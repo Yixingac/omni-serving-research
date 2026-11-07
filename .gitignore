@@ -1,0 +1,28 @@
+# Local environment and credentials
+.env
+.env.*
+.venv/
+venv/
+*.pem
+*.key
+
+# Python and editor artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.DS_Store
+.idea/
+.vscode/
+
+# Local data, model weights, and raw profiling outputs
+data/
+datasets/
+checkpoints/
+outputs/
+*.safetensors
+*.pt
+*.pth
+*.log
+*.nsys-rep
+*.ncu-rep
+*.qdrep
