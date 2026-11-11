@@ -68,7 +68,8 @@ def render(cmp: dict[str, Any]) -> str:
     if any("spark" in str(e.get("hardware")) for e in cmp["experiments"]) and any("a6000" in str(e.get("hardware")) for e in cmp["experiments"]):
         L += ["", "> **警告：对比中混有 Spark 和 A6000 的结果，硬件不同，不能据此比较系统设计。**"]
     L += ["", "## 实际测量（Measured）", ""]
-    metrics = [("e2e_s_median", "e2e 中位数 s"), ("ttft_s_median", "TTFT 中位数 s"), ("ttfa_s_median", "TTFA 中位数 s"),
+    metrics = [("e2e_s_median", "e2e 中位数 s"), ("e2e_per_audio_s_median", "e2e/语音秒 中位数"), ("output_audio_s_median", "输出语音中位数 s"),
+               ("ttft_s_median", "TTFT 中位数 s"), ("ttfa_s_median", "TTFA 中位数 s"),
                ("tp_requests_per_s", "请求/秒"), ("tp_output_tokens_per_s", "token/秒"), ("tp_output_audio_s_per_s", "音频秒/秒")]
     present = [e for e in cmp["experiments"] if not e.get("missing")]
     for lv in cmp["levels"]:

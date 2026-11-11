@@ -151,7 +151,7 @@ def phase_level_table(records: list[dict[str, Any]], slo: dict[str, float] | Non
         ms = [M.request_metrics(r) for r in ok]
         row = {"phase": phase, "level_kind": kname, "level": kval, "n": len(recs), "ok": len(ok),
                "errors": len(recs) - len(ok)}
-        for metric in ("e2e_s", "ttft_s", "ttfa_s", "audio_rtf"):
+        for metric in ("e2e_s", "ttft_s", "ttfa_s", "audio_rtf", "e2e_per_audio_s", "e2e_per_token_s"):
             s = M.summarize([m.get(metric) for m in ms], ci=False)
             row[f"{metric}_median"] = s.get("median")
             row[f"{metric}_p90"] = s.get("p90")

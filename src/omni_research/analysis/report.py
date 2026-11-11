@@ -76,13 +76,13 @@ def render(analysis: dict[str, Any], figures: list[Path], exp_dir: Path) -> str:
         lines.append("下表按阶段和负载水平汇总，不含 warmup；延迟单位为秒。分位数只在样本量足够时给出"
                      "（p90 需要 n≥50），否则为“—”。")
         lines.append("")
-        lines.append("| 阶段 | 负载 | n | 失败 | e2e 中位数 | e2e p90 | TTFT 中位数 | TTFA 中位数 | 音频 RTF 中位数 | 请求/秒 | token/秒 | 输出 token 中位数 |")
-        lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
+        lines.append("| 阶段 | 负载 | n | 失败 | e2e 中位数 | e2e p90 | TTFT 中位数 | TTFA 中位数 | e2e/语音秒 中位数 | 请求/秒 | token/秒 | 输出 token 中位数 | 输出语音中位数 s |")
+        lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
         for r in table:
             lines.append(f"| {r['phase']} | {r['level_kind']}={r['level']} | {r['n']} | {r['errors']} | {_f(r.get('e2e_s_median'))} | "
                          f"{_f(r.get('e2e_s_p90'))} | {_f(r.get('ttft_s_median'), 3)} | {_f(r.get('ttfa_s_median'), 3)} | "
-                         f"{_f(r.get('audio_rtf_median'))} | {_f(r.get('tp_requests_per_s'))} | {_f(r.get('tp_output_tokens_per_s'), 1)} | "
-                         f"{_f(r.get('output_tokens_median'), 0)} |")
+                         f"{_f(r.get('e2e_per_audio_s_median'), 3)} | {_f(r.get('tp_requests_per_s'))} | {_f(r.get('tp_output_tokens_per_s'), 1)} | "
+                         f"{_f(r.get('output_tokens_median'), 0)} | {_f(r.get('output_audio_s_median'), 1)} |")
         lines.append("")
     gpu = analysis.get("gpu_by_phase") or []
     if gpu:

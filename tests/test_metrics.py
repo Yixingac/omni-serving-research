@@ -67,3 +67,9 @@ def test_playback_underruns():
     # A 0.5 s prebuffer absorbs the jitter entirely.
     assert m.playback_underruns(chunks, prebuffer_s=0.5)["stalls"] == 0
     assert m.playback_underruns([])["stalls"] == 0
+
+
+def test_normalized_latency_per_audio_second_and_token():
+    r = m.request_metrics(_rec(0, 0.1, 2.0, 2.0, 3.0, audio=12.0, tok=60))
+    assert r["e2e_per_audio_s"] == pytest.approx(0.25)
+    assert r["e2e_per_token_s"] == pytest.approx(0.05)

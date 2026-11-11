@@ -118,6 +118,15 @@ def request_metrics(rec: dict[str, Any]) -> dict[str, float | None]:
     # Real-time factor of speech output: wall time spent producing audio / audio duration.
     if audio_s and first_audio is not None and last_audio is not None and audio_s > 0:
         m["audio_rtf"] = (last_audio - first_audio) / audio_s if last_audio > first_audio else None
+    # End-to-end time per second of generated speech. Output length varies with the prompt, so this
+    # normalized number is the one to compare across load levels (x3 on 2026-11-11: the c=1 sample
+    # happened to draw shorter answers, 11.8 s vs ~15 s of audio at higher concurrency).
+    if audio_s and gen_s is not None and audio_s > 0:
+        m["e2e_per_audio_s"] = gen_s / audio_s
+    # Same idea for text: seconds per generated token over the whole request.
+    tok = rec.get("completion_tokens")
+    if tok and gen_s is not None:
+        m["e2e_per_token_s"] = gen_s / tok
     return m
 
 
