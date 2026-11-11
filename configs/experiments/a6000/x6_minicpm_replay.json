@@ -3,7 +3,7 @@
   "hardware_label": "a6000x1",
   "seed": 0,
   "experiment_id": "x6_minicpm_replay",
-  "description": "用 x5 收集的 Agent trace 做回放：请求级（开环）与依赖感知（闭环）对比，会话复制与加速以提高并发。",
+  "description": "用 x5 收集的 Agent trace 做回放：请求级（开环）与依赖感知（闭环）对比，会话复制与加速以提高并发。 2026-11-11 在 Spark 上按原规模（最多 4 倍会话、2 倍加速）回放时，两种模式结果几乎相同，因为服务远未饱和；因此加了 8 倍会话×4 倍加速、16 倍会话×8 倍加速两档，把负载推向饱和，两种模式各跑一次。",
   "assets": "synthetic-v1",
   "servers": [
     {
@@ -57,6 +57,38 @@
       "mode": "dependency",
       "speed": 1.0,
       "session_copies": 2
+    },
+    {
+      "kind": "replay",
+      "name": "replay_req_x8_speed4",
+      "trace": "latest/x5_minicpm_agents/raw/agent_trace_agents_text_c4.jsonl",
+      "mode": "request",
+      "speed": 4.0,
+      "session_copies": 8
+    },
+    {
+      "kind": "replay",
+      "name": "replay_dep_x8_speed4",
+      "trace": "latest/x5_minicpm_agents/raw/agent_trace_agents_text_c4.jsonl",
+      "mode": "dependency",
+      "speed": 4.0,
+      "session_copies": 8
+    },
+    {
+      "kind": "replay",
+      "name": "replay_req_x16_speed8",
+      "trace": "latest/x5_minicpm_agents/raw/agent_trace_agents_text_c4.jsonl",
+      "mode": "request",
+      "speed": 8.0,
+      "session_copies": 16
+    },
+    {
+      "kind": "replay",
+      "name": "replay_dep_x16_speed8",
+      "trace": "latest/x5_minicpm_agents/raw/agent_trace_agents_text_c4.jsonl",
+      "mode": "dependency",
+      "speed": 8.0,
+      "session_copies": 16
     }
   ]
 }
