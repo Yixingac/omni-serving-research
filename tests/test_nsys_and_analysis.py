@@ -133,3 +133,25 @@ def test_gpu_timeline_without_memory_values(tmp_path):
     samples = [{"t": 100.0 + i * 0.2, "gpu": "0", "util": float(i % 100), "mem_mib": None, "power_w": None} for i in range(20)]
     p = gpu_timeline(samples, [{"phase": "p", "started": 100.5, "ended": 102.0}], tmp_path, "t")
     assert p is not None and p.exists()
+
+
+def test_compare_mixes_numeric_and_named_levels(tmp_path, monkeypatch):
+    """Replay phases use the level "dependency"; sorting levels must not assume numbers (crashed 2026-11-11)."""
+    from omni_research.analysis import compare as C
+
+    def rows(e2e):
+        return [{"phase": "p", "level": lv, "n": 12, "errors": 0, "e2e_s_median": e2e, "tp_requests_per_s": 1 / e2e}
+                for lv in ("16", "dependency", "2")]
+
+    tables = {"a": rows(1.0), "b": rows(1.5)}
+    for name in tables:
+        (tmp_path / name).mkdir()
+        (tmp_path / name / "result.json").write_text("{}")
+    monkeypatch.setattr(C.EA, "analyze_experiment",
+                        lambda d: {"table": tables[Path(d).name], "status": "ok", "config": {}, "stages": {}})
+    defn = {"name": "mixed", "phase": "p",
+            "experiments": [{"label": "A", "dir": str(tmp_path / "a")}, {"label": "B", "dir": str(tmp_path / "b")}]}
+    cmp = C.compare(defn, tmp_path)
+    assert cmp["levels"] == ["2", "16", "dependency"]
+    assert "负载水平 dependency" in C.render(cmp)
+    assert C.figure(cmp, tmp_path / "fig").exists()

@@ -35,6 +35,14 @@ def resolve_dir(spec: str, data_root: Path) -> Path:
     return (data_root / d).resolve()
 
 
+def level_key(level: str) -> tuple[int, float, str]:
+    """Numeric load levels sort by value; named ones (a replay phase's "dependency") come after, by name."""
+    try:
+        return (0, float(level), "")
+    except (TypeError, ValueError):
+        return (1, 0.0, str(level))
+
+
 def load_rows(exp_dir: Path, phase: str) -> dict[str, dict[str, Any]]:
     a = EA.analyze_experiment(exp_dir)
     return {r["level"]: r for r in a["table"] if r["phase"] == phase}, a
@@ -52,7 +60,7 @@ def compare(defn: dict[str, Any], data_root: Path) -> dict[str, Any]:
         exps.append({"label": e["label"], "dir": str(d), "rows": rows, "status": a["status"],
                      "hardware": a["config"].get("hardware_label"), "stages": a["stages"].get(e.get("phase", defn["phase"]), {})})
     present = [e for e in exps if not e.get("missing")]
-    levels = sorted(set.intersection(*[set(e["rows"]) for e in present]) if present else set(), key=lambda x: float(x))
+    levels = sorted(set.intersection(*[set(e["rows"]) for e in present]) if present else set(), key=level_key)
     return {"definition": defn, "experiments": exps, "levels": levels}
 
 
@@ -104,7 +112,8 @@ def figure(cmp: dict[str, Any], out: Path) -> Path | None:
         return None
     plt = _plt()
     fig, axes = plt.subplots(1, 2, figsize=(9, 3.3))
-    x = [float(v) for v in cmp["levels"]]
+    numeric = all(level_key(v)[0] == 0 for v in cmp["levels"])
+    x = [float(v) for v in cmp["levels"]] if numeric else list(range(len(cmp["levels"])))
     for e in present:
         axes[0].plot(x, [e["rows"][lv].get("e2e_s_median") for lv in cmp["levels"]], marker="o", label=e["label"])
         axes[1].plot(x, [e["rows"][lv].get("tp_requests_per_s") for lv in cmp["levels"]], marker="o", label=e["label"])
@@ -112,8 +121,10 @@ def figure(cmp: dict[str, Any], out: Path) -> Path | None:
         ax.set_title(t)
         ax.set_xlabel("负载水平")
         ax.set_ylabel(y)
-        if len(x) > 1 and min(x) > 0:
+        if numeric and len(x) > 1 and min(x) > 0:
             ax.set_xscale("log", base=2)
+        if not numeric:
+            ax.set_xticks(x, cmp["levels"])
         ax.legend(fontsize=7)
     fig.suptitle(cmp["definition"]["name"], fontsize=9)
     fig.tight_layout()
