@@ -436,15 +436,21 @@ class ExperimentRunner:
             return backs[0]
         return BackendPool(backs, policy=self.cfg.get("routing", "least_outstanding"))
 
-    def server_events(self, phase: str, start: bool) -> None:
+    def server_events(self, phase: str, start: bool, torch: bool = False) -> None:
+        """Start/stop SGLang-Omni's request event recorder; with ``torch`` also its torch profiler
+        (kernel-level Chrome traces under profiling/torch/<phase>/). The torch profiler perturbs
+        timing, so phases that use it are never baselines."""
         for s in self.servers:
+            run_id = f"{self.cfg['experiment_id']}-{phase}-{s.name}"
             if start:
-                body = {"run_id": f"{self.cfg['experiment_id']}-{phase}-{s.name}",
-                        "event_dir": str(self.out / "raw" / "server_events" / phase / s.name)}
-                code, _ = _http_json(f"{s.base_url}/start_request_profile", body, timeout=30)
+                body: dict[str, Any] = {"run_id": run_id, "event_dir": str(self.out / "raw" / "server_events" / phase / s.name)}
+                if torch:
+                    body.update(enable_torch=True,
+                                trace_path_template=str(self.out / "profiling" / "torch" / phase / s.name / "trace"))
+                code, _ = _http_json(f"{s.base_url}/{'start_profile' if torch else 'start_request_profile'}", body, timeout=60)
             else:
-                code, _ = _http_json(f"{s.base_url}/stop_request_profile", {}, timeout=60)
-            self.log(f"request profiler {'start' if start else 'stop'} on {s.name}: HTTP {code}")
+                code, _ = _http_json(f"{s.base_url}/{'stop_profile' if torch else 'stop_request_profile'}", {}, timeout=300)
+            self.log(f"{'torch+request' if torch else 'request'} profiler {'start' if start else 'stop'} on {s.name}: HTTP {code}")
 
     # -- phases -----------------------------------------------------------------------------
     def _pool(self, ph: dict[str, Any]) -> AssetPool | None:
@@ -471,8 +477,10 @@ class ExperimentRunner:
         raw = self.out / "raw"
         seed = int(ph.get("seed", self.cfg.get("seed", 0)))
         summary: dict[str, Any] = {"phase": name, "kind": kind, "started": time.time()}
-        if ph.get("server_events"):
-            self.server_events(name, True)
+        torch_prof = bool(ph.get("torch_profile"))
+        if ph.get("server_events") or torch_prof:
+            self.server_events(name, True, torch=torch_prof)
+            summary["profiled"] = "torch+request_events" if torch_prof else "request_events"
         try:
             if kind == "smoke":
                 summary.update(await self._phase_smoke(ph, name, seed, bench_trace))
@@ -491,8 +499,8 @@ class ExperimentRunner:
             else:
                 raise ExperimentFailure("config_error", f"unknown phase kind {kind!r}")
         finally:
-            if ph.get("server_events"):
-                self.server_events(name, False)
+            if ph.get("server_events") or torch_prof:
+                self.server_events(name, False, torch=torch_prof)
             summary["ended"] = time.time()
         _ = raw
         return summary

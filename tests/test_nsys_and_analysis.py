@@ -82,3 +82,23 @@ def test_analyze_fake_experiment(tmp_path, monkeypatch):
     split = a["agents"]["ag"]["time_split_s"]
     assert split["model"] > 0 and abs(sum(v for k, v in split.items() if k != "session") - split["session"]) < 1e-6
     assert a["stages"]["sweep"]["requests"] >= 24
+
+
+def test_torch_chrome_trace_busy_idle(tmp_path):
+    import gzip
+
+    from omni_research.analysis.torch_trace import analyze_files
+
+    tr = {"traceEvents": [
+        {"ph": "X", "cat": "kernel", "name": "gemm", "ts": 0, "dur": 500, "args": {"device": 0}},
+        {"ph": "X", "cat": "kernel", "name": "attn", "ts": 300, "dur": 500, "args": {"device": 0}},
+        {"ph": "X", "cat": "gpu_memcpy", "name": "Memcpy HtoD", "ts": 900, "dur": 100, "args": {"device": 0}},
+        {"ph": "X", "cat": "cpu_op", "name": "aten::mm", "ts": 0, "dur": 2000, "args": {}},
+    ]}
+    p = tmp_path / "trace_rank0.trace.json.gz"
+    with gzip.open(p, "wt") as fh:
+        json.dump(tr, fh)
+    out = analyze_files([p])
+    d0 = out["per_device"][0]
+    assert d0["busy_ns"] == 900_000 and d0["kernel_sum_ns"] == 1_100_000  # union vs naive sum, in ns
+    assert out["files"][0]["kernels_top"][0][0] in ("gemm", "attn")
