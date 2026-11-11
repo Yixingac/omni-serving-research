@@ -361,6 +361,48 @@ def prefix_cache_by_phase(exp: Path, phases: list[dict[str, Any]]) -> dict[str, 
     return out
 
 
+# Server-side failures that do not stop the runner (the stage process dies, the server exits, and
+# a runner without a liveness check records the run as ok; f2, x7c and f5 on 2026-11-11).
+_FAILURE_PATTERNS = (
+    ("illegal_memory_access", re.compile(r"illegal memory access")),
+    ("dead_stage_process", re.compile(r"Dead stage process\(es\) detected: ([^\n]+)")),
+    ("cuda_oom", re.compile(r"CUDA out of memory|OutOfMemoryError")),
+    ("cufft_error", re.compile(r"cuFFT error: \w+")),
+)
+_LOG_TIME_RE = re.compile(r"^(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)")
+
+
+def server_failures(exp: Path, phases: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    """First occurrence of each failure pattern in the server logs, with the phase it fell in."""
+    logs = sorted((exp / "logs").glob("server_*.log")) if (exp / "logs").exists() else []
+    offset = log_utc_offset(exp)
+    out: list[dict[str, Any]] = []
+    for log in logs:
+        last_t = None
+        seen: set[str] = set()
+        for i, line in enumerate(log.read_text(errors="replace").splitlines(), 1):
+            m = _LOG_TIME_RE.match(line)
+            if m:
+                last_t = m.group(1)
+            for kind, pat in _FAILURE_PATTERNS:
+                if kind in seen:
+                    continue
+                hit = pat.search(line)
+                if not hit:
+                    continue
+                seen.add(kind)
+                d: dict[str, Any] = {"log": log.name, "line": i, "kind": kind, "text": line.strip()[:300], "local_time": last_t}
+                if last_t and offset is not None:
+                    t = datetime.strptime(last_t, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone(offset)).timestamp()
+                    d["time"] = t
+                    for ph in phases or []:
+                        if ph.get("started") is not None and ph.get("ended") is not None and ph["started"] <= t <= ph["ended"]:
+                            d["phase"] = ph.get("phase")
+                            break
+                out.append(d)
+    return out
+
+
 # ------------------------------------------------------------------------------------------
 # Agent traces
 
@@ -431,6 +473,7 @@ def analyze_experiment(exp: Path, slo: dict[str, float] | None = None) -> dict[s
         if evs:
             stages[ph["phase"]] = stage_breakdown(evs)
     prefix_cache = prefix_cache_by_phase(exp, phases)
+    failures = server_failures(exp, phases)
     agents = {}
     for f in sorted((exp / "raw").glob("agent_trace_*.jsonl")):
         agents[f.stem.removeprefix("agent_trace_")] = agent_trace_summary(f)
@@ -452,5 +495,5 @@ def analyze_experiment(exp: Path, slo: dict[str, float] | None = None) -> dict[s
     return {"experiment": exp.name, "status": result.get("status"), "error_class": result.get("error_class"),
             "error": (result.get("error") or "")[:1500], "config": config, "manifest": manifest, "result": result,
             "table": table, "gpu_by_phase": gpu_rows, "stages": stages, "agents": agents, "gpu_traces": gpu_traces,
-            "prefix_cache": prefix_cache,
+            "prefix_cache": prefix_cache, "server_failures": failures,
             "fake_server": bool(config.get("fake_server")), "analyzed_at": time.strftime("%Y-%m-%dT%H:%M:%S")}

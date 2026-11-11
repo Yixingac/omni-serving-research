@@ -53,6 +53,12 @@ def render(analysis: dict[str, Any], figures: list[Path], exp_dir: Path) -> str:
     if is_spark:
         lines.append("")
         lines.append("> **这是 DGX Spark（GB10）上的功能验证结果，不能与 A6000 的结果比较。**")
+    fails = analysis.get("server_failures") or []
+    if fails:
+        lines.append("")
+        lines.append("> **服务端出现故障，之后的请求结果不可用：** " + "；".join(
+            f"`{f['kind']}`（{f.get('local_time') or '时间未知'}，阶段 `{f.get('phase') or '未知'}`，`{f['log']}` 第 {f['line']} 行）"
+            for f in fails) + "。运行状态以每个请求的错误记录为准。")
     lines.append("")
     lines.append("## 为什么做这个实验")
     lines.append("")

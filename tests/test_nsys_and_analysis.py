@@ -215,3 +215,28 @@ def test_log_utc_offset_sources(tmp_path):
     assert EA.log_utc_offset(exp) == timedelta(hours=-5)  # header 6 s after the runner started
     (exp / "manifest.json").write_text(json.dumps({"started": start.timestamp(), "utc_offset": "+0530"}))
     assert EA.log_utc_offset(exp) == timedelta(hours=5, minutes=30)
+
+
+def test_server_failures_found_in_log_and_placed_in_phase(tmp_path):
+    """A stage-process crash recorded only in the server log is reported with the phase it hit."""
+    from datetime import datetime, timedelta, timezone
+
+    exp = tmp_path / "e"
+    (exp / "logs").mkdir(parents=True)
+    (exp / "manifest.json").write_text(json.dumps({"utc_offset": "-0500"}))
+    tz = timezone(timedelta(hours=-5))
+    t0 = datetime(2026, 11, 11, 17, 26, 0, tzinfo=tz).timestamp()
+    (exp / "logs" / "server_s0.log").write_text("\n".join([
+        "2026-11-11 17:26:59,649 [INFO] Decode batch, #running-req: 2",
+        "2026-11-11 17:27:00,523 [ERROR] sglang_omni.scheduling.simple_scheduler: compute_fn failed",
+        "Traceback (most recent call last):",
+        "RuntimeError: Triton Error [CUDA]: an illegal memory access was encountered",
+        "2026-11-11 17:27:01,000 [ERROR] Dead stage process(es) detected: talker (pid=614961, exit=-6)",
+        "RuntimeError: CUDA error: an illegal memory access was encountered",
+    ]) + "\n")
+    phases = [{"phase": "w3b_c32_64", "started": t0 - 600, "ended": t0 - 10}, {"phase": "w3b_open", "started": t0 - 10, "ended": t0 + 120}]
+    fails = EA.server_failures(exp, phases)
+    kinds = {f["kind"]: f for f in fails}
+    assert set(kinds) == {"illegal_memory_access", "dead_stage_process"}  # each pattern reported once
+    assert kinds["illegal_memory_access"]["line"] == 4 and kinds["illegal_memory_access"]["phase"] == "w3b_open"
+    assert kinds["illegal_memory_access"]["local_time"] == "2026-11-11 17:27:00"
