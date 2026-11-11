@@ -23,7 +23,9 @@
         "--talker_ar.gpu",
         "2",
         "--thinker.engine.disable_custom_all_reduce",
-        "true"
+        "true",
+        "--thinker.engine.mem_fraction_static",
+        "0.80"
       ],
       "ready_timeout_s": 3600,
       "env": {
