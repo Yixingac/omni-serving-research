@@ -1,0 +1,134 @@
+# 任务放置清单：每个任务的资源需求、依赖、当前状态，以及它应该在哪台机器上运行。
+# 运行 `python -m omni_research.orchestration.placement` 可以根据下面的规则重新计算放置结果和理由。
+# 规则说明见 docs/03_hardware/task_placement.md。数字是估算，history 中的实际耗时会用来校正。
+
+hosts:
+  - name: mac
+    cpus: 10
+    memory_gb: 32
+    gpu: null
+    arch: arm64
+    cuda: false
+    setup_min: 0.0
+    link_gbps: {spark: 0.2, slurm: 0.1}    # Spark 只有 Wi-Fi；Unicorn 需经 CUVPN 或校园网
+  - name: spark
+    cpus: 20
+    memory_gb: 121
+    gpu: GB10
+    arch: arm64
+    cuda: true
+    setup_min: 0.5                          # SSH + tmux + 激活环境
+    link_gbps: {mac: 0.2}
+  - name: slurm
+    cpus: 24                                # Job 409712 实际申请到的 CPU 数
+    memory_gb: 300
+    gpu: RTX A6000
+    arch: x86_64
+    cuda: true
+    always_available: false
+    setup_min: 15.0                         # 排队之外，冷节点上首次 import 和预热页缓存
+    link_gbps: {mac: 0.1}
+
+tasks:
+  - task_id: unit-tests
+    description: "运行全部单元测试（纯 Python，使用 mock 后端与 fake 服务）"
+    category: cpu
+    estimated_cpu_cores: 2
+    estimated_memory_gb: 1
+    estimated_duration_minutes: 0.5
+    input_host: mac
+    status: done
+  - task_id: spark-runtime-build
+    description: "在 Spark 上构建 aarch64 SGLang-Omni 运行环境（下载为主）"
+    category: io
+    estimated_cpu_cores: 4
+    estimated_memory_gb: 8
+    estimated_duration_minutes: 40
+    input_host: spark
+    pinned_host: spark
+    pin_reason: "构建的是 Spark 自己的 aarch64 运行环境"
+    status: running
+  - task_id: spark-minicpm-smoke
+    description: "GB10 上 MiniCPM-o 4.5 单请求 smoke test（文本、语音），只验证能否运行"
+    category: gpu_dev
+    requires_gpu: true
+    requires_cuda: true
+    arm64_ok: null
+    estimated_cpu_cores: 8
+    estimated_memory_gb: 60
+    estimated_duration_minutes: 30
+    input_host: spark
+    dependencies: [spark-runtime-build]
+    status: pending
+  - task_id: spark-nsys-check
+    description: "验证 Nsight Systems 在 GB10 上采集服务进程时间线，并解析导出的 SQLite"
+    category: gpu_dev
+    requires_gpu: true
+    requires_cuda: true
+    arm64_ok: true
+    estimated_cpu_cores: 4
+    estimated_memory_gb: 16
+    estimated_duration_minutes: 20
+    input_host: spark
+    dependencies: [spark-minicpm-smoke]
+    status: pending
+  - task_id: a6000-plan-job409712
+    description: "Job 409712 的 12 个 A6000 实验（基线、Agent trace、回放、放置对比、Qwen3-Omni）"
+    category: benchmark
+    requires_gpu: true
+    requires_cuda: true
+    requires_a6000: true
+    multi_gpu: true
+    arm64_ok: null
+    estimated_cpu_cores: 24
+    estimated_memory_gb: 280
+    estimated_duration_minutes: 420
+    input_host: slurm
+    status: queued
+  - task_id: results-sync
+    description: "把 Unicorn 上的实验结果（JSONL、CSV、小文件）经 Mac 同步到 Spark"
+    category: io
+    estimated_cpu_cores: 1
+    estimated_memory_gb: 1
+    estimated_duration_minutes: 2
+    input_host: slurm
+    input_size_gb: 0.5
+    dependencies: [a6000-plan-job409712]
+    pinned_host: mac
+    pin_reason: "只有 Mac 持有 Unicorn 的 SSH 凭据，Spark 不放凭据，所以同步必须经 Mac 中转"
+    status: pending
+  - task_id: trace-analysis
+    description: "解析 Agent trace 与服务端事件，计算延迟分布、阶段分解、GPU 空闲区间"
+    category: cpu
+    estimated_cpu_cores: 4
+    estimated_memory_gb: 8
+    estimated_duration_minutes: 15
+    input_host: spark
+    input_size_gb: 0.5
+    dependencies: [results-sync]
+    status: pending
+  - task_id: figures-and-reports
+    description: "生成图表和中文实验报告"
+    category: cpu
+    estimated_cpu_cores: 2
+    estimated_memory_gb: 4
+    estimated_duration_minutes: 10
+    input_host: spark
+    dependencies: [trace-analysis]
+    status: pending
+  - task_id: draft-pr
+    description: "整理提交、推送分支、创建 Draft PR"
+    category: cpu
+    estimated_cpu_cores: 1
+    estimated_memory_gb: 1
+    estimated_duration_minutes: 1
+    input_host: mac
+    dependencies: [figures-and-reports]
+    pinned_host: mac
+    pin_reason: "推送和创建 PR 需要 GitHub 凭据，凭据只在 Mac 上，不复制到其他机器"
+    status: pending
+
+# 已完成任务的实际耗时，用于校正估算（actual/estimated 的中位数）。
+history:
+  - {task_id: spark-tests-001, category: cpu, host: spark, estimated_duration_minutes: 0.5, actual_duration_minutes: 0.15}
+  - {task_id: spark-download-minicpm-o-001, category: io, host: spark, estimated_duration_minutes: 10, actual_duration_minutes: 7.3}

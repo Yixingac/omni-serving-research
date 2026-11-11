@@ -130,9 +130,11 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--port-base", type=int, default=21000)
     r.add_argument("--deadline-s", type=float, default=None, help="extra wall-clock budget from now")
     r.add_argument("--max-gpus", type=int, default=None, help="use at most this many GPUs per node")
-    r.add_argument("--local-gpus", type=int, default=0)
-    r.add_argument("--local-cpus", type=int, default=None)
-    r.add_argument("--local-mem-gb", type=float, default=None)
+    # Local mode only (no Slurm job): the resources to schedule against. The env defaults let
+    # run_all.sh be exercised on a CPU-only host, e.g. OMNI_LOCAL_GPUS=3 with OMNI_FAKE_SERVER=1.
+    r.add_argument("--local-gpus", type=int, default=int(os.environ.get("OMNI_LOCAL_GPUS", 0)))
+    r.add_argument("--local-cpus", type=int, default=int(os.environ["OMNI_LOCAL_CPUS"]) if os.environ.get("OMNI_LOCAL_CPUS") else None)
+    r.add_argument("--local-mem-gb", type=float, default=float(os.environ["OMNI_LOCAL_MEM_GB"]) if os.environ.get("OMNI_LOCAL_MEM_GB") else None)
     r.set_defaults(fn=cmd_run)
     s = sub.add_parser("status")
     s.add_argument("--run-dir", required=True)
