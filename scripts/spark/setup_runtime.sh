@@ -36,12 +36,16 @@ runtime() {
   # micromamba 1.5.10: the 2.x 'latest' build segfaulted on Unicorn; keep both platforms on one version.
   [ -x tools/bin/micromamba ] || curl -fsSL https://micro.mamba.pm/api/micromamba/linux-aarch64/1.5.10 | tar -xj -C tools bin/micromamba
   export MAMBA_ROOT_PREFIX="$ROOT/tools/mamba"
-  local packages=(python=3.12 uv "ffmpeg>=4,<9" pynini libsndfile
+  # pynini is pinned: nemo-text-processing 1.2.0 (an sglang-omni dependency) needs exactly
+  # 2.1.6.post1, and a newer conda pynini makes pip try (and fail) to compile it from source.
+  local packages=(python=3.12 uv "ffmpeg>=4,<9" "pynini=2.1.6.post1" libsndfile
                   cuda-version=13.0 cuda-nvcc cuda-cudart-dev cuda-nvrtc-dev cuda-cccl
                   libcublas-dev libcurand-dev cuda-nvtx-dev cuda-profiler-api)
   # conda-forge has no linux-aarch64 build of sox (2026-11-11); it is only needed by a few TTS
   # utilities, so it is tried separately and skipped when unavailable.
   [ -x "$PY" ] || tools/bin/micromamba create -y -q -p "$ROOT/.conda-runtime" -c conda-forge "${packages[@]}"
+  # Idempotent fix-up for an environment created before the pin existed.
+  tools/bin/micromamba install -y -q -p "$ROOT/.conda-runtime" -c conda-forge "pynini=2.1.6.post1"
   tools/bin/micromamba install -y -q -p "$ROOT/.conda-runtime" -c conda-forge sox 2>/dev/null || echo "sox: not available on this platform, skipped"
   # JIT builds link with -L$CUDA_HOME/lib64; on aarch64 the conda toolkit keeps its libraries here.
   ln -sfn targets/sbsa-linux/lib .conda-runtime/lib64
