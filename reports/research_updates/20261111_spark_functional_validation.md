@@ -18,6 +18,7 @@
 | s5 | 用 s4 录下的 Agent trace 做回放；torch profiler 时间窗 | 回放成功；profiler 没有产出文件（导出被服务关闭打断，且多个进程同名覆盖） |
 | s6 | 修复后重测 torch profiler | 成功：两个阶段进程各自导出 trace（等待 22 秒） |
 | s7 | 按 A6000 x6 的规模回放 s4 文本 Agent trace：依赖感知 vs 请求级，会话 1/4 倍，加速 1/2 倍 | 成功：5 段回放全部完成（最多 120 个节点） |
+| s8 | Nsight Systems 采集 text-only 服务进程（服务就绪后约 40 秒），导出 SQLite | 成功：42,245 个事件；暴露并修复了解析器漏算 CUDA graph 的问题 |
 
 ## 观察到的事实（Measured，GB10）
 
@@ -34,6 +35,8 @@
 10. **同一张 GPU 上两个进程的 kernel 会重叠。** s6 的 20.5 秒窗口里，按区间并集计算 GPU 忙 19.83 秒（97%），而 kernel 时长直接相加是 26.11 秒，超过了窗口本身：thinker 进程和 talker 进程的 kernel 有约 6.3 秒是同时运行的。空闲间隙约 22 万个，几乎都短于 10 微秒，最长 55 毫秒。thinker 侧耗时最多的是 gemv（解码时的矩阵-向量乘），talker 侧是 tensor core gemm、gemv 和 flashinfer 解码 attention。
 
 11. **负载很轻时，两种回放模式没有区别。** s7 中，请求级和依赖感知回放在 4 倍会话、2 倍加速下的结果几乎相同（耗时 20.6 vs 21.2 s，请求延迟中位数 2.23 vs 2.25 s，同时在途峰值 11 vs 10），延迟也没有随负载上升（各档中位数都在 2.17–2.25 s）。依赖感知回放的作用是“服务变慢时推迟后续请求”，只有接近饱和时才会显现。因此 A6000 的 x6 加了 8 倍会话×4 倍加速、16 倍会话×8 倍加速两档。
+
+12. **Nsight Systems 可用，但解析时必须计入 CUDA graph。** nsys 默认只在 graph 层面记录 CUDA graph：graph 里的 kernel 不出现在 KERNEL 表，每次 graph 执行是 GRAPH_TRACE 表中的一行。只读 KERNEL 表时，s8 的 23.6 秒窗口里 GPU 看起来只忙了 6%；把 321 次 graph 执行（每次 66–111 ms，即一次解码步）计入后是 99%，最长空闲间隙 12.6 ms。解析器已修正并加了测试。torch profiler 会逐个记录 graph 内的 kernel，不受这个问题影响。
 
 ## 这些结果对 A6000 实验的影响
 

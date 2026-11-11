@@ -44,6 +44,16 @@ Spark 上的性能数字只用于验证功能，**不和 A6000 的数字放在�
 
 已知问题：版本锁定文件里的 `grpcio==1.85.0rc1` 已被 PyPI 撤回（有安全公告）。它来自旧环境的依赖快照；我们不运行对外的 gRPC 服务，暂时记录为待升级项。
 
+## 已验证的工具链（2026-11-11）
+
+| 工具 | 结果 |
+|---|---|
+| MiniCPM-o 4.5 文本模式、默认语音流水线 | 可运行（服务就绪 150–250 秒） |
+| 服务端 request event recorder | 可用，按 request_id 与客户端对齐 |
+| torch profiler（`/start_profile`） | 可用；模板中需含 `{stage}`，停止后需等待导出（约 20 秒） |
+| Nsight Systems 2025.3.2 | 可用；`--delay/--duration/--kill=none` 只采一段窗口；解析时须计入 GRAPH_TRACE |
+| Agent 采集与两种回放 | 可用（s4、s5、s7） |
+
 ## 共享这台机器时的约束
 
 - `gpu-agent`（Primcast GPU 租赁服务）在运行；入驻日志显示还没有上架出租。每个 GPU 任务开始前，`scripts/spark/run_experiment.sh` 会检查 GPU 上是否已有其他计算进程，有就放弃运行。
