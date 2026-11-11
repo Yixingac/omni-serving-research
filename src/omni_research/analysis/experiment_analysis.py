@@ -22,18 +22,23 @@ from typing import Any
 from . import intervals as iv
 from . import metrics as M
 
-# Server-side intervals derived from SGLang-Omni request events: (label, stage, start_event,
-# end_event). A stage of None matches the event in any stage. Only pairs present in the data are
-# reported; nothing is filled in for a stage the model does not have.
-STAGE_INTERVALS = [
-    ("preprocess", None, "preprocess_start", "preprocess_end"),
-    ("encoder", None, "encoder_start", "encoder_end"),
-    ("thinker_queue", "thinker", "scheduler_queue_enter", "scheduler_prefill_start"),
-    ("thinker_prefill_to_first_chunk", "thinker", "scheduler_prefill_start", "stage_first_stream_chunk_sent"),
-    ("talker_queue", "talker", "scheduler_queue_enter", "scheduler_prefill_start"),
-    ("talker_queue", "talker_ar", "scheduler_queue_enter", "scheduler_prefill_start"),
-    ("talker_prefill_to_first_chunk", "talker", "scheduler_prefill_start", "stage_first_stream_chunk_sent"),
-    ("talker_prefill_to_first_chunk", "talker_ar", "scheduler_prefill_start", "stage_first_stream_chunk_sent"),
+# Per-stage intervals computed for every stage that emits the events (no model-specific names):
+#   queue        scheduler_queue_enter   -> scheduler_prefill_start
+#   prefill      scheduler_prefill_start -> scheduler_prefill_end
+#   first_emit   scheduler_prefill_start -> scheduler_first_emit
+#   model_path   model_path_start        -> model_path_end      (the stage's model execution, all steps)
+#   service      stage_dispatch          -> stage_complete      (whole stage, including waiting inside it)
+#   preprocess / encoder from their own start/end events.
+# Hops between stages: destination stage_input_received minus the latest source stage_hop_sent
+# before it. Only events present in the data produce numbers.
+STAGE_EVENT_PAIRS = [
+    ("queue", "scheduler_queue_enter", "scheduler_prefill_start"),
+    ("prefill", "scheduler_prefill_start", "scheduler_prefill_end"),
+    ("first_emit", "scheduler_prefill_start", "scheduler_first_emit"),
+    ("model_path", "model_path_start", "model_path_end"),
+    ("service", "stage_dispatch", "stage_complete"),
+    ("preprocess", "preprocess_start", "preprocess_end"),
+    ("encoder", "encoder_start", "encoder_end"),
 ]
 
 
@@ -218,33 +223,54 @@ def gpu_by_phase(samples: list[dict[str, Any]], phases: list[dict[str, Any]]) ->
 
 
 def stage_breakdown(events: list[dict[str, Any]]) -> dict[str, Any]:
-    """Per-request server-side intervals (ms) and their distribution across requests."""
+    """Per-request server-side intervals (ms) for every stage, hops between stages, and totals."""
     first: dict[tuple[str, str, str], int] = {}
+    last: dict[tuple[str, str, str], int] = {}
+    hops_sent: dict[tuple[str, str], list[int]] = defaultdict(list)
     for e in events:
-        key = (e.get("request_id"), e.get("stage"), e.get("event_name"))
-        t = e.get("timestamp_ns")
-        if t is None or not key[0]:
+        rid, st, name, t = e.get("request_id"), e.get("stage"), e.get("event_name"), e.get("timestamp_ns")
+        if t is None or not rid:
             continue
-        if key not in first or t < first[key]:
-            first[key] = t
-    by_req: dict[str, dict[tuple[str, str], int]] = defaultdict(dict)
-    for (rid, stage, name), t in first.items():
-        by_req[rid][(stage, name)] = t
+        k = (rid, st, name)
+        first[k] = min(first.get(k, t), t)
+        last[k] = max(last.get(k, t), t)
+        if name == "stage_hop_sent":
+            hops_sent[(rid, st)].append(t)
+    by_req: dict[str, dict[tuple[str, str], tuple[int, int]]] = defaultdict(dict)
+    for (rid, st, name), t in first.items():
+        by_req[rid][(st, name)] = (t, last[(rid, st, name)])
     per_request: dict[str, dict[str, float]] = {}
     for rid, evs in by_req.items():
         d: dict[str, float] = {}
-        for label, stage, a, b in STAGE_INTERVALS:
-            ta = [t for (st, n), t in evs.items() if n == a and (stage is None or st == stage)]
-            tb = [t for (st, n), t in evs.items() if n == b and (stage is None or st == stage)]
-            if ta and tb and min(tb) >= min(ta):
-                d.setdefault(label, (min(tb) - min(ta)) / 1e6)
-        adm = [t for (st, n), t in evs.items() if n == "request_admission"]
-        term = [t for (st, n), t in evs.items() if n == "terminal_response"]
-        audio = [t for (st, n), t in evs.items() if n == "code2wav_first_audio"]
+        stages = {st for st, _ in evs}
+        for st in stages:
+            for label, a, b in STAGE_EVENT_PAIRS:
+                if (st, a) in evs and (st, b) in evs:
+                    ta, tb = evs[(st, a)][0], evs[(st, b)][1] if b in ("stage_complete", "model_path_end") else evs[(st, b)][0]
+                    if tb >= ta:
+                        d[f"{st}.{label}"] = (tb - ta) / 1e6
+        # Hops: for each stage's first input, the latest hop sent by another stage before it.
+        for st in stages:
+            if (st, "stage_input_received") not in evs:
+                continue
+            t_in = evs[(st, "stage_input_received")][0]
+            best = None
+            for (r2, src), ts in hops_sent.items():
+                if r2 != rid or src == st:
+                    continue
+                cands = [t for t in ts if t <= t_in]
+                if cands and (best is None or max(cands) > best[1]):
+                    best = (src, max(cands))
+            if best:
+                d[f"hop.{best[0]}->{st}"] = (t_in - best[1]) / 1e6
+        adm = [v[0] for (st, n), v in evs.items() if n == "request_admission"]
+        term = [v for (st, n), v in evs.items() if n == "terminal_response"]
         if adm and term:
-            d["admission_to_terminal"] = (min(term) - min(adm)) / 1e6
+            d["request.admission_to_first_terminal"] = (min(v[0] for v in term) - min(adm)) / 1e6
+            d["request.admission_to_last_terminal"] = (max(v[1] for v in term) - min(adm)) / 1e6
+        audio = [v[0] for (st, n), v in evs.items() if n == "code2wav_first_audio"]
         if adm and audio:
-            d["admission_to_first_audio"] = (min(audio) - min(adm)) / 1e6
+            d["request.admission_to_first_audio"] = (min(audio) - min(adm)) / 1e6
         per_request[rid] = d
     labels = sorted({k for d in per_request.values() for k in d})
     summary = {lab: M.summarize([d.get(lab) for d in per_request.values()], ci=False) for lab in labels}

@@ -36,20 +36,26 @@
 
 ## 服务端阶段（SGLang-Omni request event recorder）
 
-来自服务端事件，单位毫秒，按 request_id 匹配。只报告数据中真实存在的事件对，不会给模型没有的阶段补数字。
+来自服务端事件，单位毫秒，按 request_id 匹配。对数据里出现的**每一个阶段**（preprocessing、thinker、decode、talker、code2wav 等，名字取自事件本身）计算下面这些区间；只报告数据中真实存在的事件对，不会给模型没有的阶段补数字。
 
-| 区间 | 起点事件 → 终点事件 |
-|---|---|
-| preprocess | `preprocess_start` → `preprocess_end` |
-| encoder | `encoder_start` → `encoder_end` |
-| thinker_queue | thinker 的 `scheduler_queue_enter` → `scheduler_prefill_start` |
-| thinker_prefill_to_first_chunk | thinker 的 `scheduler_prefill_start` → `stage_first_stream_chunk_sent` |
-| talker_queue | talker 的 `scheduler_queue_enter` → `scheduler_prefill_start` |
-| talker_prefill_to_first_chunk | talker 的 `scheduler_prefill_start` → `stage_first_stream_chunk_sent` |
-| admission_to_first_audio | `request_admission` → 第一个 `code2wav_first_audio` |
-| admission_to_terminal | `request_admission` → `terminal_response` |
+| 区间 | 起点事件 → 终点事件 | 含义 |
+|---|---|---|
+| `<阶段>.queue` | `scheduler_queue_enter` → `scheduler_prefill_start` | 在该阶段调度器里排队 |
+| `<阶段>.prefill` | `scheduler_prefill_start` → `scheduler_prefill_end` | 该阶段的 prefill |
+| `<阶段>.first_emit` | `scheduler_prefill_start` → `scheduler_first_emit` | 到第一个输出 |
+| `<阶段>.model_path` | `model_path_start` → `model_path_end` | 该阶段模型执行的全过程（含逐步解码） |
+| `<阶段>.service` | `stage_dispatch` → `stage_complete` | 整个阶段，包括阶段内部的等待 |
+| `hop.<来源>-><目标>` | 来源阶段最近一次 `stage_hop_sent` → 目标阶段 `stage_input_received` | 阶段之间的数据传递 |
+| `request.admission_to_first_terminal` | `request_admission` → 第一个 `terminal_response` | 例如文本结束 |
+| `request.admission_to_last_terminal` | `request_admission` → 最后一个 `terminal_response` | 例如语音结束 |
 
-服务端的 `service_ms` 一类数字表示“开始执行到阶段完成”，包含等待其他请求的时间，不等于纯 GPU 计算时间。
+例：Spark 上一个 MiniCPM-o 语音请求的事件显示，thinker 生成完整段文本（`thinker.model_path` 约 3.7 秒）后，talker 才收到输入（`hop.thinker->talker` 约 4 毫秒），talker 执行约 1.15 秒，code2wav 约 0.19 秒。三个阶段对同一请求是串行的。
+
+`service` 一类数字表示“开始执行到阶段完成”，包含等待其他请求的时间，不等于纯 GPU 计算时间。
+
+### 关于“首个音频块时间”
+
+在我们固定版本的 MiniCPM-o 4.5 上，`/v1/chat/completions` 的流式响应里文本是逐块到达的，但音频在请求结束时**整段一次性**到达（每个请求一个音频块；Spark 上观察到，待 A6000 复核）。因此对这个模型，`ttfa_s`（首个音频块时间）等于“整段语音生成完”的时间，`audio_rtf` 无法计算（只有一个块）。比较不同模型或版本时要先确认音频是否真的流式下发。
 
 ## GPU 使用：几个不能混用的数字
 

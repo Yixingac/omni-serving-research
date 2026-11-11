@@ -37,24 +37,33 @@ def test_nsys_union_not_sum(tmp_path):
 
 
 def test_stage_breakdown_from_server_events():
-    ns = 1_000_000
+    """Shape taken from a real MiniCPM-o speech request (Spark s2): thinker -> talker -> code2wav in sequence."""
+    ms = 1_000_000
+    ev = lambda st, name, t: {"request_id": "r1", "stage": st, "event_name": name, "timestamp_ns": int(t * ms)}  # noqa: E731
     evs = [
-        {"request_id": "r1", "stage": "preprocessing", "event_name": "preprocess_start", "timestamp_ns": 0},
-        {"request_id": "r1", "stage": "preprocessing", "event_name": "preprocess_end", "timestamp_ns": 30 * ns},
-        {"request_id": "r1", "stage": "coordinator", "event_name": "request_admission", "timestamp_ns": 0},
-        {"request_id": "r1", "stage": "thinker", "event_name": "scheduler_queue_enter", "timestamp_ns": 40 * ns},
-        {"request_id": "r1", "stage": "thinker", "event_name": "scheduler_prefill_start", "timestamp_ns": 55 * ns},
-        {"request_id": "r1", "stage": "thinker", "event_name": "stage_first_stream_chunk_sent", "timestamp_ns": 100 * ns},
-        {"request_id": "r1", "stage": "talker", "event_name": "scheduler_queue_enter", "timestamp_ns": 110 * ns},
-        {"request_id": "r1", "stage": "talker", "event_name": "scheduler_prefill_start", "timestamp_ns": 300 * ns},
-        {"request_id": "r1", "stage": "code2wav", "event_name": "code2wav_first_audio", "timestamp_ns": 450 * ns},
-        {"request_id": "r1", "stage": "coordinator", "event_name": "terminal_response", "timestamp_ns": 900 * ns},
+        ev("coordinator", "request_admission", 0),
+        ev("thinker", "stage_input_received", 2.0), ev("thinker", "stage_dispatch", 2.0),
+        ev("thinker", "scheduler_queue_enter", 2.5), ev("thinker", "scheduler_prefill_start", 3.7),
+        ev("thinker", "scheduler_prefill_end", 72.9), ev("thinker", "scheduler_first_emit", 73.0),
+        ev("thinker", "model_path_start", 3.6), ev("thinker", "model_path_end", 3670.9),
+        ev("thinker", "stage_complete", 3671.4), ev("thinker", "stage_hop_sent", 3672.4),
+        ev("coordinator", "terminal_response", 3677.1),
+        ev("talker", "stage_input_received", 3676.8), ev("talker", "stage_dispatch", 3676.9),
+        ev("talker", "scheduler_queue_enter", 3678.1), ev("talker", "scheduler_prefill_start", 3678.7),
+        ev("talker", "model_path_start", 3678.7), ev("talker", "model_path_end", 4826.8),
+        ev("talker", "stage_complete", 4828.0), ev("talker", "stage_hop_sent", 4828.0),
+        ev("code2wav", "stage_input_received", 4828.0), ev("code2wav", "stage_dispatch", 4828.1),
+        ev("code2wav", "stage_complete", 5020.8), ev("coordinator", "terminal_response", 5021.0),
     ]
-    out = EA.stage_breakdown(evs)
-    d = out["per_request"]["r1"]
-    assert d["preprocess"] == 30 and d["thinker_queue"] == 15 and d["thinker_prefill_to_first_chunk"] == 45
-    assert d["talker_queue"] == 190 and d["admission_to_first_audio"] == 450 and d["admission_to_terminal"] == 900
-    assert "encoder" not in d  # no encoder events -> no encoder interval is invented
+    d = EA.stage_breakdown(evs)["per_request"]["r1"]
+    assert d["thinker.prefill"] == pytest.approx(69.2) and d["thinker.queue"] == pytest.approx(1.2)
+    assert d["thinker.model_path"] == pytest.approx(3667.3)
+    assert d["talker.model_path"] == pytest.approx(1148.1)
+    assert d["code2wav.service"] == pytest.approx(192.7)
+    assert d["hop.thinker->talker"] == pytest.approx(4.4)
+    assert d["request.admission_to_first_terminal"] == pytest.approx(3677.1)
+    assert d["request.admission_to_last_terminal"] == pytest.approx(5021.0)
+    assert not any(k.startswith("encoder") or ".encoder" in k for k in d)  # nothing invented
 
 
 def test_analyze_fake_experiment(tmp_path, monkeypatch):
