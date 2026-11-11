@@ -1,0 +1,8 @@
+# 只用于功能测试（Spark，1 张 GPU）：talker+code2wav 进程复制两份，都放在 GPU 0，检查副本路径能否跑通。不用于性能比较。
+config_cls: MiniCPMOSpeechPipelineConfig
+# --config 文件会先按完整配置校验，model_path 是必填项；启动时传入的 --model-path 会覆盖这里的值。
+model_path: openbmb/MiniCPM-o-4_5
+processes:
+  talker:
+    num_replicas: 2
+    replica_devices: [0, 0]
