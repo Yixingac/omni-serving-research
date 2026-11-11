@@ -168,6 +168,10 @@ class ReplayConfig:
     request_timeout_s: float | None = None
     seed: int = 0
     max_inflight: int | None = None  # optional client-side cap (recorded; changes open-loop semantics)
+    # "auto": resend the request body stored in the trace, or a same-size surrogate when there is none.
+    # "surrogate": always a surrogate, with the recorded output length forced, so that comparing the two
+    # isolates what replaying the actual content changes (prefix sharing between agent requests, f3: 93%).
+    payload: str = "auto"
 
     def __post_init__(self) -> None:
         if self.mode not in ("request", "dependency"):
@@ -176,6 +180,8 @@ class ReplayConfig:
             raise ValueError("speed must be > 0")
         if self.session_copies < 1:
             raise ValueError("session_copies must be >= 1")
+        if self.payload not in ("auto", "surrogate"):
+            raise ValueError(f"payload must be 'auto' or 'surrogate', not {self.payload!r}")
 
 
 class ReplayEngine:
@@ -274,7 +280,7 @@ class ReplayEngine:
         rid = f"rp-{copy}-{node.request_id or node.span_id}-{self._rng.getrandbits(32):08x}"
         md = {"session_id": f"{node.session_id}#{copy}", "replay_of_span": node.span_id,
               "replay_of_request": node.request_id, "copy": copy}
-        body = node.attrs.get("request_body")
+        body = node.attrs.get("request_body") if self.cfg.payload == "auto" else None
         if body:
             # The trace kept the original request (synthetic/public content): resend it as is.
             md["payload"] = {"kind": "original"}
@@ -283,7 +289,10 @@ class ReplayEngine:
                                audios=body.get("audios"), videos=body.get("videos"), temperature=body.get("temperature", 0.0),
                                metadata=md)
         else:
-            req = surrogate_request(node.attrs, self._rng, rid, self.pool, metadata=md)
+            attrs = node.attrs
+            if self.cfg.payload == "surrogate" and attrs.get("completion_tokens"):
+                attrs = {**attrs, "max_tokens": attrs["completion_tokens"], "force_length": True}
+            req = surrogate_request(attrs, self._rng, rid, self.pool, metadata=md)
         if self.cfg.request_timeout_s:
             req.timeout_s = self.cfg.request_timeout_s
         return req

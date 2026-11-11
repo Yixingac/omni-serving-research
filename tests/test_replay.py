@@ -79,6 +79,23 @@ async def test_dependency_mode_respects_order(tmp_path):
     assert recs["t1"]["end_ns"] - recs["t1"]["start_ns"] >= 45 * MS
 
 
+def test_surrogate_payload_ignores_stored_body_and_keeps_output_length():
+    """payload="surrogate" replays a stored request as a same-size surrogate with the recorded output length."""
+    t = _synthetic_trace()
+    body = {"messages": [{"role": "system", "content": "S" * 30}, {"role": "user", "content": "U" * 20}],
+            "max_tokens": 128, "input_modalities": ["text"], "output_modalities": ["text"]}
+    for sid in ("r1", "r2", "r3"):
+        t.spans[sid].attributes.update(request_body=body, completion_tokens=7)
+    plan = build_plan(t)
+    exact = ReplayEngine(plan, MockBackend(), ReplayConfig())._new_request(0, plan.nodes["r1"])
+    assert exact.metadata["payload"]["kind"] == "original" and exact.messages == body["messages"]
+    sur = ReplayEngine(plan, MockBackend(), ReplayConfig(payload="surrogate"))._new_request(0, plan.nodes["r1"])
+    assert sur.metadata["payload"]["kind"] == "surrogate" and sur.messages != body["messages"]
+    assert sur.max_tokens == 7 and sur.extra_body["stage_params"]["thinker"]["ignore_eos"] is True
+    with pytest.raises(ValueError):
+        ReplayConfig(payload="exact")
+
+
 async def test_dependency_mode_feedback_from_slow_server(tmp_path):
     """A slower server delays every downstream request: the closed-loop property."""
     plan = build_plan(_synthetic_trace())
