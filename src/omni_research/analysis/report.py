@@ -116,6 +116,15 @@ def render(analysis: dict[str, Any], figures: list[Path], exp_dir: Path) -> str:
             lines.append(f"| {dev} | {d['window_s']:.1f} | {d['busy_ns'] / 1e9:.2f} | {d['busy_fraction']:.0%} | "
                          f"{d['kernel_sum_ns'] / 1e9:.2f} | {d['gap_count']} | {d['longest_gap_ns'] / 1e6:.1f} |")
         lines.append("")
+        per_proc = [(f["file"], dev, ns) for f in gt.get("files", []) for dev, ns in (f.get("busy_ns") or {}).items()]
+        if len(per_proc) > 1:
+            lines.append("按进程（每个 trace 文件是一个进程）的 GPU 忙碌时间：" + "；".join(
+                f"`{name}` 在 GPU {dev} 上 {ns / 1e9:.2f} s" for name, dev, ns in per_proc) + "。")
+            for dev, d in gt["per_device"].items():
+                if d.get("multi_process_ns") is not None:
+                    lines.append(f"GPU {dev} 上两个及以上进程同时有工作的时间：{d['multi_process_ns'] / 1e9:.2f} s"
+                                 "（没有 MPS 时不同进程的 kernel 轮流执行，这段时间是争用，不是并行）。")
+            lines.append("")
     for name, a in (analysis.get("agents") or {}).items():
         sp = a["time_split_s"]
         tot = sp["session"] or 1

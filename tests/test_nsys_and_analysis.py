@@ -155,3 +155,25 @@ def test_compare_mixes_numeric_and_named_levels(tmp_path, monkeypatch):
     assert cmp["levels"] == ["2", "16", "dependency"]
     assert "负载水平 dependency" in C.render(cmp)
     assert C.figure(cmp, tmp_path / "fig").exists()
+
+
+def test_torch_traces_per_process_busy_and_overlap(tmp_path):
+    """One trace per process: per-process busy time and the time both processes had work in flight."""
+    import gzip
+
+    from omni_research.analysis.torch_trace import analyze_files
+
+    def write(name, kernels):
+        p = tmp_path / name
+        with gzip.open(p, "wt") as fh:
+            json.dump({"traceEvents": [{"ph": "X", "cat": "kernel", "name": "k", "ts": ts, "dur": dur, "args": {"device": 0}}
+                                       for ts, dur in kernels]}, fh)
+        return p
+
+    # Process a is busy 0-600 us, process b 400-1000 us: 200 us with work from both.
+    out = analyze_files([write("a.trace.json.gz", [(0, 300), (300, 300)]), write("b.trace.json.gz", [(400, 600)])])
+    assert [f["busy_ns"][0] for f in out["files"]] == [600_000, 600_000]
+    d0 = out["per_device"][0]
+    assert d0["busy_ns"] == 1_000_000 and d0["multi_process_ns"] == 200_000
+    single = analyze_files([tmp_path / "a.trace.json.gz"])
+    assert "multi_process_ns" not in single["per_device"][0]
