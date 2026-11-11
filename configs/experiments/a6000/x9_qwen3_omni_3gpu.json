@@ -27,7 +27,8 @@
       ],
       "ready_timeout_s": 3600,
       "env": {
-        "NCCL_P2P_DISABLE": "1"
+        "NCCL_P2P_DISABLE": "1",
+        "SGLANG_OMNI_STARTUP_TIMEOUT": "2400"
       }
     }
   ],
