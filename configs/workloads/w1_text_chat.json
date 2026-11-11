@@ -1,0 +1,3 @@
+{"workload_id": "W1_text_text", "description": "文本输入、文本输出。提示词为约 200 token 的合成笔记，要求两句话总结。",
+ "input_modalities": ["text"], "output_modalities": ["text"], "max_tokens": 128, "stream": true, "temperature": 0.0,
+ "prompt": {"kind": "synthetic_text", "tokens": 200, "prefix": "Summarize the following notes in two sentences: "}}

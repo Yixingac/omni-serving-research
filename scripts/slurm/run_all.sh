@@ -40,22 +40,33 @@ log "job ${SLURM_JOB_ID:-none} on $(hostname -s); gpus=${SLURM_GPUS_ON_NODE:-?} 
 bash "$REPO/scripts/slurm/preflight.sh" "$RUN_DIR/preflight" >> "$RUN_DIR/run_all.log" 2>&1
 log "preflight done"
 
+run_orchestrator() {  # run_orchestrator PLAN
+  PY="${OMNI_PYTHON:-python3}"
+  PYTHONPATH="$REPO/src${PYTHONPATH:+:$PYTHONPATH}" "$PY" -m omni_research.orchestration.cli run \
+    --plan "$1" --run-dir "$RUN_DIR/orchestrator" --stop-margin-s "$STOP_MARGIN_S" >> "$RUN_DIR/orchestrator.log" 2>&1 &
+  child=$!
+  # `wait` returns early when a trapped signal arrives; keep waiting until the child exits.
+  while kill -0 "$child" 2>/dev/null; do wait "$child"; done
+  child=""
+  log "orchestrator exited"
+}
+
 case "$mode" in
   hold)
-    # Nothing runs here; experiment steps are launched into this job with srun --jobid.
+    # If a plan was placed next to the job before it started, run it autonomously first, so the
+    # allocation does useful work even when nobody is logged in when it starts.
+    if [[ -f "$RUN_DIR/autostart_plan.json" && ! -e "$RUN_DIR/STOP" ]]; then
+      log "autostart plan found: running the orchestrator"
+      run_orchestrator "$RUN_DIR/autostart_plan.json"
+    fi
+    # Then keep the GPUs for interactive `srun --jobid` steps until STOP or the time margin.
     while [[ ! -e "$RUN_DIR/STOP" ]] && (( $(time_left_s) > STOP_MARGIN_S )); do
       sleep 30 & child=$!; wait "$child"; child=""
     done
     ;;
   run)
     [[ -f "$plan" ]] || { log "plan not found: $plan"; exit 2; }
-    PY="${OMNI_PYTHON:-python3}"
-    PYTHONPATH="$REPO/src${PYTHONPATH:+:$PYTHONPATH}" "$PY" -m omni_research.orchestration.cli run \
-      --plan "$plan" --run-dir "$RUN_DIR" --stop-margin-s "$STOP_MARGIN_S" >> "$RUN_DIR/orchestrator.log" 2>&1 &
-    child=$!
-    # `wait` returns early when a trapped signal arrives; keep waiting until the child exits.
-    while kill -0 "$child" 2>/dev/null; do wait "$child"; done
-    log "orchestrator exited"
+    run_orchestrator "$plan"
     ;;
 esac
 

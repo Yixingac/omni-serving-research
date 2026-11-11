@@ -41,6 +41,8 @@ def cmd_run(args: argparse.Namespace) -> int:
         launcher = SlurmStepLauncher(alloc.job_id, args.cwd or _repo_root(), gpu_type)
     else:
         launcher = LocalLauncher(args.cwd or _repo_root())
+    # Experiment data lives under PROJECT_DATA_ROOT (persistent storage), separate from code.
+    data_root = Path(os.path.expanduser(args.data_root or os.environ.get("PROJECT_DATA_ROOT") or _repo_root() / "results")).resolve()
     deadline = None
     if args.deadline_s:
         import time
@@ -56,7 +58,9 @@ def cmd_run(args: argparse.Namespace) -> int:
         poll_s=args.poll_s,
         grace_s=args.grace_s,
         port_base=args.port_base,
-        env={"OMNI_RUN_DIR": str(Path(args.run_dir).resolve()), "OMNI_REPO": str(_repo_root())},
+        env={"OMNI_RUN_DIR": str(Path(args.run_dir).resolve()), "OMNI_REPO": str(_repo_root()),
+             "PROJECT_DATA_ROOT": str(data_root)},
+        experiments_root=data_root / "experiments",
     )
 
     def handle(signum, _frame):  # noqa: ANN001
@@ -119,6 +123,7 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--run-dir", required=True)
     r.add_argument("--jobid", default=os.environ.get("SLURM_JOB_ID"))
     r.add_argument("--cwd", default=None)
+    r.add_argument("--data-root", default=None, help="PROJECT_DATA_ROOT (default: env or <repo>/results)")
     r.add_argument("--stop-margin-s", type=float, default=900)
     r.add_argument("--poll-s", type=float, default=5)
     r.add_argument("--grace-s", type=float, default=60)

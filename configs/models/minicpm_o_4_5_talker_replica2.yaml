@@ -1,0 +1,7 @@
+# MiniCPM-o 4.5 语音流水线，2 张 GPU：thinker（含编码器）在 GPU 0；talker+code2wav 进程复制两份，分别在 GPU 0 和 GPU 1。
+# 用来检验“只复制瓶颈阶段”的效果，与两份完整副本、thinker/talker 拆分在相同 GPU 预算下比较。
+config_cls: MiniCPMOSpeechPipelineConfig
+processes:
+  talker:
+    num_replicas: 2
+    replica_devices: [0, 1]

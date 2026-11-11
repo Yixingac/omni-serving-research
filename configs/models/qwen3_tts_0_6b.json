@@ -1,0 +1,3 @@
+{"model_id": "Qwen/Qwen3-TTS-12Hz-0.6B-Base", "revision": "5d83992436eae1d760afd27aff78a71d676296fc",
+ "model_path": "~/workspace/sglang-omni-learning/models/Qwen3-TTS-12Hz-0.6B-Base", "served_model_name": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+ "notes": "只用来合成实验输入音频（合成数据），不是被测系统。"}

@@ -272,18 +272,18 @@ class ReplayEngine:
 
     def _new_request(self, copy: int, node: ReplayNode) -> ModelRequest:
         rid = f"rp-{copy}-{node.request_id or node.span_id}-{self._rng.getrandbits(32):08x}"
-        req = surrogate_request(
-            node.attrs,
-            self._rng,
-            rid,
-            self.pool,
-            metadata={
-                "session_id": f"{node.session_id}#{copy}",
-                "replay_of_span": node.span_id,
-                "replay_of_request": node.request_id,
-                "copy": copy,
-            },
-        )
+        md = {"session_id": f"{node.session_id}#{copy}", "replay_of_span": node.span_id,
+              "replay_of_request": node.request_id, "copy": copy}
+        body = node.attrs.get("request_body")
+        if body:
+            # The trace kept the original request (synthetic/public content): resend it as is.
+            md["payload"] = {"kind": "original"}
+            req = ModelRequest(rid, body["messages"], list(body.get("input_modalities") or ["text"]),
+                               list(body.get("output_modalities") or ["text"]), max_tokens=body.get("max_tokens"),
+                               audios=body.get("audios"), videos=body.get("videos"), temperature=body.get("temperature", 0.0),
+                               metadata=md)
+        else:
+            req = surrogate_request(node.attrs, self._rng, rid, self.pool, metadata=md)
         if self.cfg.request_timeout_s:
             req.timeout_s = self.cfg.request_timeout_s
         return req

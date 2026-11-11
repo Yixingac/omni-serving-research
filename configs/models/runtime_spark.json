@@ -1,0 +1,7 @@
+{
+  "_comment": "个人 DGX Spark（spark-b935, GB10, aarch64）运行环境，由 scripts/spark/setup_runtime.sh 构建，版本与 Unicorn 一致。Spark 的结果只用于功能验证，不与 A6000 结果混合比较。",
+  "env": {"CUDA_HOME": "~/research/omni-runtime/.conda-runtime", "PATH": "~/research/omni-runtime/.conda-runtime/bin:/usr/local/bin:/usr/bin:/bin", "PYTHONNOUSERSITE": "1", "SGLANG_UNIFIED_RADIX_TREE_CORE_BACKEND": "python", "TOKENIZERS_PARALLELISM": "false", "PYTHONUNBUFFERED": "1"},
+  "cwd": "~/research/omni-runtime/repos/sglang-omni",
+  "python": "~/research/omni-runtime/.conda-runtime/bin/python",
+  "ffmpeg": "~/research/omni-runtime/.conda-runtime/bin/ffmpeg"
+}

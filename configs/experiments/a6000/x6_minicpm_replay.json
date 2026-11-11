@@ -1,0 +1,62 @@
+{
+  "runtime_profile": "unicorn",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "experiment_id": "x6_minicpm_replay",
+  "description": "用 x5 收集的 Agent trace 做回放：请求级（开环）与依赖感知（闭环）对比，会话复制与加速以提高并发。",
+  "assets": "synthetic-v1",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [],
+      "ready_timeout_s": 2400
+    }
+  ],
+  "phases": [
+    {
+      "kind": "replay",
+      "name": "replay_dep_x1",
+      "trace": "latest/x5_minicpm_agents/raw/agent_trace_agents_text_c4.jsonl",
+      "mode": "dependency",
+      "speed": 1.0,
+      "session_copies": 1
+    },
+    {
+      "kind": "replay",
+      "name": "replay_req_x1",
+      "trace": "latest/x5_minicpm_agents/raw/agent_trace_agents_text_c4.jsonl",
+      "mode": "request",
+      "speed": 1.0,
+      "session_copies": 1
+    },
+    {
+      "kind": "replay",
+      "name": "replay_dep_x4_poisson",
+      "trace": "latest/x5_minicpm_agents/raw/agent_trace_agents_text_c4.jsonl",
+      "mode": "dependency",
+      "speed": 1.0,
+      "session_copies": 4,
+      "session_arrival": "poisson:0.5"
+    },
+    {
+      "kind": "replay",
+      "name": "replay_req_x4_speed2",
+      "trace": "latest/x5_minicpm_agents/raw/agent_trace_agents_text_c4.jsonl",
+      "mode": "request",
+      "speed": 2.0,
+      "session_copies": 4
+    },
+    {
+      "kind": "replay",
+      "name": "replay_voice_dep_x2",
+      "trace": "latest/x5_minicpm_agents/raw/agent_trace_agents_voice_c4.jsonl",
+      "mode": "dependency",
+      "speed": 1.0,
+      "session_copies": 2
+    }
+  ]
+}

@@ -53,6 +53,7 @@ class Orchestrator:
         sleep: Callable[[float], None] = time.sleep,
         additions_dir: str | Path | None = None,
         env: dict[str, str] | None = None,
+        experiments_root: str | Path | None = None,
     ) -> None:
         self.plan = plan
         self.store = store
@@ -66,6 +67,7 @@ class Orchestrator:
         self.clock = clock
         self.sleep = sleep
         self.additions_dir = Path(additions_dir) if additions_dir else store.run_dir / "plan.d"
+        self.experiments_root = Path(experiments_root) if experiments_root else store.run_dir / "experiments"
         self.env = env or {}
         self.handles: dict[str, Handle] = {}
         self._seen_additions: set[str] = set()
@@ -188,8 +190,7 @@ class Orchestrator:
             free_idx = sorted(self._local_gpus[node])[: e.required_gpus]
             self._local_gpus[node] -= set(free_idx)
             a.gpu_indices = free_idx
-        # Each attempt gets its own directory, so a retry never overwrites an earlier attempt's data.
-        out_dir = self.store.run_dir / "experiments" / (e.output_path or e.experiment_id) / f"attempt-{es.attempts}"
+        out_dir = self._new_experiment_dir(e)
         h = self.launcher.launch(e, a, out_dir, self.env)
         self.handles[e.experiment_id] = h
         es.status = "RUNNING"
@@ -198,6 +199,19 @@ class Orchestrator:
         es.assigned = a.to_dict() | {"step_name": h.step_name}
         es.output_dir = str(out_dir)
         self.store.event("experiment_started", experiment_id=e.experiment_id, attempt=es.attempts, assigned=es.assigned)
+
+    def _new_experiment_dir(self, e: Experiment) -> Path:
+        """``<experiments_root>/<YYYYMMDD>_<name>_runNN``: every attempt is a new run id, and an
+        existing directory is never reused, so a retry cannot overwrite earlier data."""
+        name = e.output_path or e.experiment_id
+        stamp = time.strftime("%Y%m%d")
+        n = 1
+        while True:
+            d = self.experiments_root / f"{stamp}_{name}_run{n:02d}"
+            if not d.exists():
+                d.mkdir(parents=True)
+                return d
+            n += 1
 
     def _release(self, eid: str) -> Handle:
         h = self.handles.pop(eid)
