@@ -3,7 +3,7 @@
   "hardware_label": "a6000x1",
   "seed": 0,
   "experiment_id": "x4_minicpm_av_text_1gpu",
-  "description": "音频/视频理解基线（文本输出，--text-only）：W2 短语音提问、W2L 长朗读、W4 合成视频（2/5/10/20 秒），用于观察 CPU 预处理和编码器开销。",
+  "description": "音频/视频理解基线（文本输出，--text-only）：W2 短语音提问、W2L 长朗读、W4 合成视频（2/5/10/20 秒），用于观察 CPU 预处理和编码器开销。 最后加一个 10 秒视频、并发 4 的 torch profiler 窗口，用来看 CPU 预处理期间 GPU 是否空闲；这一段不作为基线。",
   "assets": "synthetic-v1",
   "servers": [
     {
@@ -131,6 +131,23 @@
       ],
       "requests_per_level": 24,
       "stop_if_p50_e2e_above_s": 90
+    },
+    {
+      "kind": "closed_loop",
+      "name": "w4_video_10s_torchprof",
+      "workload": "configs/workloads/w4_video_text.json",
+      "workload_overrides": {
+        "video": {
+          "tag": "count_circles",
+          "target_s": 10
+        }
+      },
+      "concurrency": [
+        4
+      ],
+      "requests_per_level": 8,
+      "warmup": 2,
+      "torch_profile": true
     }
   ]
 }
