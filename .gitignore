@@ -26,3 +26,10 @@ outputs/
 *.nsys-rep
 *.ncu-rep
 *.qdrep
+
+# Research run outputs stay out of the public repository: only results/README.md and small,
+# reviewed summaries are committed (see results/README.md).
+results/*
+!results/README.md
+*.egg-info/
+.ruff_cache/
