@@ -12,9 +12,9 @@ requires-python = ">=3.11"
 dependencies = []
 
 [project.optional-dependencies]
-client = ["aiohttp>=3.9"]
+client = ["aiohttp>=3.9", "psutil>=5.9"]
 analysis = ["matplotlib>=3.8", "numpy>=1.26"]
-dev = ["pytest>=8", "pytest-asyncio>=0.23", "aiohttp>=3.9", "matplotlib>=3.8", "numpy>=1.26", "pyyaml>=6", "ruff>=0.6"]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "aiohttp>=3.9", "matplotlib>=3.8", "numpy>=1.26", "pyyaml>=6", "psutil>=5.9", "ruff>=0.6"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

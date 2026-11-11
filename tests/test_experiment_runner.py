@@ -117,3 +117,25 @@ def test_runner_torch_profile_window_waits_for_export(cfg, tmp_path):
     traces = list((out / "profiling" / "torch" / "prof").rglob("*.trace.json.gz"))
     assert len(traces) == 1 and "fake_trace" in traces[0].name  # {stage} was filled in by the server
     assert res["phases"][0]["profiled"] == "torch+request_events"
+
+
+def test_stop_kills_server_in_its_own_process_group(cfg, tmp_path):
+    """Like nsys: the real server runs under setsid (new session/group); stop() must still end it."""
+    import time
+
+    cmd = cfg["servers"][0]["command"]
+    # Portable setsid (macOS has no setsid command): new session, then exec the real server.
+    setsid = f"{sys.executable} -c 'import os, sys; os.setsid(); os.execvp(sys.argv[1], sys.argv[1:])'"
+    cfg["servers"][0]["command"] = f"{setsid} {cmd} & wait"
+    cfg["phases"] = [{"kind": "smoke", "name": "s", "workload": cfg["phases"][0]["workload"], "requests": 1}]
+    runner = ExperimentRunner(cfg, tmp_path / "exp")
+    res = runner.run()
+    assert res["status"] == "ok", res.get("error")
+    from omni_research.orchestration.experiment import _port_free
+
+    port = runner.servers[0].port
+    for _ in range(20):  # the detached server exits shortly after SIGTERM
+        if _port_free(port):
+            break
+        time.sleep(0.5)
+    assert _port_free(port), "server in its own session is still listening after stop()"

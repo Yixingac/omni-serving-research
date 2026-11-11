@@ -259,18 +259,50 @@ class Server:
                                         f"server {self.name} not healthy after {self.ready_timeout_s:.0f}s:\n{tail[-1500:]}")
             time.sleep(5)
 
+    def _descendants(self) -> list[Any]:
+        try:
+            import psutil
+
+            return psutil.Process(self.proc.pid).children(recursive=True)
+        except Exception:  # noqa: BLE001 - psutil missing or process gone
+            return []
+
     def stop(self, grace_s: float = 45.0) -> int | None:
-        if self.proc is None or self.proc.poll() is not None:
-            return None if self.proc is None else self.proc.returncode
+        """Stop the server and everything it started. Wrappers such as nsys put the real server in
+        a new process group, so killing our group alone can leave it running on the GPU (seen on
+        the Spark, s8): the descendants are listed first and signalled individually as well."""
+        if self.proc is None:
+            return None
+        desc = self._descendants()
+        rc = self.proc.poll()
+        if rc is None:
+            try:
+                os.killpg(self.proc.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+        for p in desc:
+            try:
+                p.terminate()
+            except Exception:  # noqa: BLE001
+                pass
+        deadline = time.monotonic() + grace_s
         try:
-            os.killpg(self.proc.pid, signal.SIGTERM)
-        except ProcessLookupError:
-            return self.proc.poll()
-        try:
-            return self.proc.wait(timeout=grace_s)
+            rc = self.proc.wait(timeout=grace_s)
         except subprocess.TimeoutExpired:
-            os.killpg(self.proc.pid, signal.SIGKILL)
-            return self.proc.wait(timeout=30)
+            try:
+                os.killpg(self.proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            rc = self.proc.wait(timeout=30)
+        for p in desc:
+            try:
+                p.wait(timeout=max(1.0, deadline - time.monotonic()))
+            except Exception:  # noqa: BLE001
+                try:
+                    p.kill()
+                except Exception:  # noqa: BLE001
+                    pass
+        return rc
 
 
 def _quote(s: str) -> str:
