@@ -1,6 +1,9 @@
 # MiniCPM-o 4.5 语音流水线，2 张 GPU：thinker（含编码器）在 GPU 0；talker+code2wav 进程复制两份，分别在 GPU 0 和 GPU 1。
 # 用来检验“只复制瓶颈阶段”的效果，与两份完整副本、thinker/talker 拆分在相同 GPU 预算下比较。
 config_cls: MiniCPMOSpeechPipelineConfig
+# --config 文件会先按完整配置校验，model_path 是必填项（缺了服务直接退出，x7c 在 2026-11-11 因此失败）。
+# 这里写公开的模型名；实验启动时传入的 --model-path（本地路径）会覆盖它。
+model_path: openbmb/MiniCPM-o-4_5
 processes:
   talker:
     num_replicas: 2
