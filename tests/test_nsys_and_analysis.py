@@ -102,3 +102,12 @@ def test_torch_chrome_trace_busy_idle(tmp_path):
     d0 = out["per_device"][0]
     assert d0["busy_ns"] == 900_000 and d0["kernel_sum_ns"] == 1_100_000  # union vs naive sum, in ns
     assert out["files"][0]["kernels_top"][0][0] in ("gemm", "attn")
+
+
+def test_gpu_timeline_without_memory_values(tmp_path):
+    """GB10 reports memory as [N/A]: the plot must still render utilization."""
+    from omni_research.analysis.plots import gpu_timeline
+
+    samples = [{"t": 100.0 + i * 0.2, "gpu": "0", "util": float(i % 100), "mem_mib": None, "power_w": None} for i in range(20)]
+    p = gpu_timeline(samples, [{"phase": "p", "started": 100.5, "ended": 102.0}], tmp_path, "t")
+    assert p is not None and p.exists()

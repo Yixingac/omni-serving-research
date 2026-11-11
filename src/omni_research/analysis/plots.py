@@ -83,10 +83,16 @@ def gpu_timeline(samples: list[dict[str, Any]], phases: list[dict[str, Any]], ou
     by_gpu: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for s in samples:
         by_gpu[s["gpu"]].append(s)
+    any_mem = False
     for gpu, ss in sorted(by_gpu.items()):
         ss.sort(key=lambda s: s["t"])
         axes[0].plot([s["t"] - t0 for s in ss], [s["util"] for s in ss], lw=0.7, label=f"GPU {gpu}")
-        axes[1].plot([s["t"] - t0 for s in ss], [s["mem_mib"] / 1024 for s in ss], lw=0.8, label=f"GPU {gpu}")
+        mem = [(s["t"] - t0, s["mem_mib"] / 1024) for s in ss if s.get("mem_mib") is not None]
+        if mem:
+            any_mem = True
+            axes[1].plot([m[0] for m in mem], [m[1] for m in mem], lw=0.8, label=f"GPU {gpu}")
+    if not any_mem:
+        axes[1].text(0.5, 0.5, "nvidia-smi 不报告显存（统一内存，例如 GB10）", ha="center", va="center", transform=axes[1].transAxes)
     for ph in phases:
         if ph.get("started") and ph.get("ended"):
             for ax in axes:
