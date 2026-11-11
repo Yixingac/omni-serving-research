@@ -65,7 +65,9 @@ def load_requests(exp: Path) -> list[dict[str, Any]]:
     recs = []
     for f in sorted((exp / "raw").glob("requests_*.jsonl")):
         for r in read_jsonl(f):
-            r.setdefault("phase", f.stem.removeprefix("requests_"))
+            # Each phase writes its own requests_<phase>.jsonl, so the file name is the reliable phase
+            # label (agent records carry a generic "agent" label in their own phase field).
+            r["phase"] = f.stem.removeprefix("requests_")
             recs.append(r)
     return recs
 
