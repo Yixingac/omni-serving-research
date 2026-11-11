@@ -14,9 +14,9 @@
 | s1（run02） | 同上，补装依赖后 | 成功：服务 170 秒就绪；W1 文本 smoke 3 个、并发 1/4 各 8 个，全部成功 |
 | s2 | MiniCPM-o 4.5 默认语音流水线（单卡） | 成功：服务 250 秒就绪；W3b 文本→语音 smoke 2 个、并发 1/2 各 4 个；小规模 Agent 4 个会话 |
 | s3 | 与 s2 相同，thinker `mem_fraction_static` 0.85→0.6 | 成功：服务 155 秒就绪 |
+| s4 | 改进后的 Agent、用 MiniCPM-o TTS 生成语音提问、语音 Agent | 成功：服务 150 秒就绪；生成 26 个素材（12 段语音提问、2 段朗读、12 个视频）；文本 Agent 9 个会话、语音 Agent 4 个会话 |
 | s5 | 用 s4 录下的 Agent trace 做回放；torch profiler 时间窗 | 回放成功；profiler 没有产出文件（导出被服务关闭打断，且多个进程同名覆盖） |
 | s6 | 修复后重测 torch profiler | 成功：两个阶段进程各自导出 trace（等待 22 秒） |
-| s4 | 改进后的 Agent、用 MiniCPM-o TTS 生成语音提问、语音 Agent | 成功：服务 150 秒就绪；生成 26 个素材（12 段语音提问、2 段朗读、12 个视频）；文本 Agent 9 个会话、语音 Agent 4 个会话 |
 
 ## 观察到的事实（Measured，GB10）
 
