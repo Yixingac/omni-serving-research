@@ -153,33 +153,100 @@ def check_answer(text: str, task: AgentTask) -> bool:
 # Agent loop
 
 SYSTEM_PROMPT = """You are a careful assistant that solves the user's task with tools.
-Reply with exactly one JSON object and nothing else:
-  {{"tool": "<name>", "args": {{...}}}}   to call a tool, or
-  {{"final": "<short answer containing the number>"}}   when you know the answer.
+Each reply must contain only JSON, in one of two forms:
+  1. One or more tool calls, each {{"tool": "<name>", "args": {{...}}}}. Several calls may be listed together when
+     they do not depend on each other. Do not include a final answer in the same reply as tool calls.
+  2. When you know the answer: {{"final": "<short answer containing the number>"}}
 Tools:
 {tools}
-Always use a tool for arithmetic, conversions and inventory counts."""
+Always use a tool for arithmetic, conversions and inventory counts. Examples:
+  {{"tool": "calculator", "args": {{"expression": "12*7+3"}}}}
+  {{"tool": "convert", "args": {{"value": 10, "from_unit": "kg", "to_unit": "lb"}}}}
+  {{"tool": "inventory", "args": {{"item": "oak planks", "warehouse": "north"}}}} {{"tool": "inventory", "args": {{"item": "oak planks", "warehouse": "east"}}}}
+After the tool results arrive, reply with {{"final": ...}} or with more tool calls."""
+
+
+class _Pairs(dict):
+    """dict that also keeps every (key, value) pair, so duplicate keys are not lost."""
+
+    pairs: list[tuple[str, Any]]
+
+
+def _pairs_hook(pairs: list[tuple[str, Any]]) -> _Pairs:
+    d = _Pairs(pairs)
+    d.pairs = pairs
+    return d
+
+
+def _json_objects(text: str) -> list[_Pairs]:
+    """All top-level JSON objects embedded in a reply, left to right."""
+    dec = json.JSONDecoder(object_pairs_hook=_pairs_hook)
+    out: list[_Pairs] = []
+    i = 0
+    while True:
+        j = text.find("{", i)
+        if j < 0:
+            return out
+        try:
+            obj, end = dec.raw_decode(text, j)
+        except json.JSONDecodeError:
+            i = j + 1
+            continue
+        if isinstance(obj, dict):
+            out.append(obj)
+        i = end
+
+
+def _normalize_args(tool: str, args: Any) -> dict[str, Any]:
+    """Accept the argument shapes models actually produce for our three tools."""
+    if isinstance(args, dict):
+        return dict(args)
+    if isinstance(args, str):
+        a = args.strip()
+        if a.startswith("{"):
+            try:
+                parsed = json.loads(a)
+                if isinstance(parsed, dict):
+                    return parsed
+            except json.JSONDecodeError:
+                pass
+        if tool == "calculator":
+            return {"expression": a}
+        if tool == "inventory" and "," in a:
+            item, wh = (x.strip() for x in a.rsplit(",", 1))
+            return {"item": item, "warehouse": wh}
+    raise ValueError(f"arguments for {tool} must be a JSON object, got {type(args).__name__}")
+
+
+def parse_actions(text: str, tool_names: tuple[str, ...] = ("calculator", "convert", "inventory")) -> dict[str, Any]:
+    """Tool calls and/or a final answer from a model reply.
+
+    Accepts {"tool": NAME, "args": {...}} objects, the shorthand {NAME: {...}} (duplicate keys
+    kept, so two calls in one object both count), and {"final": TEXT}. Returns
+    {"calls": [(name, raw_args), ...], "final": str | None}.
+    """
+    calls: list[tuple[str, Any]] = []
+    final = None
+    for obj in _json_objects(text or ""):
+        if "tool" in obj:
+            calls.append((str(obj["tool"]), obj.get("args", {})))
+            continue
+        if "final" in obj and final is None:
+            final = str(obj["final"])
+        for k, v in obj.pairs:
+            if k in tool_names:
+                calls.append((k, v))
+    return {"calls": calls, "final": final}
 
 
 def parse_action(text: str) -> dict[str, Any] | None:
-    """First JSON object in the reply that has a 'tool' or 'final' key."""
-    if not text:
-        return None
-    for m in re.finditer(r"\{", text):
-        depth = 0
-        for j in range(m.start(), len(text)):
-            if text[j] == "{":
-                depth += 1
-            elif text[j] == "}":
-                depth -= 1
-                if depth == 0:
-                    try:
-                        obj = json.loads(text[m.start() : j + 1])
-                    except json.JSONDecodeError:
-                        break
-                    if isinstance(obj, dict) and ("tool" in obj or "final" in obj):
-                        return obj
-                    break
+    """First action only (kept for callers that handle one action at a time)."""
+    a = parse_actions(text)
+    if a["calls"]:
+        name, args = a["calls"][0]
+        return {"tool": name, "args": args}
+    if a["final"] is not None:
+        return {"final": a["final"]}
     return None
 
 
@@ -277,34 +344,42 @@ async def run_agent_session(
                         st.end("error", reason="model_request_failed")
                         break
                     text = res.text or ""
-                    action = parse_action(text)
+                    acts = parse_actions(text)
                     messages.append({"role": "assistant", "content": text})
-                    if action is None:
+                    if not acts["calls"] and acts["final"] is None:
                         st.set(parse_error=True)
-                        messages.append({"role": "user", "content": "Reply with one JSON object as instructed."})
+                        messages.append({"role": "user", "content": "Reply with JSON tool calls or a final answer as instructed."})
                         continue
-                    if "final" in action:
-                        final_text = str(action["final"])
+                    if not acts["calls"]:
+                        final_text = acts["final"]
                         break
-                    outcome["tool_calls"] += 1
-                    name = str(action.get("tool"))
-                    with st.child(SpanKind.TOOL_CALL, name, depends_on=last,
-                                  attributes={"tool_name": name, "args_bytes": len(json.dumps(action.get("args", {})))}) as tc:
-                        lat = tools.latency()
-                        t0 = time.monotonic()
-                        try:
-                            value = tools.call(name, dict(action.get("args") or {}))
-                            observation = json.dumps({"result": value})
-                            tc.set(tool_status="ok")
-                        except (ValueError, KeyError, TypeError, ZeroDivisionError, OverflowError) as exc:
-                            observation = json.dumps({"error": str(exc)})
-                            tc.set(tool_status="error", tool_error=str(exc)[:200])
-                        tc.set(local_exec_s=time.monotonic() - t0)
-                        if lat:
-                            await asyncio.sleep(lat)
-                            tc.set(simulated_latency_s=lat, synthetic_latency=True)
-                    last = [tc.span_id]
-                    messages.append({"role": "user", "content": f"Tool result: {observation}"})
+                    if acts["final"] is not None:
+                        st.set(premature_final_ignored=True)  # a guess written next to tool calls
+                    outcome["tool_calls"] += len(acts["calls"])
+                    st.set(parallel_tool_calls=len(acts["calls"]))
+
+                    async def run_tool(name: str, raw_args: Any, deps: list[str]) -> tuple[str, str]:
+                        with st.child(SpanKind.TOOL_CALL, name, depends_on=deps,
+                                      attributes={"tool_name": name, "args_bytes": len(json.dumps(raw_args, default=str))}) as tc:
+                            lat = tools.latency()
+                            t0 = time.monotonic()
+                            try:
+                                value = tools.call(name, _normalize_args(name, raw_args))
+                                observation = {"tool": name, "result": value}
+                                tc.set(tool_status="ok")
+                            except (ValueError, KeyError, TypeError, ZeroDivisionError, OverflowError) as exc:
+                                observation = {"tool": name, "error": str(exc)}
+                                tc.set(tool_status="error", tool_error=str(exc)[:200])
+                            tc.set(local_exec_s=time.monotonic() - t0)
+                            if lat:
+                                await asyncio.sleep(lat)
+                                tc.set(simulated_latency_s=lat, synthetic_latency=True)
+                        return tc.span_id, json.dumps(observation)
+
+                    deps = list(last)
+                    results_ = await asyncio.gather(*(run_tool(n, a, deps) for n, a in acts["calls"]))
+                    last = [sid_ for sid_, _ in results_]
+                    messages.append({"role": "user", "content": "Tool results: " + "; ".join(obs for _, obs in results_)})
             if final_text is not None:
                 outcome["success"] = check_answer(final_text, task)
                 if cfg.speak_final:

@@ -1,0 +1,64 @@
+{
+  "runtime_profile": "spark",
+  "hardware_label": "spark_gb10",
+  "seed": 0,
+  "experiment_id": "s4_minicpm_agents_smoke",
+  "description": "Spark GB10 功能验证：改进后的 Agent（并行工具调用、参数容错、带示例的提示词）；用 MiniCPM-o 自带 TTS 在 Spark 上生成语音提问，验证语音输入、语音回答的 Agent 流程和 W2/W4 输入路径。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5_spark",
+      "gpus": [
+        0
+      ],
+      "ready_timeout_s": 3600
+    }
+  ],
+  "assets": "synthetic-spark",
+  "phases": [
+    {
+      "kind": "generate_assets",
+      "name": "assets",
+      "pool": "synthetic-spark",
+      "question_tasks": 12,
+      "task_seed": 11,
+      "kb_seed": 7,
+      "passages": 2,
+      "source_label": "synthetic:tts:openbmb/MiniCPM-o-4_5@fb09628e"
+    },
+    {
+      "kind": "smoke",
+      "name": "smoke_w2",
+      "workload": "configs/workloads/w2_audio_text.json",
+      "requests": 2
+    },
+    {
+      "kind": "smoke",
+      "name": "smoke_w4",
+      "workload": "configs/workloads/w4_video_text.json",
+      "requests": 2
+    },
+    {
+      "kind": "agent",
+      "name": "agents_text",
+      "sessions": 9,
+      "concurrency": 3,
+      "seed": 2,
+      "agent": {
+        "max_steps": 5
+      }
+    },
+    {
+      "kind": "agent",
+      "name": "agents_voice",
+      "sessions": 4,
+      "concurrency": 2,
+      "seed": 11,
+      "agent": {
+        "max_steps": 5,
+        "input_modality": "audio",
+        "speak_final": true
+      }
+    }
+  ]
+}

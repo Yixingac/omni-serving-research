@@ -223,3 +223,55 @@ async def test_openai_backend_against_local_sse_server():
     assert res.text == "abc" and res.completion_tokens == 3
     assert res.output_audio_s == pytest.approx(0.25)
     assert res.sent_ns < res.first_text_ns < res.first_audio_ns <= res.done_ns
+
+
+def test_agent_parser_handles_real_model_replies():
+    """Replies recorded from MiniCPM-o 4.5 on 2026-11-11 (Spark smoke test s2)."""
+    from omni_research.tracing.agent_harness import _normalize_args, parse_actions
+
+    a = parse_actions('{"tool": "calculator", "args": "18*22-4"} {"final": "392"}')
+    assert a["calls"] == [("calculator", "18*22-4")] and a["final"] == "392"
+    assert _normalize_args("calculator", "18*22-4") == {"expression": "18*22-4"}
+    b = parse_actions('{"inventory": {"item": "steel bolts", "warehouse": "east"}, '
+                      '"inventory": {"item": "steel bolts", "warehouse": "south"}}')
+    assert [c[1]["warehouse"] for c in b["calls"]] == ["east", "south"]  # duplicate keys kept
+    c = parse_actions('{"inventory": "steel bolts, east", "inventory": "steel bolts, south"}')
+    assert _normalize_args("inventory", c["calls"][1][1]) == {"item": "steel bolts", "warehouse": "south"}
+    d = parse_actions('{"tool": "convert", "args": {"value": 97, "from_unit": "miles", "to_unit": "km"}}')
+    assert d["calls"][0][0] == "convert" and d["final"] is None
+    assert parse_actions("no json here") == {"calls": [], "final": None}
+    with pytest.raises(ValueError):
+        _normalize_args("convert", "97 miles")
+
+
+async def test_agent_parallel_tool_calls_are_traced(tmp_path):
+    from omni_research.replay.backends import RequestResult
+    from omni_research.tracing.agent_harness import AgentConfig, AgentTask, ToolBox, make_knowledge_base, run_agent_session
+    import random as _r
+
+    replies = iter(['{"inventory": {"item": "oak planks", "warehouse": "north"}, "inventory": {"item": "oak planks", "warehouse": "east"}}',
+                    '{"final": "The total is __ANS__"}'])
+    kb = make_knowledge_base(7)
+    ans = kb["oak planks"]["north"] + kb["oak planks"]["east"]
+
+    class Scripted:
+        name = "scripted"
+
+        async def run(self, req):
+            t = time.monotonic_ns()
+            return RequestResult(req.request_id, "scripted", status="ok", sent_ns=t, first_text_ns=t + 1, done_ns=t + 2,
+                                 text=next(replies).replace("__ANS__", str(ans)))
+
+        async def close(self):
+            pass
+
+    tc = TraceCollector(tmp_path / "t.jsonl", source_kind="observed", generator="test", content_policy="public")
+    task = AgentTask("t1", "inventory_sum", "How many oak planks in north and east?", float(ans))
+    out = await run_agent_session(Scripted(), tc, task, ToolBox(kb), AgentConfig(), _r.Random(0), [])
+    tc.close()
+    assert out["success"] and out["tool_calls"] == 2
+    tr = load_trace(tmp_path / "t.jsonl")
+    assert validate_trace(tr).ok
+    reqs = tr.by_kind("model_request")
+    tools_ = tr.by_kind("tool_call")
+    assert len(tools_) == 2 and sorted(reqs[1].depends_on) == sorted(t.span_id for t in tools_)
