@@ -744,14 +744,21 @@ def summarize_gpu_samples(path: Path) -> dict[str, Any]:
             continue
         idx = parts[1]
         try:
-            util, mem, total = float(parts[3]), float(parts[5]), float(parts[6])
+            util = float(parts[3])
         except ValueError:
             continue
-        d = per.setdefault(idx, {"samples": 0, "util_sum": 0.0, "util_max": 0.0, "mem_max_mib": 0.0, "mem_total_mib": total, "uuid": parts[2]})
+        def num(x: str) -> float | None:
+            try:
+                return float(x)
+            except ValueError:
+                return None  # e.g. [N/A] memory on GB10 unified memory
+        mem, total = num(parts[5]), num(parts[6])
+        d = per.setdefault(idx, {"samples": 0, "util_sum": 0.0, "util_max": 0.0, "mem_max_mib": None, "mem_total_mib": total, "uuid": parts[2]})
         d["samples"] += 1
         d["util_sum"] += util
         d["util_max"] = max(d["util_max"], util)
-        d["mem_max_mib"] = max(d["mem_max_mib"], mem)
+        if mem is not None:
+            d["mem_max_mib"] = mem if d["mem_max_mib"] is None else max(d["mem_max_mib"], mem)
     for d in per.values():
         d["util_mean"] = d.pop("util_sum") / d["samples"] if d["samples"] else None
     return per

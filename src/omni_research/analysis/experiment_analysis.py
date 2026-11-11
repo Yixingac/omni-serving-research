@@ -93,10 +93,12 @@ def load_gpu_samples(exp: Path) -> list[dict[str, Any]]:
             d = dict(zip(header, (x.strip() for x in row)))
             try:
                 t = datetime.strptime(d["timestamp"], "%Y/%m/%d %H:%M:%S.%f").timestamp()
-                rows.append({"t": t, "gpu": d["index"], "util": float(d["utilization.gpu"]),
-                             "mem_mib": float(d["memory.used"]), "power_w": _f(d.get("power.draw"))})
+                util = float(d["utilization.gpu"])
             except (KeyError, ValueError):
                 continue
+            # GB10 (unified memory) reports memory as [N/A]; keep the utilization sample anyway.
+            rows.append({"t": t, "gpu": d["index"], "util": util, "mem_mib": _f(d.get("memory.used")),
+                         "power_w": _f(d.get("power.draw"))})
     return rows
 
 
@@ -207,7 +209,7 @@ def gpu_by_phase(samples: list[dict[str, Any]], phases: list[dict[str, Any]]) ->
             out.append({"phase": ph.get("phase"), "gpu": gpu, "samples": len(ss),
                         "sampled_util_mean": sum(utils) / len(utils) if utils else None,
                         "sampled_util_zero_fraction": sum(1 for u in utils if u == 0) / len(utils) if utils else None,
-                        "mem_max_mib": max((s["mem_mib"] for s in ss), default=None)})
+                        "mem_max_mib": max((s["mem_mib"] for s in ss if s["mem_mib"] is not None), default=None)})
     return out
 
 

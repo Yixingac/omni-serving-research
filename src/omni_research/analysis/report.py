@@ -23,7 +23,9 @@ def _f(v: Any, nd: int = 2) -> str:
 def _hardware(analysis: dict[str, Any]) -> str:
     env = analysis.get("manifest", {}).get("environment", {})
     pk = env.get("packages") or {}
-    return (f"主机 `{env.get('host', '?')}`，可见 GPU `{env.get('cuda_visible_devices')}`；"
+    vis = env.get("cuda_visible_devices")
+    vis_txt = f"`{vis}`" if vis else "未设置（整机可见）"
+    return (f"主机 `{env.get('host', '?')}`，可见 GPU {vis_txt}；"
             f"本仓库 commit `{(env.get('research_repo_commit') or '?')[:8]}`"
             f"{'（有未提交修改）' if env.get('research_repo_dirty') else ''}，"
             f"sglang-omni `{(env.get('sglang_omni_commit') or '?')[:8]}`；"
