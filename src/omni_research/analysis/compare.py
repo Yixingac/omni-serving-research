@@ -9,10 +9,30 @@ differs between the experiments (from the comparison definition) and never infer
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
 from . import experiment_analysis as EA
+
+
+def resolve_dir(spec: str, data_root: Path) -> Path:
+    """``latest/<name>`` links hold absolute paths of the machine that wrote them. After copying
+    results elsewhere, resolve them by the run directory name under ``<data_root>/experiments``."""
+    d = Path(spec).expanduser()
+    if d.is_absolute():
+        return d
+    parts = Path(spec).parts
+    if parts and parts[0] == "latest" and len(parts) >= 2:
+        link = data_root / "latest" / parts[1]
+        try:
+            target = Path(os.readlink(link))
+        except OSError:
+            return (data_root / d).resolve()
+        local = data_root / "experiments" / target.name
+        if local.exists():
+            return local.joinpath(*parts[2:])
+    return (data_root / d).resolve()
 
 
 def load_rows(exp_dir: Path, phase: str) -> dict[str, dict[str, Any]]:
@@ -24,10 +44,7 @@ def compare(defn: dict[str, Any], data_root: Path) -> dict[str, Any]:
     """defn = {"name", "question", "variable", "phase", "metric_set", "experiments": [{"label", "dir"}]}"""
     exps = []
     for e in defn["experiments"]:
-        d = Path(e["dir"]).expanduser()
-        if not d.is_absolute():
-            d = data_root / d
-        d = d.resolve()
+        d = resolve_dir(e["dir"], data_root)
         if not (d / "result.json").exists():
             exps.append({"label": e["label"], "dir": str(d), "missing": True})
             continue
