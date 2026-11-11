@@ -16,7 +16,7 @@ import json
 import re
 import time
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -319,7 +319,7 @@ def log_utc_offset(exp: Path) -> timedelta | None:
     if started and logs:
         m = re.match(r"# (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)", logs[0].read_text(errors="replace")[:200])
         if m:
-            naive = datetime.strptime(m.group(1), "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc).timestamp()
+            naive = datetime.strptime(m.group(1), "%Y-%m-%dT%H:%M:%S").replace(tzinfo=UTC).timestamp()
             diff = naive - float(started)
             quarter = round(diff / 900) * 900
             if abs(diff - quarter) < 600:

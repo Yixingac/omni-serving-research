@@ -779,7 +779,7 @@ class ExperimentRunner:
                     self.log(f"phase {ph.get('name', ph['kind'])} starting")
                     try:
                         s = asyncio.run(self.run_phase(ph, bench_trace))
-                    except Exception as exc:  # noqa: BLE001 - e.g. stopping the profiler of a dead server
+                    except Exception as exc:  # e.g. stopping the profiler of a dead server
                         if not self._dead_servers():
                             raise
                         s = {"phase": ph.get("name", ph["kind"]), "kind": ph["kind"], "error": f"{type(exc).__name__}: {exc}"[:500]}
