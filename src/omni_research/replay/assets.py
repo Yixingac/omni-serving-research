@@ -80,8 +80,15 @@ async def generate_spoken_questions(
             dur, rate = wav_duration(wav)
             if dur <= 0:
                 raise RuntimeError(f"TTS returned no audio for {asset_id}")
-            rows.append({"asset_id": asset_id, "kind": "audio", "path": f"audio/{asset_id}.wav", "duration_s": round(dur, 3),
-                         "sample_rate": rate, "source": source_label, "transcript": text, **meta})
+            row = {"asset_id": asset_id, "kind": "audio", "path": f"audio/{asset_id}.wav", "duration_s": round(dur, 3),
+                   "sample_rate": rate, "source": source_label, "transcript": text, **meta}
+            # Runaway guard: TTS sometimes keeps generating until its frame cap (Qwen3-TTS: 163.84 s for a
+            # 75-character question, seen 2026-11-11). Speech runs at roughly 12-16 characters per second, so
+            # a clip far longer than its text is excluded from the pools instead of skewing the workload.
+            if dur > max(20.0, len(text) / 8.0):
+                row["tags"] = ["invalid_runaway"]
+                row["note"] = f"{dur:.1f} s for {len(text)} characters: probably did not stop; excluded from pools"
+            rows.append(row)
         await asyncio.gather(*(one(*j) for j in jobs))
     rows.sort(key=lambda r: r["asset_id"])
     return rows
