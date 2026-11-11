@@ -25,11 +25,11 @@ from pathlib import Path
 from .backends import silence_wav
 
 
-def build_app(startup_s: float, token_ms: float, agent_json: bool):  # noqa: ANN201
+def build_app(startup_s: float, token_ms: float, agent_json: bool, die_after: int | None = None):  # noqa: ANN201
     from aiohttp import web
 
     t_ready = time.monotonic() + startup_s
-    state = {"recorder": None}
+    state = {"recorder": None, "chats": 0}
 
     def emit(rid: str, event: str) -> None:
         rec = state["recorder"]
@@ -44,6 +44,11 @@ def build_app(startup_s: float, token_ms: float, agent_json: bool):  # noqa: ANN
         return web.json_response({"status": "healthy" if ok else "starting", "running": ok}, status=200 if ok else 503)
 
     async def chat(request):  # noqa: ANN001
+        state["chats"] += 1
+        if die_after is not None and state["chats"] > die_after:
+            # Like a stage process dying under load (f2, 2026-11-11): the whole server goes away mid-run.
+            print(f"fake server: exiting after {die_after} chat requests", flush=True)
+            os._exit(134)
         body = await request.json()
         rid = body.get("request_id") or "anon"
         emit(rid, "request_admission")
@@ -127,8 +132,9 @@ def main() -> None:
     p.add_argument("--startup-s", type=float, default=1.0)
     p.add_argument("--token-ms", type=float, default=5.0)
     p.add_argument("--agent-json", action="store_true", help="answer the agent protocol (tool call, then final)")
+    p.add_argument("--die-after", type=int, default=None, help="exit abruptly when this many chat requests have been served")
     a = p.parse_args()
-    web.run_app(build_app(a.startup_s, a.token_ms, a.agent_json), host="127.0.0.1", port=a.port, print=None)
+    web.run_app(build_app(a.startup_s, a.token_ms, a.agent_json, a.die_after), host="127.0.0.1", port=a.port, print=None)
 
 
 if __name__ == "__main__":

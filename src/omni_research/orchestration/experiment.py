@@ -737,11 +737,16 @@ class ExperimentRunner:
         return {"assets": len(rows), "manifest": str(manifest)}
 
     # -- main -------------------------------------------------------------------------------
+    def _dead_servers(self) -> dict[str, int | None]:
+        return {sv.name: sv.proc.returncode for sv in self.servers if sv.proc and sv.proc.poll() is not None}
+
     def run(self) -> dict[str, Any]:
         result: dict[str, Any] = {"status": "ok", "experiment_id": self.cfg["experiment_id"]}
         (self.out / "config.json").write_text(json.dumps(self.cfg, indent=2))
         fp = self.fingerprint()
         manifest = {"experiment_id": self.cfg["experiment_id"], "run_dir": str(self.out), "started": self.t_start,
+                    # Server logs carry local wall-clock times without a zone; analysis needs the offset.
+                    "host": socket.gethostname(), "utc_offset": time.strftime("%z"),
                     "environment": fp, "hardware_label": self.cfg.get("hardware_label"),
                     "description": self.cfg.get("description", "")}
         atomic_write_json(self.out / "manifest.json", manifest)
@@ -772,9 +777,22 @@ class ExperimentRunner:
                     if self.stop_requested:
                         break
                     self.log(f"phase {ph.get('name', ph['kind'])} starting")
-                    s = asyncio.run(self.run_phase(ph, bench_trace))
+                    try:
+                        s = asyncio.run(self.run_phase(ph, bench_trace))
+                    except Exception as exc:  # noqa: BLE001 - e.g. stopping the profiler of a dead server
+                        if not self._dead_servers():
+                            raise
+                        s = {"phase": ph.get("name", ph["kind"]), "kind": ph["kind"], "error": f"{type(exc).__name__}: {exc}"[:500]}
+                    dead = self._dead_servers()
+                    if dead:
+                        s["servers_exited"] = dead
                     self.phase_summaries.append(s)
                     atomic_write_json(self.out / "analysis" / "phases.json", self.phase_summaries)
+                    if dead:
+                        # A server that dies under load is a result, not a reason to keep sending requests to
+                        # nothing: f2 (2026-11-11) lost its talker process mid-phase and was still marked "ok".
+                        tails = "\n".join(f"--- {sv.name}\n{_tail(sv.log_path)[-1500:]}" for sv in self.servers if sv.name in dead)
+                        raise ExperimentFailure("server_died", f"server(s) exited during phase {ph.get('name', ph['kind'])}: {dead}\n{tails}")
                     self.log(f"phase {ph.get('name', ph['kind'])} done")
             finally:
                 bench_trace.close()

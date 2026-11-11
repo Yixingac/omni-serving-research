@@ -87,6 +87,18 @@ def test_runner_reports_server_crash(cfg, tmp_path):
     assert json.loads((tmp_path / "exp" / "result.json").read_text())["error_class"] == "oom"
 
 
+def test_runner_marks_server_death_during_a_phase(cfg, tmp_path):
+    """A server that exits mid-run fails the experiment (server_died) and later phases are skipped."""
+    cfg["servers"][0]["command"] += " --die-after 4"
+    res = ExperimentRunner(cfg, tmp_path / "exp").run()
+    assert res["status"] == "failed" and res["error_class"] == "server_died"
+    assert [p["phase"] for p in res["phases"]] == ["smoke", "sweep"]
+    assert res["phases"][-1]["servers_exited"] == {"s0": 134}
+    assert "exiting after 4 chat requests" in res["error"]
+    m = json.loads((tmp_path / "exp" / "manifest.json").read_text())
+    assert m["utc_offset"] and m["host"]
+
+
 def test_runner_bad_output_on_failed_smoke(cfg, tmp_path):
     cfg["servers"][0]["command"] = cfg["servers"][0]["command"].replace("--agent-json", "")
     # Speech requested, but with 2 tokens the fake server never emits an audio chunk.

@@ -200,3 +200,18 @@ def test_prefix_cache_by_phase_from_server_log(tmp_path):
     assert pc["b"]["cached_fraction"] == pytest.approx(0.9)
     (exp / "step.log").write_text("no timestamps\n")
     assert EA.prefix_cache_by_phase(exp, phases) == {}
+
+
+def test_log_utc_offset_sources(tmp_path):
+    """Manifest offset first; else a date -Is line; else server log header vs manifest start time."""
+    from datetime import datetime, timedelta, timezone
+
+    exp = tmp_path / "e"
+    (exp / "logs").mkdir(parents=True)
+    tz = timezone(timedelta(hours=-5))
+    start = datetime(2026, 11, 11, 17, 28, 5, tzinfo=tz)
+    (exp / "logs" / "server_s0.log").write_text("# 2026-11-11T17:28:11 CUDA_VISIBLE_DEVICES=0\n")
+    (exp / "manifest.json").write_text(json.dumps({"started": start.timestamp()}))
+    assert EA.log_utc_offset(exp) == timedelta(hours=-5)  # header 6 s after the runner started
+    (exp / "manifest.json").write_text(json.dumps({"started": start.timestamp(), "utc_offset": "+0530"}))
+    assert EA.log_utc_offset(exp) == timedelta(hours=5, minutes=30)

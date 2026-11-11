@@ -288,9 +288,25 @@ _PREFILL_RE = re.compile(r"^(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)(?:,(\d{3}))? .*?Pre
 _ISO_OFFSET_RE = re.compile(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?([+-]\d\d):?(\d\d)")
 
 
+def _offset_from_text(z: str) -> timedelta | None:
+    m = re.fullmatch(r"([+-])(\d\d):?(\d\d)", z.strip())
+    if not m:
+        return None
+    return timedelta(minutes=(1 if m.group(1) == "+" else -1) * (int(m.group(2)) * 60 + int(m.group(3))))
+
+
 def log_utc_offset(exp: Path) -> timedelta | None:
     """UTC offset of the host that ran the experiment. Server logs carry local wall-clock times
-    without a zone; the step log starts with ``date -Is`` output, which has one."""
+    without a zone. Newer runs record the offset in the manifest; Slurm runs have ``date -Is`` output
+    in the step log. Otherwise the server log's first line (local time at server start) is compared
+    with the manifest's start time, rounded to a quarter hour; that works when the server started
+    within a few minutes of the runner."""
+    mf = exp / "manifest.json"
+    manifest = json.loads(mf.read_text()) if mf.exists() else {}
+    if manifest.get("utc_offset"):
+        off = _offset_from_text(str(manifest["utc_offset"]))
+        if off is not None:
+            return off
     for name in ("step.log", "srun.log", "logs/client.log"):
         f = exp / name
         if f.exists():
@@ -298,6 +314,16 @@ def log_utc_offset(exp: Path) -> timedelta | None:
             if m:
                 sign = -1 if m.group(1).startswith("-") else 1
                 return timedelta(minutes=sign * (abs(int(m.group(1))) * 60 + int(m.group(2))))
+    started = manifest.get("started")
+    logs = sorted((exp / "logs").glob("server_*.log")) if (exp / "logs").exists() else []
+    if started and logs:
+        m = re.match(r"# (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)", logs[0].read_text(errors="replace")[:200])
+        if m:
+            naive = datetime.strptime(m.group(1), "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc).timestamp()
+            diff = naive - float(started)
+            quarter = round(diff / 900) * 900
+            if abs(diff - quarter) < 600:
+                return timedelta(seconds=quarter)
     return None
 
 
