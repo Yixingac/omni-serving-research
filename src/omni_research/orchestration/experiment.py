@@ -445,12 +445,36 @@ class ExperimentRunner:
             if start:
                 body: dict[str, Any] = {"run_id": run_id, "event_dir": str(self.out / "raw" / "server_events" / phase / s.name)}
                 if torch:
+                    # Each stage process formats the template with its own {stage} name (and {run_id}),
+                    # so per-process traces do not overwrite each other (they all report rank 0).
                     body.update(enable_torch=True,
-                                trace_path_template=str(self.out / "profiling" / "torch" / phase / s.name / "trace"))
+                                trace_path_template=str(self.out / "profiling" / "torch" / phase / s.name) + "/{stage}_trace")
                 code, _ = _http_json(f"{s.base_url}/{'start_profile' if torch else 'start_request_profile'}", body, timeout=60)
             else:
                 code, _ = _http_json(f"{s.base_url}/{'stop_profile' if torch else 'stop_request_profile'}", {}, timeout=300)
             self.log(f"{'torch+request' if torch else 'request'} profiler {'start' if start else 'stop'} on {s.name}: HTTP {code}")
+        if torch and not start:
+            self.wait_for_traces(self.out / "profiling" / "torch" / phase)
+
+    def wait_for_traces(self, root: Path, timeout_s: float = 300.0, settle_s: float = 10.0) -> list[str]:
+        """Stage processes export (and gzip) their traces asynchronously after stop; wait until files
+        exist and their sizes stop changing, so stopping the server does not cut an export short."""
+        t0 = time.monotonic()
+        last: dict[str, int] = {}
+        stable_since = None
+        while time.monotonic() - t0 < timeout_s:
+            files = {str(p): p.stat().st_size for p in root.rglob("*.trace.json*") if p.is_file()}
+            if files and files == last:
+                stable_since = stable_since or time.monotonic()
+                if time.monotonic() - stable_since >= settle_s:
+                    break
+            else:
+                stable_since = None
+            last = files
+            time.sleep(2)
+        names = sorted(Path(f).name for f in last)
+        self.log(f"torch traces after {time.monotonic() - t0:.0f}s: {names or 'none'}")
+        return names
 
     # -- phases -----------------------------------------------------------------------------
     def _pool(self, ph: dict[str, Any]) -> AssetPool | None:
