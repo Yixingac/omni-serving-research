@@ -98,10 +98,11 @@
       "required_cpus": 16,
       "required_memory_gb": 180,
       "dependencies": [
-        "x3_minicpm_speech_1gpu"
+        "x3_minicpm_speech_1gpu",
+        "x5_minicpm_agents"
       ],
-      "estimated_duration_s": 2400,
-      "timeout_s": 6000,
+      "estimated_duration_s": 3300,
+      "timeout_s": 8400,
       "max_retries": 1,
       "description": "2 卡：两个完整副本"
     },
@@ -113,10 +114,11 @@
       "required_cpus": 16,
       "required_memory_gb": 180,
       "dependencies": [
-        "x3_minicpm_speech_1gpu"
+        "x3_minicpm_speech_1gpu",
+        "x5_minicpm_agents"
       ],
-      "estimated_duration_s": 2400,
-      "timeout_s": 6000,
+      "estimated_duration_s": 3300,
+      "timeout_s": 8400,
       "max_retries": 1,
       "description": "2 卡：thinker/talker 拆分"
     },
@@ -128,12 +130,28 @@
       "required_cpus": 16,
       "required_memory_gb": 180,
       "dependencies": [
-        "x3_minicpm_speech_1gpu"
+        "x3_minicpm_speech_1gpu",
+        "x5_minicpm_agents"
       ],
-      "estimated_duration_s": 2400,
-      "timeout_s": 6000,
+      "estimated_duration_s": 3300,
+      "timeout_s": 8400,
       "max_retries": 1,
       "description": "2 卡：只复制 talker"
+    },
+    {
+      "experiment_id": "x3r_minicpm_speech_1gpu_agent_replay",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000/x3r_minicpm_speech_1gpu_agent_replay.json",
+      "priority": 71,
+      "required_gpus": 1,
+      "required_cpus": 8,
+      "required_memory_gb": 90,
+      "dependencies": [
+        "x5_minicpm_agents"
+      ],
+      "estimated_duration_s": 1500,
+      "timeout_s": 4800,
+      "max_retries": 1,
+      "description": "1 卡 Agent 回放对照"
     },
     {
       "experiment_id": "x6_minicpm_replay",
@@ -179,6 +197,21 @@
       "timeout_s": 9000,
       "max_retries": 1,
       "description": "Qwen3-Omni 3 卡语音流水线"
+    },
+    {
+      "experiment_id": "x4c_minicpm_video_4cpu",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000/x4c_minicpm_video_4cpu.json",
+      "priority": 52,
+      "required_gpus": 1,
+      "required_cpus": 4,
+      "required_memory_gb": 90,
+      "dependencies": [
+        "x4_minicpm_av_text_1gpu"
+      ],
+      "estimated_duration_s": 1800,
+      "timeout_s": 5400,
+      "max_retries": 1,
+      "description": "视频理解的 CPU 配额对照（4 核）"
     }
   ]
 }

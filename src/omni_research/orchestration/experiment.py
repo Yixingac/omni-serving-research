@@ -386,6 +386,21 @@ class ExperimentRunner:
                 fp["packages"] = None
         return fp
 
+    def check_imports(self) -> None:
+        """Fail fast when the runtime lacks a package the servers need (e.g. MiniCPM-o's onnx)."""
+        rt = self.cfg.get("runtime", {})
+        mods = rt.get("required_imports") or []
+        py = rt.get("python")
+        if not mods or not py or self.cfg.get("fake_server"):
+            return
+        code = "import importlib, sys\nmissing=[]\nfor m in sys.argv[1:]:\n  try: importlib.import_module(m)\n  except Exception as e: missing.append(f'{m}: {type(e).__name__}: {e}')\nprint('\\n'.join(missing)); sys.exit(1 if missing else 0)"
+        env = dict(os.environ)
+        env.update({k: os.path.expanduser(str(v)) for k, v in rt.get("env", {}).items()})
+        proc = subprocess.run([os.path.expanduser(py), "-c", code, *mods], capture_output=True, text=True, timeout=900, env=env)
+        if proc.returncode != 0:
+            raise ExperimentFailure("config_error", "runtime is missing required modules:\n" + (proc.stdout or proc.stderr)[-2000:])
+        self.log(f"runtime imports ok: {', '.join(mods)}")
+
     # -- servers ----------------------------------------------------------------------------
     def start_servers(self) -> None:
         rt = self.cfg.get("runtime", {})
@@ -672,6 +687,7 @@ class ExperimentRunner:
         signal.signal(signal.SIGTERM, on_term)
         signal.signal(signal.SIGUSR1, on_term)
         try:
+            self.check_imports()
             if self.cfg.get("servers"):
                 self.start_servers()
                 result["server_ready_s"] = {s.name: s.ready_after_s for s in self.servers}
