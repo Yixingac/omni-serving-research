@@ -15,7 +15,7 @@
         "--text-only"
       ],
       "ready_timeout_s": 3600,
-      "prefix": "/usr/local/bin/nsys profile -t cuda,nvtx --sample=none --cpuctxsw=none --delay=200 --duration=40 --kill=none --force-overwrite=true -o {exp_dir}/profiling/nsys_s0"
+      "prefix": "/usr/local/bin/nsys profile -t cuda,nvtx --sample=none --delay=200 --duration=40 --kill=none --force-overwrite=true -o {exp_dir}/profiling/nsys_s0"
     }
   ],
   "phases": [
