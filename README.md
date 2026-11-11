@@ -129,22 +129,27 @@ bash scripts/slurm/submit.sh run --gpus 8 --hours 16 --plan configs/experiments/
 
 ## 10. 研究进展（Research Status）
 
-已完成（有代码和测试）：
+已完成（有代码和测试，71 个测试，不需要 GPU）：
 
 - Agent trace 格式、采集器、读取与校验（依赖 DAG、因果顺序、时钟域）
 - 回放引擎：请求级（开环）与依赖感知（闭环）两种模式，会话复制、到达过程、加速
 - SGLang-Omni SSE 客户端（文本与流式音频块）、多副本路由、mock 后端和 CPU-only 假服务
-- 实验执行器：启动服务、等待就绪、按阶段测量、GPU/CPU 采样、服务端请求事件、失败分类
+- 实验执行器：启动服务、等待就绪、按阶段测量、GPU/CPU 采样、服务端请求事件、torch profiler 窗口、失败分类
 - 实验编排：DAG、资源装箱、backfill、截止时间、有限重试、原子检查点与断点恢复
-- Slurm 脚本（preflight、提交、作业主体、清理）、Mac/Spark 任务管理、任务放置规则
-- 合成素材（可核对答案的语音提问、数圆圈视频）与带工具调用的 Agent
+- 分析：服务端各阶段分解、Agent 时间拆分、Nsight/torch trace 的 GPU 忙闲区间、跨实验对比、中文报告与图表
+- Slurm 脚本（preflight、提交、作业主体、监控、清理）、Mac/Spark 任务管理、任务放置规则
+- 合成素材（可核对答案的语音提问、计数视频）与带工具调用的 Agent（支持一条回复中的多个并行工具调用）
+
+已在 DGX Spark（GB10）上做过功能验证（`reports/research_updates/20261111_spark_functional_validation.md`，数字不与 A6000 比较）：MiniCPM-o 4.5 文本与语音流水线、Agent 采集、两种回放、服务端事件、torch profiler、Nsight Systems。验证中发现并修复了 5 个问题，包括两套运行环境都缺 `onnx`（否则 A6000 上所有 MiniCPM-o 实验都会失败）和 Nsight 解析器漏算 CUDA graph。
 
 进行中：
 
-- Slurm Job 409712（3×A6000，10 小时）排队中，启动后自动运行 `configs/experiments/plan_a6000_3gpu.json` 的 12 个实验
-- Spark 上构建 aarch64 运行环境，之后在 GB10 上做 MiniCPM-o smoke test（只验证功能）
+- Slurm Job 409712（3×A6000，10 小时）排队中，启动后自动运行 `configs/experiments/plan_a6000_3gpu.json` 的 15 个实验；登录节点上的监控会在作业结束时生成汇总和报告
+- Draft PR：https://github.com/Yixingac/omni-serving-research/pull/2
 
-尚未完成：A6000 正式结果、Nsight/PyTorch Profiler 的时间线分析、8 卡实验、全双工（`/v1/realtime`）实验、研究结论。
+准备好但没有提交：8×A6000 计划 `configs/experiments/plan_a6000_8gpu.json`（副本扩展 1/2/4/8、路由策略、4 卡放置、thinker TP、两条 Qwen3-Omni 流水线、CPU 配额），需要新的分配。
+
+尚未完成：A6000 正式结果与研究结论、全双工（`/v1/realtime`）实验。
 
 ## 数据与发布规则
 

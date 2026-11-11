@@ -22,6 +22,19 @@
 
 依赖关系的设计：语音素材由单独的 TTS 模型生成（x1），所以即使 MiniCPM-o 的语音模式在单卡上出问题，音频理解类的实验（x4）也不受影响。2 卡放置实验依赖单卡语音基线（x3）成功，否则先查单卡的问题。
 
+## 8×A6000 计划（已准备，未提交）
+
+计划文件：`configs/experiments/plan_a6000_8gpu.json`；配置在 `configs/experiments/a6000_8gpu/`。需要一个 8 卡的单节点分配，并依赖 Job 409712 的素材（x1）和 Agent trace（x5）。
+
+| 实验 | GPU | 内容 | 回答的问题 |
+|---|---|---|---|
+| y1_minicpm_replicas_n{1,2,4,8} | 1/2/4/8 | 完整副本数扩展；语音扫描的并发和回放的会话数随副本数等比放大 | 扩展曲线（与放置对比分开报告） |
+| y2_minicpm_routing_8rep | 8 | 同一组 8 副本上比较轮询、在途请求最少、按会话固定三种路由，负载为 Agent 回放 | Q9、混合负载路由 |
+| y3b / y3c | 4 | 4 卡预算：两组拆分部署 / 一个 thinker 配三份 talker；与 y1_n4（4 个完整副本）对比 | Q7 |
+| y4 / y4b | 2 | thinker TP=2 vs 两个 TP=1 副本（text-only） | Q6、Q8 |
+| y5_qwen3_omni_two_pipelines_6gpu | 6 | 两条 Qwen3-Omni 流水线 | 第二个模型的扩展 |
+| y6_minicpm_video20s_cpu{4,16} | 1 | 20 秒视频的 CPU 配额扩展（与 x4 的 8 CPU 对照） | Q4 |
+
 ## 计划中但需要更多资源或更新版本的实验
 
 | 实验 | 需要 | 说明 |
