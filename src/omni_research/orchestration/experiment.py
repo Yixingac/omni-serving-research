@@ -430,12 +430,14 @@ class ExperimentRunner:
             codes[srv.name] = srv.stop()
         return codes
 
-    def backend(self, keep_text: bool = False):  # noqa: ANN201
+    def backend(self, keep_text: bool = False, routing: str | None = None):  # noqa: ANN201
+        """One server -> its backend; several servers -> a client-side router. A phase may override
+        the experiment's routing policy (e.g. to compare policies on the same replicas)."""
         model = self.cfg.get("served_model_name")
         backs = [OpenAIChatBackend(s.base_url, model=model, keep_text=keep_text, name=s.name) for s in self.servers]
         if len(backs) == 1:
             return backs[0]
-        return BackendPool(backs, policy=self.cfg.get("routing", "least_outstanding"))
+        return BackendPool(backs, policy=routing or self.cfg.get("routing", "least_outstanding"))
 
     def server_events(self, phase: str, start: bool, torch: bool = False) -> None:
         """Start/stop SGLang-Omni's request event recorder; with ``torch`` also its torch profiler
@@ -668,7 +670,7 @@ class ExperimentRunner:
         rcfg = ReplayConfig(mode=ph.get("mode", "dependency"), speed=float(ph.get("speed", 1.0)),
                             session_copies=int(ph.get("session_copies", 1)), session_arrival=ph.get("session_arrival", "trace"),
                             seed=seed, request_timeout_s=ph.get("request_timeout_s"))
-        be = self.backend()
+        be = self.backend(routing=ph.get("routing"))
         tc = replay_collector(self.out / "raw" / f"replay_trace_{name}.jsonl", plan, rcfg, getattr(be, "name", "?"))
         try:
             eng = ReplayEngine(plan, be, rcfg, pool=self._pool(ph), results_path=self.out / "raw" / f"requests_{name}.jsonl",

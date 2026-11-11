@@ -1,0 +1,6 @@
+# MiniCPM-o 4.5 语音流水线，4 张 GPU：thinker（含编码器）在 GPU 0；talker+code2wav 进程复制三份，在 GPU 1、2、3。
+config_cls: MiniCPMOSpeechPipelineConfig
+processes:
+  talker:
+    num_replicas: 3
+    replica_devices: [1, 2, 3]

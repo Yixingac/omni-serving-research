@@ -1,0 +1,186 @@
+{
+  "plan_id": "a6000_8gpu",
+  "_comment": "8×A6000 单节点计划（未提交）。需要 Job 409712 的 x1 素材与 x5 Agent trace（latest/）。每卡约 7 CPU、110 GB 内存（64 核、1 TB 的节点）。",
+  "experiments": [
+    {
+      "experiment_id": "y0_envcheck",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000/x0_envcheck.json",
+      "priority": 100,
+      "required_gpus": 1,
+      "required_cpus": 4,
+      "required_memory_gb": 32,
+      "dependencies": [],
+      "estimated_duration_s": 900,
+      "timeout_s": 2400,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "y1_minicpm_replicas_n8",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu/y1_minicpm_replicas_n8.json",
+      "priority": 90,
+      "required_gpus": 8,
+      "required_cpus": 56,
+      "required_memory_gb": 880,
+      "dependencies": [
+        "y0_envcheck"
+      ],
+      "estimated_duration_s": 3000,
+      "timeout_s": 7500,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "y2_minicpm_routing_8rep",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu/y2_minicpm_routing_8rep.json",
+      "priority": 89,
+      "required_gpus": 8,
+      "required_cpus": 56,
+      "required_memory_gb": 880,
+      "dependencies": [
+        "y0_envcheck"
+      ],
+      "estimated_duration_s": 3000,
+      "timeout_s": 7500,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "y1_minicpm_replicas_n4",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu/y1_minicpm_replicas_n4.json",
+      "priority": 80,
+      "required_gpus": 4,
+      "required_cpus": 28,
+      "required_memory_gb": 440,
+      "dependencies": [
+        "y0_envcheck"
+      ],
+      "estimated_duration_s": 2700,
+      "timeout_s": 6720,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "y3b_minicpm_4gpu_two_disagg_pairs",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu/y3b_minicpm_4gpu_two_disagg_pairs.json",
+      "priority": 79,
+      "required_gpus": 4,
+      "required_cpus": 28,
+      "required_memory_gb": 440,
+      "dependencies": [
+        "y0_envcheck"
+      ],
+      "estimated_duration_s": 2700,
+      "timeout_s": 6720,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "y3c_minicpm_4gpu_talker_replica3",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu/y3c_minicpm_4gpu_talker_replica3.json",
+      "priority": 78,
+      "required_gpus": 4,
+      "required_cpus": 28,
+      "required_memory_gb": 440,
+      "dependencies": [
+        "y0_envcheck"
+      ],
+      "estimated_duration_s": 2700,
+      "timeout_s": 6720,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "y1_minicpm_replicas_n2",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu/y1_minicpm_replicas_n2.json",
+      "priority": 70,
+      "required_gpus": 2,
+      "required_cpus": 14,
+      "required_memory_gb": 220,
+      "dependencies": [
+        "y0_envcheck"
+      ],
+      "estimated_duration_s": 2400,
+      "timeout_s": 6000,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "y4_minicpm_thinker_tp2_text",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu/y4_minicpm_thinker_tp2_text.json",
+      "priority": 69,
+      "required_gpus": 2,
+      "required_cpus": 14,
+      "required_memory_gb": 220,
+      "dependencies": [
+        "y0_envcheck"
+      ],
+      "estimated_duration_s": 1800,
+      "timeout_s": 4500,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "y4b_minicpm_two_text_replicas",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu/y4b_minicpm_two_text_replicas.json",
+      "priority": 68,
+      "required_gpus": 2,
+      "required_cpus": 14,
+      "required_memory_gb": 220,
+      "dependencies": [
+        "y0_envcheck"
+      ],
+      "estimated_duration_s": 1800,
+      "timeout_s": 4500,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "y1_minicpm_replicas_n1",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu/y1_minicpm_replicas_n1.json",
+      "priority": 60,
+      "required_gpus": 1,
+      "required_cpus": 7,
+      "required_memory_gb": 110,
+      "dependencies": [
+        "y0_envcheck"
+      ],
+      "estimated_duration_s": 2400,
+      "timeout_s": 6000,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "y6_minicpm_video20s_cpu4",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu/y6_minicpm_video20s_cpu4.json",
+      "priority": 55,
+      "required_gpus": 1,
+      "required_cpus": 4,
+      "required_memory_gb": 110,
+      "dependencies": [
+        "y0_envcheck"
+      ],
+      "estimated_duration_s": 1800,
+      "timeout_s": 4500,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "y6_minicpm_video20s_cpu16",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu/y6_minicpm_video20s_cpu16.json",
+      "priority": 54,
+      "required_gpus": 1,
+      "required_cpus": 16,
+      "required_memory_gb": 110,
+      "dependencies": [
+        "y0_envcheck"
+      ],
+      "estimated_duration_s": 1800,
+      "timeout_s": 4500,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "y5_qwen3_omni_two_pipelines_6gpu",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu/y5_qwen3_omni_two_pipelines_6gpu.json",
+      "priority": 50,
+      "required_gpus": 6,
+      "required_cpus": 42,
+      "required_memory_gb": 660,
+      "dependencies": [
+        "y0_envcheck"
+      ],
+      "estimated_duration_s": 4200,
+      "timeout_s": 10500,
+      "max_retries": 1
+    }
+  ]
+}

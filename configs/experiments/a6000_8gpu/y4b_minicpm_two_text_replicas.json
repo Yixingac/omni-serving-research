@@ -1,0 +1,53 @@
+{
+  "runtime_profile": "unicorn",
+  "seed": 0,
+  "assets": "synthetic-v1",
+  "experiment_id": "y4b_minicpm_two_text_replicas",
+  "hardware_label": "a6000x2",
+  "description": "y4 的对照：两个 TP=1 的 text-only 副本。",
+  "servers": [
+    {
+      "name": "r0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [
+        "--text-only"
+      ],
+      "ready_timeout_s": 2400
+    },
+    {
+      "name": "r1",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        1
+      ],
+      "args": [
+        "--text-only"
+      ],
+      "ready_timeout_s": 2400
+    }
+  ],
+  "routing": "least_outstanding",
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w1",
+      "workload": "configs/workloads/w1_text_chat.json",
+      "requests": 2
+    },
+    {
+      "kind": "closed_loop",
+      "name": "w1",
+      "workload": "configs/workloads/w1_text_chat.json",
+      "concurrency": [
+        1,
+        4,
+        16,
+        64
+      ],
+      "requests_per_level": 64
+    }
+  ]
+}
