@@ -4,6 +4,27 @@ config_cls: MiniCPMOSpeechPipelineConfig
 # --config 文件会先按完整配置校验，model_path 是必填项（缺了服务直接退出，x7c 在 2026-11-11 因此失败）。
 # 这里写公开的模型名；实验启动时传入的 --model-path（本地路径）会覆盖它。
 model_path: openbmb/MiniCPM-o-4_5
+
+# GPU 0 同时有 pipeline 进程和 talker 副本 r0，sglang-omni 要求这张卡上每个 GPU 阶段声明显存比例，合计不超过 1.0
+# （x7c 第二次失败的原因，可用 scripts/spark/check_pipeline_config.py 离线检查）。对 thinker、talker 这类 SGLang 引擎阶段，
+# 比例决定 KV 池大小（比例 × 显存 − 本进程已用）；其他阶段只用于放置检查。
+# 数字按 A6000（45 GiB）上的实测定：x7b 中 thinker 权重 15.3 GB、talker 权重 0.74 GB，talker 进程峰值 17.5 GB，
+# 其中 code2wav 与激活约 9 GB。thinker 0.50 时 KV 约 7 GiB（约 5 万 token），x3m 显示 thinker 显存比例从 0.85 降到 0.6
+# 对 W3b 没有影响；估计 GPU 0 峰值约 40 GiB。两个 talker 副本用同一组比例，所以 GPU 1 上的 talker KV 也按 0.12 分配。
+stages:
+  preprocessing:
+    gpu_memory_fraction: 0.01
+  audio_encoder:
+    gpu_memory_fraction: 0.02
+  image_encoder:
+    gpu_memory_fraction: 0.02
+  thinker:
+    gpu_memory_fraction: 0.50
+  talker:
+    gpu_memory_fraction: 0.12
+  code2wav:
+    gpu_memory_fraction: 0.18
+
 processes:
   talker:
     num_replicas: 2
