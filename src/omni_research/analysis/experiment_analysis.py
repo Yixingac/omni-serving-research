@@ -13,9 +13,10 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 import time
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -280,6 +281,61 @@ def stage_breakdown(events: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 # ------------------------------------------------------------------------------------------
+# Prefix cache (SGLang "Prefill batch" log lines)
+
+_PREFILL_RE = re.compile(r"^(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)(?:,(\d{3}))? .*?Prefill batch, #new-seq: (\d+), "
+                         r"#new-token: (\d+), #cached-token: (\d+)")
+_ISO_OFFSET_RE = re.compile(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?([+-]\d\d):?(\d\d)")
+
+
+def log_utc_offset(exp: Path) -> timedelta | None:
+    """UTC offset of the host that ran the experiment. Server logs carry local wall-clock times
+    without a zone; the step log starts with ``date -Is`` output, which has one."""
+    for name in ("step.log", "srun.log", "logs/client.log"):
+        f = exp / name
+        if f.exists():
+            m = _ISO_OFFSET_RE.search(f.read_text(errors="replace")[:20000])
+            if m:
+                sign = -1 if m.group(1).startswith("-") else 1
+                return timedelta(minutes=sign * (abs(int(m.group(1))) * 60 + int(m.group(2))))
+    return None
+
+
+def prefix_cache_by_phase(exp: Path, phases: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Prompt tokens computed vs served from SGLang's prefix cache, per phase.
+
+    Sums every SGLang engine stage that logs prefill batches into the server logs (for text-output
+    phases that is the thinker alone; with speech output the talker's prefills are included).
+    Returns {} when the time zone of the logs cannot be determined.
+    """
+    offset = log_utc_offset(exp)
+    logs = sorted((exp / "logs").glob("server_*.log")) if (exp / "logs").exists() else []
+    if offset is None or not logs or not phases:
+        return {}
+    tz = timezone(offset)
+    windows = [(ph.get("phase", ""), ph.get("started"), ph.get("ended")) for ph in phases]
+    out: dict[str, dict[str, Any]] = {}
+    for log in logs:
+        for line in log.read_text(errors="replace").splitlines():
+            m = _PREFILL_RE.match(line)
+            if not m:
+                continue
+            t = datetime.strptime(m.group(1), "%Y-%m-%d %H:%M:%S").replace(tzinfo=tz).timestamp() + int(m.group(2) or 0) / 1000
+            for name, t0, t1 in windows:
+                if t0 is not None and t1 is not None and t0 <= t <= t1:
+                    d = out.setdefault(name, {"prefill_batches": 0, "new_seqs": 0, "new_tokens": 0, "cached_tokens": 0})
+                    d["prefill_batches"] += 1
+                    d["new_seqs"] += int(m.group(3))
+                    d["new_tokens"] += int(m.group(4))
+                    d["cached_tokens"] += int(m.group(5))
+                    break
+    for d in out.values():
+        tot = d["new_tokens"] + d["cached_tokens"]
+        d["cached_fraction"] = d["cached_tokens"] / tot if tot else None
+    return out
+
+
+# ------------------------------------------------------------------------------------------
 # Agent traces
 
 
@@ -348,6 +404,7 @@ def analyze_experiment(exp: Path, slo: dict[str, float] | None = None) -> dict[s
         evs = load_server_events(exp, ph.get("phase", ""))
         if evs:
             stages[ph["phase"]] = stage_breakdown(evs)
+    prefix_cache = prefix_cache_by_phase(exp, phases)
     agents = {}
     for f in sorted((exp / "raw").glob("agent_trace_*.jsonl")):
         agents[f.stem.removeprefix("agent_trace_")] = agent_trace_summary(f)
@@ -369,4 +426,5 @@ def analyze_experiment(exp: Path, slo: dict[str, float] | None = None) -> dict[s
     return {"experiment": exp.name, "status": result.get("status"), "error_class": result.get("error_class"),
             "error": (result.get("error") or "")[:1500], "config": config, "manifest": manifest, "result": result,
             "table": table, "gpu_by_phase": gpu_rows, "stages": stages, "agents": agents, "gpu_traces": gpu_traces,
+            "prefix_cache": prefix_cache,
             "fake_server": bool(config.get("fake_server")), "analyzed_at": time.strftime("%Y-%m-%dT%H:%M:%S")}

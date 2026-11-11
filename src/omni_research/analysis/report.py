@@ -125,6 +125,17 @@ def render(analysis: dict[str, Any], figures: list[Path], exp_dir: Path) -> str:
                     lines.append(f"GPU {dev} 上两个及以上进程同时有工作的时间：{d['multi_process_ns'] / 1e9:.2f} s"
                                  "（没有 MPS 时不同进程的 kernel 轮流执行，这段时间是争用，不是并行）。")
             lines.append("")
+    pc = analysis.get("prefix_cache") or {}
+    if pc:
+        lines.append("SGLang 前缀缓存（来自服务日志的 Prefill batch 行；含所有打印这类日志的引擎阶段）：")
+        lines.append("")
+        lines.append("| 阶段 | prefill 批次 | 新计算的输入 token | 缓存命中的输入 token | 命中比例 |")
+        lines.append("|---|---|---|---|---|")
+        for phase, d in pc.items():
+            frac = d.get("cached_fraction")
+            lines.append(f"| {phase} | {d['prefill_batches']} | {d['new_tokens']} | {d['cached_tokens']} | "
+                         f"{'—' if frac is None else f'{frac:.1%}'} |")
+        lines.append("")
     for name, a in (analysis.get("agents") or {}).items():
         sp = a["time_split_s"]
         tot = sp["session"] or 1

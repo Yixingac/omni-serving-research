@@ -177,3 +177,26 @@ def test_torch_traces_per_process_busy_and_overlap(tmp_path):
     assert d0["busy_ns"] == 1_000_000 and d0["multi_process_ns"] == 200_000
     single = analyze_files([tmp_path / "a.trace.json.gz"])
     assert "multi_process_ns" not in single["per_device"][0]
+
+
+def test_prefix_cache_by_phase_from_server_log(tmp_path):
+    """Prefill batch lines (local time, no zone) are assigned to phases via the step log's UTC offset."""
+    from datetime import datetime, timedelta, timezone
+
+    exp = tmp_path / "exp"
+    (exp / "logs").mkdir(parents=True)
+    (exp / "step.log").write_text("2026-11-11T17:00:00-05:00 starting\n")
+    tz = timezone(timedelta(hours=-5))
+    t0 = datetime(2026, 11, 11, 17, 5, 0, tzinfo=tz).timestamp()
+    line = ("2026-11-11 17:05:{s:02d},500 [INFO] sglang.srt.managers.scheduler_components.metrics_reporter: "
+            "Prefill batch, #new-seq: 1, #new-token: {n}, #cached-token: {c}, token usage: 0.01, #running-req: 0")
+    (exp / "logs" / "server_s0.log").write_text("\n".join([
+        line.format(s=1, n=382, c=0), line.format(s=2, n=54, c=378),  # phase a
+        "unrelated line", line.format(s=30, n=10, c=90),               # phase b
+        line.format(s=59, n=1, c=1)]) + "\n")                          # outside both phases
+    phases = [{"phase": "a", "started": t0, "ended": t0 + 10}, {"phase": "b", "started": t0 + 20, "ended": t0 + 40}]
+    pc = EA.prefix_cache_by_phase(exp, phases)
+    assert pc["a"]["new_tokens"] == 436 and pc["a"]["cached_tokens"] == 378 and pc["a"]["prefill_batches"] == 2
+    assert pc["b"]["cached_fraction"] == pytest.approx(0.9)
+    (exp / "step.log").write_text("no timestamps\n")
+    assert EA.prefix_cache_by_phase(exp, phases) == {}
