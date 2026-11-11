@@ -9,13 +9,22 @@ from typing import Any
 from . import metrics as M
 
 
+# Chinese-capable fonts, in order of preference: Spark/Ubuntu (Noto), macOS, generic fallbacks.
+CJK_FONTS = ["Noto Sans CJK SC", "PingFang SC", "Hiragino Sans GB", "Heiti SC", "STHeiti", "Droid Sans Fallback",
+             "WenQuanYi Micro Hei", "AR PL UMing CN"]
+
+
 def _plt():
     import matplotlib
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    from matplotlib import font_manager
 
-    plt.rcParams.update({"figure.dpi": 130, "axes.grid": True, "grid.alpha": 0.3, "font.size": 9})
+    available = {f.name for f in font_manager.fontManager.ttflist}
+    cjk = [f for f in CJK_FONTS if f in available]
+    plt.rcParams.update({"figure.dpi": 130, "axes.grid": True, "grid.alpha": 0.3, "font.size": 9,
+                         "font.sans-serif": cjk[:1] + ["DejaVu Sans"], "axes.unicode_minus": False})
     return plt
 
 
