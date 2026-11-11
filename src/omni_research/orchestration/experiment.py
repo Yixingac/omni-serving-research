@@ -213,7 +213,8 @@ class Server:
         model = _quote(os.path.expanduser(self.spec["model_path"]))
         serve = (f"{rt.get('python', 'python')} -m sglang_omni.cli serve --model-path {model} "
                  f"--host 127.0.0.1 --port {self.port} {args}")
-        prefix = self.spec.get("prefix", "")  # e.g. an nsys command line for profiling runs
+        # Optional wrapper such as an nsys command line; {exp_dir} is the experiment directory.
+        prefix = substitute(self.spec.get("prefix", ""), rt, self.port).replace("{exp_dir}", str(self.log_path.parent.parent))
         env_script = rt.get("env_script")
         parts = []
         if env_script:
