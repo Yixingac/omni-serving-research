@@ -102,6 +102,20 @@ def render(analysis: dict[str, Any], figures: list[Path], exp_dir: Path) -> str:
         for label, s in st["summary_ms"].items():
             lines.append(f"| {label} | {s.get('n')} | {_f(s.get('median'), 1)} | {_f(s.get('mean'), 1)} | {_f(s.get('max'), 1)} |")
         lines.append("")
+    for phase, gt in (analysis.get("gpu_traces") or {}).items():
+        if "error" in gt:
+            lines.append(f"torch profiler 阶段 `{phase}` 的 trace 无法解析：{gt['error']}")
+            lines.append("")
+            continue
+        lines.append(f"GPU kernel 时间线，阶段 `{phase}`（torch profiler；忙碌时间是 kernel 与拷贝区间的并集，重叠部分只算一次；"
+                     f"这个阶段开着 profiler，延迟数字不作基线）：")
+        lines.append("")
+        lines.append("| GPU | 窗口 s | 忙碌 s | 忙碌比例 | kernel 时长直接相加 s | 空闲间隙数 | 最长间隙 ms |")
+        lines.append("|---|---|---|---|---|---|---|")
+        for dev, d in gt["per_device"].items():
+            lines.append(f"| {dev} | {d['window_s']:.1f} | {d['busy_ns'] / 1e9:.2f} | {d['busy_fraction']:.0%} | "
+                         f"{d['kernel_sum_ns'] / 1e9:.2f} | {d['gap_count']} | {d['longest_gap_ns'] / 1e6:.1f} |")
+        lines.append("")
     for name, a in (analysis.get("agents") or {}).items():
         sp = a["time_split_s"]
         tot = sp["session"] or 1

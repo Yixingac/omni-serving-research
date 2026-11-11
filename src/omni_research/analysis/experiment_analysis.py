@@ -349,7 +349,22 @@ def analyze_experiment(exp: Path, slo: dict[str, float] | None = None) -> dict[s
     agents = {}
     for f in sorted((exp / "raw").glob("agent_trace_*.jsonl")):
         agents[f.stem.removeprefix("agent_trace_")] = agent_trace_summary(f)
+    gpu_traces = {}
+    torch_root = exp / "profiling" / "torch"
+    if torch_root.exists():
+        from .torch_trace import analyze_files
+
+        for phase_dir in sorted(p for p in torch_root.iterdir() if p.is_dir()):
+            files = sorted(phase_dir.rglob("*.trace.json*"))
+            if files:
+                try:
+                    r = analyze_files(files)
+                    gpu_traces[phase_dir.name] = {"files": r["files"], "per_device": {
+                        str(dev): {k: v for k, v in d.items() if k != "window_ns"} | {"window_s": (d["window_ns"][1] - d["window_ns"][0]) / 1e9}
+                        for dev, d in r["per_device"].items()}}
+                except (OSError, ValueError, KeyError) as exc:
+                    gpu_traces[phase_dir.name] = {"error": str(exc)}
     return {"experiment": exp.name, "status": result.get("status"), "error_class": result.get("error_class"),
             "error": (result.get("error") or "")[:1500], "config": config, "manifest": manifest, "result": result,
-            "table": table, "gpu_by_phase": gpu_rows, "stages": stages, "agents": agents,
+            "table": table, "gpu_by_phase": gpu_rows, "stages": stages, "agents": agents, "gpu_traces": gpu_traces,
             "fake_server": bool(config.get("fake_server")), "analyzed_at": time.strftime("%Y-%m-%dT%H:%M:%S")}
