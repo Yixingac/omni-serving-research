@@ -106,3 +106,14 @@ def test_classify_and_gpu_summary(tmp_path):
                  "2026/11/11 19:20:00.200, 0, GPU-a, 100, 20, 3000, 49140, 200, 1800, P0\n")
     g = summarize_gpu_samples(p)
     assert g["0"]["mem_max_mib"] == 3000 and g["0"]["util_mean"] == 75 and g["0"]["samples"] == 2
+
+
+def test_runner_torch_profile_window_waits_for_export(cfg, tmp_path):
+    cfg["phases"] = [{"kind": "closed_loop", "name": "prof", "workload": cfg["phases"][0]["workload"], "concurrency": [1],
+                      "requests_per_level": 2, "warmup": 0, "torch_profile": True}]
+    out = tmp_path / "exp"
+    res = ExperimentRunner(cfg, out).run()
+    assert res["status"] == "ok", res.get("error")
+    traces = list((out / "profiling" / "torch" / "prof").rglob("*.trace.json.gz"))
+    assert len(traces) == 1 and "fake_trace" in traces[0].name  # {stage} was filled in by the server
+    assert res["phases"][0]["profiled"] == "torch+request_events"

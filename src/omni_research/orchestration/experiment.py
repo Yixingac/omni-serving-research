@@ -330,6 +330,7 @@ class ExperimentRunner:
         self.step_gpus = [g for g in vis.split(",") if g.strip()] if vis else []
         self.servers: list[Server] = []
         self.phase_summaries: list[dict[str, Any]] = []
+        self._torch_started: dict[str, int] = {}
         self.stop_requested = False
         self.client_log = open(out / "logs" / "client.log", "a")
         self.t_start = time.time()
@@ -443,6 +444,7 @@ class ExperimentRunner:
         """Start/stop SGLang-Omni's request event recorder; with ``torch`` also its torch profiler
         (kernel-level Chrome traces under profiling/torch/<phase>/). The torch profiler perturbs
         timing, so phases that use it are never baselines."""
+        started_ok = 0
         for s in self.servers:
             run_id = f"{self.cfg['experiment_id']}-{phase}-{s.name}"
             if start:
@@ -453,10 +455,13 @@ class ExperimentRunner:
                     body.update(enable_torch=True,
                                 trace_path_template=str(self.out / "profiling" / "torch" / phase / s.name) + "/{stage}_trace")
                 code, _ = _http_json(f"{s.base_url}/{'start_profile' if torch else 'start_request_profile'}", body, timeout=60)
+                started_ok += code == 200
             else:
                 code, _ = _http_json(f"{s.base_url}/{'stop_profile' if torch else 'stop_request_profile'}", {}, timeout=300)
             self.log(f"{'torch+request' if torch else 'request'} profiler {'start' if start else 'stop'} on {s.name}: HTTP {code}")
-        if torch and not start:
+        if torch and start:
+            self._torch_started[phase] = started_ok
+        if torch and not start and self._torch_started.get(phase):
             self.wait_for_traces(self.out / "profiling" / "torch" / phase)
 
     def wait_for_traces(self, root: Path, timeout_s: float = 300.0, settle_s: float = 10.0) -> list[str]:

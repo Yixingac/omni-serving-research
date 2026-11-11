@@ -4,7 +4,8 @@ It implements the endpoints the runner uses, with the same wire formats:
 ``GET /health`` (503 "starting" for ``--startup-s``, then 200 "healthy"),
 ``POST /v1/chat/completions`` (SSE text deltas and base64 WAV audio chunks, final usage),
 ``POST /v1/audio/speech`` (a WAV of silence whose length grows with the text),
-``POST /start_request_profile`` / ``/stop_request_profile`` (writes a tiny event JSONL).
+``POST /start_request_profile`` / ``/stop_request_profile`` (writes a tiny event JSONL),
+``POST /start_profile`` / ``/stop_profile`` (also writes a one-kernel trace, asynchronously after stop).
 
 Its timings are made up. Nothing it produces may be reported as a measurement.
 
@@ -77,7 +78,9 @@ def build_app(startup_s: float, token_ms: float, agent_json: bool):  # noqa: ANN
         return web.Response(body=silence_wav(secs, 24000), content_type="audio/wav")
 
     async def start_profile(request):  # noqa: ANN001
-        body = await request.json()
+        return await start_profile_impl(await request.json())
+
+    async def start_profile_impl(body):  # noqa: ANN001
         d = Path(body.get("event_dir", "/tmp/fake-events"))
         d.mkdir(parents=True, exist_ok=True)
         state["recorder"] = {"run_id": body.get("run_id", "run"), "path": d / f"events_fake_{os.getpid()}.jsonl"}
@@ -85,7 +88,25 @@ def build_app(startup_s: float, token_ms: float, agent_json: bool):  # noqa: ANN
 
     async def stop_profile(_request):  # noqa: ANN001
         state["recorder"] = None
+        tpl = state.pop("torch_template", None)
+        if tpl:
+            # Mimic SGLang-Omni: each stage process exports its trace asynchronously after stop.
+            async def export() -> None:
+                import gzip
+
+                await asyncio.sleep(1.0)
+                path = Path(tpl.format(stage="fake", run_id="run") + f"_pid{os.getpid()}_rank0.trace.json.gz")
+                path.parent.mkdir(parents=True, exist_ok=True)
+                with gzip.open(path, "wt") as fh:
+                    json.dump({"traceEvents": [{"ph": "X", "cat": "kernel", "name": "fake_kernel", "ts": 0, "dur": 10,
+                                                "args": {"device": 0}}]}, fh)
+            asyncio.get_running_loop().create_task(export())
         return web.json_response({"ok": True})
+
+    async def start_torch_profile(request):  # noqa: ANN001
+        body = await request.json()
+        state["torch_template"] = body.get("trace_path_template")
+        return await start_profile_impl(body)
 
     app = web.Application()
     app.router.add_get("/health", health)
@@ -93,6 +114,8 @@ def build_app(startup_s: float, token_ms: float, agent_json: bool):  # noqa: ANN
     app.router.add_post("/v1/audio/speech", speech)
     app.router.add_post("/start_request_profile", start_profile)
     app.router.add_post("/stop_request_profile", stop_profile)
+    app.router.add_post("/start_profile", start_torch_profile)
+    app.router.add_post("/stop_profile", stop_profile)
     return app
 
 
