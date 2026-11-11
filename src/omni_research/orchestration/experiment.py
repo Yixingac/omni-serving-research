@@ -90,7 +90,10 @@ def _http_json(url: str, body: dict[str, Any] | None = None, timeout: float = 10
 
 
 def _port_free(port: int) -> bool:
+    """True unless something is *listening* on the port. SO_REUSEADDR (as servers set it) lets
+    the probe ignore connections from a previous server that are still in TIME_WAIT."""
     with socket.socket() as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             s.bind(("127.0.0.1", port))
             return True

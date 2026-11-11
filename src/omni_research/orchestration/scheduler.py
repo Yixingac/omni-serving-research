@@ -73,6 +73,7 @@ class Orchestrator:
         self._seen_additions: set[str] = set()
         self._stop_reason: str | None = None
         self._ports_in_use: set[int] = set()
+        self._port_counter = 0
         self._local_gpus: dict[str, set[int]] = {n.name: set(range(n.gpus)) for n in alloc.nodes}
         self.state = self._init_state()
 
@@ -144,11 +145,16 @@ class Orchestrator:
         return float("inf")
 
     def _next_port(self) -> int:
-        p = self.port_base
-        while p in self._ports_in_use:
-            p += 10  # experiments may use port..port+9 (e.g. several replicas)
-        self._ports_in_use.add(p)
-        return p
+        """Ports rotate (base, base+10, ...) instead of being reused right away, so a new server
+        never lands on a port whose previous owner is still shutting down. Each experiment may
+        use port..port+9 (e.g. several replicas)."""
+        for _ in range(1000):
+            p = self.port_base + 10 * (self._port_counter % 1000)
+            self._port_counter += 1
+            if p not in self._ports_in_use:
+                self._ports_in_use.add(p)
+                return p
+        raise RuntimeError("no free port block")
 
     # -- transitions ----------------------------------------------------------------------------
     def _record_failure(self, eid: str, es: ExperimentState, klass: str, detail: str, rc: int | None) -> None:
