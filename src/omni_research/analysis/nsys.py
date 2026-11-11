@@ -25,7 +25,10 @@ def device_activity(db: str | Path, include_memcpy: bool = True) -> dict[int, li
     try:
         tabs = _tables(con)
         out: dict[int, list[tuple[float, float]]] = {}
-        sources = ["CUPTI_ACTIVITY_KIND_KERNEL"]
+        # With nsys' default --cuda-graph-trace=graph, kernels inside a CUDA graph are not listed in
+        # the KERNEL table; each graph execution is one row of GRAPH_TRACE. Leaving it out makes a
+        # decode loop that runs as CUDA graphs look almost idle (found on the Spark, s8).
+        sources = ["CUPTI_ACTIVITY_KIND_KERNEL", "CUPTI_ACTIVITY_KIND_GRAPH_TRACE"]
         if include_memcpy:
             sources += ["CUPTI_ACTIVITY_KIND_MEMCPY", "CUPTI_ACTIVITY_KIND_MEMSET"]
         for t in sources:

@@ -15,6 +15,7 @@ def make_nsys_db(path):
     con.execute("CREATE TABLE CUPTI_ACTIVITY_KIND_MEMCPY (deviceId INT, start INT, end INT)")
     con.execute("CREATE TABLE StringIds (id INT, value TEXT)")
     con.execute("CREATE TABLE NVTX_EVENTS (start INT, end INT, text TEXT, textId INT)")
+    con.execute("CREATE TABLE CUPTI_ACTIVITY_KIND_GRAPH_TRACE (deviceId INT, start INT, end INT, graphId INT)")
     # Device 0: two kernels overlapping on different streams (0-500 and 300-800) + a copy 900-1000.
     con.executemany("INSERT INTO CUPTI_ACTIVITY_KIND_KERNEL VALUES (?,?,?)", [(0, 0, 500), (0, 300, 800), (1, 0, 100)])
     con.execute("INSERT INTO CUPTI_ACTIVITY_KIND_MEMCPY VALUES (0, 900, 1000)")
@@ -34,6 +35,18 @@ def test_nsys_union_not_sum(tmp_path):
     assert rep[0]["gap_count"] == 1 and rep[0]["longest_gap_ns"] == 100
     assert rep[0]["busy_fraction"] == pytest.approx(0.9)
     assert nvtx_ranges(db) == [{"start": 0, "end": 1000, "name": "decode_step"}]
+
+
+def test_nsys_cuda_graph_executions_count_as_busy(tmp_path):
+    db = tmp_path / "g.sqlite"
+    make_nsys_db(db)
+    con = sqlite3.connect(db)
+    # A decode step replayed as one CUDA graph from 2000 to 2700 ns (no KERNEL rows for it).
+    con.execute("INSERT INTO CUPTI_ACTIVITY_KIND_GRAPH_TRACE VALUES (0, 2000, 2700, 7)")
+    con.commit()
+    con.close()
+    rep = busy_idle_report(device_activity(db), window=(0, 3000))
+    assert rep[0]["busy_ns"] == 900 + 700
 
 
 def test_stage_breakdown_from_server_events():
