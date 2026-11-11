@@ -67,7 +67,8 @@ def placement(data_root: Path, out: Path) -> Path:
 def saturation(data_root: Path, out: Path) -> Path:
     plt = _plt()
     fig, axes = plt.subplots(1, 2, figsize=(9.5, 3.6))
-    text = rows(load(data_root, "x2_minicpm_text_1gpu"), "w1") + rows(load(data_root, "f1_minicpm_text_saturation"), "w1_c128_256")
+    x2 = load(data_root, "x2_minicpm_text_1gpu")
+    text = rows(x2, "w1_low") + rows(x2, "w1_high") + rows(load(data_root, "f1_minicpm_text_saturation"), "w1_c128_256")
     speech = rows(load(data_root, "x3_minicpm_speech_1gpu"), "w3b") + rows(load(data_root, "f2_minicpm_speech_saturation"), "w3b_c32_64")
     for ax, rs, title, key, unit in ((axes[0], text, "文本（W1，--text-only）", "tp_requests_per_s", "请求/秒"),
                                      (axes[1], speech, "语音输出（W3b）", "tp_requests_per_s", "请求/秒")):
