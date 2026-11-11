@@ -17,6 +17,7 @@
 | x6_minicpm_replay | 1 | x5 | 请求级 vs 依赖感知回放；会话复制、加速 | Q9 | 待运行 |
 | x8_minicpm_profiled_1gpu | 1 | x3 | 同一负载开/关服务端事件记录；阶段分解 | Q1、Q5 | 待运行 |
 | x4c_minicpm_video_4cpu | 1（4 CPU） | x4 | 与 x4 的 10/20 秒视频阶段相同，只给 4 个 CPU | Q4 | 待运行 |
+| x3m_minicpm_speech_1gpu_memsplit | 1 | x1 | 与 x3 相同的语音扫描，thinker `mem_fraction_static` 从 0.85 降到 0.6。Spark 上默认配比会让 code2wav 跳过 CUDA graph，但没有测出耗时差异；A6000 显存更紧，在这里复核 | Q5、Q6 | 待运行 |
 | x9_qwen3_omni_3gpu | 3 | x0 | Qwen3-Omni thinker TP=2 + talker；W3b、W1 | Q3（第二个模型） | 待运行 |
 
 依赖关系的设计：语音素材由单独的 TTS 模型生成（x1），所以即使 MiniCPM-o 的语音模式在单卡上出问题，音频理解类的实验（x4）也不受影响。2 卡放置实验依赖单卡语音基线（x3）成功，否则先查单卡的问题。

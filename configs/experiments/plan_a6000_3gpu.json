@@ -184,6 +184,21 @@
       "description": "开启服务端事件记录的阶段分解"
     },
     {
+      "experiment_id": "x3m_minicpm_speech_1gpu_memsplit",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000/x3m_minicpm_speech_1gpu_memsplit.json",
+      "priority": 54,
+      "required_gpus": 1,
+      "required_cpus": 8,
+      "required_memory_gb": 90,
+      "dependencies": [
+        "x1_assets"
+      ],
+      "estimated_duration_s": 2100,
+      "timeout_s": 6000,
+      "max_retries": 1,
+      "description": "显存配比对照（thinker mem_fraction_static 0.6）"
+    },
+    {
       "experiment_id": "x9_qwen3_omni_3gpu",
       "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000/x9_qwen3_omni_3gpu.json",
       "priority": 50,
