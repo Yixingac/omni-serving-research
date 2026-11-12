@@ -1,8 +1,8 @@
 diff --git a/sglang_omni/pipeline/stage/runtime.py b/sglang_omni/pipeline/stage/runtime.py
-index e8067693..6166a98c 100644
+index e8067693..2babf62d 100644
 --- a/sglang_omni/pipeline/stage/runtime.py
 +++ b/sglang_omni/pipeline/stage/runtime.py
-@@ -267,6 +267,22 @@ class Stage:
+@@ -267,6 +267,36 @@ class Stage:
                          else:
                              pass
                          self.scheduler.warm_up_serving_thread()
@@ -21,6 +21,20 @@ index e8067693..6166a98c 100644
 +                                "DIAG: stage %s scheduler thread now runs on private CUDA stream %s",
 +                                self.name,
 +                                _diag_stream,
++                            )
++                        # DIAG: optionally route this scheduler thread's CUDA allocations to a
++                        # private MemPool (thread-local), to test whether sharing the caching
++                        # allocator's pools with the other threads of the process is required.
++                        _diag_pool_stages = _diag_os.environ.get("SGLANG_OMNI_DIAG_PRIVATE_POOL_STAGES", "")
++                        if self.name in {x.strip() for x in _diag_pool_stages.split(",") if x.strip()}:
++                            import torch as _diag_torch
++                            self._diag_mem_pool = _diag_torch.cuda.MemPool()
++                            self._diag_mem_pool_ctx = _diag_torch.cuda.use_mem_pool(self._diag_mem_pool)
++                            self._diag_mem_pool_ctx.__enter__()
++                            logger.info(
++                                "DIAG: stage %s scheduler thread now allocates from private MemPool %s",
++                                self.name,
++                                self._diag_mem_pool.id,
 +                            )
                      finally:
                          serving_thread_ready.set()
