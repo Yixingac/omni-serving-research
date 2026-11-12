@@ -22,7 +22,9 @@
 
 依赖关系的设计：语音素材由单独的 TTS 模型生成（x1），所以即使 MiniCPM-o 的语音模式在单卡上出问题，音频理解类的实验（x4）也不受影响。2 卡放置实验依赖单卡语音基线（x3）成功，否则先查单卡的问题。
 
-## 8×A6000 计划（已准备，未提交）
+## 8×A6000 计划 v1（已被 v2 取代，未提交）
+
+> **v2 见 `docs/04_experiments/plan_8gpu_v2.md`**：根据 Job 409712 的结果重写，核心改为 thinker : talker 卡数比例扫描，并加入稳定性门槛、大规模 Agent、回放方法、Qwen3-Omni、视频与拓扑实验。下面的 v1 只作记录。
 
 计划文件：`configs/experiments/plan_a6000_8gpu.json`；配置在 `configs/experiments/a6000_8gpu/`。需要一个 8 卡的单节点分配，并依赖 Job 409712 的素材（x1）和 Agent trace（x5）。
 
