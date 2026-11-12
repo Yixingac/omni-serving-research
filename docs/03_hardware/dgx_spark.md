@@ -4,7 +4,7 @@
 
 | 项目 | 内容 |
 |---|---|
-| 主机 | spark-b935（Mac 上的 SSH 别名 `s01-remote`，Tailscale；局域网别名 `s01`） |
+| 主机 | 个人 DGX Spark（Mac 上的 SSH 别名 `s01-remote`，Tailscale；局域网别名 `s01`） |
 | GPU | NVIDIA GB10，compute capability 12.1 |
 | 内存 | 128 GB CPU/GPU 统一内存（系统显示 121 GB） |
 | CPU | 20 核 ARM64 |

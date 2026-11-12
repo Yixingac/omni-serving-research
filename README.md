@@ -83,7 +83,7 @@ uv pip install --python .venv/bin/python -e '.[dev]'
 
 ## 6. Mac 连接 Spark，启动和恢复 tmux 任务
 
-Spark 是常开的开发和测试节点（GB10、128 GB 统一内存、ARM64）。说明：你给的别名 `s01_remote` 在这台 Mac 的 SSH 配置里不存在；实际可用、并已核实指向同一台机器（spark-b935）的是 `s01-remote`。脚本默认用它，可以用 `SPARK_HOST=...` 覆盖。
+Spark 是常开的开发和测试节点（GB10、128 GB 统一内存、ARM64）。说明：你给的别名 `s01_remote` 在这台 Mac 的 SSH 配置里不存在；实际可用、并已核实指向同一台机器的是 `s01-remote`。脚本默认用它，可以用 `SPARK_HOST=...` 覆盖。
 
 ```bash
 scripts/mac/check_spark.sh                         # 非交互连接检查 + 环境摘要

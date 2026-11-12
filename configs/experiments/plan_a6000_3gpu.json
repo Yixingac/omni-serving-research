@@ -1,6 +1,6 @@
 {
   "plan_id": "a6000_3gpu_job409712",
-  "_comment": "Job 409712（abdelfattah-compute-02，3×RTX A6000，24 CPU，300 GB，10 h）的自动实验计划。每个实验是一个 srun --exact step；结果写到 $PROJECT_DATA_ROOT/experiments/<日期>_<实验>_runNN。",
+  "_comment": "Job 409712（组内节点 A，3×RTX A6000，24 CPU，300 GB，10 h）的自动实验计划。每个实验是一个 srun --exact step；结果写到 $PROJECT_DATA_ROOT/experiments/<日期>_<实验>_runNN。",
   "experiments": [
     {
       "experiment_id": "x0_envcheck",

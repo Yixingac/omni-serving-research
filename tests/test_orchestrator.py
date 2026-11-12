@@ -250,10 +250,10 @@ def test_parse_scontrol_job_detail():
     text = """JobId=409712 JobName=omni-research-hold
    JobState=RUNNING Reason=None Dependency=(null)
    StartTime=2026-11-11T19:19:38 EndTime=2026-11-12T05:19:38 Deadline=N/A
-   NodeList=abdelfattah-compute-02
-     Nodes=abdelfattah-compute-02 CPU_IDs=0-11,16-27 Mem=307200 GRES=gpu:nvidia_rtx_a6000:3(IDX:0-2)
+   NodeList=node-a
+     Nodes=node-a CPU_IDs=0-11,16-27 Mem=307200 GRES=gpu:nvidia_rtx_a6000:3(IDX:0-2)
 """
     info = parse_scontrol_job(text)
     assert info["state"] == "RUNNING" and info["end_time_str"] == "2026-11-12T05:19:38"
-    assert info["nodes"] == [{"nodes": "abdelfattah-compute-02", "cpus": 24, "mem_mb": 307200, "gpus": 3,
+    assert info["nodes"] == [{"nodes": "node-a", "cpus": 24, "mem_mb": 307200, "gpus": 3,
                               "gpu_type": "nvidia_rtx_a6000"}]

@@ -58,7 +58,7 @@ python_packages() {
   local c="$REPO/configs/runtime/sglang_omni_aarch64_constraints.txt"
   .conda-runtime/bin/uv pip install --python "$PY" --prerelease=allow -c "$c" -e repos/sglang-omni debugpy
   SGLANG_BUILD_RUST_EXTS=none .conda-runtime/bin/uv pip install --python "$PY" --no-deps -e repos/sglang/python
-  .conda-runtime/bin/uv pip freeze --python "$PY" > logs/requirements-spark-b935.txt
+  .conda-runtime/bin/uv pip freeze --python "$PY" > logs/requirements-spark.txt
 }
 
 check() {
