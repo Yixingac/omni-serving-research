@@ -1,3 +1,55 @@
+diff --git a/sglang_omni/models/minicpm_o/components/code2wav.py b/sglang_omni/models/minicpm_o/components/code2wav.py
+index 648cd690..66a5ebdb 100644
+--- a/sglang_omni/models/minicpm_o/components/code2wav.py
++++ b/sglang_omni/models/minicpm_o/components/code2wav.py
+@@ -446,27 +446,31 @@ class MiniCPMOCode2Wav(nn.Module):
+         speech_token_lengths = torch.tensor(
+             token_lengths, dtype=torch.int32, device=token2wav_device
+         )
+-        mel = self.flow_mel(speech_tokens, speech_token_lengths, speaker_prompts)
++        from sglang_omni import diag_gate as _diag_gate  # DIAG
++
++        with _diag_gate.code2wav_exclusive("flow"):  # DIAG: no-op unless SGLANG_OMNI_DIAG_SERIALIZE_GPU=flow
++            mel = self.flow_mel(speech_tokens, speech_token_lengths, speaker_prompts)
+ 
+         mel_upsample_rate = self.token2wav.flow.up_rate
+         rows_by_token_length: defaultdict[int, list[int]] = defaultdict(list)
+         for row, token_length in enumerate(token_lengths):
+             rows_by_token_length[token_length].append(row)
+         waveforms_by_row: dict[int, torch.Tensor] = {}
+-        # note (MayDomine): padding changes HiFT's noncausal convolution boundaries.
+-        for token_length, row_indices in rows_by_token_length.items():
+-            speech_mel = (
+-                mel[row_indices, :, : token_length * mel_upsample_rate]
+-                .float()
+-                .contiguous()
+-            )
+-            group_waveforms, _ = self.token2wav.hift(speech_feat=speech_mel)
+-            for group_row, row in enumerate(row_indices):
+-                waveforms_by_row[row] = group_waveforms[group_row].reshape(-1)[
+-                    : token_length * SAMPLES_PER_CODEC_TOKEN
+-                ]
+-        host_waveforms = torch.cat(
+-            [waveforms_by_row[row] for row in range(len(token_lengths))]
+-        ).cpu()
++        with _diag_gate.code2wav_exclusive("hift"):  # DIAG: no-op unless SGLANG_OMNI_DIAG_SERIALIZE_GPU=hift
++            # note (MayDomine): padding changes HiFT's noncausal convolution boundaries.
++            for token_length, row_indices in rows_by_token_length.items():
++                speech_mel = (
++                    mel[row_indices, :, : token_length * mel_upsample_rate]
++                    .float()
++                    .contiguous()
++                )
++                group_waveforms, _ = self.token2wav.hift(speech_feat=speech_mel)
++                for group_row, row in enumerate(row_indices):
++                    waveforms_by_row[row] = group_waveforms[group_row].reshape(-1)[
++                        : token_length * SAMPLES_PER_CODEC_TOKEN
++                    ]
++            host_waveforms = torch.cat(
++                [waveforms_by_row[row] for row in range(len(token_lengths))]
++            ).cpu()
+         sample_counts = [length * SAMPLES_PER_CODEC_TOKEN for length in token_lengths]
+         return [waveform.numpy() for waveform in host_waveforms.split(sample_counts)]
 diff --git a/sglang_omni/models/minicpm_o/stages.py b/sglang_omni/models/minicpm_o/stages.py
 index 12512fe0..254cbad7 100644
 --- a/sglang_omni/models/minicpm_o/stages.py
@@ -21,26 +73,46 @@ index 12512fe0..254cbad7 100644
      for index, waveform in zip(voiced, voiced_waveforms, strict=True):
          waveforms[index] = waveform
 diff --git a/sglang_omni/scheduling/omni_scheduler.py b/sglang_omni/scheduling/omni_scheduler.py
-index 88e0de93..dd3b3c61 100644
+index 88e0de93..3a99fabf 100644
 --- a/sglang_omni/scheduling/omni_scheduler.py
 +++ b/sglang_omni/scheduling/omni_scheduler.py
-@@ -3638,7 +3638,10 @@ class OmniScheduler(Generic[RequestDataT]):
+@@ -3638,7 +3638,20 @@ class OmniScheduler(Generic[RequestDataT]):
          D1 in design.md section 1.3). Prefill / empty batches flush any in-flight
          decode first and run synchronously (the in-flight step is never stranded).
          """
 +        from sglang_omni import diag_gate as _diag_gate  # DIAG
++        import os as _diag_os  # DIAG
++
++        # DIAG: SGLANG_OMNI_DIAG_NO_LOOKAHEAD=1 sends the talker's decode through the sync path.
++        _diag_no_lookahead = _diag_os.environ.get(
++            "SGLANG_OMNI_DIAG_NO_LOOKAHEAD"
++        ) == "1" and "Talker" in type(self.model_runner).__name__
++        if _diag_no_lookahead:
++            logger.warning("DIAG: one-step lookahead disabled for %s", type(self.model_runner).__name__)
++        else:
++            pass
 +
          while self.running:
 +            _diag_gate.talker_checkpoint()  # DIAG: no-op unless SGLANG_OMNI_DIAG_SERIALIZE_GPU=1
              self.process_admin_requests()
              recv_reqs = self.recv_requests()
              recv_reqs.extend(self.take_deferred_request_payloads())
+@@ -3677,7 +3690,8 @@ class OmniScheduler(Generic[RequestDataT]):
+             # fallback (default True for runners not overriding lookahead_eligible).
+             runner = self.model_runner
+             use_lookahead = (
+-                batch is not None
++                not _diag_no_lookahead
++                and batch is not None
+                 and len(batch.reqs) >= self.async_decode_min_batch_size
+                 and self.batch_is_decode(batch)
+                 and (runner is None or runner.lookahead_eligible(batch))
 diff --git a/sglang_omni/diag_gate.py b/sglang_omni/diag_gate.py
 new file mode 100644
-index 00000000..f18805a2
+index 00000000..b497d886
 --- /dev/null
 +++ b/sglang_omni/diag_gate.py
-@@ -0,0 +1,60 @@
+@@ -0,0 +1,62 @@
 +"""DIAG (omni-serving-research, 2026-11-12): keep the talker's and code2wav's GPU
 +work from overlapping in time, to test whether the illegal memory access needs
 +kernels of the two scheduler threads to run concurrently. Same process, same
@@ -59,13 +131,15 @@ index 00000000..f18805a2
 +
 +logger = logging.getLogger(__name__)
 +
-+ENABLED = os.environ.get("SGLANG_OMNI_DIAG_SERIALIZE_GPU") == "1"
++# "1": the whole code2wav batch; "flow" or "hift": only that part of it.
++MODE = os.environ.get("SGLANG_OMNI_DIAG_SERIALIZE_GPU", "")
++ENABLED = MODE in ("1", "flow", "hift")
 +_request = threading.Event()
 +_parked = threading.Event()
 +_done = threading.Event()
 +_stats = {"batches": 0, "talker_parks": 0, "park_timeouts": 0}
 +if ENABLED:
-+    logger.warning("DIAG: talker and code2wav GPU work serialized (SGLANG_OMNI_DIAG_SERIALIZE_GPU=1)")
++    logger.warning("DIAG: talker and code2wav GPU work serialized (SGLANG_OMNI_DIAG_SERIALIZE_GPU=%s)", MODE)
 +
 +
 +def talker_checkpoint() -> None:
@@ -80,9 +154,9 @@ index 00000000..f18805a2
 +
 +
 +@contextlib.contextmanager
-+def code2wav_exclusive() -> Iterator[None]:
-+    """Wraps one code2wav batch; returns once all of its GPU work is done."""
-+    if not ENABLED:
++def code2wav_exclusive(part: str = "batch") -> Iterator[None]:
++    """Wraps one code2wav batch (or its flow / HiFT part); returns once that GPU work is done."""
++    if not ENABLED or part != ("batch" if MODE == "1" else MODE):
 +        yield
 +        return
 +    _parked.clear()

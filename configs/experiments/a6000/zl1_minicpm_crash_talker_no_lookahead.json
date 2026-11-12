@@ -1,0 +1,45 @@
+{
+  "runtime_profile": "unicorn_diag",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "assets": "synthetic-v1",
+  "experiment_id": "zl1_minicpm_crash_talker_no_lookahead",
+  "description": "验证崩溃根因（第 17 节），只在 zs1（整段 code2wav batch 串行化）仍崩溃时运行。诊断副本加 env 开关 SGLANG_OMNI_DIAG_NO_LOOKAHEAD=1：只让 talker 的 decode 走同步路径（不做一步前瞻；z5 想做同样的事，但工厂函数不接受参数），thinker 不变。CUDA_LAUNCH_BLOCKING=1 能避免崩溃而串行化不能时，CPU 跑在 GPU 前面的那一步是主要嫌疑。负载与 z4 相同。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [],
+      "ready_timeout_s": 2400,
+      "prefix": "env SGLANG_OMNI_DIAG_NO_LOOKAHEAD=1"
+    }
+  ],
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "open_loop",
+      "name": "w3b_soak",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "rates_rps": [
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5
+      ],
+      "requests_per_rate": 180,
+      "max_error_rate": 0.2
+    }
+  ]
+}
