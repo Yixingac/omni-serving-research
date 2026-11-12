@@ -1,0 +1,357 @@
+{
+ "runtime_profile": "unicorn",
+ "hardware_label": "a6000x8",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "v2_b2_r8",
+ "description": "plan v2 B2：8 个完整副本上的大规模 Agent（会话不重复），同时进行的会话 64–512，每档会话总数为并发的 2 倍；文本 Agent 与语音 Agent（文本提问、最后一步语音回答），客户端路由分别用在途请求最少和按会话固定。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "r0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r1",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    1
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r2",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    2
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r3",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    3
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r4",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    4
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r5",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    5
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r6",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    6
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r7",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    7
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "agent",
+   "name": "lo_text_c64",
+   "sessions": 128,
+   "concurrency": 64,
+   "seed": 7100,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5
+   },
+   "server_events": false,
+   "routing": "least_outstanding"
+  },
+  {
+   "kind": "agent",
+   "name": "lo_text_c128",
+   "sessions": 256,
+   "concurrency": 128,
+   "seed": 7101,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5
+   },
+   "server_events": false,
+   "routing": "least_outstanding"
+  },
+  {
+   "kind": "agent",
+   "name": "lo_text_c256",
+   "sessions": 512,
+   "concurrency": 256,
+   "seed": 7102,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5
+   },
+   "server_events": true,
+   "routing": "least_outstanding"
+  },
+  {
+   "kind": "agent",
+   "name": "lo_text_c512",
+   "sessions": 1024,
+   "concurrency": 512,
+   "seed": 7103,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5
+   },
+   "server_events": false,
+   "routing": "least_outstanding"
+  },
+  {
+   "kind": "agent",
+   "name": "lo_voice_c64",
+   "sessions": 128,
+   "concurrency": 64,
+   "seed": 7150,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5,
+    "speak_final": true,
+    "think_time_s": [
+     1.0,
+     0.5
+    ]
+   },
+   "routing": "least_outstanding"
+  },
+  {
+   "kind": "agent",
+   "name": "lo_voice_c128",
+   "sessions": 256,
+   "concurrency": 128,
+   "seed": 7151,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5,
+    "speak_final": true,
+    "think_time_s": [
+     1.0,
+     0.5
+    ]
+   },
+   "routing": "least_outstanding"
+  },
+  {
+   "kind": "agent",
+   "name": "lo_voice_c256",
+   "sessions": 512,
+   "concurrency": 256,
+   "seed": 7152,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5,
+    "speak_final": true,
+    "think_time_s": [
+     1.0,
+     0.5
+    ]
+   },
+   "routing": "least_outstanding"
+  },
+  {
+   "kind": "agent",
+   "name": "lo_voice_c512",
+   "sessions": 1024,
+   "concurrency": 512,
+   "seed": 7153,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5,
+    "speak_final": true,
+    "think_time_s": [
+     1.0,
+     0.5
+    ]
+   },
+   "routing": "least_outstanding"
+  },
+  {
+   "kind": "agent",
+   "name": "sa_text_c64",
+   "sessions": 128,
+   "concurrency": 64,
+   "seed": 7200,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5
+   },
+   "server_events": false,
+   "routing": "session_affinity"
+  },
+  {
+   "kind": "agent",
+   "name": "sa_text_c128",
+   "sessions": 256,
+   "concurrency": 128,
+   "seed": 7201,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5
+   },
+   "server_events": false,
+   "routing": "session_affinity"
+  },
+  {
+   "kind": "agent",
+   "name": "sa_text_c256",
+   "sessions": 512,
+   "concurrency": 256,
+   "seed": 7202,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5
+   },
+   "server_events": true,
+   "routing": "session_affinity"
+  },
+  {
+   "kind": "agent",
+   "name": "sa_text_c512",
+   "sessions": 1024,
+   "concurrency": 512,
+   "seed": 7203,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5
+   },
+   "server_events": false,
+   "routing": "session_affinity"
+  },
+  {
+   "kind": "agent",
+   "name": "sa_voice_c64",
+   "sessions": 128,
+   "concurrency": 64,
+   "seed": 7250,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5,
+    "speak_final": true,
+    "think_time_s": [
+     1.0,
+     0.5
+    ]
+   },
+   "routing": "session_affinity"
+  },
+  {
+   "kind": "agent",
+   "name": "sa_voice_c128",
+   "sessions": 256,
+   "concurrency": 128,
+   "seed": 7251,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5,
+    "speak_final": true,
+    "think_time_s": [
+     1.0,
+     0.5
+    ]
+   },
+   "routing": "session_affinity"
+  },
+  {
+   "kind": "agent",
+   "name": "sa_voice_c256",
+   "sessions": 512,
+   "concurrency": 256,
+   "seed": 7252,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5,
+    "speak_final": true,
+    "think_time_s": [
+     1.0,
+     0.5
+    ]
+   },
+   "routing": "session_affinity"
+  },
+  {
+   "kind": "agent",
+   "name": "sa_voice_c512",
+   "sessions": 1024,
+   "concurrency": 512,
+   "seed": 7253,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5,
+    "speak_final": true,
+    "think_time_s": [
+     1.0,
+     0.5
+    ]
+   },
+   "routing": "session_affinity"
+  }
+ ],
+ "routing": "least_outstanding"
+}

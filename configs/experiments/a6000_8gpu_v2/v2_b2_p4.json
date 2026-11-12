@@ -1,0 +1,201 @@
+{
+ "runtime_profile": "unicorn",
+ "hardware_label": "a6000x8",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "v2_b2_p4",
+ "description": "plan v2 B2：4 个拆分服务（每个 1 张 thinker 卡 + 1 张 talker 卡，code2wav 单独进程），客户端按在途请求最少路由上的大规模 Agent，同 v2_b2_r8 的在途请求最少路由部分。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "p0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1
+   ],
+   "args": [
+    "--talker.gpu",
+    "1",
+    "--code2wav.gpu",
+    "1",
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "p1",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    2,
+    3
+   ],
+   "args": [
+    "--talker.gpu",
+    "1",
+    "--code2wav.gpu",
+    "1",
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "p2",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    4,
+    5
+   ],
+   "args": [
+    "--talker.gpu",
+    "1",
+    "--code2wav.gpu",
+    "1",
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "p3",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    6,
+    7
+   ],
+   "args": [
+    "--talker.gpu",
+    "1",
+    "--code2wav.gpu",
+    "1",
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "agent",
+   "name": "text_c64",
+   "sessions": 128,
+   "concurrency": 64,
+   "seed": 7400,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5
+   },
+   "server_events": false
+  },
+  {
+   "kind": "agent",
+   "name": "text_c128",
+   "sessions": 256,
+   "concurrency": 128,
+   "seed": 7401,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5
+   },
+   "server_events": false
+  },
+  {
+   "kind": "agent",
+   "name": "text_c256",
+   "sessions": 512,
+   "concurrency": 256,
+   "seed": 7402,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5
+   },
+   "server_events": true
+  },
+  {
+   "kind": "agent",
+   "name": "text_c512",
+   "sessions": 1024,
+   "concurrency": 512,
+   "seed": 7403,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5
+   },
+   "server_events": false
+  },
+  {
+   "kind": "agent",
+   "name": "voice_c64",
+   "sessions": 128,
+   "concurrency": 64,
+   "seed": 7450,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5,
+    "speak_final": true,
+    "think_time_s": [
+     1.0,
+     0.5
+    ]
+   }
+  },
+  {
+   "kind": "agent",
+   "name": "voice_c128",
+   "sessions": 256,
+   "concurrency": 128,
+   "seed": 7451,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5,
+    "speak_final": true,
+    "think_time_s": [
+     1.0,
+     0.5
+    ]
+   }
+  },
+  {
+   "kind": "agent",
+   "name": "voice_c256",
+   "sessions": 512,
+   "concurrency": 256,
+   "seed": 7452,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5,
+    "speak_final": true,
+    "think_time_s": [
+     1.0,
+     0.5
+    ]
+   }
+  },
+  {
+   "kind": "agent",
+   "name": "voice_c512",
+   "sessions": 1024,
+   "concurrency": 512,
+   "seed": 7453,
+   "unique_tasks": true,
+   "agent": {
+    "max_steps": 5,
+    "speak_final": true,
+    "think_time_s": [
+     1.0,
+     0.5
+    ]
+   }
+  }
+ ],
+ "routing": "least_outstanding"
+}

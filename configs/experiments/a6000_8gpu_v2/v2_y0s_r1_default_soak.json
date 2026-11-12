@@ -1,0 +1,55 @@
+{
+ "runtime_profile": "unicorn",
+ "hardware_label": "a6000x1",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "v2_y0s_r1_default_soak",
+ "description": "plan v2 稳定性门槛的对照：单卡默认配置（talker 与 code2wav 同进程），W3b 开环 1.5 请求/秒（约为容量的一半）× 16 档 × 2 分钟。服务崩溃后自动重启、接着跑下一档，用来数每小时崩溃几次（第 17 节平均约 3 分钟一次）。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 20,
+ "servers": [
+  {
+   "name": "r0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0
+   ],
+   "args": [],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_soak",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "rates_rps": [
+    1.5,
+    1.5,
+    1.5,
+    1.5,
+    1.5,
+    1.5,
+    1.5,
+    1.5,
+    1.5,
+    1.5,
+    1.5,
+    1.5,
+    1.5,
+    1.5,
+    1.5,
+    1.5
+   ],
+   "requests_per_rate": 180,
+   "max_error_rate": 1.0,
+   "rerun_crashed_levels": false
+  }
+ ]
+}
