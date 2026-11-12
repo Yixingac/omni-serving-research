@@ -320,7 +320,7 @@ trace 包含 128 个会话、263 次模型请求和 170 次工具调用。每档
 
 ## 17. 语音负载下的服务崩溃（f2、x7c、f5）
 
-- **[实测]** 同一软件版本（SGLang-Omni 520b49ee）在 A6000 上崩溃了十次，其中六次在下面的定位实验里。前四次是：
+- **[实测]** 同一软件版本（SGLang-Omni 520b49ee）在 A6000 上崩溃了 16 次，其中 12 次在下面的定位实验里。前四次是：
   1. f2，单卡默认语音流水线。并发 32、64 的闭环阶段正常完成后，开环 1 请求/秒阶段的第 53.8 秒，code2wav 的 flow 模型（token2wav DiT，torch.compile 生成的 Triton kernel）报 `CUDA error: an illegal memory access`。
   2. x7c，只复制 talker，W3b 并发 8。GPU 0 上的 talker 副本 r0 在 `stream.synchronize` 处报同样的错误，随后 code2wav 的 HiFT 声码器报 cuFFT 内部错误。
   3. f5，单卡默认语音流水线，全新的服务，前面没有高负载阶段。开环 0.5 和 1.0 请求/秒两档没有错误；1.5 请求/秒那档完成 18 个请求后崩溃，90 个请求中 72 个失败。
@@ -329,9 +329,8 @@ trace 包含 128 个会话、263 次模型请求和 170 次工具调用。每档
 - **[实测]** 四次出错的进程所在的卡上都同时有 thinker 进程。各语音实验的语音负载合计约 50 分钟（截至 18:10）；talker 单独占一张卡的 x7b 及其重复，以及 x3、x3 重复、x3m、x8、x7a 和 x7c 的重复运行都没有出现这个错误。
 - **[实测]** 四次中，两次第一个报错在 code2wav 的 flow 模型（torch.compile 生成的 DiT kernel），两次在 talker 调度器的 `stream.synchronize`。CUDA 错误要到下一次同步时才报出来，而 talker 和 code2wav 在同一个进程的两个线程里，哪个线程先同步就由哪个报错。所以报错位置不能说明哪个 kernel 越界。
 - **[实测]** 不是某一张卡的问题：按 GPU UUID，前六次崩溃就分布在全部三张卡上（分别 3、2、1 次）。z3 和 z1 没有崩溃，它们所在的卡之前都崩溃过。执行器只记录了 ECC 是否开启，没有记录错误计数。
-- **[未知]** 根因。CUDA 错误是异步报告的，两次报错的位置不同（code2wav 的 flow 模型、talker 的同步点），真正越界的 kernel 还没有确定。code2wav 处理过的最长输入（x7a 中 834 个 codec token）比出错时的输入（429、353）还长，所以不是简单的长度上限。
-- **[假设]** 可能与 talker 进程内两个调度线程（talker 的 OmniScheduler 和 code2wav 的 SimpleScheduler）同时使用 GPU 有关，也可能与 code2wav 默认开启的 torch.compile（DiT、HiFT）或 CUDA graph 有关。
-- **[实测]** 十次退出的都是 talker 进程（talker 和 code2wav 所在的进程），而且这个进程所在的卡上都同时有 thinker 进程。
+- **[实测]** code2wav 处理过的最长输入（x7a 中 834 个 codec token）比出错时的输入（429、353）还长，所以不是简单的长度上限。
+- **[实测]** 16 次退出的都是 talker 进程（talker 和 code2wav 所在的进程），而且这个进程所在的卡上都同时有 thinker 进程。根因分析见本节末尾。
 
 **定位实验**（单卡默认语音流水线，W3b 开环泊松到达，每 2 分钟一档、速率不变，最多 8 档）：
 
@@ -349,20 +348,48 @@ trace 包含 128 个会话、263 次模型请求和 170 次工具调用。每档
 | z10（两次） | 开启 GPU core dump（出现异常时由驱动记录出错的 kernel） | 1.5 请求/秒 | 两次都没有崩溃，合计 32 分钟、2,880 个请求 | 4.36、4.37 s |
 | z11 | code2wav 放到单独的进程，同时开启 core dump | 1.5 请求/秒 | 16 分钟、1,440 个请求，没有崩溃 | 4.74 s |
 | z11b（两次） | 只把 code2wav 放到单独的进程（`--code2wav.process code2wav`），CUDA graph 和 torch.compile 保持开启 | 1.5 请求/秒 | 两次都没有崩溃，合计 32 分钟、2,880 个请求 | 4.76、4.77 s |
+| zp1 | talker 的调度线程改用一条独立的 CUDA stream，不再用 stream 0（诊断补丁） | 1.5 请求/秒 | 5.1 分钟 | 4.27 s |
+| zg1 | FlashInfer decode 每次重新 plan 之前，先等上一次计划表的主机→设备拷贝完成（诊断补丁） | 1.5 请求/秒 | 1.5 分钟 | 4.12 s |
+| zc1 | `CUDA_DEVICE_MAX_CONNECTIONS=1`（所有 stream 共用一条硬件队列） | 1.5 请求/秒 | 3.6 分钟 | 4.46 s |
+| zg3 | code2wav 的 `decode_stream` 优先级从 −1 改为 0，与 talker 相同 | 1.5 请求/秒 | 1.0 分钟 | 4.06 s |
+| zh1 | HiFT 的 cuFFT 留在 code2wav 自己的 stream 上，code2wav 线程不再使用 stream 0（诊断补丁） | 1.5 请求/秒 | 0.4 分钟 | 3.70 s（只有 13 个成功） |
+| zm1 | code2wav 调度线程的显存分配走一个私有 MemPool（`torch.cuda.use_mem_pool`，只作用于该线程；诊断补丁） | 1.5 请求/秒 | 3.5 分钟 | 4.22 s |
+| **zs1** | **talker 和 code2wav 的 GPU 工作在时间上串行化**：code2wav 每个 batch 开始前，talker 在事件循环顶部同步设备后暂停；batch 结束并同步后再放行（诊断补丁）。进程、分配器、stream、CUDA graph、torch.compile 都不变 | 1.5 请求/秒 | **15.8 分钟、1,440 个请求，没有崩溃，也没有错误** | 4.63 s |
+| **zs2** | **只在 code2wav 的 HiFT 阶段（含最后的 `.cpu()`）串行化**，flow 阶段仍与 talker 并发（诊断补丁） | 1.5 请求/秒 | **15.8 分钟、1,440 个请求，没有崩溃，也没有错误** | 4.41 s |
 
-- **[实测]** 不能避免崩溃的改动：关闭 torch.compile（z2）、只关一种 CUDA graph（z6、z7）、启动时加载全部 kernel（z12）。所以问题不在编译生成的 kernel，也不在运行中按需加载 kernel。
-- **[实测]** 能避免崩溃的改动（在同样负载下，默认配置平均约 5 分钟崩溃一次）：
+- **[实测]** 不能避免崩溃的改动：关闭 torch.compile（z2）、只关一种 CUDA graph（z6、z7）、启动时加载全部 kernel（z12）、talker 改用独立 stream（zp1）、HiFT 不用 stream 0（zh1）、code2wav 用私有显存池（zm1）、两条 stream 同优先级（zg3）、FlashInfer 计划表保护（zg1）、单条硬件队列（zc1）。zg1 里保护确实拦下了约 1.6 万次 plan 中的 161 次（上一次拷贝还没完成），这个竞争是真实存在的，但不是崩溃的原因。
+- **[实测]** 能避免崩溃的改动（在同样负载下，默认配置平均约 3–5 分钟崩溃一次）：
   - **把 code2wav 放到单独的进程**：两次合计 32 分钟没有崩溃，CUDA graph 和 torch.compile 都开着。代价是端到端慢约 8%（4.76 vs 4.25 s），多了一次跨进程传递。
+  - **同一进程，但 talker 和 code2wav 的 GPU 工作串行化（zs1）**：15.8 分钟、1,440 个请求全部成功，端到端慢约 9%（4.63 vs 4.25 s）。闸门共处理 1,200 多个 batch，talker 每次都按时暂停（超时 0 次）。
+  - **只把 HiFT 阶段串行化（zs2）**：15.8 分钟、1,440 个请求全部成功，端到端只慢约 4%（4.41 vs 4.25 s）。约 1,300 个 batch 的 flow 阶段一直与 talker 并发，没有触发崩溃。
   - 两种 CUDA graph 都关：三次合计 49.8 分钟没有崩溃，但端到端约为默认的 2 倍。
   - 开启 GPU core dump：两次合计 32 分钟没有崩溃，延迟不变，因此也没有拿到 dump。
   - `CUDA_LAUNCH_BLOCKING=1`：16.8 分钟没有崩溃，但服务严重过载（端到端 13.7 s）。
-- **[计算]** 如果拆进程对崩溃没有影响，32 分钟一次不崩的概率约为 0.2%（e^(−32/5)）。开启 core dump 的两次也是一样。
-- **[假设]** 问题出在 talker 进程内的两个调度线程（talker 的 OmniScheduler 和 code2wav 的 SimpleScheduler）同时使用 GPU 时，属于线程安全问题。依据是：把 code2wav 拆出去就不再崩溃；关掉全部 CUDA graph 或让 kernel 同步执行，都会改变两个线程之间的交错，也都不再崩溃；开启 core dump 可能也改变了驱动的调度。可能的共享对象包括同一进程里的 CUDA 缓存分配器、CUDA graph 的显存池、cuFFT 计划缓存或某个共享缓冲区，具体是哪一个还没有确定。
+- **[计算]** 如果拆进程对崩溃没有影响，32 分钟一次不崩的概率约为 0.2%（e^(−32/5)）。开启 core dump 的两次也是一样。改了但仍然崩溃的 8 次运行（z4 两次、zp1、zg1、zc1、zg3、zh1、zm1）从加负载到崩溃平均 2.8 分钟；如果串行化无效，zs1 跑 15.8 分钟不崩的概率约 0.4%（e^(−15.8/2.8)），zs2 也一样。
+- **[实测]** 崩溃时刻：16 次崩溃的第一个报错都出现在某个 code2wav batch 开始后 204–548 ms。z4 里一个 batch 从开始到音频送达的中位数是 272 ms（L ≥ 363 时 336 ms，L < 300 时 243 ms），所以出错大致在这个 batch 的后段到刚结束之间（flow 的最后几步、HiFT、`.cpu()`、释放显存），不在 batch 开头。出错前最后一个 batch 的长度从 214 到 493 个 codec token 都有，flow 走 CUDA graph（≤ 362）和走 eager 的都有。
 - **[实测]** 开启 core dump 时不崩溃，**不代表问题被修好**：越界访问可能仍然发生，只是没有触发异常，变成悄悄写坏数据。把 code2wav 拆出去的结果更干净，因为它直接去掉了同进程的两个线程。
-- **实际的规避办法**：MiniCPM-o 语音服务加上 `--code2wav.process code2wav`，代价是端到端约 8%。8 卡计划把它作为默认设置（`docs/04_experiments/plan_8gpu_v2.md`），只在专门测默认配置时去掉。
+- **实际的规避办法**：MiniCPM-o 语音服务加上 `--code2wav.process code2wav`，代价是端到端约 8%。8 卡计划把它作为默认设置（`docs/04_experiments/plan_8gpu_v2.md`），只在专门测默认配置时去掉。zs1 的串行化效果相同、代价相近（约 9%），只串行化 HiFT 阶段（zs2）代价约 4%，但都需要改代码，目前只作为诊断手段。
 - 复现很简单：单卡默认配置，W3b 开环 1.5 请求/秒，通常几分钟内出现。
 - **[实测]** GB10（Spark，s12）上没有复现：同样的默认配置，W3b 开环 0.4 请求/秒（约为 GB10 容量的一半），44.9 分钟、720 个请求，没有崩溃，也没有错误。
 - **[计算]** 按时间算，A6000 默认配置平均约 5 分钟崩一次，44.9 分钟不崩几乎不可能是偶然。但 GB10 的请求速率只有 A6000 测试的约四分之一；按请求数算（A6000 默认配置约每 380 个请求崩溃一次），720 个请求不崩的概率约 15%。所以还不能断定 GB10 上不会崩，也就不能断定这个问题只出现在 A6000（SM86）上。
+
+**根因分析（截至 2026-11-12 02:00，代码引用均为 SGLang-Omni 520b49ee）**
+
+- 进程和线程结构：默认配置里 talker 和 code2wav 在同一个进程（`sglang_omni/models/minicpm_o/config.py:193-195`，都是 `process="talker"`），每个 stage 各有一个调度线程（`pipeline/stage/runtime.py:315`）。talker 线程跑 SGLang 的自回归引擎：一步前瞻的异步 decode（`scheduling/omni_scheduler.py:3631`），带 decode CUDA graph 和采样 CUDA graph（`talker_model_runner.py:223-231`，注释里写明 code2wav 跑在同一进程的其他线程上）。code2wav 线程跑 flow（DiT，CUDA graph 或 eager）和 HiFT，用自己的 `decode_stream`（`components/code2wav.py:128`，优先级 −1）。两个线程共用同一个 CUDA context。
+- **[实测] 必要条件**：同一进程（同一 CUDA context），**并且**两个调度线程的 GPU 工作在时间上重叠。拆成两个进程（z11b）或在同一进程里串行化（zs1）都不再崩溃。zs1 没有拦住主线程收 thinker 数据的 CUDA IPC 拷贝，它们仍可能与 code2wav 重叠，所以这类重叠不足以触发崩溃，需要的是 talker 线程的 kernel 与 code2wav 线程的 kernel 同时执行。
+- **[实测] 进一步定位到 HiFT 阶段**：只把 HiFT 阶段（`code2wav.py:456-470`：HiFT 前向和最后的 `.cpu()`；flow 在第 449 行）与 talker 串行化（zs2）就不再崩溃，flow 阶段与 talker 并发不足以触发。这和崩溃时刻（batch 后段到刚结束）一致。默认配置里 HiFT 的 cuFFT 在 stream 0 上，与 talker 同一条 stream，本来就不会和 talker 的 kernel 同时执行；与 talker 并发的是 HiFT 在 `decode_stream` 上的其余部分：F0 预测、正弦激励源、卷积上采样和残差块（cuDNN 卷积，或 torch.compile 生成的 kernel）、最后的拷回主机。zh1 让 cuFFT 也离开 stream 0，照样崩溃。
+- **[实测] 已排除的具体机制**（每一条都有对应实验，同时也读了代码）：
+  1. 共用 stream 0。talker 线程的工作都在 stream 0 上，HiFT 每次 STFT/iSTFT 也切到 stream 0 并双向等待（`token2wav/hift.py:38-50`）。talker 改用独立 stream（zp1）、HiFT 不用 stream 0（zh1）都仍然崩溃。
+  2. 共用 PyTorch 缓存分配器。code2wav 线程改用私有 MemPool（zm1）仍然崩溃。读代码：HiFT 跨 stream 使用的输出都做了 `record_stream`（`hift.py:223`、`hift.py:242`），code2wav 每个 batch 以 `.cpu()` 同步结束（`code2wav.py:470`），talker→code2wav 传的是 CPU 上的 token 列表，没有找到跨线程复用同一块显存的路径。
+  3. stream 优先级（`config.py:26` 的 −1）：改成 0（zg3）仍然崩溃。
+  4. FlashInfer decode 计划表被下一次 plan 覆盖：真实存在，但加保护（zg1）仍然崩溃。
+  5. talker 把 token id 拷回主机：两块 pinned 缓冲区轮换，读之前等事件（`model_runner/base.py:213-265`、`base.py:913-962`），没有发现问题。
+  6. thinker→talker 的 CUDA IPC 接收：拷贝之后记录事件（`relay/cuda_ipc.py:1160-1167`），接收方等事件完成才确认，发送方收到确认后才释放槽位（`cuda_ipc.py:363-560`），没有发现提前释放。
+  7. 显存不足：GPU 显存峰值 41.1 / 46.1 GB。cuDNN benchmark（遇到新形状时搜索算法并清空缓存）：SGLang、FlashInfer、SGLang-Omni 都没有开启。
+  8. torch.compile（z2）、运行中按需加载 kernel（z12）、只开一种 CUDA graph（z6、z7）。
+- **[未知] 具体是哪个 kernel 越界、为什么越界。** 两个线程的 kernel 并发时还能互相影响的途径只剩两类：(a) 双方都会碰到的某块显存，例如 CUDA graph 里固化下来、之后被释放又被别处复用的地址，或者某个库内部的全局缓冲区；(b) 驱动在同一 context 里并发执行两个线程的 CUDA graph/kernel 时的缺陷。两种 CUDA graph 都关时不崩（z3），只关一种仍崩（z6、z7）：可能是 graph replay 本身和问题有关，也可能只是关掉 graph 后整体慢了一倍、两个线程 GPU 工作的重叠方式变了，现有结果不足以区分，也不足以区分 (a) 和 (b)。
+- **[假设]** core dump 模式下不崩，可能是驱动为了准确定位异常，不让不同 stream 的 kernel 并发执行；这与"需要并发"一致，但没有验证。
+- 为什么拿不到出错的 kernel：core dump 模式下不崩；内核日志里的 Xid 31 会写明出错地址、读还是写、出错的是计算核还是拷贝引擎，但计算节点 `dmesg_restrict=1`，普通用户读不到；compute-sanitizer 会把 kernel 拖慢几十倍，竞争条件就不出现了。
 
 - 对结果的影响：f2 的开环部分、x7c 第一次运行的并发 8 及以上和两段回放、f5 的 1.5 请求/秒及以上没有有效数据。Job 409712 使用的执行器版本不检测服务中途退出，这两次运行在编排器里都标为成功；执行器已经修复（第 19 节），分析时以每个请求的错误记录为准。
 
