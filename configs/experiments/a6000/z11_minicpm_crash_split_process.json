@@ -1,0 +1,48 @@
+{
+  "runtime_profile": "unicorn",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "assets": "synthetic-v1",
+  "experiment_id": "z11_minicpm_crash_split_process",
+  "description": "定位语音负载下的 CUDA illegal memory access（第 17 节：九次崩溃，退出的都是 talker 进程）。负载与 z4 相同：W3b 开环泊松到达 1.5 请求/秒，每 2 分钟一档，最多 8 档。服务启动时开启 GPU core dump：出现 GPU 异常时驱动把出错的 kernel 和位置写进实验目录，用 cuda-gdb 读取；只保留 kernel 信息，不保存显存内容，也不生成 CPU core dump，以免文件过大。与 CUDA_LAUNCH_BLOCKING 不同，它不改变执行时序。把 code2wav 放到单独的进程（`--code2wav.process code2wav`），检验崩溃是否来自 talker 进程内两个线程（talker 与 code2wav）之间的竞争；CUDA graph 和 torch.compile 保持默认开启。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [
+        "--code2wav.process",
+        "code2wav"
+      ],
+      "ready_timeout_s": 2400,
+      "prefix": "env CUDA_ENABLE_COREDUMP_ON_EXCEPTION=1 CUDA_ENABLE_CPU_COREDUMP_ON_EXCEPTION=0 CUDA_ENABLE_LIGHTWEIGHT_COREDUMP=1 CUDA_COREDUMP_GENERATION_FLAGS=skip_global_memory,skip_shared_memory,skip_local_memory CUDA_COREDUMP_SHOW_PROGRESS=1 CUDA_COREDUMP_FILE={exp_dir}/cuda_core_%h_%p_%t"
+    }
+  ],
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "open_loop",
+      "name": "w3b_soak",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "rates_rps": [
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5
+      ],
+      "requests_per_rate": 180,
+      "max_error_rate": 0.2
+    }
+  ]
+}
