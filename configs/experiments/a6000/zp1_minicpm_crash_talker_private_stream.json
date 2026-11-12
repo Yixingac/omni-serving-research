@@ -1,0 +1,45 @@
+{
+  "runtime_profile": "unicorn_diag",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "assets": "synthetic-v1",
+  "experiment_id": "zp1_minicpm_crash_talker_private_stream",
+  "description": "验证崩溃根因（第 17 节）。代码阅读发现：talker 线程的所有 GPU 工作都在默认队列（stream 0）上；code2wav 的 HiFT 为了绕开 cuFFT 表上传的问题，每次 STFT/iSTFT 都切到 stream 0，并双向等待（token2wav/hift.py:38-50）。这里用 sglang-omni 的诊断副本（同一提交 520b49ee，加 configs/runtime/patches/sglang_omni_diag_private_stream.patch），只让 talker 的调度线程改用一条独立的 CUDA stream；同一进程、CUDA graph 和 torch.compile 都保持默认。负载与 z4 相同。若不再崩溃，说明共用 stream 0 是触发条件。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [],
+      "ready_timeout_s": 2400,
+      "prefix": "env SGLANG_OMNI_DIAG_PRIVATE_STREAM_STAGES=talker"
+    }
+  ],
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "open_loop",
+      "name": "w3b_soak",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "rates_rps": [
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5
+      ],
+      "requests_per_rate": 180,
+      "max_error_rate": 0.2
+    }
+  ]
+}

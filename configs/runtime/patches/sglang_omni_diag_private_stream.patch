@@ -1,0 +1,27 @@
+diff --git a/sglang_omni/pipeline/stage/runtime.py b/sglang_omni/pipeline/stage/runtime.py
+index e8067693..6166a98c 100644
+--- a/sglang_omni/pipeline/stage/runtime.py
++++ b/sglang_omni/pipeline/stage/runtime.py
+@@ -267,6 +267,22 @@ class Stage:
+                         else:
+                             pass
+                         self.scheduler.warm_up_serving_thread()
++                        # DIAG (omni-serving-research, 2026-11-12): optionally run this stage's
++                        # scheduler thread on a private CUDA stream instead of the legacy default
++                        # stream, to test whether sharing stream 0 with code2wav's HiFT cuFFT hop
++                        # triggers the illegal memory access. Off unless the env var names this stage.
++                        import os as _diag_os
++                        _diag_stages = _diag_os.environ.get("SGLANG_OMNI_DIAG_PRIVATE_STREAM_STAGES", "")
++                        if self.name in {x.strip() for x in _diag_stages.split(",") if x.strip()}:
++                            import torch as _diag_torch
++                            _diag_stream = _diag_torch.cuda.Stream()
++                            _diag_stream.wait_stream(_diag_torch.cuda.current_stream())
++                            _diag_torch.cuda.set_stream(_diag_stream)
++                            logger.info(
++                                "DIAG: stage %s scheduler thread now runs on private CUDA stream %s",
++                                self.name,
++                                _diag_stream,
++                            )
+                     finally:
+                         serving_thread_ready.set()
+                     self.scheduler.start()
