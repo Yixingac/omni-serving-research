@@ -12,6 +12,7 @@
 # 作业已经在运行（RUNNING）：不更新代码（正在跑的实验不能换代码），只把计划写进
 #   RUN_DIR/orchestrator/plan.d/NAME.json，编排器会追加其中的新实验（已有的 experiment_id 不会被改写）。
 #   计划里新加的配置文件必须已经在 Unicorn 的检出里；否则先按实验间隙手动更新代码，并在 code_state.txt 里记一笔。
+#   如果作业开始时没有 autostart_plan.json，就没有编排器在读 plan.d：脚本拒绝写入（退出码 4），需要在作业里手动启动编排器。
 # 其他状态（已结束、取消）：什么都不做，退出码 3。
 set -euo pipefail
 jobid="${1:?usage: place_plan.sh JOBID RUN_DIR PLAN [NAME]}"
@@ -52,6 +53,14 @@ case "$state" in
     echo "placed $run_dir/autostart_plan.json (code $new)"
     ;;
   RUNNING)
+    if [[ ! -f "$run_dir/orchestrator.log" ]]; then
+      # The job started without autostart_plan.json, so run_all.sh went straight to holding the GPUs and no
+      # orchestrator is watching plan.d. Start one inside the job instead (from tmux on the login node):
+      #   srun --jobid=JOBID --overlap --gres=none -c1 --mem=4G python3 -m omni_research.orchestration.cli run \
+      #     --plan PLAN --run-dir RUN_DIR/orchestrator --keep-alive --stop-file RUN_DIR/STOP
+      echo "job $jobid runs without an orchestrator (no $run_dir/orchestrator.log); plan.d would never be read" >&2
+      exit 4
+    fi
     check_plan "$plan"
     mkdir -p "$run_dir/orchestrator/plan.d"
     target="$run_dir/orchestrator/plan.d/$name.json"
