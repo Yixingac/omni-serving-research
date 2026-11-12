@@ -1,0 +1,41 @@
+{
+  "runtime_profile": "unicorn",
+  "hardware_label": "a6000x1",
+  "seed": 1,
+  "experiment_id": "x3_minicpm_speech_1gpu_rep2",
+  "description": "重复运行（第二次，与第一次的运行顺序相反）：语音输出基线：MiniCPM-o 4.5 默认语音流水线（所有阶段在一张卡上），W3b 文本→语音、W3 语音→语音、W1 文本请求，关闭 profiler。",
+  "assets": "synthetic-v1",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [],
+      "ready_timeout_s": 2400
+    }
+  ],
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "closed_loop",
+      "name": "w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "concurrency": [
+        1,
+        2,
+        4,
+        8,
+        16
+      ],
+      "requests_per_level": 32,
+      "stop_if_p50_e2e_above_s": 90
+    }
+  ]
+}

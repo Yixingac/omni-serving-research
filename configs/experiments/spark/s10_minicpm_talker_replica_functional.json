@@ -1,0 +1,21 @@
+{
+  "runtime_profile": "spark",
+  "hardware_label": "spark_gb10",
+  "seed": 0,
+  "experiment_id": "s10_minicpm_talker_replica_functional",
+  "description": "功能测试，不是性能实验。x7c（只复制 talker）在 A6000 上因 YAML 缺 model_path 启动失败；修好后在 Spark 上用同类配置（两个 talker 副本都在 GPU 0）检查服务能否启动、请求能否完成、两个副本是否都接到请求。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5_spark",
+      "gpus": [0],
+      "ready_timeout_s": 3600,
+      "args": ["--config", "{research_repo}/configs/models/minicpm_o_4_5_talker_replica2_samegpu.yaml"]
+    }
+  ],
+  "phases": [
+    {"kind": "smoke", "name": "smoke_w3b", "workload": "configs/workloads/w3b_text_speech.json", "requests": 2},
+    {"kind": "closed_loop", "name": "w3b_small", "workload": "configs/workloads/w3b_text_speech.json",
+     "concurrency": [1, 4], "requests_per_level": 8, "server_events": true}
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "runtime_profile": "unicorn",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "experiment_id": "x8_minicpm_profiled_1gpu",
+  "description": "开启服务端请求级事件记录（request event recorder），得到各阶段排队与执行时间；与 x3 相同负载对比，评估记录本身的开销。 最后加一个短的 torch profiler 窗口（并发 4），得到 kernel 级的 GPU 忙闲区间；这一段不作为延迟基线。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [],
+      "ready_timeout_s": 2400
+    }
+  ],
+  "phases": [
+    {
+      "kind": "closed_loop",
+      "name": "w3b_events",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "concurrency": [
+        1,
+        4,
+        16
+      ],
+      "requests_per_level": 32,
+      "server_events": true
+    },
+    {
+      "kind": "closed_loop",
+      "name": "w3b_noevents",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "concurrency": [
+        1,
+        4,
+        16
+      ],
+      "requests_per_level": 32
+    },
+    {
+      "kind": "closed_loop",
+      "name": "w3b_torchprof",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "concurrency": [
+        4
+      ],
+      "requests_per_level": 8,
+      "warmup": 2,
+      "torch_profile": true
+    }
+  ]
+}

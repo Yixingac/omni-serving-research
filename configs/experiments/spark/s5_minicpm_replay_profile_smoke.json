@@ -1,0 +1,55 @@
+{
+  "runtime_profile": "spark",
+  "hardware_label": "spark_gb10",
+  "seed": 0,
+  "experiment_id": "s5_minicpm_replay_profile_smoke",
+  "description": "Spark GB10 功能验证：用 s4 录下的真实 Agent trace 做请求级与依赖感知回放；用 SGLang-Omni 的 torch profiler 采一小段 kernel 时间线并解析 GPU 忙闲区间。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5_spark",
+      "gpus": [
+        0
+      ],
+      "ready_timeout_s": 3600
+    }
+  ],
+  "assets": "synthetic-spark",
+  "phases": [
+    {
+      "kind": "replay",
+      "name": "replay_dep",
+      "trace": "latest/s4_minicpm_agents_smoke/raw/agent_trace_agents_text.jsonl",
+      "mode": "dependency",
+      "speed": 1.0,
+      "session_copies": 1
+    },
+    {
+      "kind": "replay",
+      "name": "replay_req",
+      "trace": "latest/s4_minicpm_agents_smoke/raw/agent_trace_agents_text.jsonl",
+      "mode": "request",
+      "speed": 1.0,
+      "session_copies": 1
+    },
+    {
+      "kind": "replay",
+      "name": "replay_voice_dep",
+      "trace": "latest/s4_minicpm_agents_smoke/raw/agent_trace_agents_voice.jsonl",
+      "mode": "dependency",
+      "speed": 1.0,
+      "session_copies": 1
+    },
+    {
+      "kind": "closed_loop",
+      "name": "w3b_torchprof",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "concurrency": [
+        2
+      ],
+      "requests_per_level": 4,
+      "warmup": 1,
+      "torch_profile": true
+    }
+  ]
+}

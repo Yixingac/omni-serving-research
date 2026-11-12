@@ -1,0 +1,56 @@
+{
+  "runtime_profile": "spark",
+  "hardware_label": "spark_gb10",
+  "seed": 0,
+  "experiment_id": "s9_agent_vs_closedloop_pilot",
+  "description": "Spark GB10 内部对照（试点）：同一服务、相同并发 4 下，比较闭环压测与 Agent 会话（无/有模拟工具延迟）的 GPU 采样利用率和空闲比例，观察请求依赖和工具等待带来的 GPU 空闲。只用于检验分析方法，结论不推广到 A6000。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5_spark",
+      "gpus": [
+        0
+      ],
+      "args": [
+        "--text-only"
+      ],
+      "ready_timeout_s": 3600
+    }
+  ],
+  "phases": [
+    {
+      "kind": "closed_loop",
+      "name": "closed_w1_c4",
+      "workload": "configs/workloads/w1_text_chat.json",
+      "concurrency": [
+        4
+      ],
+      "requests_per_level": 32,
+      "warmup": 4
+    },
+    {
+      "kind": "agent",
+      "name": "agents_c4_notool",
+      "sessions": 24,
+      "concurrency": 4,
+      "seed": 21,
+      "agent": {
+        "max_steps": 5
+      }
+    },
+    {
+      "kind": "agent",
+      "name": "agents_c4_toollat",
+      "sessions": 24,
+      "concurrency": 4,
+      "seed": 21,
+      "agent": {
+        "max_steps": 5
+      },
+      "tool_latency": [
+        0.5,
+        0.5
+      ]
+    }
+  ]
+}

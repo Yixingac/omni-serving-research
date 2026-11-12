@@ -1,0 +1,43 @@
+{
+  "runtime_profile": "spark",
+  "hardware_label": "spark_gb10",
+  "seed": 0,
+  "experiment_id": "s8_minicpm_nsys_smoke",
+  "description": "Spark GB10 功能验证：用 Nsight Systems 采集 MiniCPM-o text-only 服务进程的一段 CUDA 时间线（服务就绪后约 40 秒），导出 SQLite，用 analysis.nsys 计算 GPU 忙闲区间。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5_spark",
+      "gpus": [
+        0
+      ],
+      "args": [
+        "--text-only"
+      ],
+      "ready_timeout_s": 3600,
+      "prefix": "/usr/local/bin/nsys profile -t cuda,nvtx --sample=none --delay=200 --duration=40 --kill=none --force-overwrite=true -o {exp_dir}/profiling/nsys_s0"
+    }
+  ],
+  "phases": [
+    {
+      "kind": "idle",
+      "name": "align",
+      "seconds": 25
+    },
+    {
+      "kind": "closed_loop",
+      "name": "w1_nsys",
+      "workload": "configs/workloads/w1_text_chat.json",
+      "concurrency": [
+        4
+      ],
+      "requests_per_level": 28,
+      "warmup": 0
+    },
+    {
+      "kind": "idle",
+      "name": "flush",
+      "seconds": 30
+    }
+  ]
+}

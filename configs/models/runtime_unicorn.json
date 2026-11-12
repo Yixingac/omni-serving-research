@@ -1,0 +1,19 @@
+{
+  "_comment": "Unicorn A6000 运行环境：sglang-omni 520b49ee（= 上游 1845546e + 两个 pre-Hopper 修复），sglang v0.5.21。路径来自已验证的 sglang-omni-learning 环境。",
+  "env_script": "~/workspace/sglang-omni-learning/scripts/env-unicorn.sh",
+  "cwd": "~/workspace/sglang-omni-learning/repos/sglang-omni",
+  "python": "~/workspace/sglang-omni-learning/.venv/bin/python",
+  "ffmpeg": "~/workspace/sglang-omni-learning/.conda-runtime/bin/ffmpeg",
+  "warm_cache_script": "~/workspace/sglang-omni-learning/scripts/warm-cache.sh",
+  "required_imports": [
+    "torch",
+    "sglang",
+    "sglang_omni",
+    "onnx",
+    "onnxruntime",
+    "einops",
+    "aiohttp",
+    "psutil"
+  ],
+  "_comment_imports": "启动服务前检查这些模块能否导入；2026-11-11 发现两套环境都缺 MiniCPM-o 的可选依赖 onnx（extra 'minicpm-o'），已补装。"
+}

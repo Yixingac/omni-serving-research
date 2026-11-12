@@ -1,0 +1,46 @@
+{
+  "runtime_profile": "unicorn",
+  "hardware_label": "a6000x3",
+  "seed": 0,
+  "experiment_id": "x7f_minicpm_3gpu_split_talker2",
+  "description": "3 卡：thinker 单独一张卡，talker+code2wav 复制两份、各占一张卡。x7e（2 卡拆分）在并发 32 时瓶颈转到 talker 那张卡上，这里检验再加一张 talker 卡能否抬高上限。开启服务端事件记录，并发 8–64。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0,
+        1,
+        2
+      ],
+      "args": [
+        "--config",
+        "{research_repo}/configs/models/minicpm_o_4_5_talker_replica2_split3.yaml"
+      ],
+      "ready_timeout_s": 2400
+    }
+  ],
+  "assets": "synthetic-v1",
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "closed_loop",
+      "name": "w3b_events",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "concurrency": [
+        8,
+        16,
+        32,
+        64
+      ],
+      "requests_per_level": 48,
+      "server_events": true,
+      "stop_if_p50_e2e_above_s": 90
+    }
+  ]
+}

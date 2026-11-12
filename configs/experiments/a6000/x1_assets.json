@@ -1,0 +1,44 @@
+{
+  "runtime_profile": "unicorn",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "experiment_id": "x1_assets",
+  "description": "生成合成输入素材：Qwen3-TTS 合成语音提问（答案可核对）和朗读段落；程序生成数圆圈视频。Qwen3-TTS 只是素材工具，不是被测系统。",
+  "servers": [
+    {
+      "name": "tts",
+      "model": "qwen3_tts_0_6b",
+      "gpus": [
+        0
+      ],
+      "args": [
+        "--config",
+        "examples/configs/qwen3_tts_0_6b.yaml",
+        "--model-name",
+        "Qwen/Qwen3-TTS-12Hz-0.6B-Base"
+      ],
+      "ready_timeout_s": 2400
+    }
+  ],
+  "phases": [
+    {
+      "kind": "generate_assets",
+      "name": "assets",
+      "pool": "synthetic-v1",
+      "question_tasks": 24,
+      "task_seed": 11,
+      "kb_seed": 7,
+      "passages": 6,
+      "tts_model": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+      "source_label": "synthetic:tts:Qwen/Qwen3-TTS-12Hz-0.6B-Base@5d83992",
+      "tts_extra": {
+        "references": [
+          {
+            "audio_path": "{sglang_omni_repo}/tests/data/query_to_cars.wav",
+            "text": "How many cars are there in the picture?"
+          }
+        ]
+      }
+    }
+  ]
+}

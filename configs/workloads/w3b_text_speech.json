@@ -1,0 +1,9 @@
+{"workload_id": "W3b_text_speech", "description": "文本提问，文本+语音回答。没有音频编码器开销，用来单独看语音生成阶段。",
+ "input_modalities": ["text"], "output_modalities": ["text", "audio"], "max_tokens": 64, "stream": true, "temperature": 0.0,
+ "prompt": {"kind": "choice", "texts": [
+   "Explain in two sentences why streaming speech output needs a buffer on the client.",
+   "Give two short tips for keeping a server room cool.",
+   "In two sentences, what does a load balancer do?",
+   "Describe a sunrise over the ocean in two short sentences.",
+   "In two sentences, why do we measure tail latency and not only the average?",
+   "Give a two-sentence summary of how a bicycle gear works."]}}

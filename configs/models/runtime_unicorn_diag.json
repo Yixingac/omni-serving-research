@@ -1,0 +1,19 @@
+{
+  "_comment": "与 runtime_unicorn.json 相同，只是从 sglang-omni 的诊断副本启动服务（git worktree，同一提交 520b49ee，只用于验证崩溃根因的最小补丁，不影响共享运行环境）。",
+  "env_script": "~/workspace/sglang-omni-learning/scripts/env-unicorn.sh",
+  "cwd": "~/workspace/sglang-omni-learning/repos/sglang-omni-diag",
+  "python": "~/workspace/sglang-omni-learning/.venv/bin/python",
+  "ffmpeg": "~/workspace/sglang-omni-learning/.conda-runtime/bin/ffmpeg",
+  "warm_cache_script": "~/workspace/sglang-omni-learning/scripts/warm-cache.sh",
+  "required_imports": [
+    "torch",
+    "sglang",
+    "sglang_omni",
+    "onnx",
+    "onnxruntime",
+    "einops",
+    "aiohttp",
+    "psutil"
+  ],
+  "_comment_imports": "启动服务前检查这些模块能否导入；2026-11-11 发现两套环境都缺 MiniCPM-o 的可选依赖 onnx（extra 'minicpm-o'），已补装。"
+}

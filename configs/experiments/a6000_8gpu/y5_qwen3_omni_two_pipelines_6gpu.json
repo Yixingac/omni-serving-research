@@ -1,0 +1,81 @@
+{
+  "runtime_profile": "unicorn",
+  "seed": 0,
+  "assets": "synthetic-v1",
+  "experiment_id": "y5_qwen3_omni_two_pipelines_6gpu",
+  "hardware_label": "a6000x6",
+  "description": "Qwen3-Omni 扩展：两条完整流水线（每条 thinker TP=2 + talker，3 卡），客户端路由。与 Job 409712 的单条流水线（x9）对比。",
+  "servers": [
+    {
+      "name": "p0",
+      "model": "qwen3_omni_30b_a3b",
+      "gpus": [
+        0,
+        1,
+        2
+      ],
+      "args": [
+        "--model-name",
+        "qwen3-omni",
+        "--thinker.tp_size",
+        "2",
+        "--thinker.gpu",
+        "[0, 1]",
+        "--talker_ar.gpu",
+        "2",
+        "--thinker.engine.disable_custom_all_reduce",
+        "true"
+      ],
+      "ready_timeout_s": 3600,
+      "env": {
+        "NCCL_P2P_DISABLE": "1"
+      }
+    },
+    {
+      "name": "p1",
+      "model": "qwen3_omni_30b_a3b",
+      "gpus": [
+        3,
+        4,
+        5
+      ],
+      "args": [
+        "--model-name",
+        "qwen3-omni",
+        "--thinker.tp_size",
+        "2",
+        "--thinker.gpu",
+        "[0, 1]",
+        "--talker_ar.gpu",
+        "2",
+        "--thinker.engine.disable_custom_all_reduce",
+        "true"
+      ],
+      "ready_timeout_s": 3600,
+      "env": {
+        "NCCL_P2P_DISABLE": "1"
+      }
+    }
+  ],
+  "routing": "least_outstanding",
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "closed_loop",
+      "name": "w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "concurrency": [
+        2,
+        4,
+        8,
+        16
+      ],
+      "requests_per_level": 48
+    }
+  ]
+}

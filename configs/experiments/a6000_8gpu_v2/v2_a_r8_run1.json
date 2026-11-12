@@ -1,0 +1,160 @@
+{
+ "runtime_profile": "unicorn",
+ "hardware_label": "a6000x8",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "v2_a_r8_run1",
+ "description": "plan v2 A（8 卡，第 1 次）：8 个完整副本（每卡一个服务，code2wav 单独进程），客户端按在途请求最少路由。W3b 闭环并发 16–256（每档 max(96, 2×并发) 个请求，开事件记录），再按闭环测得的容量做开环泊松 50%, 75%, 90%, 100%, 120%，每档 2 分钟。最后在并发 64 开一个 torch profiler 窗口。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "r0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r1",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    1
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r2",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    2
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r3",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    3
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r4",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    4
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r5",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    5
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r6",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    6
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r7",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    7
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_closed",
+   "concurrency": [
+    16,
+    32,
+    64,
+    128,
+    256
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true,
+   "stop_if_p50_e2e_above_s": 90,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_open",
+   "capacity_from": "w3b_closed",
+   "capacity_fractions": [
+    0.5,
+    0.75,
+    0.9,
+    1.0,
+    1.2
+   ],
+   "duration_per_rate_s": 120,
+   "min_requests_per_rate": 96,
+   "max_error_rate": 0.2,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_torch_profile_c64",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    64
+   ],
+   "requests_per_level": 64,
+   "warmup": 16,
+   "torch_profile": true
+  }
+ ],
+ "routing": "least_outstanding"
+}

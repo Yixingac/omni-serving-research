@@ -1,0 +1,75 @@
+{
+  "runtime_profile": "unicorn",
+  "hardware_label": "a6000x3",
+  "seed": 0,
+  "experiment_id": "x9_qwen3_omni_3gpu",
+  "description": "Qwen3-Omni-30B-A3B BF16 语音流水线：thinker TP=2（GPU 0,1）+ talker（GPU 2）。为稳妥起见关闭 NCCL P2P 和自定义 all-reduce（PCIe 节点上曾挂起）。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "qwen3_omni_30b_a3b",
+      "gpus": [
+        0,
+        1,
+        2
+      ],
+      "args": [
+        "--model-name",
+        "qwen3-omni",
+        "--thinker.tp_size",
+        "2",
+        "--thinker.gpu",
+        "[0, 1]",
+        "--talker_ar.gpu",
+        "2",
+        "--thinker.engine.disable_custom_all_reduce",
+        "true",
+        "--thinker.engine.mem_fraction_static",
+        "0.80"
+      ],
+      "ready_timeout_s": 3600,
+      "env": {
+        "NCCL_P2P_DISABLE": "1",
+        "SGLANG_OMNI_STARTUP_TIMEOUT": "2400"
+      }
+    }
+  ],
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w1",
+      "workload": "configs/workloads/w1_text_chat.json",
+      "requests": 2
+    },
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "closed_loop",
+      "name": "w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "concurrency": [
+        1,
+        2,
+        4,
+        8
+      ],
+      "requests_per_level": 24,
+      "stop_if_p50_e2e_above_s": 120
+    },
+    {
+      "kind": "closed_loop",
+      "name": "w1",
+      "workload": "configs/workloads/w1_text_chat.json",
+      "concurrency": [
+        1,
+        4,
+        16
+      ],
+      "requests_per_level": 32
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+--- a/sglang/srt/layers/attention/flashinfer_backend.py
++++ b/sglang/srt/layers/attention/flashinfer_backend.py
+@@ -174,6 +174,45 @@
+ # This is used to remove some host-to-device copy overhead.
+ global_override_indptr_cpu = None
+ 
++# DIAG (omni-serving-research, 2026-11-12): optional guard for fast_decode_plan's page-locked plan
++# buffer. Each call rewrites the wrapper's pinned int workspace on the host and issues a non-blocking
++# H2D copy; if the previous copy has not executed yet, the previous step would read the new plan.
++# SGLANG_DIAG_PLAN_GUARD=1: record an event after each plan and, before re-planning the same wrapper,
++# count and wait while it is still pending. =count: count only, never wait. Unset: no effect.
++_DIAG_PLAN_GUARD = os.environ.get("SGLANG_DIAG_PLAN_GUARD", "")
++_DIAG_PLAN_STATS = {"calls": 0, "pending": 0}
++_diag_logger = logging.getLogger("sglang.diag.plan_guard")
++
++
++def _diag_plan_guard_before(wrapper) -> None:
++    if not _DIAG_PLAN_GUARD:
++        return
++    _DIAG_PLAN_STATS["calls"] += 1
++    ev = getattr(wrapper, "_diag_plan_event", None)
++    if ev is not None and not ev.query():
++        _DIAG_PLAN_STATS["pending"] += 1
++        n = _DIAG_PLAN_STATS["pending"]
++        if n <= 300 or n % 1000 == 0:
++            _diag_logger.warning(
++                "DIAG plan guard: previous plan copy still pending before re-plan (pending=%d calls=%d mode=%s)",
++                n, _DIAG_PLAN_STATS["calls"], _DIAG_PLAN_GUARD,
++            )
++        if _DIAG_PLAN_GUARD == "1":
++            ev.synchronize()
++    if _DIAG_PLAN_STATS["calls"] % 5000 == 0:
++        _diag_logger.warning("DIAG plan guard: calls=%d pending=%d mode=%s",
++                             _DIAG_PLAN_STATS["calls"], _DIAG_PLAN_STATS["pending"], _DIAG_PLAN_GUARD)
++
++
++def _diag_plan_guard_after(wrapper) -> None:
++    if not _DIAG_PLAN_GUARD:
++        return
++    ev = getattr(wrapper, "_diag_plan_event", None)
++    if ev is None:
++        ev = torch.cuda.Event()
++        wrapper._diag_plan_event = ev
++    ev.record()
++
+ 
+ def fast_prefill_plan(
+     self,
+@@ -1776,6 +1815,7 @@
+ 
+         if wrapper_uses_fast_decode_plan:
+             # When begin_forward is replaced with fast_decode_plan, pass global_override_indptr_cpu
++            _diag_plan_guard_before(wrapper)
+             wrapper.begin_forward(
+                 kv_indptr,
+                 kv_indices,
+@@ -1793,6 +1833,7 @@
+                 ),
+                 global_override_indptr_cpu=global_override_indptr_cpu,
+             )
++            _diag_plan_guard_after(wrapper)
+         else:
+             # When using original begin_forward, don't pass global_override_indptr_cpu
+             wrapper.begin_forward(

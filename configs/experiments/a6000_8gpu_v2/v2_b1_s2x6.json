@@ -1,0 +1,97 @@
+{
+ "runtime_profile": "unicorn",
+ "hardware_label": "a6000x8",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "v2_b1_s2x6",
+ "description": "plan v2 B1：一个服务：2 个 thinker（pipeline）副本 + 6 个 talker 副本，code2wav 单独进程、与 talker 同卡上的混合负载（40% W1 文本对话、40% W3b 文本提问语音回答、20% W2 语音提问文本回答，每个请求按权重抽取），闭环并发 16–256，再按测得容量开环 50%–120%。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "s0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "args": [
+    "--config",
+    "{research_repo}/configs/models/minicpm_o_4_5_v2_s2x6.yaml"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "closed_loop",
+   "name": "mix_closed",
+   "concurrency": [
+    16,
+    32,
+    64,
+    128,
+    256
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true,
+   "stop_if_p50_e2e_above_s": 90,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w1_text_chat.json",
+     "weight": 0.4
+    },
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.4
+    },
+    {
+     "workload": "configs/workloads/w2_audio_text.json",
+     "weight": 0.2
+    }
+   ]
+  },
+  {
+   "kind": "open_loop",
+   "name": "mix_open",
+   "capacity_from": "mix_closed",
+   "capacity_fractions": [
+    0.5,
+    0.75,
+    0.9,
+    1.0,
+    1.2
+   ],
+   "duration_per_rate_s": 120,
+   "min_requests_per_rate": 96,
+   "max_error_rate": 0.2,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w1_text_chat.json",
+     "weight": 0.4
+    },
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.4
+    },
+    {
+     "workload": "configs/workloads/w2_audio_text.json",
+     "weight": 0.2
+    }
+   ]
+  }
+ ]
+}

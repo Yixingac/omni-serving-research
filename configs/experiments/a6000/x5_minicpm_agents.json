@@ -1,0 +1,84 @@
+{
+  "runtime_profile": "unicorn",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "experiment_id": "x5_minicpm_agents",
+  "description": "收集真实 Agent trace：带工具调用的合成任务（答案可核对），文本输入与语音输入两类，不同并发；一组开启服务端请求事件记录。",
+  "assets": "synthetic-v1",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [],
+      "ready_timeout_s": 2400
+    }
+  ],
+  "phases": [
+    {
+      "kind": "agent",
+      "name": "agents_text_c1",
+      "sessions": 12,
+      "concurrency": 1,
+      "seed": 1,
+      "agent": {
+        "max_steps": 5
+      }
+    },
+    {
+      "kind": "agent",
+      "name": "agents_text_c4",
+      "sessions": 24,
+      "concurrency": 4,
+      "seed": 2,
+      "agent": {
+        "max_steps": 5
+      }
+    },
+    {
+      "kind": "agent",
+      "name": "agents_text_c8_toollat",
+      "sessions": 24,
+      "concurrency": 8,
+      "seed": 3,
+      "agent": {
+        "max_steps": 5
+      },
+      "tool_latency": [
+        0.3,
+        0.5
+      ]
+    },
+    {
+      "kind": "agent",
+      "name": "agents_voice_c4",
+      "sessions": 16,
+      "concurrency": 4,
+      "seed": 11,
+      "agent": {
+        "max_steps": 5,
+        "input_modality": "audio",
+        "speak_final": true,
+        "think_time_s": [
+          2.0,
+          0.5
+        ]
+      }
+    },
+    {
+      "kind": "agent",
+      "name": "agents_voice_c4_events",
+      "sessions": 8,
+      "concurrency": 4,
+      "seed": 11,
+      "server_events": true,
+      "agent": {
+        "max_steps": 5,
+        "input_modality": "audio",
+        "speak_final": true
+      }
+    }
+  ]
+}

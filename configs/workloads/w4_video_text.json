@@ -1,0 +1,4 @@
+{"workload_id": "W4_video_text", "description": "合成视频（移动的彩色圆，8 fps，640x360）加文本问题，回答圆的个数。时长由 video.target_s 选择。",
+ "input_modalities": ["video", "text"], "output_modalities": ["text"], "max_tokens": 16, "stream": true, "temperature": 0.0,
+ "video": {"tag": "count_circles", "target_s": 5},
+ "prompt": {"kind": "asset_question"}}

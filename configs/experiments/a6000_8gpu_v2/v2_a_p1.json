@@ -1,0 +1,69 @@
+{
+ "runtime_profile": "unicorn",
+ "hardware_label": "a6000x2",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "v2_a_p1",
+ "description": "plan v2 A（2 卡，第 1 次）：1 个拆分服务（每个 1 张 thinker 卡 + 1 张 talker 卡，code2wav 单独进程），客户端按在途请求最少路由。W3b 闭环并发 4–64（每档 max(96, 2×并发) 个请求，开事件记录），再按闭环测得的容量做开环泊松 50%, 75%, 90%, 100%, 120%，每档 2 分钟。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "p0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1
+   ],
+   "args": [
+    "--talker.gpu",
+    "1",
+    "--code2wav.gpu",
+    "1",
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_closed",
+   "concurrency": [
+    4,
+    8,
+    16,
+    32,
+    64
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true,
+   "stop_if_p50_e2e_above_s": 90,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_open",
+   "capacity_from": "w3b_closed",
+   "capacity_fractions": [
+    0.5,
+    0.75,
+    0.9,
+    1.0,
+    1.2
+   ],
+   "duration_per_rate_s": 120,
+   "min_requests_per_rate": 96,
+   "max_error_rate": 0.2,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  }
+ ]
+}

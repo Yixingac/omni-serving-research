@@ -1,0 +1,103 @@
+{
+  "_comment": "2026-11-11 16:40 追加：实验比预估快，按 x2/x3 的结果加容量刻画、更大的 Agent 采集与回放、放置对比的重复（逆序）。优先级低于 x9。",
+  "experiments": [
+    {
+      "experiment_id": "f1_minicpm_text_saturation",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000/f1_minicpm_text_saturation.json",
+      "priority": 45,
+      "required_gpus": 1,
+      "required_cpus": 8,
+      "required_memory_gb": 90,
+      "dependencies": [],
+      "estimated_duration_s": 1500,
+      "timeout_s": 4500,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "f2_minicpm_speech_saturation",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000/f2_minicpm_speech_saturation.json",
+      "priority": 44,
+      "required_gpus": 1,
+      "required_cpus": 8,
+      "required_memory_gb": 90,
+      "dependencies": [],
+      "estimated_duration_s": 1800,
+      "timeout_s": 5400,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "f3_minicpm_agents_large",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000/f3_minicpm_agents_large.json",
+      "priority": 43,
+      "required_gpus": 1,
+      "required_cpus": 8,
+      "required_memory_gb": 90,
+      "dependencies": [],
+      "estimated_duration_s": 1500,
+      "timeout_s": 4500,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "f4_minicpm_replay_large",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000/f4_minicpm_replay_large.json",
+      "priority": 42,
+      "required_gpus": 1,
+      "required_cpus": 8,
+      "required_memory_gb": 90,
+      "dependencies": [
+        "f3_minicpm_agents_large"
+      ],
+      "estimated_duration_s": 1800,
+      "timeout_s": 5400,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "x7c_minicpm_2gpu_talker_replica_rep2",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000/x7c_minicpm_2gpu_talker_replica_rep2.json",
+      "priority": 41,
+      "required_gpus": 2,
+      "required_cpus": 16,
+      "required_memory_gb": 180,
+      "dependencies": [],
+      "estimated_duration_s": 2400,
+      "timeout_s": 7200,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "x7b_minicpm_2gpu_disagg_rep2",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000/x7b_minicpm_2gpu_disagg_rep2.json",
+      "priority": 40,
+      "required_gpus": 2,
+      "required_cpus": 16,
+      "required_memory_gb": 180,
+      "dependencies": [],
+      "estimated_duration_s": 2400,
+      "timeout_s": 7200,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "x7a_minicpm_2gpu_two_replicas_rep2",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000/x7a_minicpm_2gpu_two_replicas_rep2.json",
+      "priority": 39,
+      "required_gpus": 2,
+      "required_cpus": 16,
+      "required_memory_gb": 180,
+      "dependencies": [],
+      "estimated_duration_s": 2400,
+      "timeout_s": 7200,
+      "max_retries": 1
+    },
+    {
+      "experiment_id": "x3_minicpm_speech_1gpu_rep2",
+      "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000/x3_minicpm_speech_1gpu_rep2.json",
+      "priority": 38,
+      "required_gpus": 1,
+      "required_cpus": 8,
+      "required_memory_gb": 90,
+      "dependencies": [],
+      "estimated_duration_s": 1200,
+      "timeout_s": 3600,
+      "max_retries": 1
+    }
+  ]
+}
