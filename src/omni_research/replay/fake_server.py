@@ -25,7 +25,8 @@ from pathlib import Path
 from .backends import silence_wav
 
 
-def build_app(startup_s: float, token_ms: float, agent_json: bool, die_after: int | None = None):  # noqa: ANN201
+def build_app(startup_s: float, token_ms: float, agent_json: bool, die_after: int | None = None,  # noqa: ANN201
+              die_marker: str | None = None):
     from aiohttp import web
 
     t_ready = time.monotonic() + startup_s
@@ -45,9 +46,12 @@ def build_app(startup_s: float, token_ms: float, agent_json: bool, die_after: in
 
     async def chat(request):  # noqa: ANN001
         state["chats"] += 1
-        if die_after is not None and state["chats"] > die_after:
+        if die_after is not None and state["chats"] > die_after and not (die_marker and os.path.exists(die_marker)):
             # Like a stage process dying under load (f2, 2026-11-11): the whole server goes away mid-run.
+            # With die_marker the server dies only once: a restarted server finds the marker and keeps going.
             print(f"fake server: exiting after {die_after} chat requests", flush=True)
+            if die_marker:
+                Path(die_marker).write_text("died\n")
             os._exit(134)
         body = await request.json()
         rid = body.get("request_id") or "anon"
@@ -133,8 +137,9 @@ def main() -> None:
     p.add_argument("--token-ms", type=float, default=5.0)
     p.add_argument("--agent-json", action="store_true", help="answer the agent protocol (tool call, then final)")
     p.add_argument("--die-after", type=int, default=None, help="exit abruptly when this many chat requests have been served")
+    p.add_argument("--die-marker", default=None, help="die only if this file is absent, and create it when dying (die once across restarts)")
     a = p.parse_args()
-    web.run_app(build_app(a.startup_s, a.token_ms, a.agent_json, a.die_after), host="127.0.0.1", port=a.port, print=None)
+    web.run_app(build_app(a.startup_s, a.token_ms, a.agent_json, a.die_after, a.die_marker), host="127.0.0.1", port=a.port, print=None)
 
 
 if __name__ == "__main__":

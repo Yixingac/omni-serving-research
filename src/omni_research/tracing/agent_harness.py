@@ -121,8 +121,14 @@ class AgentTask:
     meta: dict[str, Any] = field(default_factory=dict)
 
 
-def make_tasks(n: int, seed: int, kb: dict[str, dict[str, int]]) -> list[AgentTask]:
+def make_tasks(n: int, seed: int, kb: dict[str, dict[str, int]], ticket: bool = False) -> list[AgentTask]:
+    """``n`` synthetic tasks. The question space is small (36 distinct inventory questions), so a large
+    run repeats questions; with ``ticket`` every question starts with its own letters-only code (no digits
+    for check_answer to pick up), and sessions then share only the system prompt and tool descriptions.
+    The tasks themselves (numbers, answers) are the same as without ``ticket``."""
     rng = random.Random(seed)
+    trng = random.Random(f"ticket-{seed}")
+    codes: set[str] = set()
     out: list[AgentTask] = []
     for i in range(n):
         kind = ["arith", "convert", "inventory_sum"][i % 3]
@@ -140,6 +146,12 @@ def make_tasks(n: int, seed: int, kb: dict[str, dict[str, int]]) -> list[AgentTa
             w1, w2 = rng.sample(["north", "south", "east"], 2)
             q = f"How many {item} are stored in the {w1} and {w2} warehouses combined?"
             ans = kb[item][w1] + kb[item][w2]
+        if ticket:
+            code = ""
+            while not code or code in codes:
+                code = "".join(trng.choice("ABCDEFGHJKLMNPQRSTUVWXYZ") for _ in range(6))
+            codes.add(code)
+            q = f"Ticket {code}. {q}"
         out.append(AgentTask(task_id=f"task-{seed}-{i:04d}", kind=kind, question=q, answer=float(ans)))
     return out
 

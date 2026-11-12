@@ -113,7 +113,8 @@ def gpu_timeline(samples: list[dict[str, Any]], phases: list[dict[str, Any]], ou
 
 def request_gantt(records: list[dict[str, Any]], out: Path, title: str, phase: str, limit: int = 40) -> Path | None:
     """Client-side request timeline: send -> first token -> first audio -> done, per request."""
-    recs = [r for r in records if r.get("phase") == phase and r.get("sent_ns") and r.get("done_ns") and not r.get("warmup")]
+    recs = [r for r in records if r.get("phase") == phase and r.get("sent_ns") and r.get("done_ns") and not r.get("warmup")
+            and not r.get("crash_affected")]
     if not recs:
         return None
     recs.sort(key=lambda r: r["sent_ns"])

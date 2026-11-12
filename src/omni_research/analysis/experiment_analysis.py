@@ -142,7 +142,7 @@ def phase_level_table(records: list[dict[str, Any]], slo: dict[str, float] | Non
     """One row per (phase, load level): sample sizes, errors, latency summaries, throughput."""
     groups: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
     for r in records:
-        if r.get("warmup") or r.get("kind") not in (None, "model_request"):
+        if r.get("warmup") or r.get("crash_affected") or r.get("kind") not in (None, "model_request"):
             continue
         kname, kval = _level_key(r)
         groups[(r.get("phase", "?"), kname, kval)].append(r)

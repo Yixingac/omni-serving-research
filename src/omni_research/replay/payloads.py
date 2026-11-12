@@ -12,6 +12,7 @@ asset says where it came from in ``source``.
 
 from __future__ import annotations
 
+import itertools
 import json
 import random
 from dataclasses import dataclass, field
@@ -116,6 +117,26 @@ class Workload:
         d = json.loads(Path(path).read_text())
         names = set(cls.__dataclass_fields__)
         return cls(**{k: v for k, v in d.items() if k in names})
+
+
+class WorkloadMix:
+    """A weighted mix of workloads (plan v2, B1): every request draws one component, and its record
+    carries that component's workload_id, so each request class can be analysed on its own."""
+
+    def __init__(self, parts: list[tuple[Workload, float]]) -> None:
+        if not parts or any(w <= 0 for _, w in parts):
+            raise ValueError("a workload mix needs at least one component with a positive weight")
+        self.parts = parts
+        total = sum(w for _, w in parts)
+        self._cum = list(itertools.accumulate(w / total for _, w in parts))
+        self.workload_id = "mix(" + ",".join(f"{wl.workload_id}:{w:g}" for wl, w in parts) + ")"
+
+    def pick(self, rng: random.Random) -> Workload:
+        x = rng.random()
+        for (wl, _), c in zip(self.parts, self._cum):
+            if x < c:
+                return wl
+        return self.parts[-1][0]
 
 
 def _text_from_prompt_spec(spec: dict[str, Any], rng: random.Random, asset: Asset | None) -> tuple[str, dict[str, Any]]:

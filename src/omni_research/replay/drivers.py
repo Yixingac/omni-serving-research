@@ -17,7 +17,7 @@ from typing import Any
 from ..tracing.collector import TraceCollector
 from ..tracing.schema import EV_COMPLETE, EV_FIRST_AUDIO, EV_FIRST_TEXT, EV_REQUEST_SENT, SpanKind, new_id
 from .backends import Backend, ModelRequest, RequestResult
-from .payloads import AssetPool, Workload, build_request
+from .payloads import AssetPool, Workload, WorkloadMix, build_request
 
 
 class JsonlSink:
@@ -80,7 +80,7 @@ def _record(req: ModelRequest, res: RequestResult, **extra: Any) -> dict[str, An
 
 async def closed_loop(
     backend: Backend,
-    wl: Workload,
+    wl: Workload | WorkloadMix,
     pool: AssetPool | None,
     *,
     concurrency: int,
@@ -110,10 +110,12 @@ async def closed_loop(
                 return
             counter["next"] = i + 1
             rid = f"{phase}-c{concurrency}-{i:05d}-{new_id()[:8]}"
-            req = build_request(wl, random.Random(rng.random()), rid, pool, metadata={"session_id": session})
+            req_rng = random.Random(rng.random())
+            w = wl.pick(req_rng) if isinstance(wl, WorkloadMix) else wl
+            req = build_request(w, req_rng, rid, pool, metadata={"session_id": session})
             res = await backend.run(req)
             sink.write(_record(req, res, phase=phase, concurrency=concurrency, index=i, worker=wid,
-                               warmup=i < warmup, workload_id=wl.workload_id, text=res.text if keep_text else None))
+                               warmup=i < warmup, workload_id=w.workload_id, text=res.text if keep_text else None))
             trace_request(collector, req, res, session, extra={"phase": phase, "concurrency": concurrency, "warmup": i < warmup})
 
     await asyncio.gather(*(worker(w) for w in range(concurrency)))
@@ -123,7 +125,7 @@ async def closed_loop(
 
 async def open_loop(
     backend: Backend,
-    wl: Workload,
+    wl: Workload | WorkloadMix,
     pool: AssetPool | None,
     *,
     rate_rps: float,
@@ -148,10 +150,12 @@ async def open_loop(
         if delay > 0:
             await asyncio.sleep(delay)
         rid = f"{phase}-r{rate_rps:g}-{i:05d}-{new_id()[:8]}"
-        req = build_request(wl, random.Random(seed * 100003 + i), rid, pool, metadata={"session_id": f"{phase}-{i}"})
+        req_rng = random.Random(seed * 100003 + i)
+        w = wl.pick(req_rng) if isinstance(wl, WorkloadMix) else wl
+        req = build_request(w, req_rng, rid, pool, metadata={"session_id": f"{phase}-{i}"})
         res = await backend.run(req)
         sink.write(_record(req, res, phase=phase, rate_rps=rate_rps, index=i, scheduled_ns=scheduled,
-                           lateness_s=((res.sent_ns or scheduled) - scheduled) / 1e9, workload_id=wl.workload_id, warmup=False))
+                           lateness_s=((res.sent_ns or scheduled) - scheduled) / 1e9, workload_id=w.workload_id, warmup=False))
         trace_request(collector, req, res, f"{phase}-{i}", extra={"phase": phase, "rate_rps": rate_rps})
 
     await asyncio.gather(*(one(i, o) for i, o in enumerate(offsets)))

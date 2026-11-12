@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import math
 import os
 import random
 import re
@@ -41,7 +42,7 @@ from typing import Any
 from ..analysis import metrics as M
 from ..replay.backends import BackendPool, OpenAIChatBackend
 from ..replay.drivers import JsonlSink, closed_loop, open_loop
-from ..replay.payloads import AssetPool, Workload
+from ..replay.payloads import AssetPool, Workload, WorkloadMix
 from ..tracing.collector import TraceCollector
 from ..tracing.schema import SourceKind
 from .state import atomic_write_json
@@ -275,11 +276,12 @@ class Server:
             return None
         desc = self._descendants()
         rc = self.proc.poll()
-        if rc is None:
-            try:
-                os.killpg(self.proc.pid, signal.SIGTERM)
-            except ProcessLookupError:
-                pass
+        try:
+            # Also after the main process has exited: the stage processes of a crashed server keep its
+            # process group and can still hold GPU memory, which a restart on the same GPUs needs.
+            os.killpg(self.proc.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
         for p in desc:
             try:
                 p.terminate()
@@ -302,7 +304,28 @@ class Server:
                     p.kill()
                 except Exception:  # noqa: BLE001
                     pass
+        if not _wait_group_gone(self.proc.pid, max(1.0, deadline - time.monotonic())):
+            try:
+                os.killpg(self.proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            _wait_group_gone(self.proc.pid, 30.0)
         return rc
+
+
+def _wait_group_gone(pgid: int, timeout_s: float) -> bool:
+    """True once no process of group ``pgid`` is left (the id is not reused while any member lives)."""
+    t_end = time.monotonic() + timeout_s
+    while True:
+        try:
+            os.killpg(pgid, 0)
+        except ProcessLookupError:
+            return True
+        except PermissionError:
+            return False
+        if time.monotonic() >= t_end:
+            return False
+        time.sleep(0.5)
 
 
 def _quote(s: str) -> str:
@@ -362,6 +385,7 @@ class ExperimentRunner:
         self.step_gpus = [g for g in vis.split(",") if g.strip()] if vis else []
         self.servers: list[Server] = []
         self.phase_summaries: list[dict[str, Any]] = []
+        self.restarts: list[dict[str, Any]] = []  # servers restarted after exiting mid-experiment
         self._torch_started: dict[str, int] = {}
         self.stop_requested = False
         self.client_log = open(out / "logs" / "client.log", "a")
@@ -526,8 +550,15 @@ class ExperimentRunner:
             p = self.data_root / "assets" / name / "manifest.jsonl"
         return AssetPool(p)
 
-    def _workload(self, ph: dict[str, Any]) -> Workload:
-        p = Path(ph["workload"])
+    def _workload(self, ph: dict[str, Any]) -> Workload | WorkloadMix:
+        """The phase's workload, or a weighted mix (``workload_mix``: [{"workload": path, "weight": w}, ...])
+        from which every request draws its own workload."""
+        if ph.get("workload_mix"):
+            return WorkloadMix([(self._load_workload(m["workload"], ph), float(m["weight"])) for m in ph["workload_mix"]])
+        return self._load_workload(ph["workload"], ph)
+
+    def _load_workload(self, path: str, ph: dict[str, Any]) -> Workload:
+        p = Path(path)
         if not p.is_absolute():
             p = Path(os.environ.get("OMNI_REPO", Path(__file__).resolve().parents[3])) / p
         wl = Workload.from_file(p)
@@ -601,28 +632,43 @@ class ExperimentRunner:
         stop_reason = None
         max_err = float(ph.get("max_error_rate", 0.2))
         e2e_slo = ph.get("stop_if_p50_e2e_above_s")
+        attempts = 2 if ph.get("rerun_crashed_levels", True) else 1
         for c in ph.get("concurrency", [1, 2, 4, 8]):
             if self.stop_requested:
                 stop_reason = "stop requested"
                 break
+            # Wide levels get more requests: max(requests_per_level, requests_per_concurrency x c).
+            n_req = max(int(ph.get("requests_per_level", 32)), math.ceil(float(ph.get("requests_per_concurrency", 0)) * int(c)))
             for rep in range(int(ph.get("repeats", 1))):
-                sink = JsonlSink(self.out / "raw" / f"requests_{name}.jsonl")
-                be = self.backend()
-                try:
-                    info = await closed_loop(be, wl, pool, concurrency=int(c), requests=int(ph.get("requests_per_level", 32)),
-                                             warmup=int(ph.get("warmup", c)), sink=sink, collector=bench_trace,
-                                             seed=seed + 1000 * rep + int(c), phase=name)
-                finally:
-                    await be.close()
-                    sink.close()
-                meas = [r for r in sink.records if not r.get("warmup")]
-                errors = sum(1 for r in meas if r["status"] != "ok")
-                lv = {"concurrency": c, "repeat": rep, **info, "errors": errors, "n": len(meas),
-                      "e2e": M.summarize([M.request_metrics(r).get("e2e_s") for r in meas if r["status"] == "ok"], ci=False),
-                      "ttft": M.summarize([M.request_metrics(r).get("ttft_s") for r in meas if r["status"] == "ok"], ci=False),
-                      "throughput": M.throughput(meas)}
-                levels.append(lv)
-                self.log(f"{name}: c={c} rep={rep} n={len(meas)} errors={errors} p50_e2e={lv['e2e'].get('median')}")
+                for attempt in range(attempts):
+                    sink = JsonlSink(self.out / "raw" / f"requests_{name}.jsonl")
+                    be = self.backend(routing=ph.get("routing"))
+                    try:
+                        info = await closed_loop(be, wl, pool, concurrency=int(c), requests=n_req,
+                                                 warmup=int(ph.get("warmup", c)), sink=sink, collector=bench_trace,
+                                                 seed=seed + 1000 * rep + int(c), phase=name)
+                    finally:
+                        await be.close()
+                        sink.close()
+                    meas = [r for r in sink.records if not r.get("warmup")]
+                    errors = sum(1 for r in meas if r["status"] != "ok")
+                    lv = {"concurrency": c, "repeat": rep, **info, "errors": errors, "n": len(meas),
+                          "e2e": M.summarize([M.request_metrics(r).get("e2e_s") for r in meas if r["status"] == "ok"], ci=False),
+                          "ttft": M.summarize([M.request_metrics(r).get("ttft_s") for r in meas if r["status"] == "ok"], ci=False),
+                          "throughput": M.throughput(meas)}
+                    if attempt:
+                        lv["rerun_after_restart"] = True
+                    crashed = self._after_level(f"{name} c={c} rep={rep}", sink, lv)
+                    levels.append(lv)
+                    self.log(f"{name}: c={c} rep={rep} n={len(meas)} errors={errors} p50_e2e={lv['e2e'].get('median')}"
+                             + (" (server exited during this level)" if crashed else ""))
+                    if not crashed or not self.cfg.get("restart_dead_servers"):
+                        break
+                if lv.get("crash_affected"):
+                    if not self.cfg.get("restart_dead_servers"):
+                        stop_reason = f"server exited at concurrency {c}"
+                        break
+                    continue  # the level ran twice with a crash; go on with the next one
                 if meas and errors / len(meas) > max_err:
                     stop_reason = f"error rate {errors}/{len(meas)} at concurrency {c}"
                     break
@@ -637,27 +683,111 @@ class ExperimentRunner:
         wl = self._workload(ph)
         pool = self._pool(ph)
         out = []
-        for rate in ph.get("rates_rps", [0.5, 1.0]):
-            sink = JsonlSink(self.out / "raw" / f"requests_{name}.jsonl")
-            be = self.backend()
-            try:
-                info = await open_loop(be, wl, pool, rate_rps=float(rate), requests=int(ph.get("requests_per_rate", 40)),
-                                       sink=sink, collector=bench_trace, seed=seed + int(rate * 1000), phase=name)
-            finally:
-                await be.close()
-                sink.close()
-            errors = sum(1 for r in sink.records if r["status"] != "ok")
-            out.append({"rate_rps": rate, **info, "errors": errors})
-            self.log(f"{name}: rate={rate} errors={errors}")
-            if errors > len(sink.records) * float(ph.get("max_error_rate", 0.2)):
+        res: dict[str, Any] = {"rates": out}
+        rates = ph.get("rates_rps", [0.5, 1.0])
+        if ph.get("capacity_from"):
+            # Offered rates as fractions of the capacity this server measured in an earlier closed-loop
+            # phase, so one config template fits layouts whose capacity differs by several times.
+            cap = self._capacity(ph["capacity_from"])
+            if not cap:
+                res["skipped"] = f"no clean throughput in phase {ph['capacity_from']!r} to derive rates from"
+                self.log(f"{name}: {res['skipped']}")
+                return res
+            rates = [round(cap * float(f), 3) for f in ph.get("capacity_fractions", [0.5, 1.0])]
+            res.update(capacity_rps=cap, capacity_from=ph["capacity_from"])
+            self.log(f"{name}: capacity {cap:.3f} req/s from {ph['capacity_from']}; offered rates {rates}")
+        max_err = float(ph.get("max_error_rate", 0.2))
+        attempts = 2 if ph.get("rerun_crashed_levels", True) else 1
+        for rate in rates:
+            if self.stop_requested:
                 break
-        return {"rates": out}
+            dur = ph.get("duration_per_rate_s")
+            n_req = (max(int(ph.get("min_requests_per_rate", 1)), math.ceil(float(rate) * float(dur))) if dur
+                     else int(ph.get("requests_per_rate", 40)))
+            for attempt in range(attempts):
+                sink = JsonlSink(self.out / "raw" / f"requests_{name}.jsonl")
+                be = self.backend(routing=ph.get("routing"))
+                try:
+                    info = await open_loop(be, wl, pool, rate_rps=float(rate), requests=n_req,
+                                           sink=sink, collector=bench_trace, seed=seed + int(rate * 1000), phase=name)
+                finally:
+                    await be.close()
+                    sink.close()
+                errors = sum(1 for r in sink.records if r["status"] != "ok")
+                lv = {"rate_rps": rate, **info, "errors": errors}
+                if attempt:
+                    lv["rerun_after_restart"] = True
+                crashed = self._after_level(f"{name} rate={rate}", sink, lv)
+                out.append(lv)
+                self.log(f"{name}: rate={rate} errors={errors}" + (" (server exited during this rate)" if crashed else ""))
+                if not crashed or not self.cfg.get("restart_dead_servers"):
+                    break
+            if lv.get("crash_affected"):
+                if not self.cfg.get("restart_dead_servers"):
+                    break
+                continue
+            if errors > len(sink.records) * max_err:
+                break
+        return res
+
+    def _capacity(self, phase: str) -> float | None:
+        """Highest clean throughput (requests/s) over the levels of an earlier closed-loop phase."""
+        for s in self.phase_summaries:
+            if s.get("phase") == phase:
+                vals = [(lv.get("throughput") or {}).get("requests_per_s") for lv in s.get("levels", [])
+                        if not lv.get("crash_affected") and lv.get("n") and lv.get("errors", 0) <= 0.05 * lv["n"]]
+                vals = [v for v in vals if v]
+                return max(vals) if vals else None
+        return None
+
+    def _after_level(self, where: str, sink: JsonlSink, lv: dict[str, Any]) -> bool:
+        """After one load level: if a server exited during it, flag the level and its request records
+        as crash-affected (analysis drops them) and, when the experiment allows it, restart the server.
+        Returns True when a server had exited."""
+        dead = self._dead_servers()
+        if not dead:
+            return False
+        lv["crash_affected"] = True
+        lv["servers_exited"] = dead
+        mark_crash_affected(sink.path, {r["request_id"] for r in sink.records})
+        if self.cfg.get("restart_dead_servers"):
+            self._restart_dead_servers(where)
+            lv["servers_restarted"] = sorted(dead)
+        return True
+
+    def _restart_dead_servers(self, where: str) -> dict[str, int | None]:
+        """Restart every server that has exited (experiment option ``restart_dead_servers``), at most
+        ``max_server_restarts`` times per experiment. Requests are not running at this point, so the
+        client never routes to a server while it restarts."""
+        dead = self._dead_servers()
+        if not dead:
+            return dead
+        budget = int(self.cfg.get("max_server_restarts", 6))
+        if len(self.restarts) + len(dead) > budget:
+            raise ExperimentFailure("server_died", f"server(s) {dead} exited during {where}; restart budget of {budget} used up")
+        events = []
+        for sv in self.servers:
+            if sv.name in dead:
+                self.log(f"server {sv.name} exited ({dead[sv.name]}) during {where}; restarting it")
+                ev = {"server": sv.name, "exit_code": dead[sv.name], "where": where, "detected": time.time(),
+                      "log_tail": _tail(sv.log_path)[-1500:]}
+                sv.stop(grace_s=30.0)
+                sv.start()
+                events.append((sv, ev))
+        for sv, ev in events:
+            ev["ready_after_s"] = sv.wait_ready()
+            self.restarts.append(ev)
+            self.log(f"server {sv.name} healthy again after {ev['ready_after_s']:.0f}s")
+        atomic_write_json(self.out / "analysis" / "server_restarts.json", self.restarts)
+        return dead
 
     async def _phase_agent(self, ph, name, seed) -> dict[str, Any]:  # noqa: ANN001
         from ..tracing.agent_harness import AgentConfig, ToolBox, make_knowledge_base, make_tasks, run_agents
 
         kb = make_knowledge_base(int(ph.get("kb_seed", 7)))
-        tasks = make_tasks(int(ph.get("sessions", 8)), seed, kb)
+        # unique_tasks: every session opens with its own ticket code, so sessions share only the system
+        # prompt and tool descriptions (no repeated questions that would inflate prefix-cache hits).
+        tasks = make_tasks(int(ph.get("sessions", 8)), seed, kb, ticket=bool(ph.get("unique_tasks")))
         cfg = AgentConfig(**ph.get("agent", {}))
         if cfg.input_modality == "audio":
             pool = self._pool(ph)
@@ -678,7 +808,7 @@ class ExperimentRunner:
                                       "tool_latency": lat, "experiment_id": self.cfg["experiment_id"]},
                             notes="Tasks, knowledge base and simulated tool latency are synthetic; model requests are real.")
         results: list[dict[str, Any]] = []
-        be = self.backend(keep_text=True)
+        be = self.backend(keep_text=True, routing=ph.get("routing"))
         try:
             outcomes = await run_agents(be, tc, tasks, tools, cfg, int(ph.get("concurrency", 4)), seed=seed, results=results,
                                         arrival_rate_per_s=ph.get("session_arrival_rate_per_s"))
@@ -788,7 +918,13 @@ class ExperimentRunner:
                         s["servers_exited"] = dead
                     self.phase_summaries.append(s)
                     atomic_write_json(self.out / "analysis" / "phases.json", self.phase_summaries)
-                    if dead:
+                    if dead and self.cfg.get("restart_dead_servers") and not self.stop_requested:
+                        # Phase kinds without per-level handling (smoke, agent, replay): keep the phase's
+                        # data as it is, restart the server and go on with the next phase.
+                        self._restart_dead_servers(f"phase {ph.get('name', ph['kind'])}")
+                        s["servers_restarted"] = sorted(dead)
+                        atomic_write_json(self.out / "analysis" / "phases.json", self.phase_summaries)
+                    elif dead:
                         # A server that dies under load is a result, not a reason to keep sending requests to
                         # nothing: f2 (2026-11-11) lost its talker process mid-phase and was still marked "ok".
                         tails = "\n".join(f"--- {sv.name}\n{_tail(sv.log_path)[-1500:]}" for sv in self.servers if sv.name in dead)
@@ -808,6 +944,7 @@ class ExperimentRunner:
             self.log(f"runner error: {exc!r}")
         finally:
             result["server_exit_codes"] = self.stop_servers()
+            result["server_restarts"] = [{k: v for k, v in ev.items() if k != "log_tail"} for ev in self.restarts]
             gpu.stop()
             cpu.stop()
             result["phases"] = self.phase_summaries
@@ -820,6 +957,30 @@ class ExperimentRunner:
             atomic_write_json(self.out / "result.json", result)
             self.client_log.close()
         return result
+
+
+def mark_crash_affected(path: Path, request_ids: set[str]) -> int:
+    """Flag the given requests in a requests_<phase>.jsonl file as ``crash_affected`` (a server exited
+    while they ran or right before); analysis excludes them like warmup requests. Returns the count."""
+    if not request_ids or not path.exists():
+        return 0
+    n = 0
+    out = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            rec = json.loads(line)
+        except json.JSONDecodeError:
+            out.append(line)
+            continue
+        if isinstance(rec, dict) and rec.get("request_id") in request_ids and not rec.get("crash_affected"):
+            rec["crash_affected"] = True
+            line = json.dumps(rec, default=str)
+            n += 1
+        out.append(line)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text("".join(x + "\n" for x in out), encoding="utf-8")
+    os.replace(tmp, path)
+    return n
 
 
 def summarize_gpu_samples(path: Path) -> dict[str, Any]:

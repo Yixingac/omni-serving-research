@@ -359,9 +359,13 @@ class BackendPool:
 
     policies: ``round_robin``; ``least_outstanding`` (fewest in-flight requests, ties by index);
     ``session_affinity`` (hash of metadata.session_id, so one agent stays on one replica).
+
+    A replica whose request failed without any HTTP response (connection refused or reset: the
+    server exited or is restarting) is skipped for ``down_cooldown_s``. Without this, least
+    outstanding sends nearly everything to a dead replica, because its requests fail at once.
     """
 
-    def __init__(self, backends: list[Backend], policy: str = "least_outstanding") -> None:
+    def __init__(self, backends: list[Backend], policy: str = "least_outstanding", down_cooldown_s: float = 15.0) -> None:
         if not backends:
             raise ValueError("BackendPool needs at least one backend")
         if policy not in ("round_robin", "least_outstanding", "session_affinity"):
@@ -372,17 +376,31 @@ class BackendPool:
         self._inflight = [0] * len(backends)
         self._rr = 0
         self.routed = [0] * len(backends)
+        self.down_cooldown_s = down_cooldown_s
+        self._down_until = [0.0] * len(backends)
+
+    def _up(self) -> list[int]:
+        now = time.monotonic()
+        up = [i for i in range(len(self.backends)) if self._down_until[i] <= now]
+        return up or list(range(len(self.backends)))
 
     def _pick(self, req: ModelRequest) -> int:
+        up = self._up()
+        n = len(self.backends)
         if self.policy == "round_robin":
-            i = self._rr % len(self.backends)
-            self._rr += 1
-            return i
+            for _ in range(n):
+                i = self._rr % n
+                self._rr += 1
+                if i in up:
+                    return i
+            return up[0]
         if self.policy == "session_affinity" and req.metadata.get("session_id"):
             import zlib
 
-            return zlib.crc32(str(req.metadata["session_id"]).encode()) % len(self.backends)
-        return min(range(len(self.backends)), key=lambda i: (self._inflight[i], i))
+            i = zlib.crc32(str(req.metadata["session_id"]).encode()) % n
+            # A down replica's sessions move to the next healthy one (the same one for every request).
+            return i if i in up else min(up, key=lambda j: (j - i) % n)
+        return min(up, key=lambda i: (self._inflight[i], i))
 
     async def run(self, req: ModelRequest) -> RequestResult:
         i = self._pick(req)
@@ -392,6 +410,8 @@ class BackendPool:
             res = await self.backends[i].run(req)
         finally:
             self._inflight[i] -= 1
+        if res.status == "error" and res.http_status is None:
+            self._down_until[i] = time.monotonic() + self.down_cooldown_s
         res.metadata["replica"] = i
         return res
 
