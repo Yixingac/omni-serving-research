@@ -1,0 +1,103 @@
+diff --git a/sglang_omni/models/minicpm_o/stages.py b/sglang_omni/models/minicpm_o/stages.py
+index 12512fe0..254cbad7 100644
+--- a/sglang_omni/models/minicpm_o/stages.py
++++ b/sglang_omni/models/minicpm_o/stages.py
+@@ -232,10 +232,13 @@ def vocode_code2wav_payloads(
+     )
+     # note (Junnan Li): model.vocode rejects empty rows, which turns without speech produce.
+     voiced = [index for index, tokens in enumerate(codec_tokens) if tokens]
+-    voiced_waveforms = model.vocode(
+-        [codec_tokens[index] for index in voiced],
+-        [references[index] for index in voiced],
+-    )
++    from sglang_omni import diag_gate as _diag_gate  # DIAG
++
++    with _diag_gate.code2wav_exclusive():  # DIAG: no-op unless SGLANG_OMNI_DIAG_SERIALIZE_GPU=1
++        voiced_waveforms = model.vocode(
++            [codec_tokens[index] for index in voiced],
++            [references[index] for index in voiced],
++        )
+     waveforms = [np.zeros(0, dtype=np.float32) for _ in codec_tokens]
+     for index, waveform in zip(voiced, voiced_waveforms, strict=True):
+         waveforms[index] = waveform
+diff --git a/sglang_omni/scheduling/omni_scheduler.py b/sglang_omni/scheduling/omni_scheduler.py
+index 88e0de93..dd3b3c61 100644
+--- a/sglang_omni/scheduling/omni_scheduler.py
++++ b/sglang_omni/scheduling/omni_scheduler.py
+@@ -3638,7 +3638,10 @@ class OmniScheduler(Generic[RequestDataT]):
+         D1 in design.md section 1.3). Prefill / empty batches flush any in-flight
+         decode first and run synchronously (the in-flight step is never stranded).
+         """
++        from sglang_omni import diag_gate as _diag_gate  # DIAG
++
+         while self.running:
++            _diag_gate.talker_checkpoint()  # DIAG: no-op unless SGLANG_OMNI_DIAG_SERIALIZE_GPU=1
+             self.process_admin_requests()
+             recv_reqs = self.recv_requests()
+             recv_reqs.extend(self.take_deferred_request_payloads())
+diff --git a/sglang_omni/diag_gate.py b/sglang_omni/diag_gate.py
+new file mode 100644
+index 00000000..f18805a2
+--- /dev/null
++++ b/sglang_omni/diag_gate.py
+@@ -0,0 +1,60 @@
++"""DIAG (omni-serving-research, 2026-11-12): keep the talker's and code2wav's GPU
++work from overlapping in time, to test whether the illegal memory access needs
++kernels of the two scheduler threads to run concurrently. Same process, same
++caching allocator, same graphs; only the overlap goes away. Off unless
++SGLANG_OMNI_DIAG_SERIALIZE_GPU=1."""
++
++from __future__ import annotations
++
++import contextlib
++import logging
++import os
++import threading
++from collections.abc import Iterator
++
++import torch
++
++logger = logging.getLogger(__name__)
++
++ENABLED = os.environ.get("SGLANG_OMNI_DIAG_SERIALIZE_GPU") == "1"
++_request = threading.Event()
++_parked = threading.Event()
++_done = threading.Event()
++_stats = {"batches": 0, "talker_parks": 0, "park_timeouts": 0}
++if ENABLED:
++    logger.warning("DIAG: talker and code2wav GPU work serialized (SGLANG_OMNI_DIAG_SERIALIZE_GPU=1)")
++
++
++def talker_checkpoint() -> None:
++    """Called at the top of each talker loop iteration."""
++    if not ENABLED or not _request.is_set():
++        return
++    torch.cuda.synchronize()
++    _stats["talker_parks"] += 1
++    _parked.set()
++    _done.wait()
++    _parked.clear()
++
++
++@contextlib.contextmanager
++def code2wav_exclusive() -> Iterator[None]:
++    """Wraps one code2wav batch; returns once all of its GPU work is done."""
++    if not ENABLED:
++        yield
++        return
++    _parked.clear()
++    _done.clear()
++    _request.set()
++    if not _parked.wait(timeout=2.0):
++        _stats["park_timeouts"] += 1
++        logger.warning("DIAG: talker did not park within 2 s; code2wav runs anyway %s", _stats)
++    torch.cuda.synchronize()
++    try:
++        yield
++    finally:
++        torch.cuda.synchronize()
++        _stats["batches"] += 1
++        _request.clear()
++        _done.set()
++        if _stats["batches"] % 100 == 0:
++            logger.info("DIAG serialize stats %s", _stats)

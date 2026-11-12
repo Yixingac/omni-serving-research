@@ -1,0 +1,45 @@
+{
+  "runtime_profile": "unicorn_diag",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "assets": "synthetic-v1",
+  "experiment_id": "zm1_minicpm_crash_code2wav_private_pool_rep2",
+  "description": "zm1 的重复（只在 zm1 未崩溃时运行），配置完全相同。验证崩溃根因（第 17 节）。同一进程里，talker 线程、主线程和 code2wav 线程共用 PyTorch 的显存缓存分配器；code2wav 单独进程（z11b）不崩，可能是因为分配器分开了。这里用诊断副本（同一提交 520b49ee，加 configs/runtime/patches/sglang_omni_diag_private_stream.patch 里的 MemPool 开关），设 SGLANG_OMNI_DIAG_PRIVATE_POOL_STAGES=code2wav，让 code2wav 调度线程的所有显存分配都走一个私有 MemPool（torch.cuda.use_mem_pool，只作用于当前线程），其他一切保持默认（同一进程、stream 0 上的 HiFT、CUDA graph、torch.compile），负载与 z4 相同。若不再崩溃，说明跨线程复用同一块缓存显存是必要条件；若仍崩溃，分配器共享可以排除。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [],
+      "ready_timeout_s": 2400,
+      "prefix": "env SGLANG_OMNI_DIAG_PRIVATE_POOL_STAGES=code2wav"
+    }
+  ],
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "open_loop",
+      "name": "w3b_soak",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "rates_rps": [
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5
+      ],
+      "requests_per_rate": 180,
+      "max_error_rate": 0.2
+    }
+  ]
+}
