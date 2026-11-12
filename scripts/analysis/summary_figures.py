@@ -39,15 +39,20 @@ def rows(a: dict | None, phase: str) -> list[dict]:
 def placement(data_root: Path, out: Path) -> Path:
     plt = _plt()
     fig, axes = plt.subplots(1, 2, figsize=(9.5, 3.6))
-    series = [("1 卡（x3）", "x3_minicpm_speech_1gpu"), ("两个副本（x7a）", "x7a_minicpm_2gpu_two_replicas"),
-              ("拆分（x7b）", "x7b_minicpm_2gpu_disagg"), ("拆分，重复", "x7b_minicpm_2gpu_disagg_rep2"),
-              ("只复制 talker，重复", "x7c_minicpm_2gpu_talker_replica_rep2")]
-    for label, name in series:
-        rs = [r for r in rows(load(data_root, name), "w3b") if not r.get("errors")]
+    series = [("1 卡（x3）", "x3_minicpm_speech_1gpu", "w3b"),
+              ("2 卡：两个副本（x7a）", "x7a_minicpm_2gpu_two_replicas", "w3b"),
+              ("2 卡：两个副本，重复", "x7a_minicpm_2gpu_two_replicas_rep2", "w3b"),
+              ("2 卡：拆分（x7b）", "x7b_minicpm_2gpu_disagg", "w3b"),
+              ("2 卡：拆分，重复", "x7b_minicpm_2gpu_disagg_rep2", "w3b"),
+              ("2 卡：拆分，开事件记录（x7e）", "x7e_minicpm_2gpu_disagg_events", "w3b_events"),
+              ("2 卡：只复制 talker，重复", "x7c_minicpm_2gpu_talker_replica_rep2", "w3b"),
+              ("3 卡：thinker + 两个 talker（x7f）", "x7f_minicpm_3gpu_split_talker2", "w3b_events")]
+    for label, name, phase in series:
+        rs = [r for r in rows(load(data_root, name), phase) if not r.get("errors")]
         if not rs:
             continue
         x = [float(r["level"]) for r in rs]
-        style = "--" if "重复" in label else "-"
+        style = ":" if "3 卡" in label else ("--" if ("重复" in label or "x7e" in label) else "-")
         axes[0].plot(x, [r.get("e2e_per_audio_s_median") for r in rs], style, marker="o", label=label)
         axes[1].plot(x, [r.get("tp_output_audio_s_per_s") for r in rs], style, marker="o", label=label)
     axes[0].set_title("端到端 ÷ 输出语音时长（中位数，越低越好）")
@@ -56,7 +61,7 @@ def placement(data_root: Path, out: Path) -> Path:
         ax.set_xscale("log", base=2)
         ax.set_xlabel("总并发")
         ax.legend(fontsize=7)
-    fig.suptitle("MiniCPM-o 4.5，W3b 文本提问、语音回答，RTX A6000（每条线各跑一次）", fontsize=9)
+    fig.suptitle("MiniCPM-o 4.5，W3b 文本提问、语音回答，RTX A6000（每条线是一次运行）", fontsize=9)
     fig.tight_layout()
     p = out / "placement_2gpu_w3b.png"
     fig.savefig(p)
