@@ -48,7 +48,8 @@ def placement(data_root: Path, out: Path) -> Path:
               ("2 卡：只复制 talker，重复", "x7c_minicpm_2gpu_talker_replica_rep2", "w3b"),
               ("3 卡：thinker + 两个 talker（x7f）", "x7f_minicpm_3gpu_split_talker2", "w3b_events")]
     for label, name, phase in series:
-        rs = [r for r in rows(load(data_root, name), phase) if not r.get("errors")]
+        # A level with fewer requests than its concurrency is a single burst, not a steady closed loop.
+        rs = [r for r in rows(load(data_root, name), phase) if not r.get("errors") and r["n"] >= float(r["level"])]
         if not rs:
             continue
         x = [float(r["level"]) for r in rs]
