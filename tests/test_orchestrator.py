@@ -180,6 +180,47 @@ def test_plan_additions_are_picked_up(tmp_path):
     assert st.experiments["follow"].status == "SUCCEEDED"
 
 
+def test_keep_alive_runs_late_additions_until_stop(tmp_path):
+    """Hold mode: the queue drains, a plan.d entry added later still runs, and the stop file ends the run."""
+    orch, launcher, clock = make(tmp_path, [E("a", dur=10)], {"a": [(10, 0, None)], "late": [(5, 0, None)]})
+    stop = tmp_path / "STOP"
+    orch.keep_alive, orch.stop_file = True, stop
+    add = tmp_path / "run" / "plan.d"
+
+    def sleep(s):
+        clock.sleep(s)
+        if clock() >= 30 and not add.exists():
+            add.mkdir(parents=True)
+            (add / "001-late.json").write_text(json.dumps({"experiments": [
+                {"experiment_id": "late", "command": "true", "estimated_duration_s": 5,
+                 "required_gpus": 1, "required_cpus": 1, "required_memory_gb": 1}]}))
+        if clock() >= 60:
+            stop.touch()
+
+    orch.sleep = sleep
+    st = orch.run()
+    assert st.experiments["a"].status == "SUCCEEDED" and st.experiments["late"].status == "SUCCEEDED"
+    assert [x[1] for x in launcher.launched] == ["a", "late"] and clock() >= 60
+
+
+def test_stop_file_lets_running_finish_and_skips_the_rest(tmp_path):
+    orch, launcher, clock = make(tmp_path, [E("a", dur=10), E("b", gpus=4, dur=10)],
+                                 {"a": [(10, 0, None)], "b": [(10, 0, None)]})
+    stop = tmp_path / "STOP"
+    orch.stop_file = stop
+
+    def sleep(s):
+        clock.sleep(s)
+        if clock() >= 3:
+            stop.touch()
+
+    orch.sleep = sleep
+    st = orch.run()
+    assert st.experiments["a"].status == "SUCCEEDED"  # running when STOP appeared: finished normally
+    assert st.experiments["b"].status == "SKIPPED" and "stop file" in st.experiments["b"].reason
+    assert [x[1] for x in launcher.launched] == ["a"]
+
+
 def test_plan_validation_errors(tmp_path):
     with pytest.raises(ValueError, match="unknown experiment"):
         validate_plan(Plan("p", {"a": E("a", deps=["zz"])}, ["a"]))

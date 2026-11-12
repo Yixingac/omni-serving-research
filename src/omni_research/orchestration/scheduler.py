@@ -54,6 +54,8 @@ class Orchestrator:
         additions_dir: str | Path | None = None,
         env: dict[str, str] | None = None,
         experiments_root: str | Path | None = None,
+        keep_alive: bool = False,
+        stop_file: str | Path | None = None,
     ) -> None:
         self.plan = plan
         self.store = store
@@ -68,6 +70,11 @@ class Orchestrator:
         self.sleep = sleep
         self.additions_dir = Path(additions_dir) if additions_dir else store.run_dir / "plan.d"
         self.experiments_root = Path(experiments_root) if experiments_root else store.run_dir / "experiments"
+        # keep_alive: once the queue drains, keep polling plan.d until the stop file or the walltime
+        # margin (a held job on 2026-11-11 lost two experiments added two minutes after its queue
+        # emptied). stop_file: when it appears, start nothing new and exit once running work ends.
+        self.keep_alive = keep_alive
+        self.stop_file = Path(stop_file) if stop_file else None
         self.env = env or {}
         self.handles: dict[str, Handle] = {}
         self._seen_additions: set[str] = set()
@@ -317,11 +324,23 @@ class Orchestrator:
         if self._stop_reason is not None:
             self._shutdown(self._stop_reason)
             return False
-        self._update_ready()
-        self._schedule()
+        stopping = self.stop_file is not None and self.stop_file.exists()
+        if not stopping:
+            self._update_ready()
+            self._schedule()
         self.store.save(self.state)
         active = any(es.status in ("RUNNING",) for es in self.state.experiments.values())
         pending = [eid for eid, es in self.state.experiments.items() if es.status in ("PENDING", "READY")]
+        if stopping:
+            if active:
+                return True  # let running experiments finish
+            for eid in pending:
+                es = self.state.experiments[eid]
+                es.status, es.reason = "SKIPPED", "stop file present: not started"
+                self.store.event("experiment_skipped", experiment_id=eid, reason=es.reason)
+            self.store.event("stop_file_seen", path=str(self.stop_file))
+            self.store.save(self.state)
+            return False
         if not active and pending:
             # Nothing runs and nothing could start: these will never become runnable.
             for eid in pending:
@@ -330,6 +349,8 @@ class Orchestrator:
                 self.store.event("experiment_skipped", experiment_id=eid, reason=es.reason)
             self.store.save(self.state)
             return False
+        if self.keep_alive and not active and not pending:
+            return True  # idle: wait for plan.d additions, the stop file or the walltime margin
         return active or bool(pending)
 
     def run(self) -> RunState:

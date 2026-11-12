@@ -40,10 +40,11 @@ log "job ${SLURM_JOB_ID:-none} on $(hostname -s); gpus=${SLURM_GPUS_ON_NODE:-?} 
 bash "$REPO/scripts/slurm/preflight.sh" "$RUN_DIR/preflight" >> "$RUN_DIR/run_all.log" 2>&1
 log "preflight done"
 
-run_orchestrator() {  # run_orchestrator PLAN
+run_orchestrator() {  # run_orchestrator PLAN [extra orchestrator args]
   PY="${OMNI_PYTHON:-python3}"
+  local plan="$1"; shift
   PYTHONPATH="$REPO/src${PYTHONPATH:+:$PYTHONPATH}" "$PY" -m omni_research.orchestration.cli run \
-    --plan "$1" --run-dir "$RUN_DIR/orchestrator" --stop-margin-s "$STOP_MARGIN_S" >> "$RUN_DIR/orchestrator.log" 2>&1 &
+    --plan "$plan" --run-dir "$RUN_DIR/orchestrator" --stop-margin-s "$STOP_MARGIN_S" "$@" >> "$RUN_DIR/orchestrator.log" 2>&1 &
   child=$!
   # `wait` returns early when a trapped signal arrives; keep waiting until the child exits.
   while kill -0 "$child" 2>/dev/null; do wait "$child"; done
@@ -57,7 +58,9 @@ case "$mode" in
     # allocation does useful work even when nobody is logged in when it starts.
     if [[ -f "$RUN_DIR/autostart_plan.json" && ! -e "$RUN_DIR/STOP" ]]; then
       log "autostart plan found: running the orchestrator"
-      run_orchestrator "$RUN_DIR/autostart_plan.json"
+      # --keep-alive: experiments added to plan.d after the queue drains still run (Job 409712 lost
+      # z8/z9 this way); the STOP file ends it after running experiments finish.
+      run_orchestrator "$RUN_DIR/autostart_plan.json" --keep-alive --stop-file "$RUN_DIR/STOP"
     fi
     # Then keep the GPUs for interactive `srun --jobid` steps until STOP or the time margin.
     while [[ ! -e "$RUN_DIR/STOP" ]] && (( $(time_left_s) > STOP_MARGIN_S )); do

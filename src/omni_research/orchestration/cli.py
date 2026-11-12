@@ -61,6 +61,8 @@ def cmd_run(args: argparse.Namespace) -> int:
         env={"OMNI_RUN_DIR": str(Path(args.run_dir).resolve()), "OMNI_REPO": str(_repo_root()),
              "PROJECT_DATA_ROOT": str(data_root)},
         experiments_root=data_root / "experiments",
+        keep_alive=args.keep_alive,
+        stop_file=args.stop_file,
     )
 
     def handle(signum, _frame):  # noqa: ANN001
@@ -130,6 +132,9 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--port-base", type=int, default=21000)
     r.add_argument("--deadline-s", type=float, default=None, help="extra wall-clock budget from now")
     r.add_argument("--max-gpus", type=int, default=None, help="use at most this many GPUs per node")
+    r.add_argument("--keep-alive", action="store_true",
+                   help="after the queue drains, keep polling plan.d until --stop-file or the walltime margin")
+    r.add_argument("--stop-file", default=None, help="when this file exists, start nothing new and exit after running work")
     # Local mode only (no Slurm job): the resources to schedule against. The env defaults let
     # run_all.sh be exercised on a CPU-only host, e.g. OMNI_LOCAL_GPUS=3 with OMNI_FAKE_SERVER=1.
     r.add_argument("--local-gpus", type=int, default=int(os.environ.get("OMNI_LOCAL_GPUS", 0)))
