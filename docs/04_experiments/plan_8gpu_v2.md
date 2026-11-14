@@ -2,7 +2,7 @@
 
 状态：**第一批（阶段 0、A、B）的配置已生成并通过检查，作业已提交、在排队**。
 - 作业：Job 454290，8×A6000、56 核、800 GB，**不限时 hold**（用户的要求），由用户自己释放。2026-11-12 13:41 提交，当时 compute-03 被占满，`sbatch --test-only` 估计最早 11-14 05:32 开始。
-- 作业开始后，运行目录里的 `autostart_plan.json` 会自动运行。它就是 `configs/experiments/plan_a6000_8gpu_v2.json`。
+- 作业开始后，运行目录里的 `autostart_plan.json` 会自动运行。它就是 `configs/experiments/plan_a6000_8gpu_v2.json`。2026-11-14 14:25 用户确认后放入（代码 22911f7），放入时作业仍在排队；Slurm 当时估计 11-16 05:37 开始。
 - 配置由 `scripts/slurm/make_plan_8gpu_v2.py` 生成；实验清单和预计时长见第 9 节。
 - 这一版根据 Job 409712（3×A6000）的结果重写，替代 v1（`configs/experiments/plan_a6000_8gpu.json`，写于 Job 409712 之前）。
 
