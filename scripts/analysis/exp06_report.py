@@ -122,6 +122,8 @@ def analyze_run(exp: Path) -> dict[str, Any]:
                 if rec and rec.get("status") == "ok" and not rec.get("warmup"):
                     run["requests"].append({"concurrency": c, "request_id": rid, **{k: r.get(k) for k in bd.REQUEST_PARTS},
                                             "queue_depth_at_dequeue": r.get("queue_depth_at_dequeue"),
+                                            "batch_pid": r["batch"][0] if r.get("batch") else None,
+                                            "batch_id": r["batch"][1] if r.get("batch") else None,
                                             "audio_s": rec.get("output_audio_s")})
             for (pid, bid), b in batches.items():
                 run["batches"].append({"concurrency": c, "pid": pid, "batch_id": bid, **{k: v for k, v in b.items() if k not in ("request_ids", "token_lengths")},
