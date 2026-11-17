@@ -6,7 +6,7 @@
 2. **负载是什么**：`02_workloads/agent_trace_schema.md`（Agent trace 的记录格式）、`02_workloads/workload_definitions.md`（W1–W6 负载）、`02_workloads/data_sources.md`（所有输入数据从哪里来）。
 3. **在什么硬件上做**：`03_hardware/slurm_cluster.md`（实验室 A6000 集群）、`03_hardware/dgx_spark.md`（个人 DGX Spark）、`03_hardware/gpu_topology.md`（GPU 互联）、`03_hardware/task_placement.md`（任务在 Mac/Spark/Slurm 之间怎么分配）。
 4. **怎么测**：`04_experiments/experiment_matrix.md`（实验清单）、`04_experiments/benchmark_methodology.md`（方法）、`04_experiments/metrics.md`（每个指标的准确定义）。
-5. **测到了什么**：`05_findings/`（有正式结果后才会出现）和 `../reports/`。
+5. **测到了什么**：`05_findings/`（有正式结果后才会出现）和 `../reports/`。实验 6–8（code2wav 时间拆解、code2wav 独立 GPU、thinker 提前一步发射）从 `../reports/research_updates/START_HERE.md` 开始读。
 6. **怎么动手**：`06_guides/environment_setup.md`、`06_guides/mac_spark_workflow.md`、`06_guides/slurm_usage.md`、`06_guides/reproducibility.md`。
 
 ## 三层 trace，一个 request_id

@@ -3,7 +3,7 @@
  "name_zh": "Thinker 提前一步发射（lookahead）",
  "question_zh": "thinker 同步执行浪费了多少 GPU 时间？纯文字是否真的用上了提前一步发射？语音请求为什么不能用、能否安全地用、改了能快多少？",
  "status": "第一、二阶段完成；第三阶段正确性检查通过，性能对比排在实验 7 之后",
- "hypotheses": "hypotheses.md（14:40 登记；14:58、15:32 补充登记，都在实验 8 任何数据之前；16:35 补充登记二；16:58 第三阶段性能预测）",
+ "hypotheses": "hypotheses.md（14:33 前登记，提交 fe9288a；14:58、15:32 补充登记，都在实验 8 任何数据之前；16:35 补充登记二；16:58 第三阶段性能预测）",
  "model": {
   "name": "MiniCPM-o 4.5",
   "revision": "fb09628e98b1f55d8d5b863e0eccfcdd11bff499",
