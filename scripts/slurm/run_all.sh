@@ -31,12 +31,18 @@ on_signal() {
   (( stopping )) && return
   stopping=1
   log "received stop signal; asking the orchestrator to finish and save"
-  touch "$RUN_DIR/STOP"
+  # A STOP written here says why, so that a job requeued after preemption can tell it from one a
+  # person made (Job 625796 found its own STOP after the requeue and exited with nothing done).
+  [[ -e "$RUN_DIR/STOP" ]] || echo "signal $(date -Is)" > "$RUN_DIR/STOP"
   [[ -n "$child" ]] && kill -TERM "$child" 2>/dev/null
 }
 trap on_signal USR1 TERM INT
 
 log "job ${SLURM_JOB_ID:-none} on $(hostname -s); gpus=${SLURM_GPUS_ON_NODE:-?} cpus=${SLURM_CPUS_PER_TASK:-?} time_left=$(time_left_s)s"
+if (( ${SLURM_RESTART_COUNT:-0} > 0 )) && [[ -f "$RUN_DIR/STOP" ]] && grep -q '^signal ' "$RUN_DIR/STOP"; then
+  log "requeued (restart ${SLURM_RESTART_COUNT}): removing the STOP that the stop signal wrote before the requeue"
+  rm -f "$RUN_DIR/STOP"
+fi
 bash "$REPO/scripts/slurm/preflight.sh" "$RUN_DIR/preflight" >> "$RUN_DIR/run_all.log" 2>&1
 log "preflight done"
 
@@ -64,7 +70,7 @@ case "$mode" in
     fi
     # Then keep the GPUs for interactive `srun --jobid` steps until STOP or the time margin.
     while [[ ! -e "$RUN_DIR/STOP" ]] && (( $(time_left_s) > STOP_MARGIN_S )); do
-      sleep 30 & child=$!; wait "$child"; child=""
+      sleep "${OMNI_HOLD_POLL_S:-30}" & child=$!; wait "$child"; child=""
     done
     ;;
   run)
