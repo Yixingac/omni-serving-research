@@ -70,3 +70,12 @@ def test_exp02_rows_pick_the_phase_family(tmp_path):
     (tmp_path / "analysis" / "analysis.json").write_text(json.dumps({"table": table}))
     assert [r["level"] for r in ex.rows(tmp_path, "w3b_open")] == ["16.0"]
     assert ex.rows(tmp_path / "missing", "w3b_open") == []
+
+
+def test_exp05_code2wav_kernel_kinds():
+    ex = load("exp05_talker")
+    assert ex.code2wav_kind("fmha_cutlassF_f16_aligned_64x64_rf_sm80(PyTorchMemEffAttention::AttentionKernel") == "注意力（flow）"
+    assert ex.code2wav_kind("sm86_xmma_fprop_implicit_gemm_tf32f32") == "卷积（HiFT 为主）"
+    assert ex.code2wav_kind("triton_poi_fused__weight_norm_interface_add_convolution_mul_pow_reciprocal_sin_u") == "HiFT：Snake 激活"
+    assert ex.code2wav_kind("triton_per_fused__to_copy_add_constant_pad_nd_convolution_mish_mul") == "融合小 kernel（flow）"
+    assert ex.code2wav_kind("ampere_fp16_s16816gemm_fp16_128x64_ldg8_relu_f2f_tn") == "矩阵乘（flow 为主）"

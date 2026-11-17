@@ -1,0 +1,58 @@
+{
+ "experiment_number": 5,
+ "name_zh": "GPU 为什么会等待",
+ "question_zh": "高负载时 talker 卡和 thinker 卡各自被什么卡住：GPU 算不过来，还是 CPU 跟不上？",
+ "status": "第一轮（初步，1 次运行）",
+ "model": {
+  "name": "MiniCPM-o 4.5",
+  "revision": "fb09628e98b1f55d8d5b863e0eccfcdd11bff499"
+ },
+ "software": {
+  "sglang_omni": "520b49ee",
+  "sglang": "0.5.21",
+  "torch": "2.13.0"
+ },
+ "workload": {
+  "id": "W3b_text_speech",
+  "file": "configs/workloads/w3b_text_speech.json",
+  "concurrency": 128
+ },
+ "schemes": {
+  "C": {
+   "internal_layout": "S2:6",
+   "gpus": {
+    "0-1": "thinker",
+    "2-7": "talker + code2wav（code2wav 单独进程）"
+   }
+  }
+ },
+ "runs_used": [
+  {
+   "scheme": "C",
+   "run_dir": "20261117_exp05_talker_s2x6_run01",
+   "config_id": "exp05_talker_s2x6",
+   "config": "configs/experiments/a6000_8gpu_v2/exp05_talker_s2x6.json",
+   "plan": "configs/experiments/plan_a6000_8gpu_exp05.json",
+   "slurm_job": 454290,
+   "research_repo_commit": "90fbbc2",
+   "node": "compute-03",
+   "phases": [
+    "smoke_w3b",
+    "w3b_warm_c128",
+    "w3b_base_c128",
+    "w3b_prof_c128（第 12–15 秒开 profiler）",
+    "w3b_base2_c128"
+   ]
+  }
+ ],
+ "compared_with": "实验 1 的 kernel 级补测（并发 8、64）",
+ "analysis_script": "scripts/analysis/exp05_talker.py",
+ "results": "results/summary.json",
+ "figures": [
+  "figures/fig1_cpu_per_process.png",
+  "figures/fig2_gpu_time_c128.png",
+  "figures/fig3_code2wav_kernels.png",
+  "figures/fig4_thinker_step_by_load.png"
+ ],
+ "raw_data_location": "集群 results/experiments/20261117_exp05_talker_s2x6_run01（不在仓库里）；Mac 有镜像"
+}
