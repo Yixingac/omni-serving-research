@@ -1,0 +1,84 @@
+{
+ "plan_id": "a6000_8gpu_v2_batch2_part3",
+ "_comment": "plan v2 第二批的第三部分，通过 plan.d 追加：6 种 8 卡布局在相同绝对速率下的高负载开环。由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "v2b_aoh_s2x6",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_aoh_s2x6.json",
+   "priority": 80,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 900,
+   "timeout_s": 5400,
+   "max_retries": 1,
+   "description": "第二批 A 的高负载开环：一个服务：2 个 thinker（pipeline）副本 + 6 个 talker 副本，code2wav 单独进程、与 talker 同卡。W3b 开环泊松，所有布局用同一组绝对速率 16, 20, 24, 28, 32, 36, 40 请求/秒，每档 90 秒；第一批的开环最高只到闭环容量的 120%，池化布局在那里还远没离开 SLO。"
+  },
+  {
+   "experiment_id": "v2b_aoh_s3x5",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_aoh_s3x5.json",
+   "priority": 79,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 900,
+   "timeout_s": 5400,
+   "max_retries": 1,
+   "description": "第二批 A 的高负载开环：一个服务：3 个 thinker（pipeline）副本 + 5 个 talker 副本，code2wav 单独进程、与 talker 同卡。W3b 开环泊松，所有布局用同一组绝对速率 16, 20, 24, 28, 32, 36, 40 请求/秒，每档 90 秒；第一批的开环最高只到闭环容量的 120%，池化布局在那里还远没离开 SLO。"
+  },
+  {
+   "experiment_id": "v2b_aoh_s1x7",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_aoh_s1x7.json",
+   "priority": 78,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 900,
+   "timeout_s": 5400,
+   "max_retries": 1,
+   "description": "第二批 A 的高负载开环：一个服务：1 个 thinker（pipeline）副本 + 7 个 talker 副本，code2wav 单独进程、与 talker 同卡。W3b 开环泊松，所有布局用同一组绝对速率 16, 20, 24, 28, 32, 36, 40 请求/秒，每档 90 秒；第一批的开环最高只到闭环容量的 120%，池化布局在那里还远没离开 SLO。"
+  },
+  {
+   "experiment_id": "v2b_aoh_r8",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_aoh_r8.json",
+   "priority": 77,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 900,
+   "timeout_s": 5400,
+   "max_retries": 1,
+   "description": "第二批 A 的高负载开环：8 个完整副本（每卡一个服务，code2wav 单独进程），客户端按在途请求最少路由。W3b 开环泊松，所有布局用同一组绝对速率 16, 20, 24, 28, 32, 36, 40 请求/秒，每档 90 秒；第一批的开环最高只到闭环容量的 120%，池化布局在那里还远没离开 SLO。"
+  },
+  {
+   "experiment_id": "v2b_aoh_s4x4",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_aoh_s4x4.json",
+   "priority": 76,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 900,
+   "timeout_s": 5400,
+   "max_retries": 1,
+   "description": "第二批 A 的高负载开环：一个服务：4 个 thinker（pipeline）副本 + 4 个 talker 副本，code2wav 单独进程、与 talker 同卡。W3b 开环泊松，所有布局用同一组绝对速率 16, 20, 24, 28, 32, 36, 40 请求/秒，每档 90 秒；第一批的开环最高只到闭环容量的 120%，池化布局在那里还远没离开 SLO。"
+  },
+  {
+   "experiment_id": "v2b_aoh_p4",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_aoh_p4.json",
+   "priority": 75,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 900,
+   "timeout_s": 5400,
+   "max_retries": 1,
+   "description": "第二批 A 的高负载开环：4 个拆分服务（每个 1 张 thinker 卡 + 1 张 talker 卡，code2wav 单独进程），客户端按在途请求最少路由。W3b 开环泊松，所有布局用同一组绝对速率 16, 20, 24, 28, 32, 36, 40 请求/秒，每档 90 秒；第一批的开环最高只到闭环容量的 120%，池化布局在那里还远没离开 SLO。"
+  }
+ ]
+}

@@ -5,7 +5,8 @@
 
 Writes configs/models/minicpm_o_4_5_v2_s<T>x<K>.yaml (one service with T pipeline replicas and K
 talker replicas), configs/experiments/a6000_8gpu_v2/*.json, configs/experiments/plan_a6000_8gpu_v2.json
-(batch 1), configs/experiments/plan_a6000_8gpu_v2_batch2.json and ..._batch2_part2.json (plan.d).
+(batch 1), configs/experiments/plan_a6000_8gpu_v2_batch2.json, ..._batch2_part2.json and
+..._batch2_part3.json (the last two through plan.d).
 Every MiniCPM-o speech layout runs code2wav in its own process (--code2wav.process code2wav), the
 workaround for the talker crash (baseline_results.md section 17), except the same-process control in
 the stability gate. Experiments restart a server that exits and re-run the affected load level.
@@ -23,6 +24,7 @@ EXP_DIR = "configs/experiments/a6000_8gpu_v2"
 PLAN = "configs/experiments/plan_a6000_8gpu_v2.json"
 PLAN2 = "configs/experiments/plan_a6000_8gpu_v2_batch2.json"
 PLAN3 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part2.json"
+PLAN4 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part3.json"
 
 W1 = "configs/workloads/w1_text_chat.json"
 W2 = "configs/workloads/w2_audio_text.json"
@@ -326,6 +328,28 @@ def batch2_part2_entries() -> list[tuple[dict | None, dict]]:
     return entries
 
 
+# Batch-1 open loops topped out at 120% of the closed-loop "capacity", and the pooled layouts were
+# still far inside the SLO there (e2e per audio second p90 0.28-0.31 against 0.5): the closed loop
+# with two requests per slot under-reads capacity (drain). The same absolute rates for every layout.
+AOH_RATES = [16, 20, 24, 28, 32, 36, 40]
+
+
+def batch2_part3_entries() -> list[tuple[dict | None, dict]]:
+    """Batch 2, third part (plan.d): W3b open loop at fixed absolute rates, to find where each 8-GPU
+    layout leaves the speech SLO."""
+    entries: list[tuple[dict | None, dict]] = []
+    for k, name in enumerate(("s2x6", "s3x5", "s1x7", "r8", "s4x4", "p4")):
+        servers, what, routing = layout(name, 8)
+        ph = {"kind": "open_loop", "name": "w3b_open_abs", "workload": W3B, "rates_rps": AOH_RATES,
+              "duration_per_rate_s": 90, "min_requests_per_rate": 96, "max_error_rate": 0.2, "server_events": False}
+        cfg = base(f"v2b_aoh_{name}", 8, servers, [smoke(), ph],
+                   f"第二批 A 的高负载开环：{what}。W3b 开环泊松，所有布局用同一组绝对速率 "
+                   f"{', '.join(map(str, AOH_RATES))} 请求/秒，每档 90 秒；第一批的开环最高只到闭环容量的 120%，池化布局在那里还远没离开 SLO。",
+                   routing)
+        entries.append((cfg, {"priority": 80 - k, "est": 900, "timeout": 5400}))
+    return entries
+
+
 def plan_entry(cfg: dict | None, meta: dict) -> dict:
     eid = cfg["experiment_id"] if cfg else meta["experiment_id"]
     gpus = int(cfg["hardware_label"].removeprefix("a6000x")) if cfg else meta["gpus"]
@@ -356,7 +380,13 @@ def render() -> dict[str, str]:
                          "由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
              "experiments": [plan_entry(c, m) for c, m in entries3]}
     files[PLAN3] = json.dumps(plan3, ensure_ascii=False, indent=1) + "\n"
-    for cfg, _ in entries + entries2 + entries3:
+    entries4 = batch2_part3_entries()
+    plan4 = {"plan_id": "a6000_8gpu_v2_batch2_part3",
+             "_comment": "plan v2 第二批的第三部分，通过 plan.d 追加：6 种 8 卡布局在相同绝对速率下的高负载开环。"
+                         "由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+             "experiments": [plan_entry(c, m) for c, m in entries4]}
+    files[PLAN4] = json.dumps(plan4, ensure_ascii=False, indent=1) + "\n"
+    for cfg, _ in entries + entries2 + entries3 + entries4:
         if cfg:
             files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
     return files

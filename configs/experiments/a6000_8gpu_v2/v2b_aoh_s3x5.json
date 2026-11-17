@@ -1,0 +1,57 @@
+{
+ "runtime_profile": "unicorn",
+ "hardware_label": "a6000x8",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "v2b_aoh_s3x5",
+ "description": "第二批 A 的高负载开环：一个服务：3 个 thinker（pipeline）副本 + 5 个 talker 副本，code2wav 单独进程、与 talker 同卡。W3b 开环泊松，所有布局用同一组绝对速率 16, 20, 24, 28, 32, 36, 40 请求/秒，每档 90 秒；第一批的开环最高只到闭环容量的 120%，池化布局在那里还远没离开 SLO。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "s0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "args": [
+    "--config",
+    "{research_repo}/configs/models/minicpm_o_4_5_v2_s3x5.yaml"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_open_abs",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "rates_rps": [
+    16,
+    20,
+    24,
+    28,
+    32,
+    36,
+    40
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 96,
+   "max_error_rate": 0.2,
+   "server_events": false
+  }
+ ]
+}
