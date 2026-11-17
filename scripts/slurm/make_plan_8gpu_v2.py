@@ -1,10 +1,11 @@
-"""Generate plan v2's first-batch experiments (docs/04_experiments/plan_8gpu_v2.md: phase 0, A, B).
+"""Generate plan v2's experiments (docs/04_experiments/plan_8gpu_v2.md: batch 1 = phase 0, A, B; batch 2 so far).
 
     python3 scripts/slurm/make_plan_8gpu_v2.py          # rewrites the files below
     python3 scripts/slurm/make_plan_8gpu_v2.py --check  # exit 1 if any generated file is stale
 
 Writes configs/models/minicpm_o_4_5_v2_s<T>x<K>.yaml (one service with T pipeline replicas and K
-talker replicas), configs/experiments/a6000_8gpu_v2/*.json and configs/experiments/plan_a6000_8gpu_v2.json.
+talker replicas), configs/experiments/a6000_8gpu_v2/*.json, configs/experiments/plan_a6000_8gpu_v2.json
+(batch 1) and configs/experiments/plan_a6000_8gpu_v2_batch2.json.
 Every MiniCPM-o speech layout runs code2wav in its own process (--code2wav.process code2wav), the
 workaround for the talker crash (baseline_results.md section 17), except the same-process control in
 the stability gate. Experiments restart a server that exits and re-run the affected load level.
@@ -20,6 +21,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 EXP_DIR = "configs/experiments/a6000_8gpu_v2"
 PLAN = "configs/experiments/plan_a6000_8gpu_v2.json"
+PLAN2 = "configs/experiments/plan_a6000_8gpu_v2_batch2.json"
 
 W1 = "configs/workloads/w1_text_chat.json"
 W2 = "configs/workloads/w2_audio_text.json"
@@ -183,6 +185,13 @@ def a_config(eid: str, name: str, n: int, run: int, profile: bool = False) -> di
     return base(eid, n, servers, phases, desc, routing)
 
 
+def b1_config(eid: str, name: str, batch: str = "plan v2 B1") -> dict:
+    servers, what, routing = layout(name, 8)
+    return base(eid, 8, servers, [smoke(), closed("mix_closed", LEVELS[8], mix=MIX), open_from("mix_open", "mix_closed", mix=MIX)],
+                f"{batch}：{what}上的混合负载（40% W1 文本对话、40% W3b 文本提问语音回答、20% W2 语音提问文本回答，每个请求按权重抽取），"
+                "闭环并发 16–256，再按测得容量开环 50%–120%。", routing)
+
+
 def gate_configs() -> list[tuple[dict, dict]]:
     """Y0s: four experiments side by side on 1 + 2 + 4 + 1 GPUs."""
     out = []
@@ -249,14 +258,30 @@ def all_entries() -> tuple[list[tuple[dict | None, dict]], dict[str, str]]:
             entries.append((a_config(f"v2_a_{name}_run{run}", name, 4, run), {"priority": prio, "est": 1500, "timeout": 6000}))
             prio -= 1
     for k, name in enumerate(("r8", "s2x6", "p4")):
-        servers, what, routing = layout(name, 8)
-        cfg = base(f"v2_b1_{name}", 8, servers, [smoke(), closed("mix_closed", LEVELS[8], mix=MIX), open_from("mix_open", "mix_closed", mix=MIX)],
-                   f"plan v2 B1：{what}上的混合负载（40% W1 文本对话、40% W3b 文本提问语音回答、20% W2 语音提问文本回答，每个请求按权重抽取），"
-                   "闭环并发 16–256，再按测得容量开环 50%–120%。", routing)
-        entries.append((cfg, {"priority": 60 - k, "est": 1800, "timeout": 6000}))
+        entries.append((b1_config(f"v2_b1_{name}", name), {"priority": 60 - k, "est": 1800, "timeout": 6000}))
     for k, name in enumerate(("r2", "p1")):
         entries.append((a_config(f"v2_a_{name}", name, 2, 1), {"priority": 50 - k, "est": 1500, "timeout": 5400}))
     return entries, yamls
+
+
+def batch2_entries() -> list[tuple[dict | None, dict]]:
+    """Batch 2, first part, for Job 454290 on compute-03. Batch 1 ran on another 8×A6000 node of the
+    shared gpu partition (same GPUs, NVLink pairs and CPU model; driver 570 with cuda-compat there, 580 here)."""
+    entries: list[tuple[dict | None, dict]] = [(None, {
+        "experiment_id": "v2b_y0_env_topology", "gpus": 8, "priority": 100, "est": 600, "timeout": 2700,
+        "command": "bash scripts/slurm/env_topology.sh unicorn minicpm_o_4_5",
+        "description": "第二批 Y0（compute-03）：拓扑、点对点拷贝带宽、NCCL all-reduce（第一批的 Y0 因为 nvidia-smi 表头的 ANSI 码什么都没测），"
+                       "计时预热 MiniCPM-o 权重"})]
+    # The batch-1 best layout and R8 once more on this node, so batch-2 results can be set against
+    # batch 1 (two runs each on the other node).
+    for k, name in enumerate(("s2x6", "r8")):
+        cfg = a_config(f"v2b_a_{name}_c03", name, 8, 3)
+        cfg["description"] = cfg["description"].replace("plan v2 A（8 卡，第 3 次）", "第二批 A 的跨节点对照（compute-03，与第一批在另一台 8 卡节点上的两次比较）")
+        entries.append((cfg, {"priority": 90 - k, "est": 1100, "timeout": 6000}))
+    # B1 favoured the thinker-heavier layouts (P4 > R8 > S2:6 at every level): the pooled 1:1 and 3:5 next.
+    for k, name in enumerate(("s4x4", "s3x5")):
+        entries.append((b1_config(f"v2b_b1_{name}", name, "第二批 B1"), {"priority": 60 - k, "est": 1000, "timeout": 6000}))
+    return entries
 
 
 def plan_entry(cfg: dict | None, meta: dict) -> dict:
@@ -277,7 +302,13 @@ def render() -> dict[str, str]:
                         "某个实验失败不会挡住后面的实验。B 用的 S2:6、P4 是按假设预选的，A 的结果如果指向别的布局，再通过 plan.d 追加。",
             "experiments": [plan_entry(c, m) for c, m in entries]}
     files[PLAN] = json.dumps(plan, ensure_ascii=False, indent=1) + "\n"
-    for cfg, _ in entries:
+    entries2 = batch2_entries()
+    plan2 = {"plan_id": "a6000_8gpu_v2_batch2",
+             "_comment": "plan v2 第二批的第一部分（compute-03 上的 Y0、跨节点对照、B1 的另外两个布局），由 scripts/slurm/make_plan_8gpu_v2.py 生成。"
+                         "其余部分看结果再通过 plan.d 追加。",
+             "experiments": [plan_entry(c, m) for c, m in entries2]}
+    files[PLAN2] = json.dumps(plan2, ensure_ascii=False, indent=1) + "\n"
+    for cfg, _ in entries + entries2:
         if cfg:
             files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
     return files

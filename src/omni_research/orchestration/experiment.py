@@ -136,8 +136,27 @@ class GpuSampler:
                 self.proc.kill()
 
 
+def claim_processes(trees: dict[str, list[Any]]) -> dict[str, list[Any]]:
+    """Give each process (anything with a ``pid``) to the first group whose tree contains it.
+
+    The client group is this runner, and the servers it starts are its children. Without this, the
+    client tree re-read every server process right after its own group did, and psutil's cpu_percent
+    over that near-zero interval is clock-tick noise (plan v2 batch 1: "client" up to 2,700%).
+    Groups listed earlier win, so the client must come last."""
+    seen: set[int] = set()
+    out: dict[str, list[Any]] = {}
+    for name, tree in trees.items():
+        out[name] = []
+        for p in tree:
+            if p.pid not in seen:
+                seen.add(p.pid)
+                out[name].append(p)
+    return out
+
+
 class CpuSampler(threading.Thread):
-    """Process-tree CPU usage of the servers (and the client itself) once per second."""
+    """Process-tree CPU usage of the servers (and the client itself) once per second. The client
+    group counts only processes outside the server trees (``pids_fn`` lists the client last)."""
 
     def __init__(self, path: Path, pids_fn, interval_s: float = 1.0) -> None:  # noqa: ANN001
         super().__init__(daemon=True)
@@ -155,13 +174,15 @@ class CpuSampler(threading.Thread):
             while not self._stop.wait(self.interval_s):
                 rec: dict[str, Any] = {"t_wall_ns": time.time_ns(), "system_cpu_percent": psutil.cpu_percent(None),
                                        "groups": {}}
+                trees: dict[str, list[Any]] = {}
                 for name, root in self.pids_fn().items():
-                    total = 0.0
-                    n = 0
                     try:
-                        tree = [psutil.Process(root)] + psutil.Process(root).children(recursive=True)
+                        trees[name] = [psutil.Process(root)] + psutil.Process(root).children(recursive=True)
                     except psutil.Error:
                         continue
+                for name, tree in claim_processes(trees).items():
+                    total = 0.0
+                    n = 0
                     for p in tree:
                         if p.pid not in procs:
                             procs[p.pid] = p

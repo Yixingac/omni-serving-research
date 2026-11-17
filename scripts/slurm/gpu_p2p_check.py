@@ -24,6 +24,9 @@ import time
 
 def parse_topo(text: str) -> dict[tuple[int, int], str]:
     """Link type for each GPU pair (i < j) from the `nvidia-smi topo -m` matrix, e.g. {(0, 1): "NV4"}."""
+    # nvidia-smi underlines the header row with ANSI codes even when stdout is not a terminal
+    # ("\x1b[4mGPU0 ... GPU NUMA ID\x1b[0m"); without stripping them the header is never found.
+    text = re.sub(r"\x1b\[[0-9;]*m", "", text)
     links: dict[tuple[int, int], str] = {}
     header: list[str] | None = None
     for line in text.splitlines():
@@ -143,6 +146,12 @@ def main() -> int:
 
     topo = subprocess.run(["nvidia-smi", "topo", "-m"], capture_output=True, text=True).stdout
     links = parse_topo(topo)
+    listing = subprocess.run(["nvidia-smi", "-L"], capture_output=True, text=True).stdout
+    visible = sum(1 for ln in listing.splitlines() if ln.startswith("GPU "))
+    if len(links) == 0 and visible > 1:
+        # Job 625796's Y0 measured nothing and still exited 0 this way; fail so the step shows it.
+        print(f"no GPU pairs parsed from `nvidia-smi topo -m` although {visible} GPUs are visible", file=sys.stderr)
+        return 3
     gpus = sorted({g for p in links for g in p}) or [0]
     report: dict = {"links": {f"{i}-{j}": v for (i, j), v in sorted(links.items())}, "pairs": [], "allreduce": []}
     for (i, j) in sorted(links):

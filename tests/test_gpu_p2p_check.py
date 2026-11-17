@@ -28,3 +28,14 @@ def test_parse_topo_pairs_and_links():
 
 def test_parse_topo_empty():
     assert mod.parse_topo("No devices were found") == {}
+
+
+def test_parse_topo_ansi_header():
+    # Real A6000 output: nvidia-smi underlines the header row even when piped (Job 625796's Y0 parsed nothing).
+    topo = ("\t\x1b[4mGPU0\tGPU1\tGPU2\tGPU3\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\x1b[0m\n"
+            "GPU0\t X \tNODE\tNODE\tNV4\t2-7\t0\t\tN/A\n"
+            "GPU1\tNODE\t X \tNV4\tPIX\t2-7\t0\t\tN/A\n"
+            "GPU2\tNODE\tNV4\t X \tPIX\t2-7\t0\t\tN/A\n"
+            "GPU3\tNV4\tPIX\tPIX\t X \t2-7\t0\t\tN/A\n")
+    links = mod.parse_topo(topo)
+    assert links == {(0, 1): "NODE", (0, 2): "NODE", (0, 3): "NV4", (1, 2): "NV4", (1, 3): "PIX", (2, 3): "PIX"}

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from omni_research.orchestration.experiment import ExperimentRunner, classify_log, summarize_gpu_samples
+from omni_research.orchestration.experiment import ExperimentRunner, claim_processes, classify_log, summarize_gpu_samples
 from omni_research.tracing import load_trace, validate_trace
 
 REPO = Path(__file__).resolve().parents[1]
@@ -151,3 +151,15 @@ def test_stop_kills_server_in_its_own_process_group(cfg, tmp_path):
             break
         time.sleep(0.5)
     assert _port_free(port), "server in its own session is still listening after stop()"
+
+
+def test_claim_processes_keeps_server_processes_out_of_the_client_group():
+    class P:
+        def __init__(self, pid):
+            self.pid = pid
+
+    runner, shell, server, stage, sampler = P(10), P(20), P(21), P(22), P(30)
+    # The client tree (this runner) contains the server tree it started; the client is listed last.
+    groups = claim_processes({"s0": [shell, server, stage], "client": [runner, shell, server, stage, sampler]})
+    assert [p.pid for p in groups["s0"]] == [20, 21, 22]
+    assert [p.pid for p in groups["client"]] == [10, 30]
