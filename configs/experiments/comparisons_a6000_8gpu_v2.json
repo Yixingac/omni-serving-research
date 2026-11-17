@@ -1,0 +1,43 @@
+{
+  "_comment": "plan v2 第一批（另一台 8×A6000 节点，2026-11-15）的跨实验对比。dir 相对于 PROJECT_DATA_ROOT；latest/<实验名> 指向最近一次成功的运行。开环阶段的速率按各自的闭环容量换算，不同布局没有共同的负载水平，所以这里只比较闭环；相同绝对速率的开环在第二批（v2b_aoh_*）。",
+  "comparisons": [
+    {"name": "v2_placement_8gpu_w3b_closed", "question": "8 张卡、W3b（文本提问语音回答）闭环负载下，哪种 thinker/talker 分法吞吐最高、延迟最低？",
+     "variable": "8 卡放置（R8 完整副本 / P4 成对拆分 / S T:K 池化）", "phase": "w3b_closed",
+     "experiments": [
+       {"label": "R8", "dir": "latest/v2_a_r8_run1"},
+       {"label": "P4", "dir": "latest/v2_a_p4_run1"},
+       {"label": "S1:7", "dir": "latest/v2_a_s1x7_run1"},
+       {"label": "S2:6", "dir": "latest/v2_a_s2x6_run1"},
+       {"label": "S3:5", "dir": "latest/v2_a_s3x5_run1"},
+       {"label": "S4:4", "dir": "latest/v2_a_s4x4_run1"}]},
+    {"name": "v2_placement_8gpu_w3b_closed_run2", "question": "同上，第二次运行（按相反顺序排队）",
+     "variable": "8 卡放置", "phase": "w3b_closed",
+     "experiments": [
+       {"label": "R8", "dir": "latest/v2_a_r8_run2"},
+       {"label": "P4", "dir": "latest/v2_a_p4_run2"},
+       {"label": "S1:7", "dir": "latest/v2_a_s1x7_run2"},
+       {"label": "S2:6", "dir": "latest/v2_a_s2x6_run2"},
+       {"label": "S3:5", "dir": "latest/v2_a_s3x5_run2"},
+       {"label": "S4:4", "dir": "latest/v2_a_s4x4_run2"}]},
+    {"name": "v2_placement_4gpu_w3b_closed", "question": "4 张卡、W3b 闭环负载下，哪种分法最好？",
+     "variable": "4 卡放置（R4 / P2 / S1:3 / S2:2）", "phase": "w3b_closed",
+     "experiments": [
+       {"label": "R4", "dir": "latest/v2_a_r4_run1"},
+       {"label": "P2", "dir": "latest/v2_a_p2_run1"},
+       {"label": "S1:3", "dir": "latest/v2_a_s1x3_run1"},
+       {"label": "S2:2", "dir": "latest/v2_a_s2x2_run1"}]},
+    {"name": "v2_repeat_8gpu_w3b_closed", "question": "同一配置两次运行（第二次按相反顺序排队）差多少？",
+     "variable": "运行次数", "phase": "w3b_closed",
+     "experiments": [
+       {"label": "S2:6 第 1 次", "dir": "latest/v2_a_s2x6_run1"},
+       {"label": "S2:6 第 2 次", "dir": "latest/v2_a_s2x6_run2"},
+       {"label": "R8 第 1 次", "dir": "latest/v2_a_r8_run1"},
+       {"label": "R8 第 2 次", "dir": "latest/v2_a_r8_run2"}]},
+    {"name": "v2_mix_8gpu_closed", "question": "混合负载（40% 文本对话、40% 文本提问语音回答、20% 语音提问文本回答）下，最佳放置是否改变？",
+     "variable": "8 卡放置", "phase": "mix_closed",
+     "experiments": [
+       {"label": "R8", "dir": "latest/v2_b1_r8"},
+       {"label": "S2:6", "dir": "latest/v2_b1_s2x6"},
+       {"label": "P4", "dir": "latest/v2_b1_p4"}]}
+  ]
+}
