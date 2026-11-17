@@ -6,7 +6,8 @@
 Writes configs/models/minicpm_o_4_5_v2_s<T>x<K>.yaml (one service with T pipeline replicas and K
 talker replicas), configs/experiments/a6000_8gpu_v2/*.json, configs/experiments/plan_a6000_8gpu_v2.json
 (batch 1), configs/experiments/plan_a6000_8gpu_v2_batch2.json, ..._batch2_part2.json and
-..._batch2_part3.json, ..._part4.json, ..._part5.json and ..._part6.json (the last five through plan.d).
+..._batch2_part3.json, ..._part4.json, ..._part5.json, ..._part6.json and ..._part7.json (the last six
+through plan.d).
 Every MiniCPM-o speech layout runs code2wav in its own process (--code2wav.process code2wav), the
 workaround for the talker crash (baseline_results.md section 17), except the same-process control in
 the stability gate. Experiments restart a server that exits and re-run the affected load level.
@@ -28,6 +29,7 @@ PLAN4 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part3.json"
 PLAN5 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part4.json"
 PLAN6 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part5.json"
 PLAN7 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part6.json"
+PLAN8 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part7.json"
 
 W1 = "configs/workloads/w1_text_chat.json"
 W2 = "configs/workloads/w2_audio_text.json"
@@ -444,6 +446,32 @@ def batch2_part6_entries() -> list[tuple[dict | None, dict]]:
     return entries
 
 
+def batch2_part7_entries() -> list[tuple[dict | None, dict]]:
+    """Batch 2, seventh part (plan.d, after the queue drained): the four 4x replays again, whose first
+    runs lost 20-46% of their requests to the client's open-file limit (1024; now raised at client
+    start), and F1 R1 once more with server events, to find where video requests wait."""
+    entries: list[tuple[dict | None, dict]] = []
+    servers, what, routing = layout("r8", 8)
+    for k, (name, mode, payload, speed, max_sessions, copies) in enumerate(r for r in D_RUNS if r[3] == 4.0):
+        ph = {"kind": "replay", "name": "replay", "trace": D_TRACE, "mode": mode, "payload": payload, "speed": speed,
+              "session_copies": copies, "routing": "least_outstanding", "request_timeout_s": 300}
+        cfg = base(f"v2b_d_{name}_r2", 8, servers, [smoke(), ph],
+                   f"第二批 D 重跑：v2b_d_{name} 第一次运行时，客户端在约一千个请求在途时用完了文件句柄（软上限 1024），"
+                   f"20%–46% 的请求失败或被跳过；现在客户端启动时会调高软上限。其余与 v2b_d_{name} 相同："
+                   f"{'依赖感知' if mode == 'dependency' else '请求级'}回放，内容用{D_PAYLOAD[payload]}，全部 2048 个不重复会话，4 倍速。", routing)
+        entries.append((cfg, {"priority": 20 - k, "est": 600, "timeout": 3600}))
+    servers = [{"name": "r0", "model": "minicpm_o_4_5", "gpus": [0], "args": ["--text-only"], "ready_timeout_s": 2400}]
+    phases = [{"kind": "smoke", "name": "smoke_w4", "workload": W4, "requests": 2},
+              {"kind": "closed_loop", "name": "w4_video_10s", "workload": W4,
+               "workload_overrides": {"video": {"tag": "count_circles", "target_s": 10}}, "concurrency": [1, 2, 4],
+               "requests_per_level": 24, "requests_per_concurrency": 3, "server_events": True, "stop_if_p50_e2e_above_s": 90}]
+    entries.append((base("v2b_f1_r1_events", 1, servers, phases,
+                         "第二批 F1 补充：1 个完整副本（--text-only），10 秒视频，闭环并发 1、2、4，每档 24 个请求，开事件记录。"
+                         "F1 里每个副本的吞吐不随并发增长（请求被逐个处理），CPU 和 GPU 都没有用满；这次看请求在哪个阶段排队。"),
+                    {"priority": 10, "est": 400, "timeout": 2400}))
+    return entries
+
+
 def plan_entry(cfg: dict | None, meta: dict) -> dict:
     eid = cfg["experiment_id"] if cfg else meta["experiment_id"]
     gpus = int(cfg["hardware_label"].removeprefix("a6000x")) if cfg else meta["gpus"]
@@ -498,7 +526,13 @@ def render() -> dict[str, str]:
                          "由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
              "experiments": [plan_entry(c, m) for c, m in entries7]}
     files[PLAN7] = json.dumps(plan7, ensure_ascii=False, indent=1) + "\n"
-    for cfg, _ in entries + entries2 + entries3 + entries4 + entries5 + entries6 + entries7:
+    entries8 = batch2_part7_entries()
+    plan8 = {"plan_id": "a6000_8gpu_v2_batch2_part7",
+             "_comment": "plan v2 第二批的第七部分，队列跑完后通过 plan.d 追加：客户端句柄上限修好后重跑 D 的 4 个 4 倍速回放，"
+                         "再用开了事件记录的单副本视频实验看 F1 的请求在哪里排队。由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+             "experiments": [plan_entry(c, m) for c, m in entries8]}
+    files[PLAN8] = json.dumps(plan8, ensure_ascii=False, indent=1) + "\n"
+    for cfg, _ in entries + entries2 + entries3 + entries4 + entries5 + entries6 + entries7 + entries8:
         if cfg:
             files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
     return files

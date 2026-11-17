@@ -1,13 +1,15 @@
 """End-to-end test of the experiment runner against the CPU-only fake server (no GPU)."""
 
 import json
+import resource
 import socket
 import sys
 from pathlib import Path
 
 import pytest
 
-from omni_research.orchestration.experiment import ExperimentRunner, claim_processes, classify_log, summarize_gpu_samples
+from omni_research.orchestration.experiment import (ExperimentRunner, claim_processes, classify_log, raise_open_file_limit,
+                                                    summarize_gpu_samples)
 from omni_research.tracing import load_trace, validate_trace
 
 REPO = Path(__file__).resolve().parents[1]
@@ -118,6 +120,19 @@ def test_classify_and_gpu_summary(tmp_path):
                  "2026/11/11 19:20:00.200, 0, GPU-a, 100, 20, 3000, 49140, 200, 1800, P0\n")
     g = summarize_gpu_samples(p)
     assert g["0"]["mem_max_mib"] == 3000 and g["0"]["util_mean"] == 75 and g["0"]["samples"] == 2
+
+
+def test_open_file_limit_is_raised_but_never_above_the_hard_limit(monkeypatch):
+    calls = []
+    monkeypatch.setattr(resource, "setrlimit", lambda r, v: calls.append(v))
+    monkeypatch.setattr(resource, "getrlimit", lambda r: (1024, 4096))
+    assert raise_open_file_limit(65536) == (1024, 4096) and calls == [(4096, 4096)]
+    calls.clear()
+    monkeypatch.setattr(resource, "getrlimit", lambda r: (1024, 1048576))
+    assert raise_open_file_limit(65536) == (1024, 65536) and calls == [(65536, 1048576)]
+    calls.clear()
+    monkeypatch.setattr(resource, "getrlimit", lambda r: (100000, 1048576))
+    assert raise_open_file_limit(65536) == (100000, 100000) and calls == []
 
 
 def test_runner_torch_profile_window_waits_for_export(cfg, tmp_path):

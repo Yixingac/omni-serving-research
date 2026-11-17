@@ -27,6 +27,7 @@ import math
 import os
 import random
 import re
+import resource
 import shutil
 import signal
 import socket
@@ -450,6 +451,7 @@ class ExperimentRunner:
             "research_repo_dirty": bool(subprocess.run(["git", "-C", str(repo), "status", "--porcelain"], capture_output=True,
                                                        text=True).stdout.strip()) if git(repo) else None,
             "sglang_omni_commit": git(omni_repo) if omni_repo else None,
+            "open_file_limit": dict(zip(("soft", "hard"), resource.getrlimit(resource.RLIMIT_NOFILE))),
             "models": {s.get("name", "s"): {"path": s.get("model_path"), "revision": s.get("model_revision")}
                        for s in self.cfg.get("servers", [])},
         }
@@ -1074,11 +1076,31 @@ def update_latest_link(data_root: Path, name: str, out: Path) -> None:
     os.replace(tmp, latest / name)
 
 
+def raise_open_file_limit(target: int = 65536) -> tuple[int, int]:
+    """Raise this process's soft RLIMIT_NOFILE to ``target``, never above the hard limit.
+
+    The client holds one socket per in-flight request. With the inherited soft limit of 1024 it
+    failed itself ("Too many open files") once about a thousand requests were in flight (plan v2
+    batch 2: open loop above 32 req/s, replay at 4x speed). Servers started later inherit the limit.
+    Returns (soft limit before, soft limit now).
+    """
+    soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    want = target if hard == resource.RLIM_INFINITY else min(target, hard)
+    if soft == resource.RLIM_INFINITY or soft >= want:
+        return soft, soft
+    try:
+        resource.setrlimit(resource.RLIMIT_NOFILE, (want, hard))
+    except (ValueError, OSError):
+        return soft, soft
+    return soft, want
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("config")
     p.add_argument("--out", default=None)
     args = p.parse_args(argv)
+    raise_open_file_limit()
     repo = Path(os.environ.get("OMNI_REPO") or Path(__file__).resolve().parents[3])
     cfg = resolve_config(json.loads(Path(args.config).read_text()), repo)
     out = Path(os.environ.get("OMNI_EXP_DIR") or args.out or f"results/experiments/{cfg['experiment_id']}")

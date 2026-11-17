@@ -1,0 +1,71 @@
+{
+ "plan_id": "a6000_8gpu_v2_batch2_part7",
+ "_comment": "plan v2 第二批的第七部分，队列跑完后通过 plan.d 追加：客户端句柄上限修好后重跑 D 的 4 个 4 倍速回放，再用开了事件记录的单副本视频实验看 F1 的请求在哪里排队。由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "v2b_d_dep_orig_4x_r2",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_d_dep_orig_4x_r2.json",
+   "priority": 20,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 600,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "第二批 D 重跑：v2b_d_dep_orig_4x 第一次运行时，客户端在约一千个请求在途时用完了文件句柄（软上限 1024），20%–46% 的请求失败或被跳过；现在客户端启动时会调高软上限。其余与 v2b_d_dep_orig_4x 相同：依赖感知回放，内容用原文，全部 2048 个不重复会话，4 倍速。"
+  },
+  {
+   "experiment_id": "v2b_d_req_orig_4x_r2",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_d_req_orig_4x_r2.json",
+   "priority": 19,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 600,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "第二批 D 重跑：v2b_d_req_orig_4x 第一次运行时，客户端在约一千个请求在途时用完了文件句柄（软上限 1024），20%–46% 的请求失败或被跳过；现在客户端启动时会调高软上限。其余与 v2b_d_req_orig_4x 相同：请求级回放，内容用原文，全部 2048 个不重复会话，4 倍速。"
+  },
+  {
+   "experiment_id": "v2b_d_dep_prefix_4x_r2",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_d_dep_prefix_4x_r2.json",
+   "priority": 18,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 600,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "第二批 D 重跑：v2b_d_dep_prefix_4x 第一次运行时，客户端在约一千个请求在途时用完了文件句柄（软上限 1024），20%–46% 的请求失败或被跳过；现在客户端启动时会调高软上限。其余与 v2b_d_dep_prefix_4x 相同：依赖感知回放，内容用保留前缀的替代内容，全部 2048 个不重复会话，4 倍速。"
+  },
+  {
+   "experiment_id": "v2b_d_dep_sur_4x_r2",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_d_dep_sur_4x_r2.json",
+   "priority": 17,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 600,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "第二批 D 重跑：v2b_d_dep_sur_4x 第一次运行时，客户端在约一千个请求在途时用完了文件句柄（软上限 1024），20%–46% 的请求失败或被跳过；现在客户端启动时会调高软上限。其余与 v2b_d_dep_sur_4x 相同：依赖感知回放，内容用完全替代，全部 2048 个不重复会话，4 倍速。"
+  },
+  {
+   "experiment_id": "v2b_f1_r1_events",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_f1_r1_events.json",
+   "priority": 10,
+   "required_gpus": 1,
+   "required_cpus": 7,
+   "required_memory_gb": 95,
+   "dependencies": [],
+   "estimated_duration_s": 400,
+   "timeout_s": 2400,
+   "max_retries": 1,
+   "description": "第二批 F1 补充：1 个完整副本（--text-only），10 秒视频，闭环并发 1、2、4，每档 24 个请求，开事件记录。F1 里每个副本的吞吐不随并发增长（请求被逐个处理），CPU 和 GPU 都没有用满；这次看请求在哪个阶段排队。"
+  }
+ ]
+}
