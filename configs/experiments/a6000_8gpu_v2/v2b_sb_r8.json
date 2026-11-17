@@ -1,0 +1,131 @@
+{
+ "runtime_profile": "unicorn",
+ "hardware_label": "a6000x8",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "v2b_sb_r8",
+ "description": "第二批小 batch 实时服务：8 个完整副本（每卡一个服务，code2wav 单独进程），客户端按在途请求最少路由。W3b 闭环并发 1, 2, 4, 8，每档 64 个请求（另有 4 个预热），开事件记录，看小 batch 下的 TTFT、端到端 ÷ 语音秒和各阶段时间。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "r0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r1",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    1
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r2",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    2
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r3",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    3
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r4",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    4
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r5",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    5
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r6",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    6
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r7",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    7
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_small",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    1,
+    2,
+    4,
+    8
+   ],
+   "requests_per_level": 64,
+   "warmup": 4,
+   "server_events": true
+  }
+ ],
+ "routing": "least_outstanding"
+}

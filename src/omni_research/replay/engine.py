@@ -19,6 +19,8 @@ is written to a results JSONL with the original span id, so the replay is audita
 from __future__ import annotations
 
 import asyncio
+import dataclasses
+import hashlib
 import json
 import random
 import time
@@ -30,7 +32,7 @@ from ..tracing.collector import TraceCollector
 from ..tracing.io import Trace
 from ..tracing.schema import EV_COMPLETE, EV_FIRST_AUDIO, EV_FIRST_TEXT, EV_REQUEST_SENT, SourceKind, SpanKind
 from .backends import Backend, ModelRequest, RequestResult
-from .payloads import AssetPool, surrogate_request
+from .payloads import AssetPool, surrogate_request, synthetic_text
 
 REPLAYABLE = (SpanKind.MODEL_REQUEST.value, SpanKind.TOOL_CALL.value, SpanKind.WAIT.value)
 _TOL_NS = 1_000_000
@@ -137,6 +139,55 @@ def build_plan(trace: Trace) -> ReplayPlan:
     )
 
 
+def limit_sessions(plan: ReplayPlan, n: int) -> ReplayPlan:
+    """The first ``n`` sessions by start time, e.g. to clone a smaller set of sessions
+    (``session_copies``) into the same load as the whole trace."""
+    keep = sorted(plan.sessions, key=lambda s: plan.session_offset_ns[s])[:n]
+    ids = {nid for sid in keep for nid in plan.sessions[sid]}
+    nodes = {k: dataclasses.replace(v, deps=[d for d in v.deps if d in ids]) for k, v in plan.nodes.items() if k in ids}
+    return dataclasses.replace(plan, nodes=nodes, sessions={sid: plan.sessions[sid] for sid in keep},
+                               session_offset_ns={sid: plan.session_offset_ns[sid] for sid in keep})
+
+
+def _same_length_text(text: str, seed: int) -> str:
+    """Synthetic text as long as ``text``; the same input always gives the same output."""
+    rng = random.Random(f"{seed}:{hashlib.sha256(text.encode()).hexdigest()}")
+    out = synthetic_text(max(1, len(text) // 5 + 1), rng)
+    while len(out) < len(text):
+        out += " " + synthetic_text(8, rng)
+    return out[: len(text)]
+
+
+def prefix_surrogate_messages(messages: list[dict[str, Any]], seed: int = 0) -> tuple[list[dict[str, Any]], int, int]:
+    """(messages, kept_chars, replaced_chars): system messages as recorded, the text of every other
+    message replaced by same-length synthetic text. Equal texts get equal replacements, so whatever
+    requests share in the recording (the system prompt and tool descriptions across sessions, the
+    earlier turns within a session) they share in the replay too."""
+    out: list[dict[str, Any]] = []
+    kept = replaced = 0
+    for m in messages:
+        c = m.get("content")
+        if m.get("role") == "system":
+            kept += len(c) if isinstance(c, str) else sum(len(p.get("text", "")) for p in c or [] if isinstance(p, dict))
+            out.append(m)
+            continue
+        if isinstance(c, str):
+            new: Any = _same_length_text(c, seed)
+            replaced += len(c)
+        elif isinstance(c, list):
+            new = []
+            for part in c:
+                if isinstance(part, dict) and part.get("type") == "text":
+                    new.append({**part, "text": _same_length_text(part.get("text", ""), seed)})
+                    replaced += len(part.get("text", ""))
+                else:
+                    new.append(part)
+        else:
+            new = c
+        out.append({**m, "content": new})
+    return out, kept, replaced
+
+
 class _ResultSink:
     def __init__(self, path: str | Path | None) -> None:
         self.path = Path(path) if path else None
@@ -171,7 +222,10 @@ class ReplayConfig:
     # "auto": resend the request body stored in the trace, or a same-size surrogate when there is none.
     # "surrogate": always a surrogate, with the recorded output length forced, so that comparing the two
     # isolates what replaying the actual content changes (prefix sharing between agent requests, f3: 93%).
+    # "prefix_surrogate": the stored messages with non-system text replaced, keeping what requests share
+    # (prefix_surrogate_messages), recorded output length forced (plan v2 P3).
     payload: str = "auto"
+    max_sessions: int | None = None  # replay only the first N sessions by start time (limit_sessions)
 
     def __post_init__(self) -> None:
         if self.mode not in ("request", "dependency"):
@@ -180,8 +234,10 @@ class ReplayConfig:
             raise ValueError("speed must be > 0")
         if self.session_copies < 1:
             raise ValueError("session_copies must be >= 1")
-        if self.payload not in ("auto", "surrogate"):
-            raise ValueError(f"payload must be 'auto' or 'surrogate', not {self.payload!r}")
+        if self.payload not in ("auto", "surrogate", "prefix_surrogate"):
+            raise ValueError(f"payload must be 'auto', 'surrogate' or 'prefix_surrogate', not {self.payload!r}")
+        if self.max_sessions is not None and self.max_sessions < 1:
+            raise ValueError("max_sessions must be >= 1")
 
 
 class ReplayEngine:
@@ -195,7 +251,7 @@ class ReplayEngine:
         results_path: str | Path | None = None,
         collector: TraceCollector | None = None,
     ) -> None:
-        self.plan = plan
+        self.plan = limit_sessions(plan, config.max_sessions) if config.max_sessions else plan
         self.backend = backend
         self.cfg = config
         self.pool = pool
@@ -280,8 +336,16 @@ class ReplayEngine:
         rid = f"rp-{copy}-{node.request_id or node.span_id}-{self._rng.getrandbits(32):08x}"
         md = {"session_id": f"{node.session_id}#{copy}", "replay_of_span": node.span_id,
               "replay_of_request": node.request_id, "copy": copy}
-        body = node.attrs.get("request_body") if self.cfg.payload == "auto" else None
-        if body:
+        body = node.attrs.get("request_body") if self.cfg.payload in ("auto", "prefix_surrogate") else None
+        if body and self.cfg.payload == "prefix_surrogate":
+            messages, kept, replaced = prefix_surrogate_messages(body["messages"], self.cfg.seed)
+            md["payload"] = {"kind": "prefix_surrogate", "kept_chars": kept, "replaced_chars": replaced}
+            out_tokens = node.attrs.get("completion_tokens")
+            req = ModelRequest(rid, messages, list(body.get("input_modalities") or ["text"]),
+                               list(body.get("output_modalities") or ["text"]), max_tokens=out_tokens or body.get("max_tokens"),
+                               audios=body.get("audios"), videos=body.get("videos"), temperature=body.get("temperature", 0.0),
+                               metadata=md, extra_body={"stage_params": {"thinker": {"ignore_eos": True}}} if out_tokens else {})
+        elif body:
             # The trace kept the original request (synthetic/public content): resend it as is.
             md["payload"] = {"kind": "original"}
             req = ModelRequest(rid, body["messages"], list(body.get("input_modalities") or ["text"]),

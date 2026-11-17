@@ -1,0 +1,128 @@
+{
+ "runtime_profile": "unicorn",
+ "hardware_label": "a6000x8",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "v2b_d_dep_sur_1x",
+ "description": "第二批 D（回放方法）：在新启动的 8 个完整副本（每卡一个服务，code2wav 单独进程），客户端按在途请求最少路由上回放 v2b_b2l_r8 的 lo_text_c256（256 个并发文本 Agent 的实时运行）。依赖感知回放，内容用完全替代，全部 2048 个不重复会话，1 倍速。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "r0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r1",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    1
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r2",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    2
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r3",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    3
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r4",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    4
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r5",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    5
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r6",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    6
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "r7",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    7
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "replay",
+   "name": "replay",
+   "trace": "latest/v2b_b2l_r8/raw/agent_trace_lo_text_c256.jsonl",
+   "mode": "dependency",
+   "payload": "surrogate",
+   "speed": 1.0,
+   "session_copies": 1,
+   "routing": "least_outstanding",
+   "request_timeout_s": 300
+  }
+ ],
+ "routing": "least_outstanding"
+}

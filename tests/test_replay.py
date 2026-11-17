@@ -96,6 +96,47 @@ def test_surrogate_payload_ignores_stored_body_and_keeps_output_length():
         ReplayConfig(payload="exact")
 
 
+def test_prefix_surrogate_keeps_what_requests_share():
+    """payload="prefix_surrogate" (plan v2 P3): system text verbatim, other text replaced by
+    same-length synthetic text, equal texts replaced equally (so a session's earlier turns stay a
+    shared prefix), recorded output length forced."""
+    from omni_research.replay.engine import prefix_surrogate_messages
+
+    t = _synthetic_trace()
+    system = {"role": "system", "content": "You are a careful assistant. Tools: calculator(expression)."}
+    user = {"role": "user", "content": "Ticket QWERTY: how many boxes are in aisle 7?"}
+    step1 = {"messages": [system, user], "max_tokens": 192, "input_modalities": ["text"], "output_modalities": ["text"]}
+    step2 = {"messages": [system, user, {"role": "assistant", "content": '{"tool": "lookup", "args": {"aisle": 7}}'},
+                          {"role": "user", "content": "Tool results: 42"}],
+             "max_tokens": 192, "input_modalities": ["text"], "output_modalities": ["text"]}
+    t.spans["r1"].attributes.update(request_body=step1, completion_tokens=9)
+    t.spans["r2"].attributes.update(request_body=step2, completion_tokens=5)
+    plan = build_plan(t)
+    eng = ReplayEngine(plan, MockBackend(), ReplayConfig(payload="prefix_surrogate"))
+    a, b = eng._new_request(0, plan.nodes["r1"]), eng._new_request(0, plan.nodes["r2"])
+    assert a.messages[0] == system and b.messages[0] == system
+    assert a.messages[1] == b.messages[1] != user                      # shared turn, replaced the same way
+    assert [len(m["content"]) for m in b.messages] == [len(m["content"]) for m in step2["messages"]]
+    assert all(m["content"] != o["content"] for m, o in zip(b.messages[1:], step2["messages"][1:]))
+    assert a.metadata["payload"] == {"kind": "prefix_surrogate", "kept_chars": len(system["content"]), "replaced_chars": len(user["content"])}
+    assert (a.max_tokens, b.max_tokens) == (9, 5) and a.extra_body["stage_params"]["thinker"]["ignore_eos"] is True
+    # Multimodal content: only text parts change.
+    msgs, _, _ = prefix_surrogate_messages([{"role": "user", "content": [{"type": "text", "text": "abc def"}, {"type": "input_audio", "input_audio": {"data": "x"}}]}])
+    assert len(msgs[0]["content"][0]["text"]) == 7 and msgs[0]["content"][1] == {"type": "input_audio", "input_audio": {"data": "x"}}
+
+
+async def test_max_sessions_replays_the_first_sessions_and_copies_them():
+    t = _synthetic_trace()
+    plan = build_plan(t)
+    eng = ReplayEngine(plan, MockBackend(), ReplayConfig(max_sessions=1, session_copies=2, speed=20.0))
+    assert set(eng.plan.sessions) == {"A"} and set(eng.plan.nodes) == {"r1", "t1", "r2"}
+    summary = await eng.run()
+    sent = [r for r in eng.sink.records if r.get("kind") == "model_request"]
+    assert len(sent) == 4 and summary["session_copies"] == 2  # A's two requests, twice
+    with pytest.raises(ValueError):
+        ReplayConfig(max_sessions=0)
+
+
 async def test_dependency_mode_feedback_from_slow_server(tmp_path):
     """A slower server delays every downstream request: the closed-loop property."""
     plan = build_plan(_synthetic_trace())

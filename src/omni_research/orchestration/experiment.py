@@ -857,7 +857,8 @@ class ExperimentRunner:
         plan = build_plan(trace)
         rcfg = ReplayConfig(mode=ph.get("mode", "dependency"), speed=float(ph.get("speed", 1.0)),
                             session_copies=int(ph.get("session_copies", 1)), session_arrival=ph.get("session_arrival", "trace"),
-                            seed=seed, request_timeout_s=ph.get("request_timeout_s"), payload=ph.get("payload", "auto"))
+                            seed=seed, request_timeout_s=ph.get("request_timeout_s"), payload=ph.get("payload", "auto"),
+                            max_sessions=ph.get("max_sessions"))
         be = self.backend(routing=ph.get("routing"))
         tc = replay_collector(self.out / "raw" / f"replay_trace_{name}.jsonl", plan, rcfg, getattr(be, "name", "?"))
         try:

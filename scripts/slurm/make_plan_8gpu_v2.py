@@ -6,7 +6,7 @@
 Writes configs/models/minicpm_o_4_5_v2_s<T>x<K>.yaml (one service with T pipeline replicas and K
 talker replicas), configs/experiments/a6000_8gpu_v2/*.json, configs/experiments/plan_a6000_8gpu_v2.json
 (batch 1), configs/experiments/plan_a6000_8gpu_v2_batch2.json, ..._batch2_part2.json and
-..._batch2_part3.json and ..._batch2_part4.json (the last three through plan.d).
+..._batch2_part3.json, ..._part4.json, ..._part5.json and ..._part6.json (the last five through plan.d).
 Every MiniCPM-o speech layout runs code2wav in its own process (--code2wav.process code2wav), the
 workaround for the talker crash (baseline_results.md section 17), except the same-process control in
 the stability gate. Experiments restart a server that exits and re-run the affected load level.
@@ -26,6 +26,8 @@ PLAN2 = "configs/experiments/plan_a6000_8gpu_v2_batch2.json"
 PLAN3 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part2.json"
 PLAN4 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part3.json"
 PLAN5 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part4.json"
+PLAN6 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part5.json"
+PLAN7 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part6.json"
 
 W1 = "configs/workloads/w1_text_chat.json"
 W2 = "configs/workloads/w2_audio_text.json"
@@ -396,6 +398,52 @@ def batch2_part4_entries() -> list[tuple[dict | None, dict]]:
     return entries
 
 
+# D replays the live B2 run at 256 concurrent text agents (2048 unique sessions, least-outstanding
+# routing on R8) on a fresh R8 each time. (name, mode, payload, speed, max_sessions, copies)
+D_TRACE = "latest/v2b_b2l_r8/raw/agent_trace_lo_text_c256.jsonl"
+D_RUNS = [("dep_orig_1x", "dependency", "auto", 1.0, None, 1), ("dep_prefix_1x", "dependency", "prefix_surrogate", 1.0, None, 1),
+          ("dep_sur_1x", "dependency", "surrogate", 1.0, None, 1), ("dep_orig_copy4_1x", "dependency", "auto", 1.0, 512, 4),
+          ("req_orig_1x", "request", "auto", 1.0, None, 1), ("dep_orig_2x", "dependency", "auto", 2.0, None, 1),
+          ("dep_orig_4x", "dependency", "auto", 4.0, None, 1), ("req_orig_4x", "request", "auto", 4.0, None, 1),
+          ("dep_prefix_4x", "dependency", "prefix_surrogate", 4.0, None, 1), ("dep_sur_4x", "dependency", "surrogate", 4.0, None, 1)]
+D_PAYLOAD = {"auto": "原文", "prefix_surrogate": "保留前缀的替代内容", "surrogate": "完全替代"}
+
+
+def batch2_part5_entries() -> list[tuple[dict | None, dict]]:
+    """Batch 2, fifth part (plan.d, after v2b_b2l_r8 has recorded its trace): D, trace replay method."""
+    entries: list[tuple[dict | None, dict]] = []
+    servers, what, routing = layout("r8", 8)
+    for k, (name, mode, payload, speed, max_sessions, copies) in enumerate(D_RUNS):
+        ph = {"kind": "replay", "name": "replay", "trace": D_TRACE, "mode": mode, "payload": payload, "speed": speed,
+              "session_copies": copies, "routing": "least_outstanding", "request_timeout_s": 300}
+        if max_sessions:
+            ph["max_sessions"] = max_sessions
+        amp = f"前 {max_sessions} 个会话复制 {copies} 份" if max_sessions else "全部 2048 个不重复会话"
+        cfg = base(f"v2b_d_{name}", 8, servers, [smoke(), ph],
+                   f"第二批 D（回放方法）：在新启动的 {what}上回放 v2b_b2l_r8 的 lo_text_c256（256 个并发文本 Agent 的实时运行）。"
+                   f"{'依赖感知' if mode == 'dependency' else '请求级'}回放，内容用{D_PAYLOAD[payload]}，{amp}，{speed:g} 倍速。", routing)
+        entries.append((cfg, {"priority": 30 - k, "est": 600, "timeout": 3600}))
+    return entries
+
+
+SMALL_BATCH_LEVELS = [1, 2, 4, 8]
+
+
+def batch2_part6_entries() -> list[tuple[dict | None, dict]]:
+    """Batch 2, sixth part (plan.d, ahead of the rest): small-batch real-time serving. The 8-GPU
+    layouts started at concurrency 16 in batch 1; only R1 and the 2-GPU layouts saw 1-8."""
+    entries: list[tuple[dict | None, dict]] = []
+    for k, name in enumerate(("s2x6", "r8", "p4", "s1x7")):
+        servers, what, routing = layout(name, 8)
+        ph = {"kind": "closed_loop", "name": "w3b_small", "workload": W3B, "concurrency": SMALL_BATCH_LEVELS,
+              "requests_per_level": 64, "warmup": 4, "server_events": True}
+        cfg = base(f"v2b_sb_{name}", 8, servers, [smoke(), ph],
+                   f"第二批小 batch 实时服务：{what}。W3b 闭环并发 {', '.join(map(str, SMALL_BATCH_LEVELS))}，每档 64 个请求（另有 4 个预热），"
+                   "开事件记录，看小 batch 下的 TTFT、端到端 ÷ 语音秒和各阶段时间。", routing)
+        entries.append((cfg, {"priority": 88 - k, "est": 600, "timeout": 3600}))
+    return entries
+
+
 def plan_entry(cfg: dict | None, meta: dict) -> dict:
     eid = cfg["experiment_id"] if cfg else meta["experiment_id"]
     gpus = int(cfg["hardware_label"].removeprefix("a6000x")) if cfg else meta["gpus"]
@@ -438,7 +486,19 @@ def render() -> dict[str, str]:
                          "由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
              "experiments": [plan_entry(c, m) for c, m in entries5]}
     files[PLAN5] = json.dumps(plan5, ensure_ascii=False, indent=1) + "\n"
-    for cfg, _ in entries + entries2 + entries3 + entries4 + entries5:
+    entries6 = batch2_part5_entries()
+    plan6 = {"plan_id": "a6000_8gpu_v2_batch2_part5",
+             "_comment": "plan v2 第二批的第五部分（D：trace 回放方法），在 v2b_b2l_r8 录下 trace 之后通过 plan.d 追加。"
+                         "由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+             "experiments": [plan_entry(c, m) for c, m in entries6]}
+    files[PLAN6] = json.dumps(plan6, ensure_ascii=False, indent=1) + "\n"
+    entries7 = batch2_part6_entries()
+    plan7 = {"plan_id": "a6000_8gpu_v2_batch2_part6",
+             "_comment": "plan v2 第二批的第六部分，通过 plan.d 追加、优先运行：4 种 8 卡布局在并发 1/2/4/8 下的小 batch 实时服务。"
+                         "由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+             "experiments": [plan_entry(c, m) for c, m in entries7]}
+    files[PLAN7] = json.dumps(plan7, ensure_ascii=False, indent=1) + "\n"
+    for cfg, _ in entries + entries2 + entries3 + entries4 + entries5 + entries6 + entries7:
         if cfg:
             files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
     return files

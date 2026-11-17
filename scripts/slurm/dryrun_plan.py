@@ -1,7 +1,7 @@
 """Rehearse an experiment plan with the CPU-only fake server (plan v2, P6).
 
     .venv/bin/python scripts/slurm/dryrun_plan.py configs/experiments/plan_a6000_8gpu_v2.json \
-        --gpus 8 --cpus 56 --mem-gb 800 [--work DIR]
+        --gpus 8 --cpus 56 --mem-gb 800 [--work DIR] [--trace RECORDED_AGENT_TRACE]
 
 Every experiment config is shrunk (two short levels, a few requests, one-second open-loop steps, a
 handful of agent sessions), the plan is rewritten to use the shrunk copies, and the real orchestrator
@@ -61,6 +61,9 @@ def shrink_phase(ph: dict) -> dict:
         ph["agent"] = agent
     elif kind == "smoke":
         ph["requests"] = min(int(ph.get("requests", 2)), 2)
+    elif kind == "replay":
+        ph["max_sessions"] = min(int(ph.get("max_sessions") or 4), 4)
+        ph["speed"] = max(float(ph.get("speed", 1.0)), 20.0)
     return ph
 
 
@@ -99,6 +102,7 @@ def main() -> int:
     ap.add_argument("--cpus", type=int, required=True)
     ap.add_argument("--mem-gb", type=float, required=True)
     ap.add_argument("--work", default=None, help="working directory (default: a new temporary one)")
+    ap.add_argument("--trace", default=None, help="agent trace to stand in for the traces replay phases name")
     a = ap.parse_args()
 
     load_plan(a.plan)  # the real plan must load and validate as it is
@@ -126,6 +130,18 @@ def main() -> int:
     data = work / "data"
     for name in pools:
         synthetic_pool(data, name)
+    # A replay phase needs its trace: pass one with --trace (the plan's path is kept under the data root).
+    for e in doc["experiments"]:
+        m = RUN_EXP.match(e["command"])
+        cfg = json.loads(Path(m.group(1)).read_text()) if m else {}
+        for ph in cfg.get("phases", []):
+            if ph.get("kind") == "replay" and not Path(ph["trace"]).is_absolute():
+                if not a.trace:
+                    sys.exit(f"{e['experiment_id']} replays {ph['trace']}: pass a recorded trace with --trace")
+                dst = data / ph["trace"]
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                if not dst.exists():
+                    dst.write_bytes(Path(a.trace).read_bytes())
 
     env = dict(os.environ, OMNI_FAKE_SERVER="1", PROJECT_DATA_ROOT=str(data), OMNI_REPO=str(REPO),
                PYTHONPATH=str(REPO / "src"), PATH=f"{Path(sys.executable).parent}:{os.environ.get('PATH', '')}")
