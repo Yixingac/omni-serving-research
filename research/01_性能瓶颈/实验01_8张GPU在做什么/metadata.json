@@ -1,0 +1,40 @@
+{
+ "experiment_number": 1,
+ "name_zh": "8 张 GPU 在做什么",
+ "question_zh": "哪些 GPU 在忙，哪些在等待？等待的原因是什么？哪些等待真正影响性能？",
+ "status": "第一版完成（已有数据）；kernel 级补测运行中",
+ "model": {"name": "MiniCPM-o 4.5", "revision": "fb09628e98b1f55d8d5b863e0eccfcdd11bff499"},
+ "software": {"sglang_omni": "520b49ee", "sglang": "0.5.21", "torch": "2.13.0"},
+ "hardware": "8×NVIDIA RTX A6000（48 GiB），NVLink 配对 0-3、1-2、4-5、6-7，其余经 PCIe；两路 CPU 插槽，GPU 0-3 和 4-7 各在一个插槽下",
+ "workload": {"id": "W3b_text_speech", "file": "configs/workloads/w3b_text_speech.json", "input": "text", "output": ["text", "audio"], "max_tokens": 64},
+ "schemes": {
+  "A": {"name_zh": "8 个完整副本", "internal_layout": "R8", "routing": "least_outstanding",
+        "gpus": {"0-7": "thinker + talker + code2wav（code2wav 单独进程）"}},
+  "B": {"name_zh": "4 条两卡流水线", "internal_layout": "P4", "routing": "least_outstanding",
+        "gpus": {"0,2,4,6": "thinker", "1,3,5,7": "talker + code2wav（code2wav 单独进程）"}},
+  "C": {"name_zh": "2 张 thinker 卡 + 6 张 talker 卡", "internal_layout": "S2:6", "routing": "单个服务内部分配",
+        "gpus": {"0-1": "thinker", "2-7": "talker + code2wav（code2wav 单独进程）"}}
+ },
+ "runs_used": [
+  {"scheme": "A", "run_dir": "20261115_v2_a_r8_run1_run01", "config_id": "v2_a_r8_run1", "config": "configs/experiments/a6000_8gpu_v2/v2_a_r8_run1.json", "slurm_job": 625796, "slurm_step": 6, "research_repo_commit": "22911f74", "phase": "w3b_closed", "concurrency": [16, 32, 64, 128, 256], "role": "图和表的主数据"},
+  {"scheme": "B", "run_dir": "20261115_v2_a_p4_run1_run01", "config_id": "v2_a_p4_run1", "config": "configs/experiments/a6000_8gpu_v2/v2_a_p4_run1.json", "slurm_job": 625796, "slurm_step": 7, "research_repo_commit": "22911f74", "phase": "w3b_closed", "concurrency": [16, 32, 64, 128, 256], "role": "图和表的主数据"},
+  {"scheme": "C", "run_dir": "20261115_v2_a_s2x6_run1_run01", "config_id": "v2_a_s2x6_run1", "config": "configs/experiments/a6000_8gpu_v2/v2_a_s2x6_run1.json", "slurm_job": 625796, "slurm_step": 9, "research_repo_commit": "22911f74", "phase": "w3b_closed", "concurrency": [16, 32, 64, 128, 256], "role": "图和表的主数据"},
+  {"scheme": "A", "run_dir": "20261116_v2b_sb_r8_run01", "config_id": "v2b_sb_r8", "config": "configs/experiments/a6000_8gpu_v2/v2b_sb_r8.json", "slurm_job": 454290, "slurm_step": 6, "research_repo_commit": "706afb0b", "phase": "w3b_small", "concurrency": [1, 2, 4, 8], "role": "低并发"},
+  {"scheme": "B", "run_dir": "20261116_v2b_sb_p4_run01", "config_id": "v2b_sb_p4", "config": "configs/experiments/a6000_8gpu_v2/v2b_sb_p4.json", "slurm_job": 454290, "slurm_step": 7, "research_repo_commit": "706afb0b", "phase": "w3b_small", "concurrency": [1, 2, 4, 8], "role": "低并发"},
+  {"scheme": "C", "run_dir": "20261116_v2b_sb_s2x6_run01", "config_id": "v2b_sb_s2x6", "config": "configs/experiments/a6000_8gpu_v2/v2b_sb_s2x6.json", "slurm_job": 454290, "slurm_step": 5, "research_repo_commit": "706afb0b", "phase": "w3b_small", "concurrency": [1, 2, 4, 8], "role": "低并发"},
+  {"scheme": "A", "run_dir": "20261115_v2_a_r8_run2_run01", "config_id": "v2_a_r8_run2", "slurm_job": 625796, "research_repo_commit": "22911f74", "role": "重复（表 1 的范围）"},
+  {"scheme": "A", "run_dir": "20261116_v2b_a_r8_c03_run01", "config_id": "v2b_a_r8_c03", "slurm_job": 454290, "research_repo_commit": "706afb0b", "role": "重复（表 1 的范围，compute-03）"},
+  {"scheme": "B", "run_dir": "20261115_v2_a_p4_run2_run01", "config_id": "v2_a_p4_run2", "slurm_job": 625796, "research_repo_commit": "22911f74", "role": "重复（表 1 的范围）"},
+  {"scheme": "C", "run_dir": "20261115_v2_a_s2x6_run2_run01", "config_id": "v2_a_s2x6_run2", "slurm_job": 625796, "research_repo_commit": "22911f74", "role": "重复（表 1 的范围）"},
+  {"scheme": "C", "run_dir": "20261116_v2b_a_s2x6_c03_run01", "config_id": "v2b_a_s2x6_c03", "slurm_job": 454290, "research_repo_commit": "706afb0b", "role": "重复（表 1 的范围，compute-03）"}
+ ],
+ "runs_pending": [
+  {"config_id": "exp01_prof_r8", "config": "configs/experiments/a6000_8gpu_v2/exp01_prof_r8.json", "slurm_job": 454290, "plan": "configs/experiments/plan_a6000_8gpu_exp01.json", "research_repo_commit": "22ae544"},
+  {"config_id": "exp01_prof_p4", "config": "configs/experiments/a6000_8gpu_v2/exp01_prof_p4.json", "slurm_job": 454290, "plan": "configs/experiments/plan_a6000_8gpu_exp01.json", "research_repo_commit": "22ae544"},
+  {"config_id": "exp01_prof_s2x6", "config": "configs/experiments/a6000_8gpu_v2/exp01_prof_s2x6.json", "slurm_job": 454290, "plan": "configs/experiments/plan_a6000_8gpu_exp01.json", "research_repo_commit": "22ae544"}
+ ],
+ "raw_data_location": "集群 results/experiments/<run_dir>（不在仓库里）；Mac 和 Spark 上有镜像",
+ "analysis_script": "scripts/analysis/exp01_gpu_timeline.py",
+ "results": "results/summary.json",
+ "figures": ["figures/fig1_gpu_timeline.png", "figures/fig2_gpu_busy_by_level.png", "figures/fig3_stage_time_c8.png", "figures/fig3_stage_time_c64.png", "figures/fig4_stage_time_vs_load.png", "figures/fig5_critical_path.png"]
+}
