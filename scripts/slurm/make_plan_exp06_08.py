@@ -181,6 +181,48 @@ def exp08a_entries() -> list[tuple[dict, dict]]:
     return out
 
 
+PLAN_EXP07 = "configs/experiments/plan_exp07.json"
+EXP07_ARMS = ["t2_k6_shared", "t2_k4_c2", "t2_k3_c3", "t2_k2_c4", "t2_k3_shared"]
+EXP07_LEVELS = [8, 64, 128, 256]
+# Open-loop rates. Pre-registered rule (hypotheses.md): 0.5X, 0.75X, 0.9X, 1.0X of the weakest
+# equal-budget arm's pilot capacity X, rounded to 0.5 req/s; the pilot's closed-loop c256 throughput gave
+# t2_k4_c2 10.6, t2_k3_c3 15.1, t2_k2_c4 20.6 (t2_k3_shared 11.0; S2:6 about 20 in plan v2), so X = 10.6.
+# 15 and 18 req/s were added after the pilot (exploratory, recorded in limitations.md) to compare the
+# two strongest arms near their capacity.
+EXP07_RATES = [5.5, 8.0, 9.5, 10.5]
+EXP07_RATES_EXPLORATORY = [15.0, 18.0]
+
+
+def exp07_entries() -> list[tuple[dict, dict]]:
+    """实验 7: five placements x three blocks; within a block the arm order is random (seed). Each run:
+    closed loop 8/64/128/256 with events (two measured waves), a 3 s kernel trace at 128, then open
+    loop at the common rates for 60 s each with events."""
+    out = []
+    for block in range(1, BLOCKS + 1):
+        rng = random.Random(SEED * 100 + 7 * 10 + block)
+        arms = EXP07_ARMS[:]
+        rng.shuffle(arms)
+        for position, arm in enumerate(arms, start=1):
+            thinker, talker, c2w = PLACEMENTS[arm]
+            phases = [smoke(), closed_levels("w3b_closed", EXP07_LEVELS, waves=3, server_events=True),
+                      {**measured("w3b_c128_C", W3B, 128, "C"), "requests_per_concurrency": 2},
+                      {"kind": "open_loop", "name": "w3b_open", "workload": W3B, "rates_rps": EXP07_RATES,
+                       "duration_per_rate_s": 90, "min_requests_per_rate": 96, "max_error_rate": 0.2, "server_events": True},
+                      {"kind": "open_loop", "name": "w3b_open_hi", "workload": W3B, "rates_rps": EXP07_RATES_EXPLORATORY,
+                       "duration_per_rate_s": 60, "min_requests_per_rate": 96, "max_error_rate": 0.2, "server_events": True}]
+            cfg = instr(base(f"exp07_{arm}_block{block}", 8, placement_server(arm), phases,
+                             f"实验 7 第 {block} 个区组第 {position} 个（区组内顺序随机，种子 {SEED}）：放置 {arm}"
+                             f"（thinker {len(thinker)}、talker {len(talker)}、code2wav {len(c2w)}，"
+                             f"{'与 talker 同卡' if talker == c2w else '单独占卡'}，用 {len(set(thinker + talker + c2w))} 张卡），打点版 sglang-omni。"
+                             f"闭环 {'/'.join(map(str, EXP07_LEVELS))}（各三波，开事件），并发 128 开 3 秒 kernel trace，"
+                             f"再开环 {'/'.join(f'{r:g}' for r in EXP07_RATES)} 请求/秒各 90 秒（预先登记），"
+                             f"{'/'.join(f'{r:g}' for r in EXP07_RATES_EXPLORATORY)} 请求/秒各 60 秒（探索性），都开事件。"))
+            # A unique, decreasing priority runs the blocks in order and the arms in their random order,
+            # below 实验 6 and 实验 8 phase 1 (positive priorities) when all are queued together.
+            out.append((cfg, {"priority": -(10 * block + position), "est": 1000, "timeout": 3600}))
+    return out
+
+
 def render() -> dict[str, str]:
     files = {f"configs/models/minicpm_o_4_5_exp_{name}.yaml": placement_yaml(name) for name in PLACEMENTS}
     pilot = exp07_pilot_entries()
@@ -192,9 +234,11 @@ def render() -> dict[str, str]:
     files[PLAN_EXP07_PILOT] = json.dumps(plan, ensure_ascii=False, indent=1) + "\n"
     smoke_entries = [smoke_instr_entry()]
     main_entries = [*exp06_entries(), *exp08a_entries()]
+    exp07 = exp07_entries()
     for path, plan_id, comment, entries in (
         (PLAN_EXP06_SMOKE, "exp06_smoke", "打点版 sglang-omni 的 GPU 冒烟测试。先单独放，确认事件和 trace 都写出来以后，再放正式区组。", smoke_entries),
         (PLAN_EXP06_08, "exp06_exp08a", "实验 6 的 3 个区组、实验 8 第一阶段的 3 个区组，依次运行。冒烟测试检查通过后才放。", main_entries),
+        (PLAN_EXP07, "exp07", "实验 7：5 种放置 × 3 个区组，区组内顺序随机，区组按 1、2、3 的顺序跑（优先级递减）。", exp07),
     ):
         plan = {"plan_id": plan_id,
                 "_comment": comment + "通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_exp06_08.py 生成。",
@@ -202,7 +246,7 @@ def render() -> dict[str, str]:
         for e in plan["experiments"]:
             e["command"] = f"bash scripts/slurm/run_experiment.sh {EXP_DIR}/{e['experiment_id']}.json"
         files[path] = json.dumps(plan, ensure_ascii=False, indent=1) + "\n"
-    for cfg, _ in pilot + smoke_entries + main_entries:
+    for cfg, _ in pilot + smoke_entries + main_entries + exp07:
         files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
     return files
 

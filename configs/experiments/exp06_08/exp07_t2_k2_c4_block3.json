@@ -1,0 +1,95 @@
+{
+ "runtime_profile": "unicorn_instr",
+ "hardware_label": "a6000x8",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "exp07_t2_k2_c4_block3",
+ "description": "实验 7 第 3 个区组第 4 个（区组内顺序随机，种子 20261117）：放置 t2_k2_c4（thinker 2、talker 2、code2wav 4，单独占卡，用 8 张卡），打点版 sglang-omni。闭环 8/64/128/256（各三波，开事件），并发 128 开 3 秒 kernel trace，再开环 5.5/8/9.5/10.5 请求/秒各 90 秒（预先登记），15/18 请求/秒各 60 秒（探索性），都开事件。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "s0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "args": [
+    "--config",
+    "{research_repo}/configs/models/minicpm_o_4_5_exp_t2_k2_c4.yaml"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_closed",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    8,
+    64,
+    128,
+    256
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_c128_C",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    128
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "torch_profile_window": {
+    "start_after_s": 10,
+    "duration_s": 3
+   }
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_open",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "rates_rps": [
+    5.5,
+    8.0,
+    9.5,
+    10.5
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 96,
+   "max_error_rate": 0.2,
+   "server_events": true
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_open_hi",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "rates_rps": [
+    15.0,
+    18.0
+   ],
+   "duration_per_rate_s": 60,
+   "min_requests_per_rate": 96,
+   "max_error_rate": 0.2,
+   "server_events": true
+  }
+ ]
+}
