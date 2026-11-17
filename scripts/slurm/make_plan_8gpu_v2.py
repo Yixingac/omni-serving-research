@@ -472,6 +472,32 @@ def batch2_part7_entries() -> list[tuple[dict | None, dict]]:
     return entries
 
 
+PLAN_EXP01 = "configs/experiments/plan_a6000_8gpu_exp01.json"
+
+
+def exp01_entries() -> list[tuple[dict | None, dict]]:
+    """实验 1（8 张 GPU 在做什么）: GPU kernel timelines for the three main layouts. Batch 1's torch
+    profiler windows hold no GPU activity (CUPTI failed to start under driver 570 + cuda-compat);
+    compute-03 runs driver 580. Each layout: W3b closed loop at concurrency 8 and 64, first with
+    server events only (the baseline, to measure the profiler's own overhead), then with the torch
+    profiler (CPU ops, CUDA runtime calls and GPU kernels, plus server events)."""
+    entries: list[tuple[dict | None, dict]] = []
+    for k, name in enumerate(("r8", "p4", "s2x6")):
+        servers, what, routing = layout(name, 8)
+        phases = [smoke()]
+        for c, n, warm in ((8, 32, 8), (64, 64, 16)):
+            for prof in (False, True):
+                ph = {"kind": "closed_loop", "name": f"w3b_{'prof' if prof else 'base'}_c{c}", "workload": W3B, "concurrency": [c],
+                      "requests_per_level": n, "requests_per_concurrency": 1, "warmup": warm}
+                ph["torch_profile" if prof else "server_events"] = True
+                phases.append(ph)
+        cfg = base(f"exp01_prof_{name}", 8, servers, phases,
+                   f"实验 1（8 张 GPU 在做什么）：{what}。W3b 闭环并发 8（32 个请求）和 64（64 个请求），每个并发先只开事件记录跑一遍，"
+                   "再开 torch profiler（CPU 操作、CUDA 调用和 GPU kernel）跑一遍，用来画每张 GPU 的工作时间线，并量出 profiler 本身的开销。", routing)
+        entries.append((cfg, {"priority": 8 - k, "est": 900, "timeout": 3600}))
+    return entries
+
+
 def plan_entry(cfg: dict | None, meta: dict) -> dict:
     eid = cfg["experiment_id"] if cfg else meta["experiment_id"]
     gpus = int(cfg["hardware_label"].removeprefix("a6000x")) if cfg else meta["gpus"]
@@ -532,7 +558,13 @@ def render() -> dict[str, str]:
                          "再用开了事件记录的单副本视频实验看 F1 的请求在哪里排队。由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
              "experiments": [plan_entry(c, m) for c, m in entries8]}
     files[PLAN8] = json.dumps(plan8, ensure_ascii=False, indent=1) + "\n"
-    for cfg, _ in entries + entries2 + entries3 + entries4 + entries5 + entries6 + entries7 + entries8:
+    entries9 = exp01_entries()
+    plan9 = {"plan_id": "a6000_8gpu_exp01",
+             "_comment": "实验 1（8 张 GPU 在做什么）的补测：三种主要分工（R8、P4、S2:6）在并发 8 和 64 下的 GPU kernel 时间线，"
+                         "每个并发先跑一遍不开 profiler 的对照。通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+             "experiments": [plan_entry(c, m) for c, m in entries9]}
+    files[PLAN_EXP01] = json.dumps(plan9, ensure_ascii=False, indent=1) + "\n"
+    for cfg, _ in entries + entries2 + entries3 + entries4 + entries5 + entries6 + entries7 + entries8 + entries9:
         if cfg:
             files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
     return files
