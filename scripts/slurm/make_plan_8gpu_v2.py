@@ -5,7 +5,7 @@
 
 Writes configs/models/minicpm_o_4_5_v2_s<T>x<K>.yaml (one service with T pipeline replicas and K
 talker replicas), configs/experiments/a6000_8gpu_v2/*.json, configs/experiments/plan_a6000_8gpu_v2.json
-(batch 1) and configs/experiments/plan_a6000_8gpu_v2_batch2.json.
+(batch 1), configs/experiments/plan_a6000_8gpu_v2_batch2.json and ..._batch2_part2.json (plan.d).
 Every MiniCPM-o speech layout runs code2wav in its own process (--code2wav.process code2wav), the
 workaround for the talker crash (baseline_results.md section 17), except the same-process control in
 the stability gate. Experiments restart a server that exits and re-run the affected load level.
@@ -22,6 +22,7 @@ REPO = Path(__file__).resolve().parents[2]
 EXP_DIR = "configs/experiments/a6000_8gpu_v2"
 PLAN = "configs/experiments/plan_a6000_8gpu_v2.json"
 PLAN2 = "configs/experiments/plan_a6000_8gpu_v2_batch2.json"
+PLAN3 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part2.json"
 
 W1 = "configs/workloads/w1_text_chat.json"
 W2 = "configs/workloads/w2_audio_text.json"
@@ -33,6 +34,7 @@ OPEN_FRACTIONS = [0.5, 0.75, 0.9, 1.0, 1.2]
 CPUS = {1: 7, 2: 14, 4: 27, 8: 54}
 MEM_GB = {1: 95, 2: 190, 4: 390, 8: 780}
 S_LAYOUTS = {4: [(1, 3), (2, 2)], 8: [(1, 7), (2, 6), (3, 5), (4, 4)]}
+S_LAYOUTS_BATCH2 = [(5, 3), (6, 2)]  # thinker-heavier pools for B1/B2 (batch 1: B1 favoured thinker GPUs)
 # Talker GPUs host a talker and a code2wav process; sglang-omni then wants a memory fraction for both.
 TALKER_FRACTION = 0.40
 CODE2WAV_FRACTION = 0.40
@@ -126,19 +128,22 @@ def profile_c64() -> dict:
 MIX = [{"workload": W1, "weight": 0.4}, {"workload": W3B, "weight": 0.4}, {"workload": W2, "weight": 0.2}]
 
 
-def agent_levels(levels: list[int], tag: str, seed0: int, routing: str | None = None) -> list[dict]:
-    """Text and voice agents at each level of concurrent sessions, twice as many sessions in total;
-    every session is unique (unique_tasks). The voice agent asks in text and speaks the final answer:
-    only 24 synthetic spoken questions exist, and repeating them would inflate prefix-cache hits."""
+def agent_levels(levels: list[int], tag: str, seed0: int, routing: str | None = None,
+                 per_slot: dict[int, int] | None = None) -> list[dict]:
+    """Text and voice agents at each level of concurrent sessions, twice as many sessions in total
+    unless ``per_slot`` gives another multiple per level; every session is unique (unique_tasks). The
+    voice agent asks in text and speaks the final answer: only 24 synthetic spoken questions exist,
+    and repeating them would inflate prefix-cache hits."""
+    n = lambda c: (per_slot or {}).get(c, 2) * c  # noqa: E731
     out = []
     for i, c in enumerate(levels):
-        ph = {"kind": "agent", "name": f"{tag}text_c{c}", "sessions": 2 * c, "concurrency": c, "seed": seed0 + i,
+        ph = {"kind": "agent", "name": f"{tag}text_c{c}", "sessions": n(c), "concurrency": c, "seed": seed0 + i,
               "unique_tasks": True, "agent": {"max_steps": 5}, "server_events": c == 256}
         if routing:
             ph["routing"] = routing
         out.append(ph)
     for i, c in enumerate(levels):
-        ph = {"kind": "agent", "name": f"{tag}voice_c{c}", "sessions": 2 * c, "concurrency": c, "seed": seed0 + 50 + i,
+        ph = {"kind": "agent", "name": f"{tag}voice_c{c}", "sessions": n(c), "concurrency": c, "seed": seed0 + 50 + i,
               "unique_tasks": True, "agent": {"max_steps": 5, "speak_final": True, "think_time_s": [1.0, 0.5]}}
         if routing:
             ph["routing"] = routing
@@ -218,7 +223,8 @@ def gate_configs() -> list[tuple[dict, dict]]:
 
 def all_entries() -> tuple[list[tuple[dict | None, dict]], dict[str, str]]:
     entries: list[tuple[dict | None, dict]] = []
-    yamls = {f"configs/models/minicpm_o_4_5_v2_s{t}x{k}.yaml": s_yaml(t, k) for n in (4, 8) for t, k in S_LAYOUTS[n]}
+    yamls = {f"configs/models/minicpm_o_4_5_v2_s{t}x{k}.yaml": s_yaml(t, k)
+             for t, k in [tk for n in (4, 8) for tk in S_LAYOUTS[n]] + S_LAYOUTS_BATCH2}
     entries.append((None, {"experiment_id": "v2_y0_env_topology", "gpus": 8, "priority": 100, "est": 900, "timeout": 2700,
                            "command": "bash scripts/slurm/env_topology.sh unicorn minicpm_o_4_5",
                            "description": "Y0：GPU 拓扑、NVLink、点对点拷贝带宽、NVLink 对上的 NCCL all-reduce，计时预热 MiniCPM-o 权重文件（P7）"}))
@@ -284,6 +290,42 @@ def batch2_entries() -> list[tuple[dict | None, dict]]:
     return entries
 
 
+# Batch-1 agent levels lasted 6-40 s (two sessions per slot), too short for a steady state: about
+# 2-3 minutes per level now.
+B2_LONG = {64: 8, 128: 8, 256: 8, 512: 4}
+
+
+def batch2_part2_entries() -> list[tuple[dict | None, dict]]:
+    """Batch 2, second part (added to the running orchestrator through plan.d): B1 on the two
+    thinker-heavier pools, and B2 again with ~2-3 minute levels on R8 (both routings), P4, S2:6
+    (with the tool-latency levels) and S4:4."""
+    entries: list[tuple[dict | None, dict]] = []
+    for k, name in enumerate(("s5x3", "s6x2")):
+        entries.append((b1_config(f"v2b_b1_{name}", name, "第二批 B1"), {"priority": 58 - k, "est": 1000, "timeout": 6000}))
+    lv = [64, 128, 256, 512]
+    what_long = "每档会话总数为并发的 8 倍（512 并发时 4 倍），每档约 2–3 分钟（第一批每档只有 6–40 秒）"
+    servers, what, routing = layout("r8", 8)
+    entries.append((base("v2b_b2l_r8", 8, servers, [smoke(), *agent_levels(lv, "lo_", 8100, "least_outstanding", B2_LONG),
+                                                    *agent_levels(lv, "sa_", 8200, "session_affinity", B2_LONG)],
+                         f"第二批 B2（加长）：{what}上的大规模 Agent（会话不重复），同时进行的会话 64–512，{what_long}；"
+                         "文本 Agent 与语音 Agent（文本提问、最后一步语音回答），路由分别用在途请求最少和按会话固定。", routing),
+                    {"priority": 50, "est": 2700, "timeout": 9000}))
+    servers, what, _ = layout("s2x6", 8)
+    entries.append((base("v2b_b2l_s2x6", 8, servers, [smoke(), *agent_levels(lv, "", 8300, per_slot=B2_LONG),
+                         {"kind": "agent", "name": "toollat0p5_text_c256", "sessions": 2048, "concurrency": 256, "seed": 8390,
+                          "unique_tasks": True, "agent": {"max_steps": 5}, "tool_latency": [0.5, 0.5]},
+                         {"kind": "agent", "name": "toollat2_text_c256", "sessions": 2048, "concurrency": 256, "seed": 8391,
+                          "unique_tasks": True, "agent": {"max_steps": 5}, "tool_latency": [2.0, 0.5]}],
+                         f"第二批 B2（加长）：{what}上的大规模 Agent，{what_long}；另加 256 个会话时工具延迟 0.5 s、2 s 两档"
+                         "（对数正态中位数，各 2048 个会话）。"), {"priority": 49, "est": 1800, "timeout": 7200}))
+    for k, name in enumerate(("p4", "s4x4")):
+        servers, what, routing = layout(name, 8)
+        entries.append((base(f"v2b_b2l_{name}", 8, servers, [smoke(), *agent_levels(lv, "", 8400 + 100 * k, per_slot=B2_LONG)],
+                             f"第二批 B2（加长）：{what}上的大规模 Agent，{what_long}。", routing),
+                        {"priority": 48 - k, "est": 1500, "timeout": 7200}))
+    return entries
+
+
 def plan_entry(cfg: dict | None, meta: dict) -> dict:
     eid = cfg["experiment_id"] if cfg else meta["experiment_id"]
     gpus = int(cfg["hardware_label"].removeprefix("a6000x")) if cfg else meta["gpus"]
@@ -308,7 +350,13 @@ def render() -> dict[str, str]:
                          "其余部分看结果再通过 plan.d 追加。",
              "experiments": [plan_entry(c, m) for c, m in entries2]}
     files[PLAN2] = json.dumps(plan2, ensure_ascii=False, indent=1) + "\n"
-    for cfg, _ in entries + entries2:
+    entries3 = batch2_part2_entries()
+    plan3 = {"plan_id": "a6000_8gpu_v2_batch2_part2",
+             "_comment": "plan v2 第二批的第二部分，通过 plan.d 加到正在运行的编排器：B1 的 S5:3、S6:2，加长的 B2。"
+                         "由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+             "experiments": [plan_entry(c, m) for c, m in entries3]}
+    files[PLAN3] = json.dumps(plan3, ensure_ascii=False, indent=1) + "\n"
+    for cfg, _ in entries + entries2 + entries3:
         if cfg:
             files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
     return files
