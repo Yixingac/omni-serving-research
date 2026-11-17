@@ -1,0 +1,84 @@
+{
+ "plan_id": "exp08_proto_perf",
+ "_comment": "实验 8 第三阶段的性能对比，3 个区组 × 关/开，排在实验 7 之后；正确性检查通过、进入条件满足后才放。通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_exp06_08.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "exp08_proto_perf_block1_off",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/exp06_08/exp08_proto_perf_block1_off.json",
+   "priority": -111,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 600,
+   "timeout_s": 2400,
+   "max_retries": 1,
+   "description": "实验 8 第三阶段性能对比第 1 个区组、off（SGLANG_OMNI_SPEECH_LOOKAHEAD=0）。2+6，原型副本，W3b 不带种子；并发顺序（种子 20261117）32、8、64，每档 ABC 三段；本区组两组的顺序 off→on。C 段只给 thinker 所在的进程开 torch profiler。"
+  },
+  {
+   "experiment_id": "exp08_proto_perf_block1_on",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/exp06_08/exp08_proto_perf_block1_on.json",
+   "priority": -112,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 600,
+   "timeout_s": 2400,
+   "max_retries": 1,
+   "description": "实验 8 第三阶段性能对比第 1 个区组、on（SGLANG_OMNI_SPEECH_LOOKAHEAD=1）。2+6，原型副本，W3b 不带种子；并发顺序（种子 20261117）32、8、64，每档 ABC 三段；本区组两组的顺序 off→on。C 段只给 thinker 所在的进程开 torch profiler。"
+  },
+  {
+   "experiment_id": "exp08_proto_perf_block2_on",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/exp06_08/exp08_proto_perf_block2_on.json",
+   "priority": -121,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 600,
+   "timeout_s": 2400,
+   "max_retries": 1,
+   "description": "实验 8 第三阶段性能对比第 2 个区组、on（SGLANG_OMNI_SPEECH_LOOKAHEAD=1）。2+6，原型副本，W3b 不带种子；并发顺序（种子 20261117）64、8、32，每档 BCA 三段；本区组两组的顺序 on→off。C 段只给 thinker 所在的进程开 torch profiler。"
+  },
+  {
+   "experiment_id": "exp08_proto_perf_block2_off",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/exp06_08/exp08_proto_perf_block2_off.json",
+   "priority": -122,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 600,
+   "timeout_s": 2400,
+   "max_retries": 1,
+   "description": "实验 8 第三阶段性能对比第 2 个区组、off（SGLANG_OMNI_SPEECH_LOOKAHEAD=0）。2+6，原型副本，W3b 不带种子；并发顺序（种子 20261117）64、8、32，每档 BCA 三段；本区组两组的顺序 on→off。C 段只给 thinker 所在的进程开 torch profiler。"
+  },
+  {
+   "experiment_id": "exp08_proto_perf_block3_off",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/exp06_08/exp08_proto_perf_block3_off.json",
+   "priority": -131,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 600,
+   "timeout_s": 2400,
+   "max_retries": 1,
+   "description": "实验 8 第三阶段性能对比第 3 个区组、off（SGLANG_OMNI_SPEECH_LOOKAHEAD=0）。2+6，原型副本，W3b 不带种子；并发顺序（种子 20261117）8、64、32，每档 CAB 三段；本区组两组的顺序 off→on。C 段只给 thinker 所在的进程开 torch profiler。"
+  },
+  {
+   "experiment_id": "exp08_proto_perf_block3_on",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/exp06_08/exp08_proto_perf_block3_on.json",
+   "priority": -132,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 600,
+   "timeout_s": 2400,
+   "max_retries": 1,
+   "description": "实验 8 第三阶段性能对比第 3 个区组、on（SGLANG_OMNI_SPEECH_LOOKAHEAD=1）。2+6，原型副本，W3b 不带种子；并发顺序（种子 20261117）8、64、32，每档 CAB 三段；本区组两组的顺序 off→on。C 段只给 thinker 所在的进程开 torch profiler。"
+  }
+ ]
+}

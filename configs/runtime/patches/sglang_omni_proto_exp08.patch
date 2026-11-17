@@ -220,7 +220,7 @@ index 85aca4e18..fc8e6a1b7 100644
              graph_runner.lock if graph_shape is not None else nullcontext(),
              packed_runner.lock if packed_layout is not None else nullcontext(),
 diff --git a/sglang_omni/models/minicpm_o/stages.py b/sglang_omni/models/minicpm_o/stages.py
-index 12512fe02..1ebc0e86a 100644
+index 12512fe02..2c19d4a11 100644
 --- a/sglang_omni/models/minicpm_o/stages.py
 +++ b/sglang_omni/models/minicpm_o/stages.py
 @@ -27,6 +27,7 @@ from sglang_omni.models.minicpm_o.native_config import TALKER_CONTEXT_LENGTH
@@ -252,24 +252,31 @@ index 12512fe02..1ebc0e86a 100644
      waveforms = [np.zeros(0, dtype=np.float32) for _ in codec_tokens]
      for index, waveform in zip(voiced, voiced_waveforms, strict=True):
          waveforms[index] = waveform
-@@ -251,6 +255,24 @@ def vocode_code2wav_payloads(
+@@ -251,6 +255,31 @@ def vocode_code2wav_payloads(
              )
          )
          outputs.append(payload)
 +    record = exp_trace.vocode_record()
 +    if exp_trace.active("c2w") and record is not None:
++        metadata = {
++            **record,
++            "batch_id": exp_trace.current_batch_id() or -1,
++            "prepare_start_ns": prepare_start_ns,
++            "prepare_end_ns": prepare_end_ns,
++            "postprocess_start_ns": postprocess_start_ns,
++            "request_codec_tokens": [len(tokens) for tokens in codec_tokens],
++            "request_ids": [payload.request_id for payload in payloads],
++        }
++        if exp_trace.configured("digest"):
++            metadata["request_codec_sha256"] = [
++                exp_trace.digest(tokens) for tokens in codec_tokens
++            ]
++        else:
++            pass
 +        exp_trace.emit_for_requests(
 +            [payload.request_id for payload in payloads],
 +            "exp_vocode",
-+            {
-+                **record,
-+                "batch_id": exp_trace.current_batch_id() or -1,
-+                "prepare_start_ns": prepare_start_ns,
-+                "prepare_end_ns": prepare_end_ns,
-+                "postprocess_start_ns": postprocess_start_ns,
-+                "request_codec_tokens": [len(tokens) for tokens in codec_tokens],
-+                "request_ids": [payload.request_id for payload in payloads],
-+            },
++            metadata,
 +            exp_trace.now_ns(),
 +        )
 +    else:
@@ -277,7 +284,7 @@ index 12512fe02..1ebc0e86a 100644
      return outputs
  
  
-@@ -320,6 +342,7 @@ def create_code2wav_executor(
+@@ -320,6 +349,7 @@ def create_code2wav_executor(
          abort_callback=model.release_reference,
          shutdown_callback=model.close_reference_pool,
          request_arrival_hook=prefetch_reference,
@@ -286,19 +293,18 @@ index 12512fe02..1ebc0e86a 100644
  
  
 diff --git a/sglang_omni/models/minicpm_o/thinker_model_runner.py b/sglang_omni/models/minicpm_o/thinker_model_runner.py
-index bfd3f6d42..d5bfdd911 100644
+index bfd3f6d42..11721fc5d 100644
 --- a/sglang_omni/models/minicpm_o/thinker_model_runner.py
 +++ b/sglang_omni/models/minicpm_o/thinker_model_runner.py
-@@ -3,6 +3,8 @@
+@@ -3,6 +3,7 @@
  
  from __future__ import annotations
  
-+import hashlib
 +import os
  from typing import TYPE_CHECKING
  
  import torch
-@@ -12,6 +14,7 @@ from sglang_omni.model_runner.base import ModelRunner
+@@ -12,6 +13,7 @@ from sglang_omni.model_runner.base import ModelRunner
  from sglang_omni.model_runner.thinker_model_runner import ThinkerModelRunner
  from sglang_omni.models.minicpm_o.payload_types import MiniCPMOPipelineState
  from sglang_omni.models.minicpm_o.routing import THINKER_STAGE
@@ -306,17 +312,46 @@ index bfd3f6d42..d5bfdd911 100644
  from sglang_omni.scheduling.types import (
      RequestOutput,
      SchedulerOutput,
-@@ -72,6 +75,9 @@ class MiniCPMOThinkerModelRunner(ThinkerModelRunner):
+@@ -35,6 +37,26 @@ else:
+     pass
+ 
+ 
++SPEECH_LOOKAHEAD_MODES: dict[str | None, tuple[bool, bool]] = {
++    None: (False, False),
++    "": (False, False),
++    "0": (False, False),
++    "1": (True, True),
++    "nosnapshot": (True, False),
++}
++
++
++def speech_lookahead_mode(value: str | None) -> tuple[bool, bool]:
++    """(speech may run ahead, hidden states are snapshotted at launch) for SGLANG_OMNI_SPEECH_LOOKAHEAD."""
++    if value not in SPEECH_LOOKAHEAD_MODES:
++        raise ValueError(
++            f"SGLANG_OMNI_SPEECH_LOOKAHEAD must be 0, 1 or nosnapshot, got {value!r}"
++        )
++    else:
++        pass
++    return SPEECH_LOOKAHEAD_MODES[value]
++
++
+ class MiniCPMOThinkerModelRunner(ThinkerModelRunner):
+     """Run the thinker and accumulate hidden states for speech conditioning."""
+ 
+@@ -72,6 +94,11 @@ class MiniCPMOThinkerModelRunner(ThinkerModelRunner):
              else get_server_return_hidden_states_mode()
          )
          self.pending_hidden: dict[str, list[torch.Tensor]] = {}
 +        # note (research): prototype switch; the next lookahead launch replays the decode graph into the
 +        # same hidden-state buffer, so speech steps snapshot it at launch before they may run ahead.
-+        self.speech_lookahead = os.environ.get("SGLANG_OMNI_SPEECH_LOOKAHEAD") == "1"
++        self.speech_lookahead, self.snapshot_hidden = speech_lookahead_mode(
++            os.environ.get("SGLANG_OMNI_SPEECH_LOOKAHEAD")
++        )
  
      def requested_capture_hidden_mode_prefill(
          self, schedule_batch: ScheduleBatch, requests: list[SchedulerRequest]
-@@ -161,6 +167,56 @@ class MiniCPMOThinkerModelRunner(ThinkerModelRunner):
+@@ -161,6 +188,56 @@ class MiniCPMOThinkerModelRunner(ThinkerModelRunner):
                  # note (MayDomine): CUDA graph replay overwrites the original hidden buffer.
                  seq.append(hidden_rows[-1].detach().clone())
  
@@ -358,7 +393,7 @@ index bfd3f6d42..d5bfdd911 100644
 +    ) -> torch.Tensor | None:
 +        """Snapshot this step's hidden states before the next launch can overwrite the graph buffer."""
 +        if (
-+            self.speech_lookahead
++            self.snapshot_hidden
 +            and result is not None
 +            and result.logits_output is not None
 +            and result.logits_output.hidden_states is not None
@@ -373,22 +408,19 @@ index bfd3f6d42..d5bfdd911 100644
      def finalize_skip_rids(self, scheduler_output: SchedulerOutput) -> set[str]:
          """Do not advance generation state for non-final prefill chunks."""
          return {
-@@ -188,6 +244,23 @@ class MiniCPMOThinkerModelRunner(ThinkerModelRunner):
+@@ -188,6 +265,20 @@ class MiniCPMOThinkerModelRunner(ThinkerModelRunner):
              pass
          stacked = torch.stack(seq).to("cpu")
          req_data.extra_model_outputs["hidden_states_seq"] = list(stacked.unbind(0))
-+        if exp_trace.active("thinker"):
++        if exp_trace.active("digest"):
 +            exp_trace.emit_for_requests(
 +                [request_id],
 +                "exp_thinker_hidden",
 +                {
 +                    "rows": int(stacked.shape[0]),
-+                    "hidden_sha256": hashlib.sha256(
-+                        stacked.contiguous().view(torch.int16).numpy().tobytes()
-+                        if stacked.element_size() == 2
-+                        else stacked.contiguous().numpy().tobytes()
-+                    ).hexdigest()[:16],
++                    "hidden_sha256": exp_trace.digest(stacked),
 +                    "speech_lookahead": self.speech_lookahead,
++                    "snapshot_hidden": self.snapshot_hidden,
 +                },
 +                exp_trace.now_ns(),
 +            )
@@ -397,16 +429,41 @@ index bfd3f6d42..d5bfdd911 100644
  
      def reset_request(self, request_id: str) -> None:
          """Drop accumulated hidden states on abort (no terminal flush runs)."""
+diff --git a/sglang_omni/pipeline/stage/runtime.py b/sglang_omni/pipeline/stage/runtime.py
+index e8067693b..d4a98f7d7 100644
+--- a/sglang_omni/pipeline/stage/runtime.py
++++ b/sglang_omni/pipeline/stage/runtime.py
+@@ -2319,7 +2319,18 @@ class Stage:
+ 
+     def on_profiler_start(self, msg: ProfilerStartMessage) -> None:
+         run_id = msg.run_id
+-        if msg.enable_torch and not TorchProfiler.is_active():
++        # note (research): measurement switch; listed stages keep request events but stay out of the
++        # torch profiler, so a trace window covers only the stages under study.
++        skipped_prefixes = tuple(
++            prefix
++            for prefix in os.environ.get("SGLANG_OMNI_EXP_TORCH_SKIP", "").split(",")
++            if prefix
++        )
++        if (
++            msg.enable_torch
++            and not TorchProfiler.is_active()
++            and not self.name.startswith(skipped_prefixes)
++        ):
+             base_tpl = msg.trace_path_template.format(run_id=run_id, stage=self.name)
+             template = f"{base_tpl}_pid{os.getpid()}"
+             prof_dir = os.environ.get("SGLANG_TORCH_PROFILER_DIR")
 diff --git a/sglang_omni/profiler/exp_trace.py b/sglang_omni/profiler/exp_trace.py
 new file mode 100644
-index 000000000..07f836381
+index 000000000..e7c18d99c
 --- /dev/null
 +++ b/sglang_omni/profiler/exp_trace.py
-@@ -0,0 +1,124 @@
+@@ -0,0 +1,134 @@
 +# SPDX-License-Identifier: Apache-2.0
 +"""Opt-in measurement points for research experiments on code2wav batching and thinker lookahead.
 +
-+Nothing here runs unless SGLANG_OMNI_EXP_TRACE names the part (comma list of c2w and thinker).
++Nothing here runs unless SGLANG_OMNI_EXP_TRACE names the part (comma list of c2w, thinker and digest;
++digest adds hashes of thinker hidden states and codec tokens for comparing runs).
 +Events go through the request event recorder, so they are written only while request events are
 +switched on, land in the same per-process JSONL files and use the same wall clock (time.time_ns).
 +No call here synchronizes a CUDA stream: GPU spans come from CUDA events that are read after a
@@ -416,6 +473,7 @@ index 000000000..07f836381
 +from __future__ import annotations
 +
 +import contextlib
++import hashlib
 +import os
 +import threading
 +import time
@@ -435,6 +493,14 @@ index 000000000..07f836381
 +EventMetadata = dict[str, int | float | str | bool | list[int] | list[str]]
 +
 +thread_state = threading.local()
++
++
++def digest(values: torch.Tensor | list[int]) -> str:
++    """First 16 hex digits of SHA-256 over the dtype and raw bytes; bfloat16 is read as int16."""
++    tensor = values if isinstance(values, torch.Tensor) else torch.tensor(values, dtype=torch.int64)
++    tensor = tensor.detach().contiguous().cpu()
++    raw = tensor.view(torch.int16) if tensor.dtype == torch.bfloat16 else tensor
++    return hashlib.sha256(str(tensor.dtype).encode() + raw.numpy().tobytes()).hexdigest()[:16]
 +
 +
 +def configured(part: str) -> bool:

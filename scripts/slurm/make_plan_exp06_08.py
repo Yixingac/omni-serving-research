@@ -208,6 +208,70 @@ def exp08_supp_entries() -> list[tuple[dict, dict]]:
     return out
 
 
+PLAN_EXP08_PROTO_CHECK = "configs/experiments/plan_exp08_proto_check.json"
+PLAN_EXP08_PROTO_PERF = "configs/experiments/plan_exp08_proto_perf.json"
+PROTO_RUNTIME = "unicorn_proto"
+W3B_GREEDY = "configs/workloads/w3b_greedy_check.json"
+# SGLANG_OMNI_SPEECH_LOOKAHEAD per arm; nosnapshot lets speech run ahead without the snapshot (diagnostic only).
+PROTO_ARMS = {"off": "0", "on": "1", "nosnap": "nosnapshot"}
+
+
+def proto(cfg: dict, arm: str, digest: bool) -> dict:
+    """Serve from the prototype worktree with the arm's switch; digest adds hidden-state and codec hashes."""
+    cfg["runtime_profile"] = PROTO_RUNTIME
+    env = {"SGLANG_OMNI_SPEECH_LOOKAHEAD": PROTO_ARMS[arm]}
+    if digest:
+        env["SGLANG_OMNI_EXP_TRACE"] = "thinker,c2w,digest"
+    else:
+        pass
+    for server in cfg["servers"]:
+        server["env"] = env
+    return cfg
+
+
+def exp08_proto_check_entries() -> list[tuple[dict, dict]]:
+    """实验 8 phase 3, correctness before any performance: the same deterministic requests (thinker and talker
+    greedy, no seed) with the prototype off, on, and on without the snapshot. Concurrency 1 compares outputs
+    request by request; concurrency 8 checks mixed batches for errors and missing or extra hidden rows."""
+    out = []
+    for i, arm in enumerate(PROTO_ARMS):
+        phases = [smoke(),
+                  {"kind": "smoke", "name": "check_c1", "workload": W3B_GREEDY, "requests": 18, "server_events": True},
+                  {"kind": "closed_loop", "name": "check_c8", "workload": W3B_GREEDY, "concurrency": [8],
+                   "requests_per_level": 48, "requests_per_concurrency": 6, "server_events": True}]
+        cfg = proto(base(f"exp08_proto_check_{arm}", 8, placement_server("t2_k6_shared"), phases,
+                         f"实验 8 第三阶段的正确性检查（{arm}：SGLANG_OMNI_SPEECH_LOOKAHEAD={PROTO_ARMS[arm]}）。2+6，原型副本。"
+                         "thinker、talker 都用贪心解码、不带种子：并发 1 跑 18 个请求（6 个问题各 3 次），逐个比较文字、"
+                         "thinker 隐藏状态的哈希和语音编码的哈希；并发 8 跑 48 个请求，检查混合批里有没有错误、隐藏状态行数对不对。"),
+                    arm, digest=True)
+        out.append((cfg, {"priority": 1 - i, "est": 420, "timeout": 2400}))
+    return out
+
+
+def exp08_proto_perf_entries() -> list[tuple[dict, dict]]:
+    """实验 8 phase 3 performance: W3b without seed, prototype off vs on, concurrency 8/32/64 in a random order
+    shared by both arms of a block, A/B/C rotated by block; arm order off-on, on-off, off-on (ABBA)."""
+    out = []
+    rotations = ["ABC", "BCA", "CAB"]
+    arm_orders = [("off", "on"), ("on", "off"), ("off", "on")]
+    for block in range(1, BLOCKS + 1):
+        rng = random.Random(SEED * 100 + 83 * 10 + block)
+        levels = EXP08_LEVELS[:]
+        rng.shuffle(levels)
+        for position, arm in enumerate(arm_orders[block - 1], start=1):
+            phases = [smoke()]
+            for c in levels:
+                phases += [measured(f"w3b_ns_c{c}_{mode}", EXP08_WORKLOADS["w3b_ns"], c, mode) for mode in rotations[block - 1]]
+            cfg = proto(base(f"exp08_proto_perf_block{block}_{arm}", 8, placement_server("t2_k6_shared"), phases,
+                             f"实验 8 第三阶段性能对比第 {block} 个区组、{arm}（SGLANG_OMNI_SPEECH_LOOKAHEAD={PROTO_ARMS[arm]}）。"
+                             f"2+6，原型副本，W3b 不带种子；并发顺序（种子 {SEED}）{'、'.join(map(str, levels))}，"
+                             f"每档 {rotations[block - 1]} 三段；本区组两组的顺序 {'→'.join(arm_orders[block - 1])}。"
+                             "C 段只给 thinker 所在的进程开 torch profiler。"),
+                        arm, digest=False)
+            out.append((cfg, {"priority": -100 - (10 * block + position), "est": 600, "timeout": 2400}))
+    return out
+
+
 PLAN_EXP07 = "configs/experiments/plan_exp07.json"
 EXP07_ARMS = ["t2_k6_shared", "t2_k4_c2", "t2_k3_c3", "t2_k2_c4", "t2_k3_shared"]
 EXP07_LEVELS = [8, 64, 128, 256]
@@ -263,11 +327,15 @@ def render() -> dict[str, str]:
     main_entries = [*exp06_entries(), *exp08a_entries()]
     exp07 = exp07_entries()
     supp = exp08_supp_entries()
+    proto_check = exp08_proto_check_entries()
+    proto_perf = exp08_proto_perf_entries()
     for path, plan_id, comment, entries in (
         (PLAN_EXP06_SMOKE, "exp06_smoke", "打点版 sglang-omni 的 GPU 冒烟测试。先单独放，确认事件和 trace 都写出来以后，再放正式区组。", smoke_entries),
         (PLAN_EXP06_08, "exp06_exp08a", "实验 6 的 3 个区组、实验 8 第一阶段的 3 个区组，依次运行。冒烟测试检查通过后才放。", main_entries),
         (PLAN_EXP07, "exp07", "实验 7：5 种放置 × 3 个区组，区组内顺序随机，区组按 1、2、3 的顺序跑（优先级递减）。", exp07),
         (PLAN_EXP08_SUPP, "exp08_supp", "实验 8 第一阶段的补测（文字条件在并发 32、64 的 kernel trace），排在实验 7 之前。", supp),
+        (PLAN_EXP08_PROTO_CHECK, "exp08_proto_check", "实验 8 第三阶段的正确性检查（关、开、开但不做快照），排在实验 7 之前。", proto_check),
+        (PLAN_EXP08_PROTO_PERF, "exp08_proto_perf", "实验 8 第三阶段的性能对比，3 个区组 × 关/开，排在实验 7 之后；正确性检查通过、进入条件满足后才放。", proto_perf),
     ):
         plan = {"plan_id": plan_id,
                 "_comment": comment + "通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_exp06_08.py 生成。",
@@ -275,7 +343,7 @@ def render() -> dict[str, str]:
         for e in plan["experiments"]:
             e["command"] = f"bash scripts/slurm/run_experiment.sh {EXP_DIR}/{e['experiment_id']}.json"
         files[path] = json.dumps(plan, ensure_ascii=False, indent=1) + "\n"
-    for cfg, _ in pilot + smoke_entries + main_entries + exp07 + supp:
+    for cfg, _ in pilot + smoke_entries + main_entries + exp07 + supp + proto_check + proto_perf:
         files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
     return files
 
