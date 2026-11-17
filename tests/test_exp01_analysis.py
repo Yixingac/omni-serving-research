@@ -61,3 +61,12 @@ def test_stage_names_of_trace_files():
     assert kt.stage_of("code2wav_trace_pid3_rank0.trace.json.gz") == ("code2wav", "")
     assert kt.role_label({"thinker", "talker", "code2wav"}) == "全部\n三段"
     assert kt.role_label({"talker", "code2wav"}) == "talker\n+c2w"
+
+
+def test_exp02_rows_pick_the_phase_family(tmp_path):
+    ex = load("exp02_placement")
+    (tmp_path / "analysis").mkdir()
+    table = [{"phase": "smoke_w3b", "level": "1"}, {"phase": "w3b_open_abs", "level": "16.0"}, {"phase": "w3b_closed", "level": "64"}]
+    (tmp_path / "analysis" / "analysis.json").write_text(json.dumps({"table": table}))
+    assert [r["level"] for r in ex.rows(tmp_path, "w3b_open")] == ["16.0"]
+    assert ex.rows(tmp_path / "missing", "w3b_open") == []

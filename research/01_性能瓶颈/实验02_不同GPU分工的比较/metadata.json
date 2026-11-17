@@ -1,0 +1,241 @@
+{
+ "experiment_number": 2,
+ "name_zh": "不同 GPU 分工的比较",
+ "question_zh": "8 张卡怎么分给 thinker 和 talker 最合理？为什么某种分工低负载快、另一种高负载快？",
+ "status": "第一版（全部用已有数据）",
+ "model": {
+  "name": "MiniCPM-o 4.5",
+  "revision": "fb09628e98b1f55d8d5b863e0eccfcdd11bff499"
+ },
+ "software": {
+  "sglang_omni": "520b49ee",
+  "sglang": "0.5.21",
+  "torch": "2.13.0"
+ },
+ "workload": {
+  "id": "W3b_text_speech",
+  "file": "configs/workloads/w3b_text_speech.json"
+ },
+ "schemes": {
+  "A": {
+   "internal_layout": "r8"
+  },
+  "B": {
+   "internal_layout": "p4"
+  },
+  "C": {
+   "internal_layout": "s2x6"
+  },
+  "D": {
+   "internal_layout": "s1x7"
+  },
+  "E": {
+   "internal_layout": "s3x5"
+  },
+  "F": {
+   "internal_layout": "s4x4"
+  }
+ },
+ "runs_used": [
+  {
+   "scheme": "A",
+   "run_dir": "20261116_v2b_aoh_r8_run01",
+   "config_id": "v2b_aoh_r8",
+   "slurm_job": 454290,
+   "research_repo_commit": "706afb0b",
+   "role": "同速率开环 16–40 请求/秒"
+  },
+  {
+   "scheme": "A",
+   "run_dir": "20261115_v2_a_r8_run1_run01",
+   "config_id": "v2_a_r8_run1",
+   "slurm_job": 625796,
+   "research_repo_commit": "22911f74",
+   "role": "闭环 16–256，第 1 次"
+  },
+  {
+   "scheme": "A",
+   "run_dir": "20261115_v2_a_r8_run2_run01",
+   "config_id": "v2_a_r8_run2",
+   "slurm_job": 625796,
+   "research_repo_commit": "22911f74",
+   "role": "闭环 16–256，第 2 次"
+  },
+  {
+   "scheme": "A",
+   "run_dir": "20261116_v2b_a_r8_c03_run01",
+   "config_id": "v2b_a_r8_c03",
+   "slurm_job": 454290,
+   "research_repo_commit": "706afb0b",
+   "role": "闭环，compute-03 复跑"
+  },
+  {
+   "scheme": "A",
+   "run_dir": "20261116_v2b_sb_r8_run01",
+   "config_id": "v2b_sb_r8",
+   "slurm_job": 454290,
+   "research_repo_commit": "706afb0b",
+   "role": "小 batch，并发 1–8"
+  },
+  {
+   "scheme": "B",
+   "run_dir": "20261116_v2b_aoh_p4_run01",
+   "config_id": "v2b_aoh_p4",
+   "slurm_job": 454290,
+   "research_repo_commit": "706afb0b",
+   "role": "同速率开环 16–40 请求/秒"
+  },
+  {
+   "scheme": "B",
+   "run_dir": "20261115_v2_a_p4_run1_run01",
+   "config_id": "v2_a_p4_run1",
+   "slurm_job": 625796,
+   "research_repo_commit": "22911f74",
+   "role": "闭环 16–256，第 1 次"
+  },
+  {
+   "scheme": "B",
+   "run_dir": "20261115_v2_a_p4_run2_run01",
+   "config_id": "v2_a_p4_run2",
+   "slurm_job": 625796,
+   "research_repo_commit": "22911f74",
+   "role": "闭环 16–256，第 2 次"
+  },
+  {
+   "scheme": "B",
+   "run_dir": "20261116_v2b_sb_p4_run01",
+   "config_id": "v2b_sb_p4",
+   "slurm_job": 454290,
+   "research_repo_commit": "706afb0b",
+   "role": "小 batch，并发 1–8"
+  },
+  {
+   "scheme": "C",
+   "run_dir": "20261116_v2b_aoh_s2x6_run01",
+   "config_id": "v2b_aoh_s2x6",
+   "slurm_job": 454290,
+   "research_repo_commit": "706afb0b",
+   "role": "同速率开环 16–40 请求/秒"
+  },
+  {
+   "scheme": "C",
+   "run_dir": "20261115_v2_a_s2x6_run1_run01",
+   "config_id": "v2_a_s2x6_run1",
+   "slurm_job": 625796,
+   "research_repo_commit": "22911f74",
+   "role": "闭环 16–256，第 1 次"
+  },
+  {
+   "scheme": "C",
+   "run_dir": "20261115_v2_a_s2x6_run2_run01",
+   "config_id": "v2_a_s2x6_run2",
+   "slurm_job": 625796,
+   "research_repo_commit": "22911f74",
+   "role": "闭环 16–256，第 2 次"
+  },
+  {
+   "scheme": "C",
+   "run_dir": "20261116_v2b_a_s2x6_c03_run01",
+   "config_id": "v2b_a_s2x6_c03",
+   "slurm_job": 454290,
+   "research_repo_commit": "706afb0b",
+   "role": "闭环，compute-03 复跑"
+  },
+  {
+   "scheme": "C",
+   "run_dir": "20261116_v2b_sb_s2x6_run01",
+   "config_id": "v2b_sb_s2x6",
+   "slurm_job": 454290,
+   "research_repo_commit": "706afb0b",
+   "role": "小 batch，并发 1–8"
+  },
+  {
+   "scheme": "D",
+   "run_dir": "20261116_v2b_aoh_s1x7_run01",
+   "config_id": "v2b_aoh_s1x7",
+   "slurm_job": 454290,
+   "research_repo_commit": "706afb0b",
+   "role": "同速率开环 16–40 请求/秒"
+  },
+  {
+   "scheme": "D",
+   "run_dir": "20261115_v2_a_s1x7_run1_run01",
+   "config_id": "v2_a_s1x7_run1",
+   "slurm_job": 625796,
+   "research_repo_commit": "22911f74",
+   "role": "闭环 16–256，第 1 次"
+  },
+  {
+   "scheme": "D",
+   "run_dir": "20261115_v2_a_s1x7_run2_run01",
+   "config_id": "v2_a_s1x7_run2",
+   "slurm_job": 625796,
+   "research_repo_commit": "22911f74",
+   "role": "闭环 16–256，第 2 次"
+  },
+  {
+   "scheme": "D",
+   "run_dir": "20261116_v2b_sb_s1x7_run01",
+   "config_id": "v2b_sb_s1x7",
+   "slurm_job": 454290,
+   "research_repo_commit": "706afb0b",
+   "role": "小 batch，并发 1–8"
+  },
+  {
+   "scheme": "E",
+   "run_dir": "20261116_v2b_aoh_s3x5_run01",
+   "config_id": "v2b_aoh_s3x5",
+   "slurm_job": 454290,
+   "research_repo_commit": "706afb0b",
+   "role": "同速率开环 16–40 请求/秒"
+  },
+  {
+   "scheme": "E",
+   "run_dir": "20261115_v2_a_s3x5_run1_run01",
+   "config_id": "v2_a_s3x5_run1",
+   "slurm_job": 625796,
+   "research_repo_commit": "22911f74",
+   "role": "闭环 16–256，第 1 次"
+  },
+  {
+   "scheme": "E",
+   "run_dir": "20261115_v2_a_s3x5_run2_run01",
+   "config_id": "v2_a_s3x5_run2",
+   "slurm_job": 625796,
+   "research_repo_commit": "22911f74",
+   "role": "闭环 16–256，第 2 次"
+  },
+  {
+   "scheme": "F",
+   "run_dir": "20261116_v2b_aoh_s4x4_run01",
+   "config_id": "v2b_aoh_s4x4",
+   "slurm_job": 454290,
+   "research_repo_commit": "706afb0b",
+   "role": "同速率开环 16–40 请求/秒"
+  },
+  {
+   "scheme": "F",
+   "run_dir": "20261115_v2_a_s4x4_run1_run01",
+   "config_id": "v2_a_s4x4_run1",
+   "slurm_job": 625796,
+   "research_repo_commit": "22911f74",
+   "role": "闭环 16–256，第 1 次"
+  },
+  {
+   "scheme": "F",
+   "run_dir": "20261115_v2_a_s4x4_run2_run01",
+   "config_id": "v2_a_s4x4_run2",
+   "slurm_job": 625796,
+   "research_repo_commit": "22911f74",
+   "role": "闭环 16–256，第 2 次"
+  }
+ ],
+ "analysis_script": "scripts/analysis/exp02_placement.py",
+ "results": "results/summary.json",
+ "figures": [
+  "figures/fig1_slo_vs_rate.png",
+  "figures/fig2_throughput_latency.png",
+  "figures/fig3_role_busy_vs_rate.png"
+ ],
+ "raw_data_location": "集群 results/experiments/<run_dir>（不在仓库里）；Mac 和 Spark 上有镜像"
+}
