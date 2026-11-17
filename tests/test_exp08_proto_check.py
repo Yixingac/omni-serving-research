@@ -58,7 +58,8 @@ def test_missing_events_and_failed_requests_count_as_missing_not_as_equal():
     recs = [rec("r0", 0), rec("r1", 1, status="error"), rec("r2", 2)]
     events = [hidden("r0", "h0"), vocode(["r0", "r2"], ["c0", "c2"])]  # r2 has no hidden-state event
     out = pc.outputs_by_request(recs, events)
-    assert out["r0"] == {"prompt": 0, "status": "ok", "text": "t", "hidden": "h0", "codec": "c0", "rows": 10, "tokens": 10, "audio_s": 8.0}
+    assert out["r0"] == {"index": None, "prompt": 0, "status": "ok", "text": "t", "hidden": "h0", "codec": "c0", "rows": 10, "tokens": 10,
+                         "audio_s": 8.0}
     assert out["r1"]["status"] == "error" and out["r1"]["hidden"] is None
     assert out["r2"]["hidden"] is None and out["r2"]["codec"] == "c2"
     s = pc.mixed_batch_summary(out)
@@ -69,3 +70,20 @@ def test_missing_events_and_failed_requests_count_as_missing_not_as_equal():
 def test_warmup_records_are_ignored():
     recs = [rec("r0", 0), {**rec("w0", 0), "warmup": True}]
     assert set(pc.outputs_by_request(recs, [])) == {"r0"}
+
+
+def test_request_by_request_comparison_matches_the_kth_request_of_each_arm():
+    # Both arms send the same question sequence; the baseline's own repeats differ, but the same way in every arm.
+    def arm_seq(hidden):
+        recs = [{**rec(f"r{i}", p), "index": i} for i, p in enumerate([0, 1, 0])]
+        events = [hidden_ev for i, h in enumerate(hidden) for hidden_ev in (hidden_event(f"r{i}", h), vocode([f"r{i}"], [f"c{i}"]))]
+        return pc.outputs_by_request(recs, events)
+
+    off, on, shifted = arm_seq(["a", "b", "a2"]), arm_seq(["a", "b", "a2"]), arm_seq(["x", "b", "a2"])
+    by_index = pc.compare_by_index({"off": off, "on": on, "nosnap": shifted})
+    assert by_index["on"] == {"requests": 3, "same": {"text": 3, "hidden": 3, "codec": 3}, "different_indices": {"text": [], "hidden": [], "codec": []}}
+    assert by_index["nosnap"]["same"]["hidden"] == 2 and by_index["nosnap"]["different_indices"]["hidden"] == [0]
+
+
+def hidden_event(rid, digest):
+    return hidden(rid, digest)
