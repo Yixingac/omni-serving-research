@@ -1,0 +1,71 @@
+{
+ "runtime_profile": "unicorn",
+ "hardware_label": "a6000x1",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "v2b_f1_r1",
+ "description": "第二批 F1：1 个完整副本（--text-only，每卡一个服务）上的视频理解（W4，10 秒和 20 秒合成视频，文本输出），闭环并发 1, 2, 4, 8（每个副本 1、2、4、8），每档 max(24, 3×并发) 个请求；每卡 7 个 CPU。看视频吞吐是否随副本数线性增长，以及 GPU 空闲比例。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "r0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0
+   ],
+   "args": [
+    "--text-only"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w4",
+   "workload": "configs/workloads/w4_video_text.json",
+   "requests": 2
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w4_video_10s",
+   "workload": "configs/workloads/w4_video_text.json",
+   "workload_overrides": {
+    "video": {
+     "tag": "count_circles",
+     "target_s": 10
+    }
+   },
+   "concurrency": [
+    1,
+    2,
+    4,
+    8
+   ],
+   "requests_per_level": 24,
+   "requests_per_concurrency": 3,
+   "stop_if_p50_e2e_above_s": 90
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w4_video_20s",
+   "workload": "configs/workloads/w4_video_text.json",
+   "workload_overrides": {
+    "video": {
+     "tag": "count_circles",
+     "target_s": 20
+    }
+   },
+   "concurrency": [
+    1,
+    2,
+    4,
+    8
+   ],
+   "requests_per_level": 24,
+   "requests_per_concurrency": 3,
+   "stop_if_p50_e2e_above_s": 90
+  }
+ ]
+}

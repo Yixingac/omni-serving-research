@@ -73,7 +73,8 @@ def shrink_config(cfg: dict) -> dict:
 
 
 def synthetic_pool(data_root: Path, name: str) -> None:
-    """A tiny asset pool with the kinds the workloads ask for (silent audio tagged agent_question)."""
+    """A tiny asset pool with the kinds the workloads ask for: silent audio tagged agent_question,
+    and placeholder "videos" tagged count_circles (the fake server never decodes them)."""
     pool = data_root / "assets" / name
     pool.mkdir(parents=True, exist_ok=True)
     rows = []
@@ -82,6 +83,12 @@ def synthetic_pool(data_root: Path, name: str) -> None:
         p.write_bytes(silence_wav(2.0 + i))
         rows.append({"asset_id": f"dry-q{i}", "kind": "audio", "path": p.name, "duration_s": 2.0 + i,
                      "source": "synthetic:silence", "tags": ["agent_question"], "task_id": f"task-dry-{i}"})
+    for sec in (2.0, 5.0, 10.0, 20.0):
+        p = pool / f"v{int(sec)}.mp4"
+        p.write_bytes(b"\0" * 64)
+        rows.append({"asset_id": f"dry-v{int(sec)}", "kind": "video", "path": p.name, "duration_s": sec, "fps": 8,
+                     "source": "synthetic:placeholder", "question": "How many circles are moving in this video? Answer with a number.",
+                     "answer": 1, "tags": ["count_circles"]})
     (pool / "manifest.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
 
 

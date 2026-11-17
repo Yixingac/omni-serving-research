@@ -6,7 +6,7 @@
 Writes configs/models/minicpm_o_4_5_v2_s<T>x<K>.yaml (one service with T pipeline replicas and K
 talker replicas), configs/experiments/a6000_8gpu_v2/*.json, configs/experiments/plan_a6000_8gpu_v2.json
 (batch 1), configs/experiments/plan_a6000_8gpu_v2_batch2.json, ..._batch2_part2.json and
-..._batch2_part3.json (the last two through plan.d).
+..._batch2_part3.json and ..._batch2_part4.json (the last three through plan.d).
 Every MiniCPM-o speech layout runs code2wav in its own process (--code2wav.process code2wav), the
 workaround for the talker crash (baseline_results.md section 17), except the same-process control in
 the stability gate. Experiments restart a server that exits and re-run the affected load level.
@@ -25,6 +25,7 @@ PLAN = "configs/experiments/plan_a6000_8gpu_v2.json"
 PLAN2 = "configs/experiments/plan_a6000_8gpu_v2_batch2.json"
 PLAN3 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part2.json"
 PLAN4 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part3.json"
+PLAN5 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part4.json"
 
 W1 = "configs/workloads/w1_text_chat.json"
 W2 = "configs/workloads/w2_audio_text.json"
@@ -350,13 +351,58 @@ def batch2_part3_entries() -> list[tuple[dict | None, dict]]:
     return entries
 
 
+W4 = "configs/workloads/w4_video_text.json"
+# compute-03 GPU pairs by link (Y0 in batch 2): NV4 0-3, 1-2, 4-5, 6-7; PIX 1-3, 2-3; NODE 0-1, 0-2,
+# 4-6, 4-7, 5-6, 5-7; everything across the two sockets is SYS. Thinker GPU first, talker GPU second.
+G1_PAIRS = {"v2b_g1a_links": [("node", 0, 2), ("pix", 1, 3), ("nv4a", 4, 5), ("nv4b", 6, 7)],
+            "v2b_g1b_links": [("sysa", 0, 4), ("sysb", 1, 5), ("pix", 2, 3), ("nv4", 6, 7)]}
+
+
+def batch2_part4_entries() -> list[tuple[dict | None, dict]]:
+    """Batch 2, fourth part (plan.d): G1, the thinker -> talker link (four 2-GPU split services on
+    chosen GPU pairs, side by side, requests in turn so each gets the same load), and F1, video
+    understanding on 1, 2, 4 and 8 full replicas (7 CPUs per GPU), one after another."""
+    entries: list[tuple[dict | None, dict]] = []
+    for k, (eid, pairs) in enumerate(G1_PAIRS.items()):
+        servers = [{"name": f"g_{lab}", "model": "minicpm_o_4_5", "gpus": [a, b],
+                    "args": ["--talker.gpu", "1", "--code2wav.gpu", "1", *C2W], "ready_timeout_s": 2400} for lab, a, b in pairs]
+        phases = [smoke(),
+                  {"kind": "closed_loop", "name": "w3b_closed", "workload": W3B, "concurrency": [16, 32], "requests_per_level": 96,
+                   "requests_per_concurrency": 3, "server_events": True},
+                  {"kind": "open_loop", "name": "w3b_open_abs", "workload": W3B, "rates_rps": [6, 10, 13, 15], "duration_per_rate_s": 120,
+                   "min_requests_per_rate": 96, "max_error_rate": 0.2, "server_events": True}]
+        what = "、".join(f"{lab.rstrip('ab')}（GPU {a}→{b}）" for lab, a, b in pairs)
+        entries.append((base(eid, 8, servers, phases,
+                             f"第二批 G1：4 个 2 卡拆分服务（thinker 卡 → talker 卡，code2wav 单独进程）同时运行，卡对的连接分别是 {what}；"
+                             "客户端轮流分配请求，每个服务承受相同的负载。W3b 闭环并发 16、32，开环 6、10、13、15 请求/秒（合计），开事件记录，"
+                             "按服务比较延迟和跨卡传递时间。", "round_robin"),
+                        {"priority": 45 - k, "est": 1000, "timeout": 5400}))
+    prev = None
+    for k, n in enumerate((1, 2, 4, 8)):
+        servers = [{"name": f"r{i}", "model": "minicpm_o_4_5", "gpus": [i], "args": ["--text-only"], "ready_timeout_s": 2400} for i in range(n)]
+        levels = [n * c for c in (1, 2, 4, 8)]
+        phases = [{"kind": "smoke", "name": "smoke_w4", "workload": W4, "requests": 2}]
+        for sec in (10, 20):
+            phases.append({"kind": "closed_loop", "name": f"w4_video_{sec}s", "workload": W4,
+                           "workload_overrides": {"video": {"tag": "count_circles", "target_s": sec}}, "concurrency": levels,
+                           "requests_per_level": 24, "requests_per_concurrency": 3, "stop_if_p50_e2e_above_s": 90})
+        eid = f"v2b_f1_r{n}"
+        cfg = base(eid, n, servers, phases,
+                   f"第二批 F1：{n} 个完整副本（--text-only，每卡一个服务）上的视频理解（W4，10 秒和 20 秒合成视频，文本输出），"
+                   f"闭环并发 {', '.join(map(str, levels))}（每个副本 1、2、4、8），每档 max(24, 3×并发) 个请求；每卡 7 个 CPU。"
+                   "看视频吞吐是否随副本数线性增长，以及 GPU 空闲比例。", "least_outstanding" if n > 1 else None)
+        entries.append((cfg, {"priority": 40 - k, "est": 1500, "timeout": 7200, "deps": [prev] if prev else []}))
+        prev = eid
+    return entries
+
+
 def plan_entry(cfg: dict | None, meta: dict) -> dict:
     eid = cfg["experiment_id"] if cfg else meta["experiment_id"]
     gpus = int(cfg["hardware_label"].removeprefix("a6000x")) if cfg else meta["gpus"]
     return {"experiment_id": eid,
             "command": meta.get("command") or f"bash scripts/slurm/run_experiment.sh {EXP_DIR}/{eid}.json",
             "priority": meta["priority"], "required_gpus": gpus, "required_cpus": CPUS[gpus], "required_memory_gb": MEM_GB[gpus],
-            "dependencies": [], "estimated_duration_s": meta["est"], "timeout_s": meta["timeout"], "max_retries": 1,
+            "dependencies": meta.get("deps", []), "estimated_duration_s": meta["est"], "timeout_s": meta["timeout"], "max_retries": 1,
             "description": (meta.get("description") or cfg["description"])[:200]}
 
 
@@ -386,7 +432,13 @@ def render() -> dict[str, str]:
                          "由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
              "experiments": [plan_entry(c, m) for c, m in entries4]}
     files[PLAN4] = json.dumps(plan4, ensure_ascii=False, indent=1) + "\n"
-    for cfg, _ in entries + entries2 + entries3 + entries4:
+    entries5 = batch2_part4_entries()
+    plan5 = {"plan_id": "a6000_8gpu_v2_batch2_part4",
+             "_comment": "plan v2 第二批的第四部分，通过 plan.d 追加：G1（thinker 到 talker 的卡间连接）和 F1（视频随副本数的扩展，依次运行）。"
+                         "由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+             "experiments": [plan_entry(c, m) for c, m in entries5]}
+    files[PLAN5] = json.dumps(plan5, ensure_ascii=False, indent=1) + "\n"
+    for cfg, _ in entries + entries2 + entries3 + entries4 + entries5:
         if cfg:
             files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
     return files
