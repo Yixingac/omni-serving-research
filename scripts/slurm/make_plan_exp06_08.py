@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
 import sys
 from pathlib import Path
 
@@ -23,6 +24,17 @@ from make_plan_8gpu_v2 import CODE2WAV_FRACTION, TALKER_FRACTION, W3B, base, pla
 REPO = Path(__file__).resolve().parents[2]
 EXP_DIR = "configs/experiments/exp06_08"
 PLAN_EXP07_PILOT = "configs/experiments/plan_exp07_pilot.json"
+PLAN_EXP06_SMOKE = "configs/experiments/plan_exp06_smoke.json"
+PLAN_EXP06_08 = "configs/experiments/plan_exp06_exp08a.json"
+W3T = "configs/workloads/w3t_text_only.json"
+SEED = 20261117  # every randomized order below derives from this seed (hypotheses.md)
+INSTR_RUNTIME = "unicorn_instr"
+EXP06_LEVELS = [8, 64, 128, 256]
+EXP08_LEVELS = [8, 32, 64]
+BLOCKS = 3
+# Where a 3 s profiler window starts inside a measured phase of max(96, 3c) requests (seconds), so it
+# falls in the steady middle; from the S2:6 throughput of plan v2 (about 3.7, 14, 20, 20 req/s).
+WINDOW_START_S = {8: 10, 32: 8, 64: 7, 128: 10, 256: 18}
 
 # name -> (thinker GPUs, talker GPUs, code2wav GPUs); shared when the talker and code2wav lists are equal.
 PLACEMENTS = {
@@ -99,6 +111,76 @@ def exp07_pilot_entries() -> list[tuple[dict, dict]]:
     return out
 
 
+def measured(name: str, workload: str, c: int, mode: str) -> dict:
+    """One closed-loop phase at concurrency c: the runner's default warmup (c requests), then
+    max(96, 3c) measured requests. mode A: no events, no profiler; B: request events (with the
+    patch's measurement points); C: a 3 s torch profiler window with events inside it."""
+    ph = {"kind": "closed_loop", "name": name, "workload": workload, "concurrency": [c],
+          "requests_per_level": 96, "requests_per_concurrency": 3}
+    if mode == "B":
+        ph["server_events"] = True
+    elif mode == "C":
+        ph["torch_profile_window"] = {"start_after_s": WINDOW_START_S[c], "duration_s": 3}
+    else:
+        pass
+    return ph
+
+
+def instr(cfg: dict) -> dict:
+    cfg["runtime_profile"] = INSTR_RUNTIME
+    return cfg
+
+
+def smoke_instr_entry() -> tuple[dict, dict]:
+    phases = [smoke(), measured("w3b_c16_B", W3B, 16, "B"),
+              {**measured("w3b_c64_C", W3B, 64, "C"), "torch_profile_window": {"start_after_s": 6, "duration_s": 2}}]
+    cfg = instr(base("exp06_smoke_instr", 8, placement_server("t2_k6_shared"), phases,
+                     "实验 6–8 打点版 sglang-omni 的 GPU 冒烟测试（不是正式数据）：2+6，并发 16 开事件、并发 64 开 2 秒 profiler。"
+                     "确认补丁在 GPU 上能跑、事件和 trace 都写出来，再放正式实验。"))
+    return cfg, {"priority": 30, "est": 600, "timeout": 2400}
+
+
+def exp06_entries() -> list[tuple[dict, dict]]:
+    """实验 6: S2:6 at concurrency 8/64/128/256, three blocks (independent server starts). Within a block
+    the level order is random and A/B/C rotate (ABC, BCA, CAB) so order effects balance."""
+    out = []
+    rotations = ["ABC", "BCA", "CAB"]
+    for block in range(1, BLOCKS + 1):
+        rng = random.Random(SEED * 100 + 6 * 10 + block)
+        levels = EXP06_LEVELS[:]
+        rng.shuffle(levels)
+        order = rotations[block - 1]
+        phases = [smoke()]
+        for c in levels:
+            phases += [measured(f"w3b_c{c}_{mode}", W3B, c, mode) for mode in order]
+        cfg = instr(base(f"exp06_c2w_block{block}", 8, placement_server("t2_k6_shared"), phases,
+                         f"实验 6（code2wav 时间拆解）第 {block} 个区组：2+6，打点版 sglang-omni。并发顺序（种子 {SEED}）"
+                         f"{'、'.join(map(str, levels))}；每个并发依次跑 {'、'.join(order)} 三段（A 不打点、B 打点、C 打点并在中间开 3 秒 torch profiler），"
+                         "每段先预热一波再测 max(96, 3×并发) 个请求。"))
+        out.append((cfg, {"priority": 20 - block, "est": 900, "timeout": 3600}))
+    return out
+
+
+def exp08a_entries() -> list[tuple[dict, dict]]:
+    """实验 8 phase 1: S2:6, W3t (text only) vs W3b (text + speech) at concurrency 8/32/64; three blocks with
+    a random order of the six (workload, concurrency) conditions; B (events) then C (3 s kernel trace)."""
+    out = []
+    for block in range(1, BLOCKS + 1):
+        rng = random.Random(SEED * 100 + 8 * 10 + block)
+        conditions = [(w, c) for w in ("w3t", "w3b") for c in EXP08_LEVELS]
+        rng.shuffle(conditions)
+        phases = [smoke()]
+        for w, c in conditions:
+            workload = W3T if w == "w3t" else W3B
+            phases += [measured(f"{w}_c{c}_B", workload, c, "B"), measured(f"{w}_c{c}_C", workload, c, "C")]
+        cfg = instr(base(f"exp08_lookahead_block{block}", 8, placement_server("t2_k6_shared"), phases,
+                         f"实验 8 第一阶段第 {block} 个区组：2+6，打点版 sglang-omni。只要文字（W3t）和文字+语音（W3b）各在并发 8、32、64，"
+                         f"顺序（种子 {SEED}）{'、'.join(f'{w}@{c}' for w, c in conditions)}；每个条件先跑开事件的一段（含 thinker 每轮记录），"
+                         "再跑一段在中间开 3 秒 torch profiler。"))
+        out.append((cfg, {"priority": 15 - block, "est": 720, "timeout": 3600}))
+    return out
+
+
 def render() -> dict[str, str]:
     files = {f"configs/models/minicpm_o_4_5_exp_{name}.yaml": placement_yaml(name) for name in PLACEMENTS}
     pilot = exp07_pilot_entries()
@@ -108,7 +190,19 @@ def render() -> dict[str, str]:
     for e in plan["experiments"]:
         e["command"] = f"bash scripts/slurm/run_experiment.sh {EXP_DIR}/{e['experiment_id']}.json"
     files[PLAN_EXP07_PILOT] = json.dumps(plan, ensure_ascii=False, indent=1) + "\n"
-    for cfg, _ in pilot:
+    smoke_entries = [smoke_instr_entry()]
+    main_entries = [*exp06_entries(), *exp08a_entries()]
+    for path, plan_id, comment, entries in (
+        (PLAN_EXP06_SMOKE, "exp06_smoke", "打点版 sglang-omni 的 GPU 冒烟测试。先单独放，确认事件和 trace 都写出来以后，再放正式区组。", smoke_entries),
+        (PLAN_EXP06_08, "exp06_exp08a", "实验 6 的 3 个区组、实验 8 第一阶段的 3 个区组，依次运行。冒烟测试检查通过后才放。", main_entries),
+    ):
+        plan = {"plan_id": plan_id,
+                "_comment": comment + "通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_exp06_08.py 生成。",
+                "experiments": [plan_entry(c, m) for c, m in entries]}
+        for e in plan["experiments"]:
+            e["command"] = f"bash scripts/slurm/run_experiment.sh {EXP_DIR}/{e['experiment_id']}.json"
+        files[path] = json.dumps(plan, ensure_ascii=False, indent=1) + "\n"
+    for cfg, _ in pilot + smoke_entries + main_entries:
         files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
     return files
 
