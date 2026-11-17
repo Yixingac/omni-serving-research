@@ -1,0 +1,140 @@
+{
+ "experiment_number": 8,
+ "name_zh": "Thinker 提前一步发射（lookahead）",
+ "question_zh": "thinker 同步执行浪费了多少 GPU 时间？纯文字是否真的用上了提前一步发射？语音请求为什么不能用、能否安全地用、改了能快多少？",
+ "status": "第一、二阶段完成；第三阶段正确性检查通过，性能对比排在实验 7 之后",
+ "hypotheses": "hypotheses.md（14:40 登记；14:58、15:32 补充登记，都在实验 8 任何数据之前；16:35 补充登记二；16:58 第三阶段性能预测）",
+ "model": {
+  "name": "MiniCPM-o 4.5",
+  "revision": "fb09628e98b1f55d8d5b863e0eccfcdd11bff499",
+  "thinker_hidden_size": 4096
+ },
+ "software": {
+  "sglang_omni_phase1": "520b49ee + configs/runtime/patches/sglang_omni_instr_exp06_08.patch（runtime_unicorn_instr，SGLANG_OMNI_EXP_TRACE=c2w,thinker）",
+  "sglang_omni_phase3": "520b49ee + configs/runtime/patches/sglang_omni_proto_exp08.patch（v2，测量补丁 + 原型；runtime_unicorn_proto）",
+  "sglang": "0.5.21",
+  "torch": "2.13.0",
+  "cuda_runtime": "13.0.96",
+  "nvidia_driver": "580.126.18"
+ },
+ "hardware": {
+  "node": "compute-03（第二批节点）",
+  "gpus": "8 × NVIDIA RTX A6000 48 GB",
+  "slurm_job": 454290
+ },
+ "placement": "t2_k6_shared（= S2:6）：GPU 0、1 pipeline（含 thinker）；GPU 2–7 各 talker + code2wav",
+ "phase1": {
+  "conditions": {
+   "w3t": "configs/workloads/w3t_text_only.json（只要文字，seed 0）",
+   "w3t_ns": "configs/workloads/w3t_text_only_noseed.json",
+   "w3b": "configs/workloads/w3b_text_speech.json（文字 + 语音，seed 0）",
+   "w3b_ns": "configs/workloads/w3b_text_speech_noseed.json"
+  },
+  "levels": [
+   8,
+   32,
+   64
+  ],
+  "per_condition": "预热一波；B 段 max(96, 3c) 个请求开事件；C 段同样负载、在第 7–10 秒开 3 秒 torch profiler",
+  "blocks": [
+   {
+    "run_dir": "20261117_exp08_lookahead_block1_run01",
+    "time_est": "15:40:07–15:51:26",
+    "note": "w3b_c64_C：code2wav@r4 段错误，22 个请求报错"
+   },
+   {
+    "run_dir": "20261117_exp08_lookahead_block2_run01",
+    "time_est": "15:55:30–16:03:48"
+   },
+   {
+    "run_dir": "20261117_exp08_lookahead_block3_run01",
+    "time_est": "16:07:11–16:16:00"
+   }
+  ],
+  "supplement": [
+   {
+    "run_dir": "20261117_exp08_lookahead_supp_block1_run01",
+    "time_est": "16:19:48–16:21:43"
+   },
+   {
+    "run_dir": "20261117_exp08_lookahead_supp_block2_run01",
+    "time_est": "16:26:26–16:28:06"
+   },
+   {
+    "run_dir": "20261117_exp08_lookahead_supp_block3_run01",
+    "time_est": "16:34:23–16:36:06"
+   }
+  ],
+  "supplement_rule": "w3t、w3t_ns 在并发 32、64 的 C 段指标只用补测区组",
+  "randomization_seed": 20261117,
+  "plans": [
+   "configs/experiments/plan_exp06_exp08a.json",
+   "configs/experiments/plan_exp08_supp.json"
+  ]
+ },
+ "phase3": {
+  "switch": "SGLANG_OMNI_SPEECH_LOOKAHEAD：0 关，1 开并快照，nosnapshot 开但不快照（诊断）",
+  "measurement_switch": "SGLANG_OMNI_EXP_TORCH_SKIP=code2wav,talker（C 段只给 thinker 所在的进程开 profiler）",
+  "correctness": {
+   "workload": "configs/workloads/w3b_greedy_check.json（thinker、talker 温度 0，不带种子）",
+   "runs": {
+    "off": "20261117_exp08_proto_check_off_run01（16:58:29–16:59:37）",
+    "on": "20261117_exp08_proto_check_on_run01（17:03:18–17:04:22）",
+    "nosnap": "20261117_exp08_proto_check_nosnap_run01（17:06:42–17:07:45）"
+   },
+   "plan": "configs/experiments/plan_exp08_proto_check.json",
+   "result": "results/proto_check.json"
+  },
+  "performance": {
+   "workload": "configs/workloads/w3b_text_speech_noseed.json",
+   "levels": [
+    8,
+    32,
+    64
+   ],
+   "blocks": 3,
+   "arm_order": [
+    "off→on",
+    "on→off",
+    "off→on"
+   ],
+   "plan": "configs/experiments/plan_exp08_proto_perf.json（排在实验 7 之后）",
+   "result": "results/phase3.json（待运行）"
+  }
+ },
+ "analysis": {
+  "scripts": [
+   "scripts/analysis/exp08_lookahead.py",
+   "scripts/analysis/exp08_report.py",
+   "scripts/analysis/exp08_zoom.py",
+   "scripts/analysis/exp08_figures.py",
+   "scripts/analysis/exp08_proto_check.py",
+   "scripts/analysis/exp08_proto_perf.py",
+   "scripts/analysis/exp05_step_sync.py"
+  ],
+  "tests": [
+   "tests/test_exp08_lookahead.py",
+   "tests/test_exp08_report.py",
+   "tests/test_exp08_proto_check.py",
+   "tests/test_exp08_proto_perf.py"
+  ],
+  "patch_checks": [
+   "configs/runtime/patches/check_sglang_omni_instr.py",
+   "configs/runtime/patches/check_sglang_omni_proto.py"
+  ]
+ },
+ "results": [
+  "results/summary_main.json",
+  "results/summary_supp.json",
+  "results/phase1.json",
+  "results/zoom.json",
+  "results/proto_check.json"
+ ],
+ "figures": [
+  "figures/fig1_step_timeline.png",
+  "figures/fig2_lookahead_share.png",
+  "figures/fig3_step_idle.png",
+  "figures/fig4_token_time.png"
+ ],
+ "raw_data": "集群 results/experiments/20261117_exp08_*（不进公开仓库）"
+}
