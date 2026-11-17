@@ -158,7 +158,7 @@ def fig_queue_depth(plt, requests: list[dict[str, Any]], path: Path) -> dict[str
     ax.set_ylabel("它在收件队列里等了多久（毫秒，对数坐标；0 记为 0.05）")
     ax.legend(fontsize=8, markerscale=3)
     ax.grid(alpha=0.3)
-    ax.set_title("图 4　队列深度和排队时间：取出时队列几乎总是空的，等待主要来自前一批还没算完", fontsize=10, loc="left")
+    ax.set_title("图 4　队列深度和排队时间：并发 128、256 时，请求被取出时后面还排着几个到二十几个请求；排得越深，等得越久", fontsize=10, loc="left")
     fig.savefig(path, dpi=130)
     plt.close(fig)
     return out
@@ -273,6 +273,8 @@ def fig_timeline(plt, c2w_trace: Path, talker_trace: Path, events_file: Path, pa
     flow_a, flow_b, hift_b = (to_ms(m["flow_issue_start_ns"]), to_ms(m["flow_issue_end_ns"]), to_ms(m["hift_issue_end_ns"]))
     calls = {(e.get("args") or {}).get("correlation"): e for e in ev if e.get("cat") in ("cuda_runtime", "cuda_driver")}
     span_end = to_ms(m["download_end_ns"]) * 1.05
+    # One broken_barh call per color: tens of thousands of single calls take minutes to draw.
+    bars: dict[str, list[tuple[float, float]]] = defaultdict(list)
     for e in ev:
         if e.get("cat") not in ("kernel", "gpu_memcpy", "gpu_memset"):
             continue
@@ -282,12 +284,12 @@ def fig_timeline(plt, c2w_trace: Path, talker_trace: Path, events_file: Path, pa
         call = calls.get((e.get("args") or {}).get("correlation"))
         cs = to_ms(base + call["ts"] * 1e3) if call else None
         color = "#0072B2" if cs is not None and flow_a <= cs <= flow_b else "#009E73" if cs is not None and flow_b < cs <= hift_b else "#bbbbbb"
-        ax.broken_barh([(s, max(e.get("dur", 0) / 1e3, 0.02))], (1.2, 0.7), color=color, lw=0)
-    for e in talker["traceEvents"]:
-        if e.get("ph") == "X" and e.get("cat") in ("kernel", "gpu_memcpy", "gpu_memset"):
-            s = (tbase + e["ts"] * 1e3 - t0) / 1e6
-            if -5 <= s <= span_end:
-                ax.broken_barh([(s, max(e.get("dur", 0) / 1e3, 0.02))], (0.2, 0.7), color="#999999", lw=0)
+        bars[color].append((s, max(e.get("dur", 0) / 1e3, 0.02)))
+    for color, xs in bars.items():
+        ax.broken_barh(xs, (1.2, 0.7), color=color, lw=0)
+    talker_bars = [((tbase + e["ts"] * 1e3 - t0) / 1e6, max(e.get("dur", 0) / 1e3, 0.02)) for e in talker["traceEvents"]
+                   if e.get("ph") == "X" and e.get("cat") in ("kernel", "gpu_memcpy", "gpu_memset")]
+    ax.broken_barh([b for b in talker_bars if -5 <= b[0] <= span_end], (0.2, 0.7), color="#999999", lw=0)
     ax.set_yticks([0.55, 1.55, 2.3, 2.9])
     ax.set_yticklabels(["GPU：同一张卡上 talker 的 kernel", "GPU：这批 code2wav 的 kernel\n（蓝 = flow，绿 = HiFT）", "CPU：同步调用（暗红）",
                         "CPU：code2wav 调度线程在做什么"], fontsize=8)

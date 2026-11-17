@@ -184,6 +184,30 @@ def exp08a_entries() -> list[tuple[dict, dict]]:
     return out
 
 
+PLAN_EXP08_SUPP = "configs/experiments/plan_exp08_supp.json"
+
+
+def exp08_supp_entries() -> list[tuple[dict, dict]]:
+    """实验 8 phase 1 supplement. Text-only phases at concurrency 32 and 64 finish in about 8-10 s, so the
+    3 s profiler window that starts 7-8 s into the phase caught few or no decode steps (block 1). Here the two
+    text conditions run six waves and the window starts 5 s in; three blocks, random order (limitations.md)."""
+    out = []
+    for block in range(1, BLOCKS + 1):
+        rng = random.Random(SEED * 100 + 88 * 10 + block)
+        conditions = [(w, c) for w in ("w3t", "w3t_ns") for c in (32, 64)]
+        rng.shuffle(conditions)
+        phases = [smoke()]
+        for w, c in conditions:
+            phases.append({"kind": "closed_loop", "name": f"{w}_c{c}_C", "workload": EXP08_WORKLOADS[w], "concurrency": [c],
+                           "requests_per_level": 96, "requests_per_concurrency": 6, "torch_profile_window": {"start_after_s": 5, "duration_s": 3}})
+        cfg = instr(base(f"exp08_lookahead_supp_block{block}", 8, placement_server("t2_k6_shared"), phases,
+                         f"实验 8 第一阶段的补测第 {block} 个区组：只要文字的两个条件（带种子 w3t、不带种子 w3t_ns）在并发 32、64 跑六波，"
+                         f"第 5 秒起开 3 秒 kernel trace（原设计的窗口开得太晚，文字请求跑得快，录不到 decode 步）。顺序（种子 {SEED}）"
+                         f"{'、'.join(f'{w}@{c}' for w, c in conditions)}。"))
+        out.append((cfg, {"priority": 5 - block, "est": 420, "timeout": 2400}))
+    return out
+
+
 PLAN_EXP07 = "configs/experiments/plan_exp07.json"
 EXP07_ARMS = ["t2_k6_shared", "t2_k4_c2", "t2_k3_c3", "t2_k2_c4", "t2_k3_shared"]
 EXP07_LEVELS = [8, 64, 128, 256]
@@ -238,10 +262,12 @@ def render() -> dict[str, str]:
     smoke_entries = [smoke_instr_entry()]
     main_entries = [*exp06_entries(), *exp08a_entries()]
     exp07 = exp07_entries()
+    supp = exp08_supp_entries()
     for path, plan_id, comment, entries in (
         (PLAN_EXP06_SMOKE, "exp06_smoke", "打点版 sglang-omni 的 GPU 冒烟测试。先单独放，确认事件和 trace 都写出来以后，再放正式区组。", smoke_entries),
         (PLAN_EXP06_08, "exp06_exp08a", "实验 6 的 3 个区组、实验 8 第一阶段的 3 个区组，依次运行。冒烟测试检查通过后才放。", main_entries),
         (PLAN_EXP07, "exp07", "实验 7：5 种放置 × 3 个区组，区组内顺序随机，区组按 1、2、3 的顺序跑（优先级递减）。", exp07),
+        (PLAN_EXP08_SUPP, "exp08_supp", "实验 8 第一阶段的补测（文字条件在并发 32、64 的 kernel trace），排在实验 7 之前。", supp),
     ):
         plan = {"plan_id": plan_id,
                 "_comment": comment + "通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_exp06_08.py 生成。",
@@ -249,7 +275,7 @@ def render() -> dict[str, str]:
         for e in plan["experiments"]:
             e["command"] = f"bash scripts/slurm/run_experiment.sh {EXP_DIR}/{e['experiment_id']}.json"
         files[path] = json.dumps(plan, ensure_ascii=False, indent=1) + "\n"
-    for cfg, _ in pilot + smoke_entries + main_entries + exp07:
+    for cfg, _ in pilot + smoke_entries + main_entries + exp07 + supp:
         files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
     return files
 
