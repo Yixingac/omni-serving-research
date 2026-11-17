@@ -257,3 +257,22 @@ def test_parse_scontrol_job_detail():
     assert info["state"] == "RUNNING" and info["end_time_str"] == "2026-11-12T05:19:38"
     assert info["nodes"] == [{"nodes": "node-a", "cpus": 24, "mem_mb": 307200, "gpus": 3,
                               "gpu_type": "nvidia_rtx_a6000"}]
+
+
+def test_squeue_timeout_leaves_time_left_unknown_instead_of_crashing(monkeypatch):
+    # A busy slurmctld once made squeue take > 30 s; the TimeoutExpired killed the orchestrator
+    # while its hold job kept running. An unanswered query must mean "unknown", not a crash.
+    import subprocess
+    import time
+
+    from omni_research.orchestration import resources
+
+    def slow(cmd, **kw):
+        raise subprocess.TimeoutExpired(cmd, kw.get("timeout", 30))
+
+    monkeypatch.setattr(resources.subprocess, "run", slow)
+    assert resources.slurm_time_left_s("454290") is None
+    bounded = Allocation(mode="slurm", job_id="1", nodes=[], end_time=time.time() + 3600)
+    assert 3500 < resources.make_time_left_fn(bounded)() <= 3600
+    unlimited = Allocation(mode="slurm", job_id="1", nodes=[], end_time=None)
+    assert resources.make_time_left_fn(unlimited)() == float("inf")

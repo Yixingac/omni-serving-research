@@ -100,8 +100,14 @@ def discover_allocation(job_id: str | None = None, local_gpus: int = 0, local_cp
 
 
 def slurm_time_left_s(job_id: str) -> float | None:
-    """Remaining walltime from squeue %L ([d-]hh:mm:ss); None if unknown/unlimited."""
-    tl = _run(["squeue", "-h", "-j", str(job_id), "-o", "%L"]).strip()
+    """Remaining walltime from squeue %L ([d-]hh:mm:ss); None if unknown/unlimited.
+
+    A squeue that hangs (busy slurmctld) or is missing also means unknown: the caller then falls back
+    to the allocation's end time, and a transient Slurm hiccup must not stop a long-running orchestrator."""
+    try:
+        tl = _run(["squeue", "-h", "-j", str(job_id), "-o", "%L"]).strip()
+    except (subprocess.TimeoutExpired, OSError):
+        return None
     if not tl or tl in ("INVALID", "UNLIMITED", "NOT_SET"):
         return None
     days = 0
