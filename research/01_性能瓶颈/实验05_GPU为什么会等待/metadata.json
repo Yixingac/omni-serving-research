@@ -1,8 +1,8 @@
 {
  "experiment_number": 5,
  "name_zh": "GPU 为什么会等待",
- "question_zh": "高负载时 talker 卡和 thinker 卡各自被什么卡住：GPU 算不过来，还是 CPU 跟不上？",
- "status": "第一轮（初步，1 次运行）",
+ "question_zh": "两批 8 卡实验里，哪里有 GPU bubble？哪些真正拖慢了请求？根因是什么，哪个最值得先修？",
+ "status": "第二版（第一轮 1 次补测 + 两批 8 卡 Job 全部运行的重新分析，没有新跑 GPU）",
  "model": {
   "name": "MiniCPM-o 4.5",
   "revision": "fb09628e98b1f55d8d5b863e0eccfcdd11bff499"
@@ -12,47 +12,101 @@
   "sglang": "0.5.21",
   "torch": "2.13.0"
  },
- "workload": {
-  "id": "W3b_text_speech",
-  "file": "configs/workloads/w3b_text_speech.json",
-  "concurrency": 128
- },
- "schemes": {
-  "C": {
-   "internal_layout": "S2:6",
-   "gpus": {
-    "0-1": "thinker",
-    "2-7": "talker + code2wav（code2wav 单独进程）"
+ "round1": {
+  "question_zh": "高负载时 talker 卡和 thinker 卡各自被什么卡住：GPU 算不过来，还是 CPU 跟不上？",
+  "workload": {
+   "id": "W3b_text_speech",
+   "file": "configs/workloads/w3b_text_speech.json",
+   "concurrency": 128
+  },
+  "schemes": {
+   "C": {
+    "internal_layout": "S2:6",
+    "gpus": {
+     "0-1": "thinker",
+     "2-7": "talker + code2wav（code2wav 单独进程）"
+    }
    }
-  }
+  },
+  "runs_used": [
+   {
+    "scheme": "C",
+    "run_dir": "20261117_exp05_talker_s2x6_run01",
+    "config_id": "exp05_talker_s2x6",
+    "config": "configs/experiments/a6000_8gpu_v2/exp05_talker_s2x6.json",
+    "plan": "configs/experiments/plan_a6000_8gpu_exp05.json",
+    "slurm_job": 454290,
+    "research_repo_commit": "90fbbc2",
+    "node": "compute-03",
+    "phases": [
+     "smoke_w3b",
+     "w3b_warm_c128",
+     "w3b_base_c128",
+     "w3b_prof_c128（第 12–15 秒开 profiler）",
+     "w3b_base2_c128"
+    ]
+   }
+  ],
+  "compared_with": "实验 1 的 kernel 级补测（并发 8、64）",
+  "analysis_script": "scripts/analysis/exp05_talker.py",
+  "results": "results/summary.json"
  },
- "runs_used": [
-  {
-   "scheme": "C",
-   "run_dir": "20261117_exp05_talker_s2x6_run01",
-   "config_id": "exp05_talker_s2x6",
-   "config": "configs/experiments/a6000_8gpu_v2/exp05_talker_s2x6.json",
-   "plan": "configs/experiments/plan_a6000_8gpu_exp05.json",
-   "slurm_job": 454290,
-   "research_repo_commit": "90fbbc2",
-   "node": "compute-03",
-   "phases": [
-    "smoke_w3b",
-    "w3b_warm_c128",
-    "w3b_base_c128",
-    "w3b_prof_c128（第 12–15 秒开 profiler）",
-    "w3b_base2_c128"
+ "round2": {
+  "data": {
+   "runs": 77,
+   "runs_using_all_8_gpus": 59,
+   "load_windows": 543,
+   "load_windows_with_server_events": 217,
+   "kernel_traced_phases": [
+    "20261117_exp01_prof_r8_run01: w3b_prof_c8, w3b_prof_c64",
+    "20261117_exp01_prof_p4_run01: w3b_prof_c8, w3b_prof_c64",
+    "20261117_exp01_prof_s2x6_run01: w3b_prof_c8, w3b_prof_c64",
+    "20261117_exp05_talker_s2x6_run01: w3b_prof_c128（3 秒窗口）"
+   ],
+   "run_selection": "<镜像>/experiments 下目录名匹配 2026111[5-7]_(v2_|v2b_|exp0)，去掉 *_y0_env*（不跑服务）",
+   "slurm_jobs": {
+    "625796": "第一批，共享 gpu 分区的 8×A6000，驱动 570（录不到 kernel）",
+    "454290": "第二批，compute-03，8×A6000，驱动 580"
+   }
+  },
+  "w3b_map_sources": {
+   "concurrency_1_to_8": "v2b_sb_{r8,p4,s1x7,s2x6}（第二批）",
+   "concurrency_16_to_256": "v2_a_{r8,p4,s1x7,s2x6,s3x5,s4x4}_run{1,2}（第一批，取平均）"
+  },
+  "source_code_checked": {
+   "sglang_omni": "520b49ee",
+   "files": [
+    "sglang_omni/model_runner/thinker_model_runner.py（lookahead_eligible）",
+    "sglang_omni/scheduling/omni_scheduler.py（event_loop_async_decode）",
+    "sglang_omni/models/minicpm_o/bootstrap.py",
+    "sglang_omni/models/minicpm_o/stages.py"
    ]
-  }
- ],
- "compared_with": "实验 1 的 kernel 级补测（并发 8、64）",
- "analysis_script": "scripts/analysis/exp05_talker.py",
- "results": "results/summary.json",
+  },
+  "analysis_scripts": [
+   "scripts/analysis/exp05_bubble_census.py",
+   "scripts/analysis/exp05_step_sync.py",
+   "scripts/analysis/exp05_bubble_figures.py"
+  ],
+  "results": [
+   "results/bubble_census.json",
+   "results/step_sync.json",
+   "results/bubble_summary.json"
+  ],
+  "estimate_check": "没有 trace 的运行，有活却空着 = 有活比例 − nvidia-smi 忙碌比例；在 6 段有 trace 的数据上与 kernel 实测平均差 2.7、最大差 7.4 个百分点"
+ },
  "figures": [
   "figures/fig1_cpu_per_process.png",
   "figures/fig2_gpu_time_c128.png",
   "figures/fig3_code2wav_kernels.png",
-  "figures/fig4_thinker_step_by_load.png"
+  "figures/fig4_thinker_step_by_load.png",
+  "figures/fig5_bubble_map.png",
+  "figures/fig6_gpu_time_by_type.png",
+  "figures/fig7_stage_time.png",
+  "figures/fig8_stage_wait.png",
+  "figures/fig9_critical_path.png",
+  "figures/fig10_thinker_step_zoom.png",
+  "figures/fig11_step_idle_split.png",
+  "figures/fig12_root_cause_rank.png"
  ],
- "raw_data_location": "集群 results/experiments/20261117_exp05_talker_s2x6_run01（不在仓库里）；Mac 有镜像"
+ "raw_data_location": "集群 results/experiments/<运行目录>（不在仓库里）；Mac 有镜像"
 }
