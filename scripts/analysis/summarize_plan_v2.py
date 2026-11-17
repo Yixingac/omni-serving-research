@@ -18,11 +18,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+from omni_research.analysis.experiment_analysis import clock_anchor, read_jsonl, stage_breakdown  # noqa: E402
 from omni_research.analysis.metrics import request_metrics  # noqa: E402
 
 SLO_FRACTION = 0.95
@@ -52,10 +54,10 @@ def slo_capacity(levels: list[tuple[float, float]], threshold: float = SLO_FRACT
     return best, False
 
 
-def pct(values: list[float], q: float) -> float | None:
-    if not values:
+def pct(values: list[float | None], q: float) -> float | None:
+    v = sorted(x for x in values if x is not None)
+    if not v:
         return None
-    v = sorted(values)
     return v[min(len(v) - 1, int(round(q * (len(v) - 1))))]
 
 
@@ -221,6 +223,167 @@ def agent_section(runs: list[tuple[Path, dict, dict]]) -> list[str]:
     return L + [""]
 
 
+def level_of(rec: dict[str, Any]) -> Any:
+    return rec.get("concurrency") if rec.get("concurrency") is not None else rec.get("rate_rps")
+
+
+def link_label(server: str) -> str:
+    """G1 service names carry the nvidia-smi topo link of their GPU pair: g_nv4a -> NV4, g_sysb -> SYS."""
+    return server.removeprefix("g_").rstrip("ab").upper()
+
+
+def g1_section(runs: list[tuple[Path, dict, dict]]) -> list[str]:
+    L = ["## G1 thinker→talker 的卡间连接", "",
+         "四个 2 卡拆分服务同时运行，客户端轮流分配请求。连接类型是 nvidia-smi topo 的叫法：NV4 = 4 条 NVLink；PIX = 同一个 PCIe 交换机；"
+         "NODE = 同一 NUMA 节点内跨 PCIe 主桥；SYS = 跨 CPU 插槽。传递时间取自服务端事件：下一阶段收到输入的时刻减去上一阶段发出的时刻。"
+         "e2e 和 SLO 比例只看每个阶段的最高一档（闭环并发 32，开环合计 15 请求/秒）。", "",
+         "| 实验 | 服务 | GPU | 连接 | 阶段 | n | thinker→talker p50 / p90 ms | talker→code2wav p50 ms | 最高一档 e2e 中位数 / p90 s | 最高一档满足 SLO 比例 |",
+         "|---|---|---|---|---|---|---|---|---|---|"]
+    for d, res, ana in runs:
+        gpus = {s["name"]: s["gpus"] for s in ana["config"].get("servers", [])}
+        for ph in ("w3b_closed", "w3b_open_abs"):
+            base = d / "raw" / "server_events" / ph
+            if not base.exists():
+                continue
+            recs = {r["request_id"]: r for r in read_jsonl(d / "raw" / f"requests_{ph}.jsonl") if not r.get("warmup")}
+            for sdir in sorted(p for p in base.iterdir() if p.is_dir()):
+                per = stage_breakdown([e for f in sorted(sdir.glob("*.jsonl")) for e in read_jsonl(f)])["per_request"]
+                mine = [rid for rid in per if rid in recs]
+                if not mine:
+                    continue
+                hop = [per[r].get("hop.thinker->talker") for r in mine]
+                c2w = [per[r].get("hop.talker->code2wav") for r in mine]
+                top = max(level_of(recs[r]) for r in mine)
+                at_top = [recs[r] for r in mine if level_of(recs[r]) == top]
+                e2e = [request_metrics(r).get("e2e_s") for r in at_top if r.get("status") == "ok"]
+                slo = sum(1 for r in at_top if slo_ok(r)) / len(at_top)
+                L.append(f"| {res['experiment_id']} | {sdir.name} | {'→'.join(map(str, gpus.get(sdir.name, [])))} | {link_label(sdir.name)} | {ph} | "
+                         f"{len(mine)} | {f(pct(hop, 0.5))} / {f(pct(hop, 0.9))} | {f(pct(c2w, 0.5))} | {f(pct(e2e, 0.5))} / {f(pct(e2e, 0.9))} | {slo:.2f} |")
+    return L + [""]
+
+
+def window_cores(samples: list[dict[str, Any]], a_wall: int, b_wall: int, skip: str = "client") -> float | None:
+    """Mean CPU cores used by the server process groups between two wall-clock times (ns)."""
+    vals = [sum(g["cpu_percent"] for k, g in s["groups"].items() if k != skip) / 100
+            for s in samples if a_wall <= s["t_wall_ns"] <= b_wall and len(s["groups"]) > 1]
+    return sum(vals) / len(vals) if vals else None
+
+
+def f1_section(runs: list[tuple[Path, dict, dict]]) -> list[str]:
+    L = ["## F1 视频（W4，文本输出）随副本数", "",
+         "每卡一个完整副本（--text-only），每卡 7 个 CPU。“服务 CPU”是 1 秒一次的进程树采样在这一档期间的均值，按副本平均（核）。", "",
+         "| 实验 | 视频 | 并发 | n | 吞吐 请求/秒 | 每副本 | e2e 中位数 s | 输出 token 中位数 | 服务 CPU 核/副本 |", "|---|---|---|---|---|---|---|---|---|"]
+    best: dict[tuple[str, int], float] = {}
+    for d, res, ana in runs:
+        n = len(ana["config"].get("servers", [])) or 1
+        anchor = clock_anchor(d)
+        off = anchor[1] - anchor[0] if anchor else None
+        samples = read_jsonl(d / "raw" / "cpu_samples.jsonl") if (d / "raw" / "cpu_samples.jsonl").exists() else []
+        for ph in [p["phase"] for p in res["phases"] if p["phase"].startswith("w4_video")]:
+            by: dict[Any, list[dict]] = {}
+            for r in read_jsonl(d / "raw" / f"requests_{ph}.jsonl"):
+                if not r.get("warmup"):
+                    by.setdefault(level_of(r), []).append(r)
+            for lv, rs in sorted(by.items()):
+                ok = [r for r in rs if r.get("status") == "ok"]
+                if not ok:
+                    continue
+                a, b = min(r["sent_ns"] for r in rs), max(r["done_ns"] for r in ok)
+                tp = len(ok) / ((b - a) / 1e9)
+                if re.fullmatch(r"v2b?_f1_r\d+", res["experiment_id"]):  # the scaling series, not follow-ups
+                    best[(ph, n)] = max(best.get((ph, n), 0.0), tp)
+                cores = window_cores(samples, a + off, b + off) if off is not None else None
+                L.append(f"| {res['experiment_id']} | {ph.removeprefix('w4_video_')} | {lv} | {len(rs)} | {tp:.2f} | {tp / n:.2f} | "
+                         f"{f(pct([request_metrics(r).get('e2e_s') for r in ok], 0.5))} | {f(pct([r.get('completion_tokens') for r in ok], 0.5), 0)} | "
+                         f"{f(cores / n if cores is not None else None)} |")
+    reps = sorted({n for _, n in best})
+    if reps:
+        L += ["", "各副本数下的最高吞吐（请求/秒）和相对 1 个副本的倍数：", "",
+              "| 视频 | " + " | ".join(f"R{n}" for n in reps) + " |", "|---|" + "---|" * len(reps)]
+        for ph in sorted({p for p, _ in best}):
+            one = best.get((ph, 1))
+            L.append(f"| {ph.removeprefix('w4_video_')} | " + " | ".join(
+                f"{best[(ph, n)]:.2f}" + (f"（{best[(ph, n)] / one:.1f}×）" if one and n > 1 else "") if (ph, n) in best else "—" for n in reps) + " |")
+    return L + [""]
+
+
+def replay_stats(recs: list[dict[str, Any]]) -> dict[str, Any]:
+    """Client-side view of one replay (or live agent) run: model requests only."""
+    sent = [r for r in recs if r.get("sent_ns") is not None]
+    ok = [r for r in sent if r.get("status") == "ok" and r.get("done_ns")]
+    if not ok:
+        return {"n": len(recs), "ok": 0}
+    a, b = min(r["sent_ns"] for r in sent), max(r["done_ns"] for r in ok)
+    span = (b - a) / 1e9
+    e2e = [(r["done_ns"] - r["sent_ns"]) / 1e9 for r in ok]
+    ttft = [(r["first_text_ns"] - r["sent_ns"]) / 1e9 for r in ok if r.get("first_text_ns")]
+    sess: dict[str, list[int]] = {}
+    for r in ok:
+        s = sess.setdefault(r.get("session_id") or r["request_id"], [r["sent_ns"], r["done_ns"]])
+        s[0], s[1] = min(s[0], r["sent_ns"]), max(s[1], r["done_ns"])
+    steps = sorted([(r["sent_ns"], 1) for r in sent if r.get("done_ns")] + [(r["done_ns"], -1) for r in sent if r.get("done_ns")])
+    cur = peak = 0
+    for _, step in steps:
+        cur += step
+        peak = max(peak, cur)
+    out_tok = [r["completion_tokens"] for r in ok if r.get("completion_tokens") is not None]
+    return {"n": len(recs), "ok": len(ok), "fd_errors": sum(1 for r in recs if "Too many open files" in str(r.get("error") or "")),
+            "skipped": sum(1 for r in recs if r.get("status") == "skipped"), "span_s": span, "tp": len(ok) / span,
+            "mean_inflight": sum(e2e) / span, "peak_inflight": peak, "e2e": (pct(e2e, 0.5), pct(e2e, 0.9)),
+            "ttft": (pct(ttft, 0.5), pct(ttft, 0.9)), "session": (pct([(y - x) / 1e9 for x, y in sess.values()], 0.5),
+                                                                pct([(y - x) / 1e9 for x, y in sess.values()], 0.9)),
+            "out_tokens_mean": sum(out_tok) / len(out_tok) if out_tok else None,
+            "prompt_tokens_p50": pct([r.get("prompt_tokens") for r in ok if r.get("prompt_tokens") is not None], 0.5)}
+
+
+def d_section(runs: list[tuple[Path, dict, dict]], all_runs: list[tuple[Path, dict, dict]]) -> list[str]:
+    L = ["## D 回放方法", "",
+         "每个回放都在新启动的 R8 上进行（缓存是空的），只统计模型请求。第一行是被回放的实时运行。“在途”是同时在服务端的模型请求数；"
+         "平均在途 = 所有请求 e2e 之和 ÷ 用时。“句柄错误”是客户端自己用完文件句柄导致的失败（这些行不能用来比较）。", "",
+         "| 运行 | 模式 | 内容 | 倍速 | 成功 / 总数 | 句柄错误 | 跳过 | 用时 s | 吞吐 请求/秒 | 平均 / 最高在途 | e2e p50 / p90 s | TTFT p50 / p90 s | "
+         "会话 p50 / p90 s | 输出 token 均值 | 输入 token 中位数 | 前缀缓存命中 | GPU 采样利用率 % |",
+         "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+
+    def row(label: str, mode: str, payload: str, speed: str, s: dict[str, Any], cache: Any, util: Any) -> str:
+        if not s.get("ok"):
+            return f"| {label} | {mode} | {payload} | {speed} | 0 / {s['n']} |" + " — |" * 12
+        return (f"| {label} | {mode} | {payload} | {speed} | {s['ok']} / {s['n']} | {s['fd_errors']} | {s['skipped']} | {s['span_s']:.1f} | {s['tp']:.1f} | "
+                f"{s['mean_inflight']:.0f} / {s['peak_inflight']} | {f(s['e2e'][0])} / {f(s['e2e'][1])} | {f(s['ttft'][0], 3)} / {f(s['ttft'][1], 3)} | "
+                f"{f(s['session'][0])} / {f(s['session'][1])} | {f(s['out_tokens_mean'], 1)} | {f(s['prompt_tokens_p50'], 0)} | {f(cache, 3)} | {f(util, 0)} |")
+
+    def util_of(ana: dict, phase: str) -> float | None:
+        v = [g["sampled_util_mean"] for g in ana.get("gpu_by_phase", []) if g["phase"] == phase and g.get("sampled_util_mean") is not None]
+        return sum(v) / len(v) if v else None
+
+    live_done: set[str] = set()
+    for d, res, ana in runs:
+        ph = next((p for p in res["phases"] if p.get("kind") == "replay"), None)
+        if not ph:
+            continue
+        src = ph.get("source_trace") or ""
+        parts = Path(src).parts
+        if "latest" in parts and src not in live_done:
+            # The live run that recorded the trace: latest/<experiment_id>/raw/agent_trace_<phase>.jsonl
+            eid, phase = parts[parts.index("latest") + 1], Path(src).stem.removeprefix("agent_trace_")
+            live = next(((ld, la) for ld, lr, la in all_runs if lr["experiment_id"] == eid), None)
+            if live and (live[0] / "raw" / f"requests_{phase}.jsonl").exists():
+                live_done.add(src)
+                s = replay_stats(read_jsonl(live[0] / "raw" / f"requests_{phase}.jsonl"))
+                L.append(row(f"实时运行 {eid} {phase}", "实时", "原文", "1", s,
+                             ((live[1].get("prefix_cache") or {}).get(phase) or {}).get("cached_fraction"), util_of(live[1], phase)))
+        rp = ph.get("replay") or {}
+        cfg_ph = next((p for p in ana["config"].get("phases", []) if p.get("kind") == "replay"), {})
+        recs = [r for r in read_jsonl(d / "raw" / "requests_replay.jsonl") if r.get("kind") == "model_request"]
+        copies = rp.get("session_copies") or 1
+        payload = {"auto": "原文", "prefix_surrogate": "保留前缀的替代", "surrogate": "完全替代"}.get(cfg_ph.get("payload", "auto"), cfg_ph.get("payload"))
+        if copies > 1:
+            payload += f"，前 {cfg_ph.get('max_sessions')} 个会话 ×{copies}"
+        L.append(row(res["experiment_id"].removeprefix("v2b_d_"), {"dependency": "依赖感知", "request": "请求级"}.get(rp.get("mode"), rp.get("mode")),
+                     payload, f"{rp.get('speed', 1):g}", replay_stats(recs),
+                     ((ana.get("prefix_cache") or {}).get("replay") or {}).get("cached_fraction"), util_of(ana, "replay")))
+    return L + [""]
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--data-root", required=True)
@@ -245,6 +408,12 @@ def main() -> int:
     L += role_util_section(w3b8, "w3b_open")
     L += mix_section(by("_b1_"))
     L += agent_section([r for r in runs if "_b2" in r[1]["experiment_id"]])
+    if by("_g1"):
+        L += g1_section(by("_g1"))
+    if by("_f1_"):
+        L += f1_section(by("_f1_"))
+    if by("_d_"):
+        L += d_section(by("_d_"), runs)
     Path(a.out).expanduser().write_text("\n".join(L) + "\n")
     print(a.out)
     return 0
