@@ -1,0 +1,2347 @@
+{
+ "generated_by": "scripts/analysis/exp08_lookahead.py",
+ "runs": [
+  "20261117_exp08_lookahead_supp_block1_run01",
+  "20261117_exp08_lookahead_supp_block2_run01",
+  "20261117_exp08_lookahead_supp_block3_run01"
+ ],
+ "per_run": [
+  {
+   "run": "20261117_exp08_lookahead_supp_block1_run01",
+   "experiment_id": "exp08_lookahead_supp_block1",
+   "phases": {
+    "w3t_ns_c64_C": {
+     "condition": "w3t_ns",
+     "concurrency": 64,
+     "mode": "C",
+     "client": {
+      "ok": 384,
+      "errors": 0,
+      "throughput_rps": 29.457554210887945,
+      "e2e_s": {
+       "n": 384,
+       "mean": 1.914191487015625,
+       "p50": 1.7629689045,
+       "p95": 3.599537164249999
+      },
+      "ttft_s": {
+       "n": 384,
+       "mean": 0.2043577975911458,
+       "p50": 0.092585799,
+       "p95": 0.6024185647499999
+      },
+      "completion_tokens": {
+       "n": 384,
+       "mean": 45.0625,
+       "p50": 40.5,
+       "p95": 63.0
+      }
+     },
+     "graph_steps": {
+      "steps": 30.0,
+      "span_ms_p50": 25.53452722167969,
+      "busy_ms_p50": 25.340226074218748,
+      "idle_ms_p50": 0.19708740234375,
+      "lead_ms_p50": 17.917900146484378,
+      "waited_share": 0.0,
+      "late_launch_share": 0.0,
+      "sync_share_of_period": 0.6061505262572979
+     }
+    },
+    "w3t_c32_C": {
+     "condition": "w3t",
+     "concurrency": 32,
+     "mode": "C",
+     "client": {
+      "ok": 192,
+      "errors": 0,
+      "throughput_rps": 16.068224711335755,
+      "e2e_s": {
+       "n": 192,
+       "mean": 1.7308818728854165,
+       "p50": 1.604360102,
+       "p95": 3.2366504077499987
+      },
+      "ttft_s": {
+       "n": 192,
+       "mean": 0.112117615625,
+       "p50": 0.066489727,
+       "p95": 0.12177414989999998
+      },
+      "completion_tokens": {
+       "n": 192,
+       "mean": 45.40625,
+       "p50": 47.0,
+       "p95": 63.44999999999999
+      }
+     },
+     "graph_steps": {
+      "steps": 67.5,
+      "span_ms_p50": 32.20338745117188,
+      "busy_ms_p50": 24.589058471679685,
+      "idle_ms_p50": 7.435406616210937,
+      "lead_ms_p50": -7.497627319335937,
+      "waited_share": 1.0,
+      "late_launch_share": 1.0,
+      "sync_share_of_period": 0.531128294959065
+     }
+    },
+    "w3t_ns_c32_C": {
+     "condition": "w3t_ns",
+     "concurrency": 32,
+     "mode": "C",
+     "client": {
+      "ok": 192,
+      "errors": 0,
+      "throughput_rps": 17.712200150899346,
+      "e2e_s": {
+       "n": 192,
+       "mean": 1.5866242494947915,
+       "p50": 1.4353447495,
+       "p95": 3.0912584919499992
+      },
+      "ttft_s": {
+       "n": 192,
+       "mean": 0.08883219434895832,
+       "p50": 0.0798710815,
+       "p95": 0.10301623085
+      },
+      "completion_tokens": {
+       "n": 192,
+       "mean": 45.380208333333336,
+       "p50": 47.0,
+       "p95": 63.0
+      }
+     },
+     "graph_steps": {
+      "steps": 69.5,
+      "span_ms_p50": 24.4152265625,
+      "busy_ms_p50": 24.368581420898437,
+      "idle_ms_p50": 0.0448428955078125,
+      "lead_ms_p50": 19.31910693359375,
+      "waited_share": 0.25062266500622665,
+      "late_launch_share": 0.2361975923619759,
+      "sync_share_of_period": 0.4815728569151392
+     }
+    },
+    "w3t_c64_C": {
+     "condition": "w3t",
+     "concurrency": 64,
+     "mode": "C",
+     "client": {
+      "ok": 384,
+      "errors": 0,
+      "throughput_rps": 27.443669871312284,
+      "e2e_s": {
+       "n": 384,
+       "mean": 2.0432325151744792,
+       "p50": 1.9350357095,
+       "p95": 3.2690585575
+      },
+      "ttft_s": {
+       "n": 384,
+       "mean": 0.09133791362760417,
+       "p50": 0.0794295155,
+       "p95": 0.14752372819999995
+      },
+      "completion_tokens": {
+       "n": 384,
+       "mean": 45.138020833333336,
+       "p50": 40.0,
+       "p95": 63.0
+      }
+     },
+     "graph_steps": {
+      "steps": 35.0,
+      "span_ms_p50": 37.072466186523435,
+      "busy_ms_p50": 26.01787451171875,
+      "idle_ms_p50": 11.376177124023439,
+      "lead_ms_p50": -12.352687744140624,
+      "waited_share": 1.0,
+      "late_launch_share": 1.0,
+      "sync_share_of_period": 0.45260328366323826
+     }
+    }
+   }
+  },
+  {
+   "run": "20261117_exp08_lookahead_supp_block2_run01",
+   "experiment_id": "exp08_lookahead_supp_block2",
+   "phases": {
+    "w3t_c32_C": {
+     "condition": "w3t",
+     "concurrency": 32,
+     "mode": "C",
+     "client": {
+      "ok": 192,
+      "errors": 0,
+      "throughput_rps": 11.929551631400683,
+      "e2e_s": {
+       "n": 192,
+       "mean": 2.3946197487291667,
+       "p50": 1.600656585,
+       "p95": 7.00928721865
+      },
+      "ttft_s": {
+       "n": 192,
+       "mean": 0.451312854265625,
+       "p50": 0.062724163,
+       "p95": 2.68726786355
+      },
+      "completion_tokens": {
+       "n": 192,
+       "mean": 45.208333333333336,
+       "p50": 47.0,
+       "p95": 64.0
+      }
+     },
+     "graph_steps": {
+      "steps": 7.0,
+      "span_ms_p50": 28.629865478515626,
+      "busy_ms_p50": 24.29473291015625,
+      "idle_ms_p50": 4.304464111328125,
+      "lead_ms_p50": -4.340240234375,
+      "waited_share": 1.0,
+      "late_launch_share": 1.0,
+      "sync_share_of_period": 0.8235150188351255
+     }
+    },
+    "w3t_c64_C": {
+     "condition": "w3t",
+     "concurrency": 64,
+     "mode": "C",
+     "client": {
+      "ok": 384,
+      "errors": 0,
+      "throughput_rps": 29.52888699446998,
+      "e2e_s": {
+       "n": 384,
+       "mean": 1.8893177419791665,
+       "p50": 1.767599299,
+       "p95": 3.2957888340499997
+      },
+      "ttft_s": {
+       "n": 384,
+       "mean": 0.08754208826041666,
+       "p50": 0.07027917950000001,
+       "p95": 0.09625791549999996
+      },
+      "completion_tokens": {
+       "n": 384,
+       "mean": 44.846354166666664,
+       "p50": 40.0,
+       "p95": 63.0
+      }
+     },
+     "graph_steps": {
+      "steps": 28.0,
+      "span_ms_p50": 74.32093017578126,
+      "busy_ms_p50": 50.53297705078125,
+      "idle_ms_p50": 23.643248046875,
+      "lead_ms_p50": -48.98730249023437,
+      "waited_share": 1.0,
+      "late_launch_share": 1.0,
+      "sync_share_of_period": 0.37105792056092246
+     }
+    },
+    "w3t_ns_c64_C": {
+     "condition": "w3t_ns",
+     "concurrency": 64,
+     "mode": "C",
+     "client": {
+      "ok": 384,
+      "errors": 0,
+      "throughput_rps": 31.83162723904634,
+      "e2e_s": {
+       "n": 384,
+       "mean": 1.7755365338098958,
+       "p50": 1.6418100175,
+       "p95": 3.1805378483499998
+      },
+      "ttft_s": {
+       "n": 384,
+       "mean": 0.10353572939583333,
+       "p50": 0.0861508205,
+       "p95": 0.11926561079999996
+      },
+      "completion_tokens": {
+       "n": 384,
+       "mean": 44.8359375,
+       "p50": 40.0,
+       "p95": 63.0
+      }
+     },
+     "graph_steps": {
+      "steps": 40.5,
+      "span_ms_p50": 26.233762207031248,
+      "busy_ms_p50": 26.10996142578125,
+      "idle_ms_p50": 0.1814337158203125,
+      "lead_ms_p50": 18.152694213867186,
+      "waited_share": 0.3075275397796818,
+      "late_launch_share": 0.3075275397796818,
+      "sync_share_of_period": 0.30892147325846275
+     }
+    },
+    "w3t_ns_c32_C": {
+     "condition": "w3t_ns",
+     "concurrency": 32,
+     "mode": "C",
+     "client": {
+      "ok": 192,
+      "errors": 0,
+      "throughput_rps": 17.467147931909736,
+      "e2e_s": {
+       "n": 192,
+       "mean": 1.5846559462395833,
+       "p50": 1.4070115890000001,
+       "p95": 2.9211274175499997
+      },
+      "ttft_s": {
+       "n": 192,
+       "mean": 0.09989960151562499,
+       "p50": 0.07916873099999999,
+       "p95": 0.09714020219999997
+      },
+      "completion_tokens": {
+       "n": 192,
+       "mean": 45.260416666666664,
+       "p50": 47.0,
+       "p95": 64.0
+      }
+     },
+     "graph_steps": {
+      "steps": 60.0,
+      "span_ms_p50": 24.925073974609376,
+      "busy_ms_p50": 24.881873535156252,
+      "idle_ms_p50": 0.047962646484374996,
+      "lead_ms_p50": 18.646757080078125,
+      "waited_share": 0.3182957393483709,
+      "late_launch_share": 0.3182957393483709,
+      "sync_share_of_period": 0.4365962465472739
+     }
+    }
+   }
+  },
+  {
+   "run": "20261117_exp08_lookahead_supp_block3_run01",
+   "experiment_id": "exp08_lookahead_supp_block3",
+   "phases": {
+    "w3t_c32_C": {
+     "condition": "w3t",
+     "concurrency": 32,
+     "mode": "C",
+     "client": {
+      "ok": 192,
+      "errors": 0,
+      "throughput_rps": 13.29819437567659,
+      "e2e_s": {
+       "n": 192,
+       "mean": 2.122018682015625,
+       "p50": 1.7437326535,
+       "p95": 4.5036506263
+      },
+      "ttft_s": {
+       "n": 192,
+       "mean": 0.32845634396875,
+       "p50": 0.06554032500000001,
+       "p95": 1.68460809895
+      },
+      "completion_tokens": {
+       "n": 192,
+       "mean": 45.557291666666664,
+       "p50": 47.0,
+       "p95": 63.0
+      }
+     },
+     "graph_steps": {
+      "steps": 28.5,
+      "span_ms_p50": 31.651080810546873,
+      "busy_ms_p50": 24.27061572265625,
+      "idle_ms_p50": 7.369415771484375,
+      "lead_ms_p50": -7.406915649414062,
+      "waited_share": 1.0,
+      "late_launch_share": 1.0,
+      "sync_share_of_period": 0.6643485039090465
+     }
+    },
+    "w3t_c64_C": {
+     "condition": "w3t",
+     "concurrency": 64,
+     "mode": "C",
+     "client": {
+      "ok": 384,
+      "errors": 0,
+      "throughput_rps": 27.83502370957455,
+      "e2e_s": {
+       "n": 384,
+       "mean": 2.0254810783489585,
+       "p50": 1.9103267145,
+       "p95": 3.5018652464499995
+      },
+      "ttft_s": {
+       "n": 384,
+       "mean": 0.10431710616927083,
+       "p50": 0.07955591249999999,
+       "p95": 0.1805630457
+      },
+      "completion_tokens": {
+       "n": 384,
+       "mean": 44.947916666666664,
+       "p50": 40.0,
+       "p95": 63.0
+      }
+     },
+     "graph_steps": {
+      "steps": 29.5,
+      "span_ms_p50": 35.321965209960936,
+      "busy_ms_p50": 25.428529296875,
+      "idle_ms_p50": 9.774703124999998,
+      "lead_ms_p50": -10.485583007812501,
+      "waited_share": 1.0,
+      "late_launch_share": 1.0,
+      "sync_share_of_period": 0.44170870283664976
+     }
+    },
+    "w3t_ns_c32_C": {
+     "condition": "w3t_ns",
+     "concurrency": 32,
+     "mode": "C",
+     "client": {
+      "ok": 192,
+      "errors": 0,
+      "throughput_rps": 16.83678853026052,
+      "e2e_s": {
+       "n": 192,
+       "mean": 1.6485355561770831,
+       "p50": 1.5007916385,
+       "p95": 3.1152490071999996
+      },
+      "ttft_s": {
+       "n": 192,
+       "mean": 0.12146404281770834,
+       "p50": 0.0853981885,
+       "p95": 0.14547116114999992
+      },
+      "completion_tokens": {
+       "n": 192,
+       "mean": 44.75,
+       "p50": 46.5,
+       "p95": 64.0
+      }
+     },
+     "graph_steps": {
+      "steps": 64.0,
+      "span_ms_p50": 24.415315673828125,
+      "busy_ms_p50": 24.366716796875,
+      "idle_ms_p50": 0.04610888671875,
+      "lead_ms_p50": 17.332152343750003,
+      "waited_share": 0.2656898656898657,
+      "late_launch_share": 0.2656898656898657,
+      "sync_share_of_period": 0.4096006426866396
+     }
+    },
+    "w3t_ns_c64_C": {
+     "condition": "w3t_ns",
+     "concurrency": 64,
+     "mode": "C",
+     "client": {
+      "ok": 384,
+      "errors": 0,
+      "throughput_rps": 27.930575301467126,
+      "e2e_s": {
+       "n": 384,
+       "mean": 2.0462173396822916,
+       "p50": 1.8540558415000001,
+       "p95": 3.566243969649999
+      },
+      "ttft_s": {
+       "n": 384,
+       "mean": 0.14852685661458334,
+       "p50": 0.0985869775,
+       "p95": 0.44297392139999986
+      },
+      "completion_tokens": {
+       "n": 384,
+       "mean": 44.934895833333336,
+       "p50": 40.0,
+       "p95": 64.0
+      }
+     },
+     "graph_steps": {
+      "steps": 70.5,
+      "span_ms_p50": 25.52380993652344,
+      "busy_ms_p50": 25.331632690429686,
+      "idle_ms_p50": 0.1936776123046875,
+      "lead_ms_p50": 16.195276855468748,
+      "waited_share": 0.05458603896103896,
+      "late_launch_share": 0.048092532467532464,
+      "sync_share_of_period": 0.5217411861281442
+     }
+    }
+   }
+  }
+ ],
+ "by_condition": {
+  "w3t_c32_B": {
+   "steps.decode_lookahead_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.lookahead_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.batch_size_decode.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.run.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.resolve.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.launch.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "thinker_ms_per_token.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.throughput_rps": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.e2e_s.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.e2e_s.p95": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.ttft_s.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   }
+  },
+  "w3t_c32_C": {
+   "graph_steps.idle_ms_p50": {
+    "runs": [
+     7.435406616210937,
+     4.304464111328125,
+     7.369415771484375
+    ],
+    "n": 3,
+    "mean": 6.369762166341146,
+    "ci95": [
+     1.9255173731292317,
+     10.81400695955306
+    ]
+   },
+   "graph_steps.busy_ms_p50": {
+    "runs": [
+     24.589058471679685,
+     24.29473291015625,
+     24.27061572265625
+    ],
+    "n": 3,
+    "mean": 24.38480236816406,
+    "ci95": [
+     23.944325444753716,
+     24.825279291574404
+    ]
+   },
+   "graph_steps.span_ms_p50": {
+    "runs": [
+     32.20338745117188,
+     28.629865478515626,
+     31.651080810546873
+    ],
+    "n": 3,
+    "mean": 30.828111246744793,
+    "ci95": [
+     26.049085202883884,
+     35.607137290605706
+    ]
+   },
+   "graph_steps.waited_share": {
+    "runs": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "n": 3,
+    "mean": 1.0,
+    "ci95": [
+     1.0,
+     1.0
+    ]
+   },
+   "graph_steps.lead_ms_p50": {
+    "runs": [
+     -7.497627319335937,
+     -4.340240234375,
+     -7.406915649414062
+    ],
+    "n": 3,
+    "mean": -6.414927734374999,
+    "ci95": [
+     -10.880039874145371,
+     -1.949815594604627
+    ]
+   },
+   "graph_steps.steps": {
+    "runs": [
+     67.5,
+     7.0,
+     28.5
+    ],
+    "n": 3,
+    "mean": 34.333333333333336,
+    "ci95": [
+     -41.85866394674705,
+     110.52533061341373
+    ]
+   },
+   "client.throughput_rps": {
+    "runs": [
+     16.068224711335755,
+     11.929551631400683,
+     13.29819437567659
+    ],
+    "n": 3,
+    "mean": 13.765323572804343,
+    "ci95": [
+     8.527073643368567,
+     19.00357350224012
+    ]
+   }
+  },
+  "w3t_c64_B": {
+   "steps.decode_lookahead_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.lookahead_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.batch_size_decode.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.run.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.resolve.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.launch.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "thinker_ms_per_token.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.throughput_rps": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.e2e_s.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.e2e_s.p95": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.ttft_s.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   }
+  },
+  "w3t_c64_C": {
+   "graph_steps.idle_ms_p50": {
+    "runs": [
+     11.376177124023439,
+     23.643248046875,
+     9.774703124999998
+    ],
+    "n": 3,
+    "mean": 14.931376098632816,
+    "ci95": [
+     -3.9174854115075295,
+     33.78023760877316
+    ]
+   },
+   "graph_steps.busy_ms_p50": {
+    "runs": [
+     26.01787451171875,
+     50.53297705078125,
+     25.428529296875
+    ],
+    "n": 3,
+    "mean": 33.993126953125,
+    "ci95": [
+     -1.5998897888212014,
+     69.5861436950712
+    ]
+   },
+   "graph_steps.span_ms_p50": {
+    "runs": [
+     37.072466186523435,
+     74.32093017578126,
+     35.321965209960936
+    ],
+    "n": 3,
+    "mean": 48.905120524088545,
+    "ci95": [
+     -5.820209416162207,
+     103.6304504643393
+    ]
+   },
+   "graph_steps.waited_share": {
+    "runs": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "n": 3,
+    "mean": 1.0,
+    "ci95": [
+     1.0,
+     1.0
+    ]
+   },
+   "graph_steps.lead_ms_p50": {
+    "runs": [
+     -12.352687744140624,
+     -48.98730249023437,
+     -10.485583007812501
+    ],
+    "n": 3,
+    "mean": -23.94185774739583,
+    "ci95": [
+     -77.87702029845295,
+     29.99330480366129
+    ]
+   },
+   "graph_steps.steps": {
+    "runs": [
+     35.0,
+     28.0,
+     29.5
+    ],
+    "n": 3,
+    "mean": 30.833333333333332,
+    "ci95": [
+     21.677162270723272,
+     39.98950439594339
+    ]
+   },
+   "client.throughput_rps": {
+    "runs": [
+     27.443669871312284,
+     29.52888699446998,
+     27.83502370957455
+    ],
+    "n": 3,
+    "mean": 28.269193525118936,
+    "ci95": [
+     25.515710376767682,
+     31.02267667347019
+    ]
+   }
+  },
+  "w3t_ns_c32_B": {
+   "steps.decode_lookahead_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.lookahead_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.batch_size_decode.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.run.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.resolve.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.launch.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "thinker_ms_per_token.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.throughput_rps": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.e2e_s.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.e2e_s.p95": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.ttft_s.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   }
+  },
+  "w3t_ns_c32_C": {
+   "graph_steps.idle_ms_p50": {
+    "runs": [
+     0.0448428955078125,
+     0.047962646484374996,
+     0.04610888671875
+    ],
+    "n": 3,
+    "mean": 0.046304809570312494,
+    "ci95": [
+     0.04240669302877363,
+     0.050202926111851356
+    ]
+   },
+   "graph_steps.busy_ms_p50": {
+    "runs": [
+     24.368581420898437,
+     24.881873535156252,
+     24.366716796875
+    ],
+    "n": 3,
+    "mean": 24.539057250976565,
+    "ci95": [
+     23.80148437884169,
+     25.276630123111442
+    ]
+   },
+   "graph_steps.span_ms_p50": {
+    "runs": [
+     24.4152265625,
+     24.925073974609376,
+     24.415315673828125
+    ],
+    "n": 3,
+    "mean": 24.58520540364583,
+    "ci95": [
+     23.85397816483968,
+     25.31643264245198
+    ]
+   },
+   "graph_steps.waited_share": {
+    "runs": [
+     0.25062266500622665,
+     0.3182957393483709,
+     0.2656898656898657
+    ],
+    "n": 3,
+    "mean": 0.27820275668148775,
+    "ci95": [
+     0.1899356298379648,
+     0.3664698835250107
+    ]
+   },
+   "graph_steps.lead_ms_p50": {
+    "runs": [
+     19.31910693359375,
+     18.646757080078125,
+     17.332152343750003
+    ],
+    "n": 3,
+    "mean": 18.432672119140626,
+    "ci95": [
+     15.921927341949717,
+     20.943416896331534
+    ]
+   },
+   "graph_steps.steps": {
+    "runs": [
+     69.5,
+     60.0,
+     64.0
+    ],
+    "n": 3,
+    "mean": 64.5,
+    "ci95": [
+     52.65046196751395,
+     76.34953803248605
+    ]
+   },
+   "client.throughput_rps": {
+    "runs": [
+     17.712200150899346,
+     17.467147931909736,
+     16.83678853026052
+    ],
+    "n": 3,
+    "mean": 17.338712204356536,
+    "ci95": [
+     16.216742110196932,
+     18.46068229851614
+    ]
+   }
+  },
+  "w3t_ns_c64_B": {
+   "steps.decode_lookahead_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.lookahead_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.batch_size_decode.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.run.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.resolve.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.launch.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "thinker_ms_per_token.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.throughput_rps": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.e2e_s.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.e2e_s.p95": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.ttft_s.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   }
+  },
+  "w3t_ns_c64_C": {
+   "graph_steps.idle_ms_p50": {
+    "runs": [
+     0.19708740234375,
+     0.1814337158203125,
+     0.1936776123046875
+    ],
+    "n": 3,
+    "mean": 0.19073291015625002,
+    "ci95": [
+     0.17028227494687376,
+     0.21118354536562628
+    ]
+   },
+   "graph_steps.busy_ms_p50": {
+    "runs": [
+     25.340226074218748,
+     26.10996142578125,
+     25.331632690429686
+    ],
+    "n": 3,
+    "mean": 25.593940063476563,
+    "ci95": [
+     24.483668787895606,
+     26.70421133905752
+    ]
+   },
+   "graph_steps.span_ms_p50": {
+    "runs": [
+     25.53452722167969,
+     26.233762207031248,
+     25.52380993652344
+    ],
+    "n": 3,
+    "mean": 25.76403312174479,
+    "ci95": [
+     24.75332331619642,
+     26.774742927293165
+    ]
+   },
+   "graph_steps.waited_share": {
+    "runs": [
+     0.0,
+     0.3075275397796818,
+     0.05458603896103896
+    ],
+    "n": 3,
+    "mean": 0.12070452624690692,
+    "ci95": [
+     -0.2869241070175375,
+     0.5283331595113514
+    ]
+   },
+   "graph_steps.lead_ms_p50": {
+    "runs": [
+     17.917900146484378,
+     18.152694213867186,
+     16.195276855468748
+    ],
+    "n": 3,
+    "mean": 17.421957071940103,
+    "ci95": [
+     14.766688388866609,
+     20.077225755013597
+    ]
+   },
+   "graph_steps.steps": {
+    "runs": [
+     30.0,
+     40.5,
+     70.5
+    ],
+    "n": 3,
+    "mean": 47.0,
+    "ci95": [
+     -5.215446711198403,
+     99.21544671119841
+    ]
+   },
+   "client.throughput_rps": {
+    "runs": [
+     29.457554210887945,
+     31.83162723904634,
+     27.930575301467126
+    ],
+    "n": 3,
+    "mean": 29.739918917133807,
+    "ci95": [
+     24.856219956561656,
+     34.623617877705954
+    ]
+   }
+  },
+  "w3b_c32_B": {
+   "steps.decode_lookahead_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.lookahead_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.batch_size_decode.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.run.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.resolve.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.launch.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "thinker_ms_per_token.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.throughput_rps": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.e2e_s.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.e2e_s.p95": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.ttft_s.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   }
+  },
+  "w3b_c32_C": {
+   "graph_steps.idle_ms_p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.busy_ms_p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.span_ms_p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.waited_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.lead_ms_p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.steps": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.throughput_rps": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   }
+  },
+  "w3b_c64_B": {
+   "steps.decode_lookahead_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.lookahead_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.batch_size_decode.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.run.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.resolve.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.launch.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "thinker_ms_per_token.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.throughput_rps": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.e2e_s.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.e2e_s.p95": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.ttft_s.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   }
+  },
+  "w3b_c64_C": {
+   "graph_steps.idle_ms_p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.busy_ms_p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.span_ms_p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.waited_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.lead_ms_p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.steps": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.throughput_rps": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   }
+  },
+  "w3b_ns_c32_B": {
+   "steps.decode_lookahead_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.lookahead_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.batch_size_decode.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.run.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.resolve.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.launch.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "thinker_ms_per_token.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.throughput_rps": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.e2e_s.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.e2e_s.p95": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.ttft_s.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   }
+  },
+  "w3b_ns_c32_C": {
+   "graph_steps.idle_ms_p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.busy_ms_p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.span_ms_p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.waited_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.lead_ms_p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.steps": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.throughput_rps": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   }
+  },
+  "w3b_ns_c64_B": {
+   "steps.decode_lookahead_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.lookahead_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.batch_size_decode.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.run.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.resolve.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "steps.cpu_ms.launch.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "thinker_ms_per_token.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.throughput_rps": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.e2e_s.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.e2e_s.p95": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.ttft_s.p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   }
+  },
+  "w3b_ns_c64_C": {
+   "graph_steps.idle_ms_p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.busy_ms_p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.span_ms_p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.waited_share": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.lead_ms_p50": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "graph_steps.steps": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   },
+   "client.throughput_rps": {
+    "runs": [],
+    "n": 0,
+    "mean": null,
+    "ci95": null
+   }
+  }
+ },
+ "contrasts": {
+  "w3t_ns-w3t": {
+   "label": "H8c：只差种子（文字）",
+   "c32": {
+    "B:steps.decode_lookahead_share": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.lookahead_share": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.batch_size_decode.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.cpu_ms.run.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.cpu_ms.resolve.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.cpu_ms.launch.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:thinker_ms_per_token.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.throughput_rps": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.e2e_s.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.e2e_s.p95": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.ttft_s.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.idle_ms_p50": {
+     "runs": [
+      -7.390563720703124,
+      -4.256501464843749,
+      -7.323306884765625
+     ],
+     "n": 3,
+     "mean": -6.323457356770834,
+     "ci95": [
+      -10.771297639802757,
+      -1.875617073738911
+     ]
+    },
+    "C:graph_steps.busy_ms_p50": {
+     "runs": [
+      -0.22047705078124835,
+      0.5871406250000035,
+      0.09610107421875114
+     ],
+     "n": 3,
+     "mean": 0.1542548828125021,
+     "ci95": [
+      -0.8567150320745518,
+      1.165224797699556
+     ]
+    },
+    "C:graph_steps.span_ms_p50": {
+     "runs": [
+      -7.788160888671879,
+      -3.7047915039062502,
+      -7.235765136718747
+     ],
+     "n": 3,
+     "mean": -6.242905843098959,
+     "ci95": [
+      -11.746600160978456,
+      -0.7392115252194618
+     ]
+    },
+    "C:graph_steps.waited_share": {
+     "runs": [
+      -0.7493773349937733,
+      -0.681704260651629,
+      -0.7343101343101344
+     ],
+     "n": 3,
+     "mean": -0.7217972433185121,
+     "ci95": [
+      -0.8100643701620351,
+      -0.6335301164749891
+     ]
+    },
+    "C:graph_steps.lead_ms_p50": {
+     "runs": [
+      26.816734252929688,
+      22.986997314453124,
+      24.739067993164063
+     ],
+     "n": 3,
+     "mean": 24.84759985351563,
+     "ci95": [
+      20.084691569101285,
+      29.610508137929973
+     ]
+    },
+    "C:graph_steps.steps": {
+     "runs": [
+      2.0,
+      53.0,
+      35.5
+     ],
+     "n": 3,
+     "mean": 30.166666666666668,
+     "ci95": [
+      -34.21477146468537,
+      94.54810479801871
+     ]
+    },
+    "C:client.throughput_rps": {
+     "runs": [
+      1.6439754395635902,
+      5.537596300509053,
+      3.5385941545839295
+     ],
+     "n": 3,
+     "mean": 3.573388631552191,
+     "ci95": [
+      -1.2637262177847322,
+      8.410503480889114
+     ]
+    }
+   },
+   "c64": {
+    "B:steps.decode_lookahead_share": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.lookahead_share": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.batch_size_decode.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.cpu_ms.run.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.cpu_ms.resolve.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.cpu_ms.launch.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:thinker_ms_per_token.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.throughput_rps": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.e2e_s.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.e2e_s.p95": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.ttft_s.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.idle_ms_p50": {
+     "runs": [
+      -11.17908972167969,
+      -23.46181433105469,
+      -9.58102551269531
+     ],
+     "n": 3,
+     "mean": -14.740643188476563,
+     "ci95": [
+      -33.60895421971481,
+      4.127667842761687
+     ]
+    },
+    "C:graph_steps.busy_ms_p50": {
+     "runs": [
+      -0.6776484375000038,
+      -24.423015624999998,
+      -0.09689660644531273
+     ],
+     "n": 3,
+     "mean": -8.399186889648439,
+     "ci95": [
+      -42.88200112007587,
+      26.08362734077899
+     ]
+    },
+    "C:graph_steps.span_ms_p50": {
+     "runs": [
+      -11.537938964843747,
+      -48.08716796875001,
+      -9.798155273437498
+     ],
+     "n": 3,
+     "mean": -23.141087402343754,
+     "ci95": [
+      -76.856071038667,
+      30.573896233979486
+     ]
+    },
+    "C:graph_steps.waited_share": {
+     "runs": [
+      -1.0,
+      -0.6924724602203183,
+      -0.945413961038961
+     ],
+     "n": 3,
+     "mean": -0.8792954737530931,
+     "ci95": [
+      -1.2869241070175375,
+      -0.4716668404886488
+     ]
+    },
+    "C:graph_steps.lead_ms_p50": {
+     "runs": [
+      30.270587890625002,
+      67.13999670410155,
+      26.68085986328125
+     ],
+     "n": 3,
+     "mean": 41.363814819335936,
+     "ci95": [
+      -14.272616332632914,
+      97.00024597130479
+     ]
+    },
+    "C:graph_steps.steps": {
+     "runs": [
+      -5.0,
+      12.5,
+      41.0
+     ],
+     "n": 3,
+     "mean": 16.166666666666668,
+     "ci95": [
+      -41.515115654049154,
+      73.84844898738248
+     ]
+    },
+    "C:client.throughput_rps": {
+     "runs": [
+      2.013884339575661,
+      2.3027402445763627,
+      0.09555159189257623
+     ],
+     "n": 3,
+     "mean": 1.4707253920148666,
+     "ci95": [
+      -1.5096384267245484,
+      4.451089210754281
+     ]
+    }
+   }
+  },
+  "w3b_ns-w3b": {
+   "label": "H8d：只差种子（语音，阴性对照）",
+   "c32": {
+    "B:steps.decode_lookahead_share": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.lookahead_share": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.batch_size_decode.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.cpu_ms.run.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.cpu_ms.resolve.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.cpu_ms.launch.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:thinker_ms_per_token.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.throughput_rps": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.e2e_s.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.e2e_s.p95": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.ttft_s.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.idle_ms_p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.busy_ms_p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.span_ms_p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.waited_share": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.lead_ms_p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.steps": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:client.throughput_rps": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    }
+   },
+   "c64": {
+    "B:steps.decode_lookahead_share": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.lookahead_share": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.batch_size_decode.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.cpu_ms.run.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.cpu_ms.resolve.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.cpu_ms.launch.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:thinker_ms_per_token.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.throughput_rps": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.e2e_s.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.e2e_s.p95": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.ttft_s.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.idle_ms_p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.busy_ms_p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.span_ms_p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.waited_share": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.lead_ms_p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.steps": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:client.throughput_rps": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    }
+   }
+  },
+  "w3t-w3b": {
+   "label": "H8a：文字对语音（都带种子）",
+   "c32": {
+    "B:steps.decode_lookahead_share": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.lookahead_share": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.batch_size_decode.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.cpu_ms.run.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.cpu_ms.resolve.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.cpu_ms.launch.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:thinker_ms_per_token.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.throughput_rps": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.e2e_s.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.e2e_s.p95": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.ttft_s.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.idle_ms_p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.busy_ms_p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.span_ms_p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.waited_share": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.lead_ms_p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.steps": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:client.throughput_rps": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    }
+   },
+   "c64": {
+    "B:steps.decode_lookahead_share": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.lookahead_share": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.batch_size_decode.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.cpu_ms.run.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.cpu_ms.resolve.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:steps.cpu_ms.launch.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:thinker_ms_per_token.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.throughput_rps": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.e2e_s.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.e2e_s.p95": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "B:client.ttft_s.p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.idle_ms_p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.busy_ms_p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.span_ms_p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.waited_share": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.lead_ms_p50": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:graph_steps.steps": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    },
+    "C:client.throughput_rps": {
+     "runs": [],
+     "n": 0,
+     "mean": null,
+     "ci95": null
+    }
+   }
+  }
+ }
+}
