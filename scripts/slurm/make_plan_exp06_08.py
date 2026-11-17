@@ -27,6 +27,10 @@ PLAN_EXP07_PILOT = "configs/experiments/plan_exp07_pilot.json"
 PLAN_EXP06_SMOKE = "configs/experiments/plan_exp06_smoke.json"
 PLAN_EXP06_08 = "configs/experiments/plan_exp06_exp08a.json"
 W3T = "configs/workloads/w3t_text_only.json"
+# The research client sends "seed": 0 by default; sglang-omni keeps seeded requests off the thinker's
+# lookahead, so 实验 8 adds no-seed variants (hypotheses.md, amendment of 14:58 before any data).
+EXP08_WORKLOADS = {"w3t": W3T, "w3t_ns": "configs/workloads/w3t_text_only_noseed.json",
+                   "w3b": W3B, "w3b_ns": "configs/workloads/w3b_text_speech_noseed.json"}
 SEED = 20261117  # every randomized order below derives from this seed (hypotheses.md)
 INSTR_RUNTIME = "unicorn_instr"
 EXP06_LEVELS = [8, 64, 128, 256]
@@ -162,22 +166,21 @@ def exp06_entries() -> list[tuple[dict, dict]]:
 
 
 def exp08a_entries() -> list[tuple[dict, dict]]:
-    """实验 8 phase 1: S2:6, W3t (text only) vs W3b (text + speech) at concurrency 8/32/64; three blocks with
-    a random order of the six (workload, concurrency) conditions; B (events) then C (3 s kernel trace)."""
+    """实验 8 phase 1: S2:6, 2x2 (text only W3t vs text + speech W3b) x (seed 0 vs no seed) at concurrency
+    8/32/64; three blocks with a random order of the twelve conditions; B (events) then C (3 s kernel trace)."""
     out = []
     for block in range(1, BLOCKS + 1):
         rng = random.Random(SEED * 100 + 8 * 10 + block)
-        conditions = [(w, c) for w in ("w3t", "w3b") for c in EXP08_LEVELS]
+        conditions = [(w, c) for w in EXP08_WORKLOADS for c in EXP08_LEVELS]
         rng.shuffle(conditions)
         phases = [smoke()]
         for w, c in conditions:
-            workload = W3T if w == "w3t" else W3B
-            phases += [measured(f"{w}_c{c}_B", workload, c, "B"), measured(f"{w}_c{c}_C", workload, c, "C")]
+            phases += [measured(f"{w}_c{c}_B", EXP08_WORKLOADS[w], c, "B"), measured(f"{w}_c{c}_C", EXP08_WORKLOADS[w], c, "C")]
         cfg = instr(base(f"exp08_lookahead_block{block}", 8, placement_server("t2_k6_shared"), phases,
-                         f"实验 8 第一阶段第 {block} 个区组：2+6，打点版 sglang-omni。只要文字（W3t）和文字+语音（W3b）各在并发 8、32、64，"
-                         f"顺序（种子 {SEED}）{'、'.join(f'{w}@{c}' for w, c in conditions)}；每个条件先跑开事件的一段（含 thinker 每轮记录），"
-                         "再跑一段在中间开 3 秒 torch profiler。"))
-        out.append((cfg, {"priority": 15 - block, "est": 720, "timeout": 3600}))
+                         f"实验 8 第一阶段第 {block} 个区组：2+6，打点版 sglang-omni。2×2：只要文字（w3t）或文字+语音（w3b），"
+                         f"请求带种子 0 或不带（_ns），并发 8、32、64；顺序（种子 {SEED}）{'、'.join(f'{w}@{c}' for w, c in conditions)}。"
+                         "每个条件先跑开事件的一段（含 thinker 每轮记录），再跑一段在中间开 3 秒 torch profiler。"))
+        out.append((cfg, {"priority": 15 - block, "est": 1100, "timeout": 3600}))
     return out
 
 

@@ -108,3 +108,19 @@ def test_nanosecond_mixups_are_caught():
     evs = batch_events(["j"], 7, dispatch_ms=[0], dequeue_ms=[5], formed_ms=6, start_ms=6, done_ms=10, complete_ms=[4_000_000])
     reqs, _, issues = bd.breakdown(evs)
     assert reqs["j"]["total_ms"] is None and issues["implausible_span"] == 1
+
+
+def test_no_seed_workloads_send_a_null_seed_and_the_originals_keep_seed_zero():
+    # sglang-omni keeps any request with a sampling seed off the thinker's one-step lookahead; the
+    # 实验 8 controls must therefore send "seed": null, while W3t/W3b keep the client's seed 0.
+    import random
+
+    from omni_research.replay.payloads import Workload, build_request
+
+    root = Path(__file__).resolve().parents[1] / "configs/workloads"
+    seeds = {}
+    for name in ("w3t_text_only", "w3t_text_only_noseed", "w3b_text_speech", "w3b_text_speech_noseed"):
+        body = build_request(Workload.from_file(root / f"{name}.json"), random.Random(0), "r0").body(None)
+        seeds[name] = body.get("seed", "absent")
+        assert body["modalities"] == (["text"] if name.startswith("w3t") else ["text", "audio"])
+    assert seeds == {"w3t_text_only": 0, "w3t_text_only_noseed": None, "w3b_text_speech": 0, "w3b_text_speech_noseed": None}

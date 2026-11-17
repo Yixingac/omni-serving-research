@@ -49,10 +49,10 @@
    "required_cpus": 54,
    "required_memory_gb": 780,
    "dependencies": [],
-   "estimated_duration_s": 720,
+   "estimated_duration_s": 1100,
    "timeout_s": 3600,
    "max_retries": 1,
-   "description": "实验 8 第一阶段第 1 个区组：2+6，打点版 sglang-omni。只要文字（W3t）和文字+语音（W3b）各在并发 8、32、64，顺序（种子 20261117）w3t@8、w3b@8、w3t@64、w3b@32、w3b@64、w3t@32；每个条件先跑开事件的一段（含 thinker 每轮记录），再跑一段在中间开 3 秒 torch profiler。"
+   "description": "实验 8 第一阶段第 1 个区组：2+6，打点版 sglang-omni。2×2：只要文字（w3t）或文字+语音（w3b），请求带种子 0 或不带（_ns），并发 8、32、64；顺序（种子 20261117）w3t_ns@32、w3t_ns@64、w3b@8、w3b@64、w3b_ns@64、w3t@8、w3t@32、w3b_ns@8、w3b@32、w3b_ns@32、w3t@64、w3t_ns"
   },
   {
    "experiment_id": "exp08_lookahead_block2",
@@ -62,10 +62,10 @@
    "required_cpus": 54,
    "required_memory_gb": 780,
    "dependencies": [],
-   "estimated_duration_s": 720,
+   "estimated_duration_s": 1100,
    "timeout_s": 3600,
    "max_retries": 1,
-   "description": "实验 8 第一阶段第 2 个区组：2+6，打点版 sglang-omni。只要文字（W3t）和文字+语音（W3b）各在并发 8、32、64，顺序（种子 20261117）w3b@8、w3b@64、w3t@32、w3t@64、w3t@8、w3b@32；每个条件先跑开事件的一段（含 thinker 每轮记录），再跑一段在中间开 3 秒 torch profiler。"
+   "description": "实验 8 第一阶段第 2 个区组：2+6，打点版 sglang-omni。2×2：只要文字（w3t）或文字+语音（w3b），请求带种子 0 或不带（_ns），并发 8、32、64；顺序（种子 20261117）w3b@32、w3b_ns@64、w3b_ns@8、w3t@32、w3b_ns@32、w3t_ns@32、w3t@64、w3t_ns@8、w3b@8、w3t_ns@64、w3t@8、w3b@"
   },
   {
    "experiment_id": "exp08_lookahead_block3",
@@ -75,10 +75,10 @@
    "required_cpus": 54,
    "required_memory_gb": 780,
    "dependencies": [],
-   "estimated_duration_s": 720,
+   "estimated_duration_s": 1100,
    "timeout_s": 3600,
    "max_retries": 1,
-   "description": "实验 8 第一阶段第 3 个区组：2+6，打点版 sglang-omni。只要文字（W3t）和文字+语音（W3b）各在并发 8、32、64，顺序（种子 20261117）w3b@8、w3t@64、w3t@32、w3b@64、w3t@8、w3b@32；每个条件先跑开事件的一段（含 thinker 每轮记录），再跑一段在中间开 3 秒 torch profiler。"
+   "description": "实验 8 第一阶段第 3 个区组：2+6，打点版 sglang-omni。2×2：只要文字（w3t）或文字+语音（w3b），请求带种子 0 或不带（_ns），并发 8、32、64；顺序（种子 20261117）w3t_ns@64、w3b_ns@64、w3t@64、w3t_ns@8、w3t_ns@32、w3t@32、w3b@8、w3b@64、w3b@32、w3b_ns@32、w3t@8、w3b_ns"
   }
  ]
 }
