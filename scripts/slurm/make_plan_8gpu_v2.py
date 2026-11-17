@@ -498,6 +498,31 @@ def exp01_entries() -> list[tuple[dict | None, dict]]:
     return entries
 
 
+PLAN_EXP05 = "configs/experiments/plan_a6000_8gpu_exp05.json"
+
+
+def exp05_entries() -> list[tuple[dict | None, dict]]:
+    """实验 5 (GPU 为什么会等待), first run: what limits the talker GPUs of S2:6 at a steady high load,
+    the talker's CPU-side overhead or code2wav's compute. Lessons from 实验 1: warm up at the target
+    concurrency first, run each measured phase for three waves, profile only a few seconds inside a
+    steady phase (a whole-phase trace is gigabytes), and repeat the baseline after the profiled phase
+    to see order effects. The runner also records CPU per process now (pid -> stage)."""
+    servers, what, routing = layout("s2x6", 8)
+    c = 128
+    def phase(name: str, n: int, warm: int, **extra) -> dict:
+        return {"kind": "closed_loop", "name": name, "workload": W3B, "concurrency": [c], "requests_per_level": n,
+                "requests_per_concurrency": 1, "warmup": warm, **extra}
+    phases = [smoke(),
+              phase(f"w3b_warm_c{c}", c, 0),
+              phase(f"w3b_base_c{c}", 3 * c, c, server_events=True),
+              phase(f"w3b_prof_c{c}", 3 * c, c, torch_profile_window={"start_after_s": 12, "duration_s": 3}),
+              phase(f"w3b_base2_c{c}", 3 * c, c, server_events=True)]
+    cfg = base("exp05_talker_s2x6", 8, servers, phases,
+               f"实验 5（GPU 为什么会等待）第一次补测：{what}。W3b 闭环并发 {c}：先预热一波（{c} 个请求），再跑三段，每段 {3 * c} 个请求（另加 {c} 个预热）："
+               "只记事件 → 第 12 秒起开 3 秒 torch profiler → 再只记事件（看先后顺序的影响）。看高负载时 talker 卡被什么卡住：talker 的 CPU 开销，还是 code2wav 的计算。", routing)
+    return [(cfg, {"priority": 6, "est": 900, "timeout": 2700})]
+
+
 def plan_entry(cfg: dict | None, meta: dict) -> dict:
     eid = cfg["experiment_id"] if cfg else meta["experiment_id"]
     gpus = int(cfg["hardware_label"].removeprefix("a6000x")) if cfg else meta["gpus"]
@@ -564,7 +589,13 @@ def render() -> dict[str, str]:
                          "每个并发先跑一遍不开 profiler 的对照。通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
              "experiments": [plan_entry(c, m) for c, m in entries9]}
     files[PLAN_EXP01] = json.dumps(plan9, ensure_ascii=False, indent=1) + "\n"
-    for cfg, _ in entries + entries2 + entries3 + entries4 + entries5 + entries6 + entries7 + entries8 + entries9:
+    entries10 = exp05_entries()
+    plan10 = {"plan_id": "a6000_8gpu_exp05",
+              "_comment": "实验 5（GPU 为什么会等待）的第一次补测：2+6 分工在并发 128 的稳定负载下，talker 卡被什么卡住。"
+                          "通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+              "experiments": [plan_entry(c, m) for c, m in entries10]}
+    files[PLAN_EXP05] = json.dumps(plan10, ensure_ascii=False, indent=1) + "\n"
+    for cfg, _ in entries + entries2 + entries3 + entries4 + entries5 + entries6 + entries7 + entries8 + entries9 + entries10:
         if cfg:
             files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
     return files

@@ -156,8 +156,9 @@ def claim_processes(trees: dict[str, list[Any]]) -> dict[str, list[Any]]:
 
 
 class CpuSampler(threading.Thread):
-    """Process-tree CPU usage of the servers (and the client itself) once per second. The client
-    group counts only processes outside the server trees (``pids_fn`` lists the client last)."""
+    """Process-tree CPU usage of the servers (and the client itself) once per second, per group and
+    per process (``by_pid``, processes at >= 1%). The client group counts only processes outside the
+    server trees (``pids_fn`` lists the client last)."""
 
     def __init__(self, path: Path, pids_fn, interval_s: float = 1.0) -> None:  # noqa: ANN001
         super().__init__(daemon=True)
@@ -184,6 +185,10 @@ class CpuSampler(threading.Thread):
                 for name, tree in claim_processes(trees).items():
                     total = 0.0
                     n = 0
+                    # Per process as well: one server runs several stage processes, and a stage that keeps
+                    # one core at ~100% is CPU-bound however idle the group looks. Server event and trace
+                    # file names carry the pid, which maps a process to its stage.
+                    by_pid: dict[str, float] = {}
                     for p in tree:
                         if p.pid not in procs:
                             procs[p.pid] = p
@@ -193,11 +198,14 @@ class CpuSampler(threading.Thread):
                                 pass
                             continue
                         try:
-                            total += procs[p.pid].cpu_percent(None)
+                            c = procs[p.pid].cpu_percent(None)
+                            total += c
                             n += 1
+                            if c >= 1.0:
+                                by_pid[str(p.pid)] = round(c, 1)
                         except psutil.Error:
                             pass
-                    rec["groups"][name] = {"cpu_percent": total, "processes": n}
+                    rec["groups"][name] = {"cpu_percent": total, "processes": n, "by_pid": by_pid}
                 fh.write(json.dumps(rec) + "\n")
                 fh.flush()
 
@@ -595,10 +603,19 @@ class ExperimentRunner:
         raw = self.out / "raw"
         seed = int(ph.get("seed", self.cfg.get("seed", 0)))
         summary: dict[str, Any] = {"phase": name, "kind": kind, "started": time.time()}
-        torch_prof = bool(ph.get("torch_profile"))
-        if ph.get("server_events") or torch_prof:
+        # torch_profile_window = {"start_after_s", "duration_s"}: the torch profiler (with request events)
+        # only for a few seconds inside the phase, once the load is steady. Profiling a whole phase at
+        # high concurrency gives traces of gigabytes (a talker process: ~110 MB of JSON per second).
+        window = ph.get("torch_profile_window")
+        torch_prof = bool(ph.get("torch_profile")) and not window
+        # A window records its own request events; whole-phase events would collide with it on the server.
+        events = bool(ph.get("server_events")) and not window
+        if events or torch_prof:
             self.server_events(name, True, torch=torch_prof)
             summary["profiled"] = "torch+request_events" if torch_prof else "request_events"
+        window_task = None
+        if window:
+            window_task = asyncio.create_task(self._profile_window(name, float(window["start_after_s"]), float(window["duration_s"]), summary))
         try:
             if kind == "smoke":
                 summary.update(await self._phase_smoke(ph, name, seed, bench_trace))
@@ -617,11 +634,34 @@ class ExperimentRunner:
             else:
                 raise ExperimentFailure("config_error", f"unknown phase kind {kind!r}")
         finally:
-            if ph.get("server_events") or torch_prof:
+            if window_task is not None:
+                window_task.cancel()  # a window still waiting to start is dropped; one in progress stops now
+                try:
+                    await window_task
+                except asyncio.CancelledError:
+                    pass
+            if events or torch_prof:
                 self.server_events(name, False, torch=torch_prof)
             summary["ended"] = time.time()
         _ = raw
         return summary
+
+    async def _profile_window(self, phase: str, start_after_s: float, duration_s: float, summary: dict[str, Any]) -> None:
+        """Torch profiler + request events from start_after_s to start_after_s + duration_s into the phase.
+        The HTTP calls block, so they run in a thread and the load generator keeps its pace. Once the
+        start is issued, the stop always follows (shielded), even when the phase ends first."""
+        await asyncio.sleep(start_after_s)
+        start = asyncio.ensure_future(asyncio.to_thread(self.server_events, phase, True, True))
+        try:
+            await asyncio.shield(start)
+            summary["profiled"] = "torch+request_events window"
+            summary["profile_window_unix"] = [time.time(), None]
+            await asyncio.sleep(duration_s)
+        finally:
+            await asyncio.shield(start)
+            if summary.get("profile_window_unix"):
+                summary["profile_window_unix"][1] = time.time()
+            await asyncio.shield(asyncio.to_thread(self.server_events, phase, False, True))
 
     async def _phase_smoke(self, ph, name, seed, bench_trace) -> dict[str, Any]:  # noqa: ANN001
         wl = self._workload(ph)

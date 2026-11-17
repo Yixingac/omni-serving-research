@@ -80,6 +80,11 @@ def test_runner_end_to_end(cfg, tmp_path):
     assert rep.stats["by_kind"]["tool_call"] == 3 and rep.stats["by_kind"]["model_request"] == 6
     bench = validate_trace(load_trace(out / "raw" / "bench_trace.jsonl"))
     assert bench.ok, bench.errors
+    # CPU samples carry each group's total and its processes (pid -> %), when psutil is available.
+    cpu = [json.loads(x) for x in (out / "raw" / "cpu_samples.jsonl").read_text().splitlines()] if (out / "raw" / "cpu_samples.jsonl").exists() else []
+    later = [s for s in cpu if "s0" in s["groups"]]
+    if later:
+        assert all("by_pid" in s["groups"]["s0"] for s in later)
 
 
 def test_runner_reports_server_crash(cfg, tmp_path):
@@ -144,6 +149,26 @@ def test_runner_torch_profile_window_waits_for_export(cfg, tmp_path):
     traces = list((out / "profiling" / "torch" / "prof").rglob("*.trace.json.gz"))
     assert len(traces) == 1 and "fake_trace" in traces[0].name  # {stage} was filled in by the server
     assert res["phases"][0]["profiled"] == "torch+request_events"
+
+
+def test_runner_torch_profile_window_inside_a_phase(cfg, tmp_path):
+    wl = cfg["phases"][0]["workload"]
+    cfg["phases"] = [
+        {"kind": "closed_loop", "name": "win", "workload": wl, "concurrency": [1], "requests_per_level": 40, "warmup": 0,
+         "torch_profile_window": {"start_after_s": 0.3, "duration_s": 0.4}},
+        # Starts after the phase is over: dropped, and no profiler is left running.
+        {"kind": "closed_loop", "name": "late", "workload": wl, "concurrency": [1], "requests_per_level": 2, "warmup": 0,
+         "torch_profile_window": {"start_after_s": 60, "duration_s": 1}},
+    ]
+    out = tmp_path / "exp"
+    res = ExperimentRunner(cfg, out).run()
+    assert res["status"] == "ok", res.get("error")
+    win, late = res["phases"]
+    assert win["profiled"] == "torch+request_events window"
+    a, b = win["profile_window_unix"]
+    assert win["started"] < a < b <= win["ended"] and b - a >= 0.4
+    assert list((out / "profiling" / "torch" / "win").rglob("*.trace.json.gz"))
+    assert "profiled" not in late and not (out / "profiling" / "torch" / "late").exists()
 
 
 def test_stop_kills_server_in_its_own_process_group(cfg, tmp_path):
