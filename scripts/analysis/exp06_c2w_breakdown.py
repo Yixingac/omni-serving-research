@@ -146,3 +146,80 @@ def summarize(requests: dict[str, dict[str, Any]], batches: dict[tuple, dict[str
     paths = Counter(b.get("flow_solve_path") for b in batches.values() if b.get("flow_solve_path"))
     out["flow_solve_path_share"] = {k: v / sum(paths.values()) for k, v in paths.items()} if paths else {}
     return out
+
+
+# ------------------------------------------------------------------------------------------
+# kernel traces (torch profiler, one code2wav process, a few seconds)
+
+DEVICE_CATS = {"kernel", "gpu_memcpy", "gpu_memset"}
+RUNTIME_CATS = {"cuda_runtime", "cuda_driver"}
+
+
+def union_us(intervals: list[tuple[float, float]]) -> float:
+    total, end = 0.0, None
+    for a, b in sorted(intervals):
+        if end is None or a > end:
+            total += b - a
+            end = b
+        elif b > end:
+            total += b - end
+            end = b
+    return total
+
+
+def trace_stats(trace: dict[str, Any], cpu_ranges: list[tuple[str, int, int]] | None = None) -> dict[str, Any]:
+    """Kernel time, launch and sync API time, device queue delay, and the kernels each CPU range launched.
+
+    A kernel belongs to the range whose CPU interval contains the runtime call that launched it (CUDA
+    correlation id). Ranges are the trace's c2w.* annotations, or cpu_ranges = (name, start_ns, end_ns) on the
+    wall clock (the measurement patch's events), matched through baseTimeNanoseconds + ts * 1000. The device
+    queue delay is counted once per launch call: its first kernel's start minus the call's end (later kernels
+    of a graph wait for earlier ones, not for the queue). Trace times are microseconds; results are milliseconds."""
+    events = [e for e in trace.get("traceEvents", []) if e.get("ph") == "X" and "ts" in e]
+    kernels = [e for e in events if e.get("cat") in DEVICE_CATS]
+    calls = {(e.get("args") or {}).get("correlation"): e for e in events if e.get("cat") in RUNTIME_CATS}
+    if cpu_ranges is not None:
+        base_ns = int(trace.get("baseTimeNanoseconds") or 0)
+        ranges = [{"name": n, "ts": (a - base_ns) / 1e3, "dur": (b - a) / 1e3} for n, a, b in cpu_ranges]
+    else:
+        ranges = [e for e in events if e.get("cat") == "user_annotation" and str(e.get("name", "")).startswith("c2w.")]
+    by_range: dict[str, dict[str, float]] = {r: {"kernels": 0, "kernel_ms": 0.0, "launch_api_ms": 0.0, "sync_api_ms": 0.0}
+                                             for r in sorted({e["name"] for e in ranges})}
+    for call in calls.values():
+        owner = next((r["name"] for r in ranges if r["ts"] <= call["ts"] <= r["ts"] + r.get("dur", 0)), None)
+        if owner is None:
+            continue
+        if "Launch" in call["name"]:
+            by_range[owner]["launch_api_ms"] += call.get("dur", 0) / 1e3
+        elif "Synchronize" in call["name"]:
+            by_range[owner]["sync_api_ms"] += call.get("dur", 0) / 1e3
+    first_start: dict[Any, float] = {}
+    unattributed, graph_us, total_us = 0, 0.0, 0.0
+    for kern in kernels:
+        dur = float(kern.get("dur", 0))
+        total_us += dur
+        if (kern.get("args") or {}).get("graph id", 0):
+            graph_us += dur
+        corr = (kern.get("args") or {}).get("correlation")
+        call = calls.get(corr)
+        if call is None:
+            unattributed += 1
+            continue
+        first_start[corr] = min(first_start.get(corr, kern["ts"]), kern["ts"])
+        owner = next((r["name"] for r in ranges if r["ts"] <= call["ts"] <= r["ts"] + r.get("dur", 0)), None)
+        if owner is None:
+            unattributed += 1
+        else:
+            by_range[owner]["kernels"] += 1
+            by_range[owner]["kernel_ms"] += dur / 1e3
+    runtime = [e for e in events if e.get("cat") in RUNTIME_CATS]
+    span_us = (max(e["ts"] + e.get("dur", 0) for e in events) - min(e["ts"] for e in events)) if events else 0.0
+    return {"window_ms": span_us / 1e3, "kernels": len(kernels),
+            "kernel_busy_ms": union_us([(e["ts"], e["ts"] + float(e.get("dur", 0))) for e in kernels]) / 1e3,
+            "kernel_sum_ms": total_us / 1e3, "graph_kernel_time_share": graph_us / total_us if total_us else None,
+            "launch_api_ms": sum(e.get("dur", 0) for e in runtime if "Launch" in e["name"]) / 1e3,
+            "launch_calls": sum(1 for e in runtime if "Launch" in e["name"]),
+            "sync_api_ms": sum(e.get("dur", 0) for e in runtime if "Synchronize" in e["name"]) / 1e3,
+            "range_cpu_ms": {name: sum(e.get("dur", 0) for e in ranges if e["name"] == name) / 1e3 for name in by_range},
+            "by_range": by_range, "unattributed_kernels": unattributed,
+            "queue_delay_ms": stats([(ts - (calls[c]["ts"] + calls[c].get("dur", 0))) / 1e3 for c, ts in first_start.items()])}

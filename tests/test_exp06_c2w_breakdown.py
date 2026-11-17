@@ -124,3 +124,59 @@ def test_no_seed_workloads_send_a_null_seed_and_the_originals_keep_seed_zero():
         seeds[name] = body.get("seed", "absent")
         assert body["modalities"] == (["text"] if name.startswith("w3t") else ["text", "audio"])
     assert seeds == {"w3t_text_only": 0, "w3t_text_only_noseed": None, "w3b_text_speech": 0, "w3b_text_speech_noseed": None}
+
+
+def k(ts, dur, corr, graph=0, name="gemm"):
+    return {"ph": "X", "cat": "kernel", "name": name, "ts": ts, "dur": dur, "args": {"correlation": corr, "graph id": graph}}
+
+
+def rt(ts, dur, corr, name="cudaLaunchKernel"):
+    return {"ph": "X", "cat": "cuda_runtime", "name": name, "ts": ts, "dur": dur, "args": {"correlation": corr}}
+
+
+def ann(ts, dur, name):
+    return {"ph": "X", "cat": "user_annotation", "name": name, "ts": ts, "dur": dur}
+
+
+def test_trace_stats_split_kernels_by_the_cpu_range_that_launched_them():
+    # Times in microseconds, as in torch profiler traces. Flow range 0-100 launches two kernels that
+    # overlap on the GPU; HiFT range 100-200 launches one; the sync waits 150-260.
+    trace = {"traceEvents": [
+        ann(0, 100, "c2w.flow"), ann(100, 100, "c2w.hift"),
+        rt(10, 5, 1), k(20, 30, 1), rt(30, 5, 2), k(40, 30, 2, graph=1),
+        rt(110, 5, 3, "cuLaunchKernel"), k(150, 100, 3, name="fprop"),
+        rt(150, 110, 4, "cudaStreamSynchronize"),
+        k(300, 10, 99),  # no matching launch call: unattributed
+    ]}
+    s = bd.trace_stats(trace)
+    assert s["kernels"] == 4 and abs(s["kernel_busy_ms"] - (0.05 + 0.1 + 0.01)) < 1e-9  # 20-70 union, 150-250, 300-310
+    assert abs(s["launch_api_ms"] - 0.015) < 1e-9 and abs(s["sync_api_ms"] - 0.11) < 1e-9
+    assert s["by_range"]["c2w.flow"]["kernels"] == 2 and abs(s["by_range"]["c2w.flow"]["kernel_ms"] - 0.06) < 1e-9
+    assert s["by_range"]["c2w.hift"]["kernels"] == 1 and s["unattributed_kernels"] == 1
+    # CPU time inside each range spent in launch calls and in synchronization calls.
+    assert abs(s["by_range"]["c2w.flow"]["launch_api_ms"] - 0.010) < 1e-9 and s["by_range"]["c2w.flow"]["sync_api_ms"] == 0
+    assert abs(s["by_range"]["c2w.hift"]["launch_api_ms"] - 0.005) < 1e-9 and abs(s["by_range"]["c2w.hift"]["sync_api_ms"] - 0.11) < 1e-9
+    assert abs(s["graph_kernel_time_share"] - 30 / 170) < 1e-9  # over all kernels, attributed or not
+    # Device queue delay: kernel start minus the end of the call that launched it (us -> ms).
+    assert s["queue_delay_ms"]["n"] == 3 and abs(s["queue_delay_ms"]["p50"] - 0.005) < 1e-9
+
+
+def test_trace_stats_of_an_empty_or_truncated_trace():
+    assert bd.trace_stats({"traceEvents": []})["kernels"] == 0
+    assert bd.trace_stats({})["kernels"] == 0
+
+
+def test_a_graph_launch_counts_one_queue_delay_and_events_can_supply_the_cpu_ranges():
+    # One cudaGraphLaunch (corr 5) runs three kernels back to back: only the first kernel's start
+    # minus the call's end is queueing. The CPU ranges come from the patch's events (wall-clock ns):
+    # trace time ts (us) maps to wall clock as baseTimeNanoseconds + ts * 1000.
+    base = 1_000_000_000
+    trace = {"baseTimeNanoseconds": base, "traceEvents": [
+        rt(10, 5, 5, "cudaGraphLaunch"), k(20, 10, 5, graph=1), k(30, 10, 5, graph=1), k(40, 10, 5, graph=1),
+        rt(60, 5, 6), k(80, 5, 6),
+    ]}
+    ranges = [("c2w.flow", base + 0, base + 50_000), ("c2w.hift", base + 50_000, base + 100_000)]
+    s = bd.trace_stats(trace, cpu_ranges=ranges)
+    assert s["queue_delay_ms"]["n"] == 2 and abs(s["queue_delay_ms"]["mean"] - (0.005 + 0.015) / 2) < 1e-9
+    assert s["by_range"]["c2w.flow"]["kernels"] == 3 and s["by_range"]["c2w.hift"]["kernels"] == 1
+    assert s["unattributed_kernels"] == 0
