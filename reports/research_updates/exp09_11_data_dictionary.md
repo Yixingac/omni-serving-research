@@ -196,6 +196,8 @@
 
 放在 `research/01_性能瓶颈/实验11_Thinker异步优化/results/`。
 
+> **2026-11-18 这一轮只生成了 `check.json` 和诊断的三个文件。** 正确性检查没有通过，没有做性能对比，所以 `performance.json`、`ttft.json`、`timeline_windows.json` 都没有生成；下面保留它们事先写好的格式，供以后的运行使用。
+
 > **注意，两套 A、B、C 是两回事。**
 > - **组** A、B、C 是服务的设置：同步执行、提前发射 + 快照、提前发射 + 快照 + 旁路复制。它们由 `SGLANG_OMNI_SPEECH_LOOKAHEAD` 设为 `0`、`1`、`sidecopy`，每组是单独启动的服务。
 > - **段** A、B、C 是同一个服务里的三种测量方式：不打点、打事件、录 thinker 的 trace。
@@ -216,6 +218,25 @@
     - 输出 token 的哈希来自调度器给 output_ids 赋值之后发出的 `exp_thinker_output` 事件。
 - `lengths`：长回答段的 token 数和语音时长，以及 `codec_at_talker_cap`（语音到了 talker 上限 2048 个编码的请求数）。
 - `errors`：每组每段的失败数。
+
+### 诊断（补充登记五）：`diag_lookahead_check.json`、`diag_sidecopy_check.json`、`diagnostic.json`
+
+- 前两个文件是 `exp11_check.py` 原样的输出，格式和 `check.json` 相同，但它的 A、C、A2 三个槽位放的是别的运行：
+
+| 文件 | 槽位 A | 槽位 C | 槽位 A2 | 所以 `C_vs_A` 是 | `A2_vs_A` 是 |
+|---|---|---|---|---|---|
+| `check.json` | A | C | A2 | C 对 A | A2 对 A |
+| `diag_lookahead_check.json` | A | 诊断 B | A2 | B 对 A | A2 对 A |
+| `diag_sidecopy_check.json` | 诊断 B | C | 诊断 B2 | C 对 B | B2 对 B |
+
+  - 这两个文件里的 `pass`、`reasons` 是把同样的规则套在这些比较上的结果，不是正确性检查的判定；
+  - `rows`、`errors` 检查的是槽位 C 里的运行（诊断 B 或 C）。
+- `diagnostic.json`（`exp11_diagnostic.py`）：
+  - `gate`、`lookahead`、`sidecopy`：三种比较各一项，有 `test_label`、`reference_label`；
+  - `phases["<段>"]`：`test`、`reference`（偏差超过 0.05 的比例）、`test_max`、`reference_max`（最大偏差）、`test_pairs`、`reference_pairs`；
+  - `pooled`：8 段合在一起的比例；`phases_over_margin`：test 比 reference 高出 5 个百分点以上的段；
+  - `test_max_deviation`、`reference_max_deviation`、`max_deviation`；
+  - `reading`：按补充登记五事先定的规则得出的解读；`rule`：门槛（5 个百分点）和“可能读错一行”的偏差（0.5）。
 
 ### `performance.json`（`exp11_report.py`，性能对比）
 

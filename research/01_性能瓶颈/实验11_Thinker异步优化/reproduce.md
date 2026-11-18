@@ -21,7 +21,21 @@
        --out research/01_性能瓶颈/实验11_Thinker异步优化
    ```
 
-   打印 PASS 才继续；FAIL 时不做 C 组的性能对比（hypotheses.md）。
+   打印 PASS 才继续；FAIL 时不做 C 组的性能对比（hypotheses.md）。**2026-11-18 这次是 FAIL，没有做第 3–5 步。**
+   - 诊断（补充登记五）：先 `python scripts/slurm/make_plan_exp09_11.py --exp11-diagnostic` 生成配置，放 `configs/experiments/plan_exp11_diag.json`（B、B2 两次运行，各约 6 分钟），然后：
+
+   ```bash
+   python scripts/analysis/exp11_check.py --data-root <results> --run A=<A 目录> --run C=<diag B 目录> --run A2=<A2 目录> --out <tmp>/lookahead
+   python scripts/analysis/exp11_check.py --data-root <results> --run A=<diag B 目录> --run C=<C 目录> --run A2=<diag B2 目录> --out <tmp>/sidecopy
+   cp <tmp>/lookahead/results/check.json research/01_性能瓶颈/实验11_Thinker异步优化/results/diag_lookahead_check.json
+   cp <tmp>/sidecopy/results/check.json research/01_性能瓶颈/实验11_Thinker异步优化/results/diag_sidecopy_check.json
+   D=research/01_性能瓶颈/实验11_Thinker异步优化
+   python scripts/analysis/exp11_diagnostic.py --gate $D/results/check.json --lookahead $D/results/diag_lookahead_check.json \
+       --sidecopy $D/results/diag_sidecopy_check.json --out $D
+   python scripts/analysis/exp11_figures.py --out $D   # 图 9
+   ```
+
+   这次用的目录见 `metadata.json`。
 3. 性能对比：放 `configs/experiments/plan_exp11.json`（9 个运行）。
 4. 分析：
 
