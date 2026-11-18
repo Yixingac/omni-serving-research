@@ -233,10 +233,109 @@ def exp10_entries() -> list[tuple[dict, dict]]:
     return out
 
 
+# ---------------------------------------------------------------- 实验 11
+
+ASYNC_RUNTIME = "unicorn_async"
+EXP11_ARMS = {"A": "0", "B": "1", "C": "sidecopy"}
+W3B_NS = "configs/workloads/w3b_text_speech_noseed.json"
+W3L_NS = "configs/workloads/w3l_long_speech_noseed.json"
+W3XL_NS = "configs/workloads/w3xl_long_speech_noseed.json"
+W3T_NS = "configs/workloads/w3t_text_only_noseed.json"
+W3L_GREEDY = "configs/workloads/w3l_greedy_check.json"
+W3L_TIMEOUT = "configs/workloads/w3l_greedy_timeout.json"
+EXP11_LEVELS = [8, 32, 64]
+# Where the 3 s thinker-only profiler window starts in a measured C phase (seconds), as in 实验 8 phase 3.
+EXP11_WINDOW_S = {8: 10, 32: 8, 64: 7}
+PLAN_EXP11_CHECK = "configs/experiments/plan_exp11_check.json"
+PLAN_EXP11 = "configs/experiments/plan_exp11.json"
+
+
+def async_server(arm: str, digest: bool) -> list[dict]:
+    srv = placement_server_s26()
+    env = {"SGLANG_OMNI_SPEECH_LOOKAHEAD": EXP11_ARMS[arm.rstrip("2")]}
+    if digest:
+        env["SGLANG_OMNI_EXP_TRACE"] = "thinker,c2w,digest"
+    srv[0]["env"] = env
+    return srv
+
+
+def placement_server_s26() -> list[dict]:
+    return [{"name": "s0", "model": "minicpm_o_4_5", "gpus": list(range(8)),
+             "args": ["--config", "{research_repo}/configs/models/minicpm_o_4_5_exp_t2_k6_shared.yaml"], "ready_timeout_s": 2400}]
+
+
+def mixed(name: str, mix: list[dict], c: int, requests: int) -> dict:
+    return {"kind": "closed_loop", "name": name, "workload_mix": mix, "concurrency": [c], "requests_per_level": requests,
+            "requests_per_concurrency": 1, "server_events": True}
+
+
+def exp11_check_entries() -> list[tuple[dict, dict]]:
+    """Correctness gate: A, C and a repeat of A, digest on, greedy workloads (see hypotheses.md)."""
+    out = []
+    for position, arm in enumerate(["A", "C", "A2"]):
+        phases = [smoke(),
+                  {"kind": "smoke", "name": "chk_c1", "workload": GREEDY, "requests": 18, "server_events": True},
+                  {**closed("chk_c8", GREEDY, [8], waves=6, events=True), "requests_per_level": 48},
+                  {**closed("chk_c32", GREEDY, [32], waves=3, events=True)},
+                  {**closed("chk_c64", GREEDY, [64], waves=2, events=True)},
+                  mixed("chk_mix_text", [{"workload": W3T_NS, "weight": 0.5}, {"workload": GREEDY, "weight": 0.5}], 32, 96),
+                  mixed("chk_mix_long", [{"workload": GREEDY, "weight": 0.5}, {"workload": W3L_GREEDY, "weight": 0.5}], 32, 96),
+                  mixed("chk_mix_seed", [{"workload": W3B, "weight": 0.5}, {"workload": GREEDY, "weight": 0.5}], 32, 96),
+                  {**closed("chk_timeout", W3L_TIMEOUT, [32], waves=2, events=True), "requests_per_level": 64},
+                  {**closed("chk_after", GREEDY, [32], waves=3, events=True)},
+                  {**closed("chk_w3xl", W3XL_NS, [8], waves=4, events=True), "requests_per_level": 32}]
+        cfg = base(f"exp11_check_{arm}", 8, async_server(arm, digest=True), phases,
+                   f"实验 11 正确性检查：组 {arm}（SGLANG_OMNI_SPEECH_LOOKAHEAD={EXP11_ARMS[arm.rstrip('2')]}），2+6，打开 digest。"
+                   "贪心负载：并发 1（18 个）、8、32、64，混合（文字/语音、短/长、带 seed 0/不带），客户端 1.5 秒超时的中止段及之后的检查段，"
+                   "W3XL 实际长度。")
+        cfg["runtime_profile"] = ASYNC_RUNTIME
+        out.append((cfg, {"priority": -(300 + position), "est": 900, "timeout": 3600}))
+    return out
+
+
+def exp11_measured(name: str, workload: str, c: int, mode: str) -> dict:
+    ph = {"kind": "closed_loop", "name": name, "workload": workload, "concurrency": [c],
+          "requests_per_level": 96, "requests_per_concurrency": 3}
+    if mode == "B":
+        ph["server_events"] = True
+    elif mode == "C":
+        ph["requests_per_concurrency"] = 6  # keeps the phase busy past the end of the profiler window
+        ph["torch_profile_window"] = {"start_after_s": EXP11_WINDOW_S[c], "duration_s": 3}
+    else:
+        pass
+    return ph
+
+
+def exp11_entries() -> list[tuple[dict, dict]]:
+    """Performance: 3 blocks x arms A, B, C in a Latin-square order; W3b 8/32/64 (random order per block, shared by
+    the arms) with A/B/C phases rotated by block, then W3L and W3XL at 32 (A and B phases)."""
+    out = []
+    rotations = ["ABC", "BCA", "CAB"]
+    arm_orders = [["A", "B", "C"], ["B", "C", "A"], ["C", "A", "B"]]
+    for block in range(1, BLOCKS + 1):
+        rng = random.Random(SEED * 100 + 11 * 10 + block)
+        levels = EXP11_LEVELS[:]
+        rng.shuffle(levels)
+        for position, arm in enumerate(arm_orders[block - 1], start=1):
+            phases = [smoke()]
+            for c in levels:
+                phases += [exp11_measured(f"w3b_ns_c{c}_{mode}", W3B_NS, c, mode) for mode in rotations[block - 1]]
+            for tag, wl in (("w3l_ns", W3L_NS), ("w3xl_ns", W3XL_NS)):
+                phases += [exp11_measured(f"{tag}_c32_{mode}", wl, 32, mode) for mode in "AB"]
+            cfg = base(f"exp11_perf_block{block}_{arm}", 8, async_server(arm, digest=False), phases,
+                       f"实验 11 性能对比第 {block} 个区组、组 {arm}（SGLANG_OMNI_SPEECH_LOOKAHEAD={EXP11_ARMS[arm]}）。2+6，seed null。"
+                       f"W3b 并发顺序 {'、'.join(map(str, levels))}，每档 {rotations[block - 1]} 三段；W3L、W3XL 并发 32 各 A、B 段。"
+                       "C 段只给 thinker 所在的进程开 torch profiler。")
+            cfg["runtime_profile"] = ASYNC_RUNTIME
+            out.append((cfg, {"priority": -(310 + 10 * block + position), "est": 1000, "timeout": 3600}))
+    return out
+
+
 def render() -> dict[str, str]:
     files = {f"configs/models/minicpm_o_4_5_exp_{name}.yaml": placement_yaml(name) for name in NEW_PLACEMENTS}
     files[EXP10_NOGRAPH_YAML] = nograph_yaml()
     check10, main10 = [exp10_check_entry()], exp10_entries()
+    check11, main11 = exp11_check_entries(), exp11_entries()
     pilot = exp09_pilot_entries()
     main9 = exp09_entries() if EXP09_RATES_W3B and EXP09_RATES_W3L else []
     plans = [(PLAN_EXP09_PILOT, "exp09_pilot", "实验 9 预跑：4 种放置各一次，用来定开环速率（规则见 hypotheses.md）。", pilot)]
@@ -244,6 +343,8 @@ def render() -> dict[str, str]:
         plans.append((PLAN_EXP09, "exp09", "实验 9 正式运行：4 种放置 × 3 个区组，区组内顺序随机，区组依次运行。", main9))
     plans.append((PLAN_EXP10_CHECK, "exp10_check", "实验 10 正确性检查（排在实验 9 正式运行之后）。", check10))
     plans.append((PLAN_EXP10, "exp10", "实验 10 性能运行：3 个区组 × flow CUDA graph 开/关，排在正确性检查之后。", main10))
+    plans.append((PLAN_EXP11_CHECK, "exp11_check", "实验 11 正确性检查：A、C、A 的重复（排在实验 10 之后）。", check11))
+    plans.append((PLAN_EXP11, "exp11", "实验 11 性能对比：3 个区组 × A/B/C。只有正确性检查通过才放进队列。", main11))
     for path, plan_id, comment, entries in plans:
         plan = {"plan_id": plan_id,
                 "_comment": comment + "通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_exp09_11.py 生成。",
@@ -251,7 +352,7 @@ def render() -> dict[str, str]:
         for e in plan["experiments"]:
             e["command"] = f"bash scripts/slurm/run_experiment.sh {EXP_DIR}/{e['experiment_id']}.json"
         files[path] = json.dumps(plan, ensure_ascii=False, indent=1) + "\n"
-    for cfg, _ in pilot + main9 + check10 + main10:
+    for cfg, _ in pilot + main9 + check10 + main10 + check11 + main11:
         files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
     return files
 
