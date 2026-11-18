@@ -21,6 +21,7 @@ import math
 import re
 import sys
 from collections import defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -67,6 +68,53 @@ def talker_times(events: list[dict[str, Any]]) -> dict[str, dict[str, float]]:
         q, p, m = (first.get((rid, n)) for n in ("scheduler_queue_enter", "scheduler_prefill_start", "model_path_end"))
         if q is not None and p is not None and m is not None:
             out[rid] = {"queue_ms": (p - q) / 1e6, "gen_ms": (m - p) / 1e6}
+    return out
+
+
+def hop_times(events: list[dict[str, Any]]) -> dict[str, float]:
+    """Per request: talker -> code2wav hand-over (talker stage_hop_sent -> code2wav stage_input_received), ms."""
+    sent: dict[str, int] = {}
+    received: dict[str, int] = {}
+    for e in events:
+        stage, name, rid = e.get("stage") or "", e.get("event_name"), e.get("request_id")
+        if name == "stage_hop_sent" and stage.startswith("talker"):
+            sent[rid] = min(sent.get(rid, e["timestamp_ns"]), e["timestamp_ns"])
+        elif name == "stage_input_received" and stage.startswith("code2wav"):
+            received[rid] = min(received.get(rid, e["timestamp_ns"]), e["timestamp_ns"])
+    return {rid: (received[rid] - t) / 1e6 for rid, t in sent.items() if rid in received}
+
+
+def c2w_gpu_ms_per_audio_s(batches: dict[tuple, dict[str, Any]], records: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """code2wav GPU time (flow + HiFT) per second of output audio, over the batches with complete GPU timing."""
+    gpu = audio = 0.0
+    n = 0
+    for b in batches.values():
+        if b.get("gpu_flow_ms") is None or b.get("gpu_hift_ms") is None:
+            continue
+        gpu += b["gpu_flow_ms"] + b["gpu_hift_ms"]
+        audio += sum((records.get(r) or {}).get("output_audio_s") or 0.0 for r in b.get("request_ids", []))
+        n += 1
+    return {"batches": n, "ms_per_audio_s": gpu / audio if audio else None}
+
+
+def load_clocks(exp: Path) -> dict[int, list[tuple[float, float, float]]]:
+    """Per GPU index: (unix time s, SM clock MHz, power W) from the nvidia-smi samples."""
+    from exp01_gpu_timeline import utc_offset_s
+
+    off = utc_offset_s(exp)
+    out: dict[int, list[tuple[float, float, float]]] = defaultdict(list)
+    with open(exp / "raw" / "gpu_samples.csv") as fh:
+        rd = csv.reader(fh)
+        hdr = [h.strip() for h in next(rd, [])]
+        for row in rd:
+            if len(row) != len(hdr):
+                continue
+            d = dict(zip(hdr, (x.strip() for x in row)))
+            try:
+                t = datetime.strptime(d["timestamp"], "%Y/%m/%d %H:%M:%S.%f").replace(tzinfo=timezone.utc).timestamp() - off
+                out[int(d["index"])].append((t, float(d["clocks.sm"]), float(d["power.draw"])))
+            except (KeyError, ValueError):
+                continue
     return out
 
 
@@ -206,8 +254,10 @@ def gpu_roles(arm: str) -> dict[str, list[int]]:
 
 
 def level_row(recs: list[dict[str, Any]], reqs: dict[str, Any], batches: dict[tuple, Any], talker: dict[str, Any],
-              util: dict[int, list], anchor: Any, roles: dict[str, list[int]]) -> dict[str, Any]:
+              util: dict[int, list], anchor: Any, roles: dict[str, list[int]], hops: dict[str, float] | None = None,
+              events: list[dict[str, Any]] | None = None, clocks: dict[int, list] | None = None) -> dict[str, Any]:
     from exp06_report import client_metrics, phase_window
+    from exp08_lookahead import thinker_ms_per_token
 
     ids = {r["request_id"] for r in recs if r.get("request_id")}
     mine = batches_of(batches, ids)
@@ -216,14 +266,22 @@ def level_row(recs: list[dict[str, Any]], reqs: dict[str, Any], batches: dict[tu
     gen = [talker[r["request_id"]]["gen_ms"] / r["output_audio_s"] for r in ok if r["request_id"] in talker and r.get("output_audio_s")]
     queue = [talker[r["request_id"]]["queue_ms"] for r in ok if r["request_id"] in talker]
     row = {"client": client_metrics(recs), "breakdown": bd.summarize({k: v for k, v in reqs.items() if k in ids}, mine, records),
-           "c2w_flow_us_per_frame_b1": flow_us_per_frame_b1(mine), "talker_gen_ms_per_audio_s": bd.stats(gen), "talker_queue_ms": bd.stats(queue)}
+           "c2w_flow_us_per_frame_b1": flow_us_per_frame_b1(mine), "talker_gen_ms_per_audio_s": bd.stats(gen), "talker_queue_ms": bd.stats(queue),
+           "c2w_gpu_ms_per_audio_s": c2w_gpu_ms_per_audio_s(mine, records)}
+    if hops is not None:
+        row["hop_ms"] = bd.stats([hops[r["request_id"]] for r in ok if r["request_id"] in hops])
+    if events is not None:
+        row["thinker_ms_per_token"] = thinker_ms_per_token(events, records)
     win = phase_window([r for r in recs if not r.get("warmup")], anchor)
     if win:
         row["gpu"] = {}
         for role, gpus in roles.items():
             samples = [(u, m) for g in gpus for t, u, m in util.get(g, []) if win[0] <= t <= win[1]]
+            cp = [(c, p) for g in gpus for t, c, p in (clocks or {}).get(g, []) if win[0] <= t <= win[1]]
             row["gpu"][role] = {"busy": float(np.mean([u for u, _ in samples])) / 100 if samples else None,
-                                "mem_max_mib": float(max(m for _, m in samples)) if samples else None}
+                                "mem_max_mib": float(max(m for _, m in samples)) if samples else None,
+                                "sm_clock_mhz": float(np.mean([c for c, _ in cp])) if cp else None,
+                                "power_w": float(np.mean([p for _, p in cp])) if cp else None}
     return row
 
 
@@ -276,17 +334,17 @@ def analyze_run(exp: Path) -> dict[str, Any]:
     res = json.load(open(exp / "result.json"))
     m = RUN_RE.match(res["experiment_id"])
     arm, block = m.group(1), int(m.group(2))
-    util, anchor, roles = load_util(exp), clock_anchor(exp), gpu_roles(arm)
+    util, anchor, roles, clocks = load_util(exp), clock_anchor(exp), gpu_roles(arm), load_clocks(exp)
     run: dict[str, Any] = {"run": exp.name, "arm": arm, "block": block, "restarts": res.get("server_restarts") or [],
                            "closed": {}, "open": {}, "issues": {}}
     recs = read_jsonl(exp / "raw" / "requests_w3b_closed.jsonl")
     events = read_events(exp / "raw" / "server_events" / "w3b_closed")
     reqs, batches, run["issues"]["w3b_closed"] = bd.breakdown(events)
-    talker = talker_times(events)
+    talker, hops = talker_times(events), hop_times(events)
     for c in LEVELS:
         lv = [r for r in recs if r.get("concurrency") == c]
         if lv:
-            run["closed"][str(c)] = level_row(lv, reqs, batches, talker, util, anchor, roles)
+            run["closed"][str(c)] = level_row(lv, reqs, batches, talker, util, anchor, roles, hops, events, clocks)
     for phase in OPEN_PHASES:
         path = exp / "raw" / f"requests_{phase}.jsonl"
         if not path.exists():
@@ -294,9 +352,10 @@ def analyze_run(exp: Path) -> dict[str, Any]:
         recs = read_jsonl(path)
         events = read_events(exp / "raw" / "server_events" / phase)
         reqs, batches, run["issues"][phase] = bd.breakdown(events)
-        talker = talker_times(events)
+        talker, hops = talker_times(events), hop_times(events)
         for rate in sorted({r.get("rate_rps") for r in recs if r.get("rate_rps") is not None}):
-            run["open"][f"{rate:g}"] = {**level_row([r for r in recs if r.get("rate_rps") == rate], reqs, batches, talker, util, anchor, roles),
+            run["open"][f"{rate:g}"] = {**level_row([r for r in recs if r.get("rate_rps") == rate], reqs, batches, talker, util, anchor, roles,
+                                                    hops, events, clocks),
                                         "phase": phase}
     restart_phases = [x.get("where", "") for x in run["restarts"]]
     run["after_restart"] = sorted({p.split()[-1] for p in restart_phases})
@@ -308,9 +367,11 @@ def analyze_run(exp: Path) -> dict[str, Any]:
 SUMMARY_PATHS = {"closed": ["client.throughput_rps", "client.audio_s_per_s", "client.e2e_s.p50", "client.e2e_s.p95", "client.e2e_s.p99",
                             "client.ttft_s.p50", "breakdown.total_ms.p50", "breakdown.queue_ms.p50", "breakdown.compute_ms.p50",
                             "breakdown.batch_size.mean", "c2w_flow_us_per_frame_b1.p50", "talker_gen_ms_per_audio_s.p50",
-                            "talker_queue_ms.p50"],
+                            "talker_queue_ms.p50", "client.first_audio_s.p50", "hop_ms.p50", "c2w_gpu_ms_per_audio_s.ms_per_audio_s",
+                            "thinker_ms_per_token.p50"],
                  "open": ["client.throughput_rps", "client.e2e_s.p50", "client.e2e_s.p95", "client.e2e_s.p99", "client.ttft_s.p50",
-                          "breakdown.queue_ms.p50", "breakdown.total_ms.p50", "talker_queue_ms.p50"]}
+                          "breakdown.queue_ms.p50", "breakdown.total_ms.p50", "talker_queue_ms.p50", "client.first_audio_s.p50", "hop_ms.p50",
+                          "c2w_gpu_ms_per_audio_s.ms_per_audio_s", "thinker_ms_per_token.p50", "talker_gen_ms_per_audio_s.p50"]}
 
 
 def by_arm(runs: list[dict[str, Any]]) -> dict[str, Any]:
@@ -342,14 +403,16 @@ def main() -> int:
     with open(out / "levels.csv", "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["arm", "block", "section", "level", "throughput_rps", "e2e_p50_s", "e2e_p95_s", "e2e_p99_s", "ttft_p50_s", "errors",
-                    "c2w_queue_p50_ms", "c2w_total_p50_ms", "talker_gen_ms_per_audio_s", "talker_queue_p50_ms", "flow_us_per_frame_b1"])
+                    "c2w_queue_p50_ms", "c2w_total_p50_ms", "talker_gen_ms_per_audio_s", "talker_queue_p50_ms", "flow_us_per_frame_b1",
+                    "first_audio_p50_s", "hop_p50_ms", "c2w_gpu_ms_per_audio_s", "thinker_ms_per_token_p50"])
         for r in runs:
             for section in ("closed", "open"):
                 for k, x in r[section].items():
                     w.writerow([r["arm"], r["block"], section, k] + [get(x, p) for p in (
                         "client.throughput_rps", "client.e2e_s.p50", "client.e2e_s.p95", "client.e2e_s.p99", "client.ttft_s.p50", "client.errors",
                         "breakdown.queue_ms.p50", "breakdown.total_ms.p50", "talker_gen_ms_per_audio_s.p50", "talker_queue_ms.p50",
-                        "c2w_flow_us_per_frame_b1.p50")])
+                        "c2w_flow_us_per_frame_b1.p50", "client.first_audio_s.p50", "hop_ms.p50", "c2w_gpu_ms_per_audio_s.ms_per_audio_s",
+                        "thinker_ms_per_token.p50")])
     print(out / "summary.json")
     return 0
 

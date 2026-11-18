@@ -101,3 +101,33 @@ def test_h7c_low_load_differences():
     v = rp.verdicts(world())
     assert v["H7c"]["low_load_small"] is True
     assert set(v["H7c"]["by_arm"]) == {"t2_k4_c2", "t2_k3_c3", "t2_k2_c4"}
+
+
+def test_hop_time_is_code2wav_receipt_minus_talker_send():
+    events = [ev("r1", "talker@r0", "stage_hop_sent", 100), ev("r1", "code2wav@r2", "stage_input_received", 112.5),
+              # the thinker also sends a hop (to the talker); it must not be taken as the talker's send
+              ev("r1", "thinker@r0", "stage_hop_sent", 10), ev("r1", "talker@r0", "stage_input_received", 11),
+              ev("r2", "talker@r1", "stage_hop_sent", 200)]  # never received: left out
+    assert rp.hop_times(events) == {"r1": 12.5}
+
+
+def test_code2wav_gpu_time_per_audio_second_is_a_ratio_of_sums():
+    batches = {(1, 1): {"request_ids": ["a", "b"], "gpu_flow_ms": 300.0, "gpu_hift_ms": 100.0},
+               (1, 2): {"request_ids": ["c"], "gpu_flow_ms": 150.0, "gpu_hift_ms": 50.0},
+               (1, 3): {"request_ids": ["d"], "gpu_flow_ms": None, "gpu_hift_ms": 50.0}}  # incomplete GPU timing: left out
+    records = {"a": {"output_audio_s": 10.0}, "b": {"output_audio_s": 6.0}, "c": {"output_audio_s": 4.0}, "d": {"output_audio_s": 9.0}}
+    assert rp.c2w_gpu_ms_per_audio_s(batches, records) == {"batches": 2, "ms_per_audio_s": 30.0}  # (400 + 200) / (16 + 4)
+
+
+def test_sm_clock_and_power_are_read_per_gpu(tmp_path):
+    (tmp_path / "raw").mkdir()
+    (tmp_path / "manifest.json").write_text('{"utc_offset": "-0500"}')
+    (tmp_path / "raw" / "gpu_samples.csv").write_text(
+        "timestamp, index, uuid, utilization.gpu, utilization.memory, memory.used, memory.total, power.draw, clocks.sm, pstate\n"
+        "2026/11/17 17:07:55.615, 0, GPU-a, 90, 50, 1000, 49140, 250.5, 1800, P2\n"
+        "2026/11/17 17:07:55.622, 1, GPU-b, 0, 0, 1, 49140, 36.1, 210, P8\n"
+        "2026/11/17 17:07:55.700, 0, GPU-a, bad row\n")
+    clocks = rp.load_clocks(tmp_path)
+    t = clocks[0][0][0]
+    assert clocks[0] == [(t, 1800.0, 250.5)] and clocks[1][0][1:] == (210.0, 36.1)
+    assert abs(t - 1794953275.615) < 1e-3  # 17:07:55.615 at UTC-5
