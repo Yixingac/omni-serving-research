@@ -293,7 +293,7 @@ index 12512fe02..2c19d4a11 100644
  
  
 diff --git a/sglang_omni/models/minicpm_o/thinker_model_runner.py b/sglang_omni/models/minicpm_o/thinker_model_runner.py
-index bfd3f6d42..6ca046620 100644
+index bfd3f6d42..94d0417a1 100644
 --- a/sglang_omni/models/minicpm_o/thinker_model_runner.py
 +++ b/sglang_omni/models/minicpm_o/thinker_model_runner.py
 @@ -3,6 +3,7 @@
@@ -460,7 +460,7 @@ index bfd3f6d42..6ca046620 100644
 +            result.logits_output.hidden_states = (
 +                result.logits_output.hidden_states.clone()
 +            )
-+            if self.side_copy:
++            if getattr(self, "side_copy", False):  # set in __init__; also safe on objects built without it
 +                event = torch.cuda.Event()
 +                event.record()
 +                snapshot = result.logits_output.hidden_states
