@@ -3,6 +3,7 @@
  "name_zh": "code2wav 组批和补齐",
  "question_zh": "主动改变 code2wav 的批上限和组批方式，能不能省 GPU？长度差异造成的补齐是不是主要浪费？CUDA graph 起什么作用？",
  "status": "COMPLETED（正确性检查、6 个性能运行、3 个完整服务验证运行，2026-11-18 04:27–06:55）",
+ "commit_note": "每个运行记的 research_repo_commit 是运行开始时集群上研究仓库检出的提交（运行器和配置的版本），不是本目录报告的版本；报告以 PR #2 分支的最新提交为准",
  "hypotheses": "hypotheses.md（预先登记；补充登记一 00:27、二 01:55、三 02:13，都在任何实验 10 数据之前）",
  "model": {
   "name": "MiniCPM-o 4.5",

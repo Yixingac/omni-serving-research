@@ -1,6 +1,7 @@
 # 实验 9–11 的发现
 
-> 2026-11-18 起草，随实验完成逐节补全。所有数字都来自各实验目录的 `results/`，每条结论标了证据等级：Measured（实测）、Derived（由实测推算）、Estimated（估算）、Hypothesis（假设）、Unknown（未知）。
+> 2026-11-18 05:04 起草，随实验完成逐节补全，07:33 定稿，三个实验都已结束。更早的提交里标题是当时的状态：05:04–06:08 的提交里实验 10 还标着 RUNNING，07:14 以前实验 11 还标着 SUBMITTED，以本版为准。各实验 `metadata.json` 里每个运行记的 `research_repo_commit`（例如 c06c143）是跑那次实验时的代码版本，不是本文的版本。
+> 所有数字都来自各实验目录的 `results/`，每条结论标了证据等级：Measured（实测）、Derived（由实测推算）、Estimated（估算）、Hypothesis（假设）、Unknown（未知）。
 > 机器：一台 8×RTX A6000 节点（compute-03，Slurm Job 454290）。模型 MiniCPM-o 4.5，sglang-omni 520b49ee 加我们自己的补丁。不和 DGX Spark（GB10）的数字混用。
 
 ## 一、三个实验实际完成到哪里

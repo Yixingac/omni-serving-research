@@ -3,6 +3,7 @@
  "name_zh": "thinker 提前发射以后的异步拷贝",
  "question_zh": "thinker 提前发射以后，TTFT 为什么变长？请求结束时的阻塞拷贝能不能安全地去掉，能不能换来端到端的改善？",
  "status": "正确性检查 COMPLETED（未通过）；性能对比 BLOCKED（按登记不做）；诊断 COMPLETED（2026-11-18 05:54–07:26）",
+ "commit_note": "每个运行记的 research_repo_commit 是运行开始时集群上研究仓库检出的提交（运行器和配置的版本），不是本目录报告的版本；报告以 PR #2 分支的最新提交为准",
  "hypotheses": "hypotheses.md（预先登记；补充登记一 00:05、二 01:27、三 02:02、四 02:21，都在任何实验 11 数据之前；补充登记五 07:12，看到正确性检查失败后、诊断运行之前）",
  "model": {
   "name": "MiniCPM-o 4.5",

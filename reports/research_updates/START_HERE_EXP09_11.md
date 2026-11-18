@@ -38,6 +38,11 @@
 | [configs/experiments/exp09_11/resource_plan.md](../../configs/experiments/exp09_11/resource_plan.md) | GPU 时间的预算和实际用量 |
 | [research/实验总目录.md](../../research/实验总目录.md) | 所有实验的编号、状态和一句话结论 |
 
+## 引用哪个版本
+
+- 实验 9–11 的结论在 2026-11-18 07:33 的提交 f0bc64d 全部写完。之后的提交只改了过程记录、资源用量和版本说明，没有改结论。引用时请用 PR #2 分支的最新提交。
+- 各实验 `metadata.json` 里每个运行记的 `research_repo_commit` 是跑那次实验时的代码版本，不是报告的版本。那时报告还没写完，例如 c06c143 里实验 10 还标着 RUNNING、实验 11 还标着 SUBMITTED。
+
 ## 怎么复现
 
 - 配置由 `scripts/slurm/make_plan_exp09_11.py` 生成，放在 `configs/experiments/exp09_11/`。
