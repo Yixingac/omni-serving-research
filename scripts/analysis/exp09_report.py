@@ -149,6 +149,35 @@ def bottleneck(residence_ms: dict[str, float]) -> dict[str, Any]:
 
 # ---------------------------------------------------------------- verdicts
 
+def usable(client: dict[str, Any]) -> bool:
+    """Registered exclusion: a closed-loop level with errors + timeouts above 5 % of the measured requests is unusable."""
+    bad = (client.get("errors") or 0) + (client.get("timeouts") or 0)
+    return not (client.get("measured") and bad / client["measured"] > 0.05)
+
+
+def workload_entry(levels: list[dict[str, Any]], w: str, top: int) -> dict[str, Any] | None:
+    """Capacity (unprofiled phase, or the events phase in the pilot) and bottleneck (events phase) at the top closed-loop
+    level. A level that is unusable, or in the phase where the server restarted, gives a missing value (registered)."""
+    cap = [x for x in levels if x["workload"] == w and x["kind"] == "closed_loop" and x.get("concurrency") == top]
+    a = [x for x in cap if x["mode"] == "A"] or [x for x in cap if x["mode"] == "B"]
+    b = [x for x in cap if x["mode"] == "B"]
+    if not a:
+        return None
+    excluded = []
+    for row, what in ((a[0], "capacity"), (b[0] if b else None, "bottleneck")):
+        if row is None:
+            continue
+        if row.get("usable") is False:
+            excluded.append(f"{what}: {row['mode']} errors + timeouts > 5 %")
+        elif row.get("restart_here"):
+            excluded.append(f"{what}: {row['mode']} server restarted in this phase")
+    cap_ok = not any(e.startswith("capacity") for e in excluded)
+    bn_ok = b and not any(e.startswith("bottleneck") for e in excluded) and b[0].get("bottleneck")
+    return {"capacity_rps": a[0]["client"].get("throughput_rps") if cap_ok else None,
+            "audio_s_per_s": a[0]["client"].get("audio_s_per_s") if cap_ok else None, "capacity_from": a[0]["mode"],
+            "bottleneck": b[0]["bottleneck"]["stage"] if bn_ok else None, "excluded": excluded}
+
+
 def _caps(runs: list[dict[str, Any]], w: str) -> dict[tuple[int, int], float]:
     return {(r["arm"], r["block"]): r["workload"][w]["capacity_rps"] for r in runs
             if w in r["workload"] and r["workload"][w].get("capacity_rps") is not None}
@@ -305,8 +334,12 @@ def analyze_run(exp: Path) -> dict[str, Any]:
     run: dict[str, Any] = {"run": exp.name, "placement": name, "arm": ARM_OF[name], "block": int(m.group(2)) if m.group(2) else 0,
                            "restarts": res.get("server_restarts") or [], "workload": {}, "levels": []}
     util, clocks, anchor, roles = load_util(exp), load_clocks(exp), clock_anchor(exp), gpu_roles(name)
+    restart_phases = {x.get("where", "").split()[-1] for x in run["restarts"] if x.get("where")}
+    after_restart = False
     for ph in res.get("phases", []):
         phase = ph["phase"]
+        restart_here = phase in restart_phases
+        after_restart = after_restart or restart_here
         path = exp / "raw" / f"requests_{phase}.jsonl"
         if phase.startswith("smoke") or not path.exists():
             continue
@@ -323,6 +356,7 @@ def analyze_run(exp: Path) -> dict[str, Any]:
             meas = [r for r in lv if not r.get("warmup")]
             row = {"workload": w, "phase": phase, "mode": mode, "kind": ph.get("kind"), key: level, **level_client(lv),
                    "gpu": gpu_window(util, clocks, roles, phase_window(meas, anchor))}
+            row.update(usable=usable(row["client"]), restart_here=restart_here, after_restart=after_restart)
             if key == "rate_rps":
                 row["growth"] = queue_growth(meas, float(level))
                 row["inflight_series"] = inflight_series(meas)
@@ -342,12 +376,9 @@ def analyze_run(exp: Path) -> dict[str, Any]:
                 row["talker_queue_ms"] = bd.stats([talker[i]["queue_ms"] for i in ids if i in talker])
             run["levels"].append(row)
     for w, top in WORKLOADS.items():
-        cap = [x for x in run["levels"] if x["workload"] == w and x["kind"] == "closed_loop" and x.get("concurrency") == top]
-        a = [x for x in cap if x["mode"] == "A"] or [x for x in cap if x["mode"] == "B"]  # the pilot has events only
-        b = [x for x in cap if x["mode"] == "B"]
-        if a:
-            run["workload"][w] = {"capacity_rps": a[0]["client"].get("throughput_rps"), "audio_s_per_s": a[0]["client"].get("audio_s_per_s"),
-                                  "capacity_from": a[0]["mode"], "bottleneck": b[0]["bottleneck"]["stage"] if b and b[0].get("bottleneck") else None}
+        entry = workload_entry(run["levels"], w, top)
+        if entry:
+            run["workload"][w] = entry
     return run
 
 
@@ -377,6 +408,8 @@ def by_arm(runs: list[dict[str, Any]]) -> dict[str, Any]:
                 cell[label] = interval([None if (v is None or (isinstance(v, float) and math.isinf(v))) else v for v in vals])
                 cell[label]["infinite_runs"] = sum(1 for v in vals if isinstance(v, float) and math.isinf(v))
             cell["steady_runs"] = [get(x, "growth.steady") if x else None for x in rows]
+            cell["unusable_runs"] = [x.get("usable") is False if x else None for x in rows]
+            cell["after_restart_runs"] = [bool(x.get("after_restart")) if x else None for x in rows]
             out[str(arm)][f"{w}|{kind}|{mode}|{level:g}"] = cell
     return dict(out)
 
@@ -422,7 +455,7 @@ def main() -> int:
                 wr = csv.writer(fh)
                 wr.writerow(["arm", "placement", "block", "workload", "kind", "mode", "level", "throughput_rps", "busy_window_rps", "audio_s_per_s",
                              "e2e_p50_s", "e2e_p95_s", "e2e_p99_s", "failed", "ttft_p50_s", "growth_slope_rps", "steady",
-                             "tokens_mean", "audio_s_mean", "bottleneck"])
+                             "tokens_mean", "audio_s_mean", "bottleneck", "usable", "restart_here", "after_restart"])
                 for r in runs:
                     for x in r["levels"]:
                         wr.writerow([r["arm"], r["placement"], r["block"], x["workload"], x["kind"], x["mode"], x.get("concurrency", x.get("rate_rps")),
@@ -430,7 +463,8 @@ def main() -> int:
                                      get(x, "censored.p50"),
                                      get(x, "censored.p95"), get(x, "censored.p99"), get(x, "censored.failed"), get(x, "client.ttft_s.p50"),
                                      get(x, "growth.slope_rps"), get(x, "growth.steady"), get(x, "output.tokens_mean"),
-                                     get(x, "output.audio_s_mean"), get(x, "bottleneck.stage")])
+                                     get(x, "output.audio_s_mean"), get(x, "bottleneck.stage"), x.get("usable"), x.get("restart_here"),
+                                     x.get("after_restart")])
         print(out / name)
     return 0
 

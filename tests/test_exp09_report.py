@@ -121,3 +121,17 @@ def test_inflight_series_counts_sent_minus_done_each_second():
     recs = [rec(i * 0.5, i * 0.5 + 2.0) for i in range(10)]  # 2 per second, each takes 2 s
     s = rp.inflight_series(recs, step_s=1.0)
     assert s[0] == [0.0, 1] and s[2] == [2.0, 4] and s[-1][1] >= 0
+
+
+def test_unusable_or_restarted_capacity_level_is_left_out():
+    def row(mode, errors=0, timeouts=0, restart=False, stage="code2wav"):
+        client = {"measured": 100, "errors": errors, "timeouts": timeouts, "throughput_rps": 20.0, "audio_s_per_s": 50.0}
+        return {"workload": "w3b", "kind": "closed_loop", "mode": mode, "concurrency": 256, "client": client,
+                "usable": rp.usable(client), "restart_here": restart, "bottleneck": {"stage": stage}}
+
+    ok = rp.workload_entry([row("A"), row("B")], "w3b", 256)
+    assert ok["capacity_rps"] == 20.0 and ok["bottleneck"] == "code2wav" and ok["excluded"] == []
+    bad = rp.workload_entry([row("A", errors=4, timeouts=2), row("B", restart=True)], "w3b", 256)
+    assert bad["capacity_rps"] is None and bad["bottleneck"] is None and len(bad["excluded"]) == 2
+    assert rp.workload_entry([row("A", errors=5)], "w3b", 256)["capacity_rps"] == 20.0  # exactly 5 % is still usable
+    assert rp.workload_entry([row("B")], "w3b", 256)["capacity_from"] == "B"  # the pilot has the events phase only
