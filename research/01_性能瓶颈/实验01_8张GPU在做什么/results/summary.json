@@ -1,0 +1,1526 @@
+{
+ "generated_by": "scripts/analysis/exp01_gpu_timeline.py",
+ "schemes": {
+  "A": {
+   "name": "8 个完整副本",
+   "layout": "r8",
+   "run": "20261115_v2_a_r8_run1_run01",
+   "low_run": "20261116_v2b_sb_r8_run01",
+   "gpu_roles": {
+    "0": "full replica",
+    "1": "full replica",
+    "2": "full replica",
+    "3": "full replica",
+    "4": "full replica",
+    "5": "full replica",
+    "6": "full replica",
+    "7": "full replica"
+   },
+   "busy_by_level": {
+    "1": {
+     "0": 87.5,
+     "1": 0.0,
+     "2": 0.0,
+     "3": 0.0,
+     "4": 0.0,
+     "5": 0.0,
+     "6": 0.0,
+     "7": 0.0
+    },
+    "2": {
+     "0": 87.4,
+     "1": 85.1,
+     "2": 0.0,
+     "3": 0.0,
+     "4": 0.0,
+     "5": 0.0,
+     "6": 0.0,
+     "7": 0.0
+    },
+    "4": {
+     "0": 89.7,
+     "1": 83.5,
+     "2": 81.1,
+     "3": 82.4,
+     "4": 0.0,
+     "5": 0.0,
+     "6": 0.0,
+     "7": 0.0
+    },
+    "8": {
+     "0": 88.6,
+     "1": 85.3,
+     "2": 81.8,
+     "3": 81.8,
+     "4": 80.6,
+     "5": 72.9,
+     "6": 71.2,
+     "7": 77.1
+    },
+    "16": {
+     "0": 94.4,
+     "1": 90.5,
+     "2": 82.2,
+     "3": 82.3,
+     "4": 81.1,
+     "5": 91.1,
+     "6": 89.5,
+     "7": 83.6
+    },
+    "32": {
+     "0": 95.3,
+     "1": 85.7,
+     "2": 86.3,
+     "3": 88.9,
+     "4": 92.5,
+     "5": 87.9,
+     "6": 90.3,
+     "7": 91.0
+    },
+    "64": {
+     "0": 92.7,
+     "1": 95.2,
+     "2": 88.4,
+     "3": 93.2,
+     "4": 91.6,
+     "5": 90.0,
+     "6": 94.8,
+     "7": 94.8
+    },
+    "128": {
+     "0": 99.3,
+     "1": 98.4,
+     "2": 95.3,
+     "3": 91.9,
+     "4": 90.3,
+     "5": 95.9,
+     "6": 87.7,
+     "7": 94.2
+    },
+    "256": {
+     "0": 96.4,
+     "1": 96.1,
+     "2": 95.5,
+     "3": 96.1,
+     "4": 91.3,
+     "5": 95.2,
+     "6": 94.6,
+     "7": 96.0
+    }
+   },
+   "mem_max_mib": {
+    "0": 47809.0,
+    "1": 45447.0,
+    "2": 45005.0,
+    "3": 48061.0,
+    "4": 46683.0,
+    "5": 44607.0,
+    "6": 47473.0,
+    "7": 45365.0
+   },
+   "levels": [
+    {
+     "level": 1.0,
+     "n": 64,
+     "tp_rps": 0.5616295736269018,
+     "e2e_p50_s": 1.51332285,
+     "ttft_p50_s": 0.049800582,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 0.07833327266519176,
+      "talker": 0.03339403572165451,
+      "code2wav": 0.009118705304274355
+     },
+     "replicas": {
+      "thinker": 8,
+      "talker": 8,
+      "code2wav": 8
+     },
+     "gpu_util_by_role": {
+      "full replica": 10.931592039800995
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 2.720363,
+      "thinker.prefill": 35.362701,
+      "thinker.decode": 883.483085,
+      "talker.queue": 2.26588,
+      "talker.model_path": 420.629924,
+      "code2wav.service": 115.966826
+     },
+     "thinker_ms_per_token_p50": 26.434189575757575,
+     "hop_thinker_talker_p50_ms": 2.922308
+    },
+    {
+     "level": 2.0,
+     "n": 64,
+     "tp_rps": 0.9774578602146171,
+     "e2e_p50_s": 2.085930047,
+     "ttft_p50_s": 0.047719164,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 0.1561615114255541,
+      "talker": 0.0663018741295003,
+      "code2wav": 0.01770164853851556
+     },
+     "replicas": {
+      "thinker": 8,
+      "talker": 8,
+      "code2wav": 8
+     },
+     "gpu_util_by_role": {
+      "full replica": 21.559210526315788
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 2.538335,
+      "thinker.prefill": 33.813107,
+      "thinker.decode": 1226.947453,
+      "talker.queue": 2.229102,
+      "talker.model_path": 596.58179,
+      "code2wav.service": 149.361671
+     },
+     "thinker_ms_per_token_p50": 26.07131391489362,
+     "hop_thinker_talker_p50_ms": 3.171236
+    },
+    {
+     "level": 4.0,
+     "n": 64,
+     "tp_rps": 1.86411913095289,
+     "e2e_p50_s": 2.133667481,
+     "ttft_p50_s": 0.051159446,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 0.30036078622568946,
+      "talker": 0.13620592406030263,
+      "code2wav": 0.03818118980914737
+     },
+     "replicas": {
+      "thinker": 8,
+      "talker": 8,
+      "code2wav": 8
+     },
+     "gpu_util_by_role": {
+      "full replica": 42.12428571428572
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 2.888749,
+      "thinker.prefill": 35.302693,
+      "thinker.decode": 1256.5988659999998,
+      "talker.queue": 2.447985,
+      "talker.model_path": 606.514304,
+      "code2wav.service": 159.994444
+     },
+     "thinker_ms_per_token_p50": 26.69919,
+     "hop_thinker_talker_p50_ms": 3.473236
+    },
+    {
+     "level": 8.0,
+     "n": 64,
+     "tp_rps": 3.4908212388073023,
+     "e2e_p50_s": 2.122204936,
+     "ttft_p50_s": 0.054028706,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 0.5888245284975272,
+      "talker": 0.2660109412467263,
+      "code2wav": 0.0852844557277166
+     },
+     "replicas": {
+      "thinker": 8,
+      "talker": 8,
+      "code2wav": 8
+     },
+     "gpu_util_by_role": {
+      "full replica": 80.09444444444445
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 2.936973,
+      "thinker.prefill": 37.903593,
+      "thinker.decode": 1250.250567,
+      "talker.queue": 2.492488,
+      "talker.model_path": 586.796321,
+      "code2wav.service": 159.951622
+     },
+     "thinker_ms_per_token_p50": 26.65472234090909,
+     "hop_thinker_talker_p50_ms": 3.545903
+    },
+    {
+     "level": 16.0,
+     "n": 96,
+     "tp_rps": 5.03471106363046,
+     "e2e_p50_s": 2.662935431,
+     "ttft_p50_s": 0.060007833,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 0.9966518212459028,
+      "talker": 0.5764151465680117,
+      "code2wav": 0.19589604529251164
+     },
+     "replicas": {
+      "thinker": 8,
+      "talker": 8,
+      "code2wav": 8
+     },
+     "gpu_util_by_role": {
+      "full replica": 86.83495145631068
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 2.178705,
+      "thinker.prefill": 28.272833,
+      "thinker.decode": 1426.196659,
+      "talker.queue": 1.852446,
+      "talker.model_path": 845.654338,
+      "code2wav.service": 249.359447
+     },
+     "thinker_ms_per_token_p50": 32.37522464516129,
+     "hop_thinker_talker_p50_ms": 3.523991
+    },
+    {
+     "level": 32.0,
+     "n": 96,
+     "tp_rps": 6.836283589221142,
+     "e2e_p50_s": 3.636268195,
+     "ttft_p50_s": 0.077847436,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 1.916730956864901,
+      "talker": 1.165899674264899,
+      "code2wav": 0.32037991449484765
+     },
+     "replicas": {
+      "thinker": 8,
+      "talker": 8,
+      "code2wav": 8
+     },
+     "gpu_util_by_role": {
+      "full replica": 89.74188311688312
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 1.458235,
+      "thinker.prefill": 47.837536,
+      "thinker.decode": 1934.720991,
+      "talker.queue": 1.091455,
+      "talker.model_path": 1136.177571,
+      "code2wav.service": 299.409318
+     },
+     "thinker_ms_per_token_p50": 47.41334235,
+     "hop_thinker_talker_p50_ms": 3.481516
+    },
+    {
+     "level": 64.0,
+     "n": 128,
+     "tp_rps": 9.955071428817721,
+     "e2e_p50_s": 4.284506972,
+     "ttft_p50_s": 0.0978856,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 3.513833037385754,
+      "talker": 2.3267296767983456,
+      "code2wav": 0.8341056061712115
+     },
+     "replicas": {
+      "thinker": 8,
+      "talker": 8,
+      "code2wav": 8
+     },
+     "gpu_util_by_role": {
+      "full replica": 92.58506944444444
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 1.612778,
+      "thinker.prefill": 53.115928,
+      "thinker.decode": 2429.1171759999997,
+      "talker.queue": 1.025054,
+      "talker.model_path": 1340.809057,
+      "code2wav.service": 362.622208
+     },
+     "thinker_ms_per_token_p50": 57.32006772340425,
+     "hop_thinker_talker_p50_ms": 3.683988
+    },
+    {
+     "level": 128.0,
+     "n": 256,
+     "tp_rps": 14.66902219609458,
+     "e2e_p50_s": 5.941131584,
+     "ttft_p50_s": 0.125888418,
+     "slo": 0.890625,
+     "eff_batch": {
+      "thinker": 6.444279975949717,
+      "talker": 4.294828114001369,
+      "code2wav": 2.6049214877079274
+     },
+     "replicas": {
+      "thinker": 8,
+      "talker": 8,
+      "code2wav": 8
+     },
+     "gpu_util_by_role": {
+      "full replica": 94.14322916666667
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 1.891857,
+      "thinker.prefill": 78.570339,
+      "thinker.decode": 2951.273819,
+      "talker.queue": 1.077522,
+      "talker.model_path": 1777.642704,
+      "code2wav.service": 584.867602
+     },
+     "thinker_ms_per_token_p50": 70.47589231818182,
+     "hop_thinker_talker_p50_ms": 3.558644
+    },
+    {
+     "level": 256.0,
+     "n": 512,
+     "tp_rps": 18.70950919036053,
+     "e2e_p50_s": 9.211723532,
+     "ttft_p50_s": 0.152965366,
+     "slo": 0.0390625,
+     "eff_batch": {
+      "thinker": 9.82267016258083,
+      "talker": 7.5750989780146645,
+      "code2wav": 10.635658618035743
+     },
+     "replicas": {
+      "thinker": 8,
+      "talker": 8,
+      "code2wav": 8
+     },
+     "gpu_util_by_role": {
+      "full replica": 95.13636363636364
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 2.967817,
+      "thinker.prefill": 83.991909,
+      "thinker.decode": 3518.589045,
+      "talker.queue": 1.117293,
+      "talker.model_path": 2222.060508,
+      "code2wav.service": 3401.755311
+     },
+     "thinker_ms_per_token_p50": 81.43488815909092,
+     "hop_thinker_talker_p50_ms": 3.199585
+    }
+   ],
+   "critical_path": {
+    "8": {
+     "request_id": "w3b_small-c8-00028-44308a21",
+     "segments_ms": [
+      [
+       "预处理",
+       0.9,
+       3.5
+      ],
+      [
+       "thinker 排队",
+       5.4,
+       8.3
+      ],
+      [
+       "thinker 读入提示（prefill）",
+       8.3,
+       46.2
+      ],
+      [
+       "thinker 逐个生成文字 token（decode）",
+       46.2,
+       1303.1
+      ],
+      [
+       "talker 排队",
+       1319.0,
+       1321.2
+      ],
+      [
+       "talker 生成语音 token",
+       1321.2,
+       1928.4
+      ],
+      [
+       "code2wav 等待开始",
+       1933.0,
+       1933.3
+      ],
+      [
+       "code2wav 合成波形",
+       1933.3,
+       2086.3
+      ],
+      [
+       "总计（到最后一个响应）",
+       0.0,
+       2090.6
+      ]
+     ]
+    },
+    "64": {
+     "request_id": "w3b_closed-c64-00177-bfb5ee7f",
+     "segments_ms": [
+      [
+       "预处理",
+       0.5,
+       2.6
+      ],
+      [
+       "thinker 排队",
+       34.3,
+       35.7
+      ],
+      [
+       "thinker 读入提示（prefill）",
+       35.7,
+       112.8
+      ],
+      [
+       "thinker 逐个生成文字 token（decode）",
+       112.8,
+       2869.4
+      ],
+      [
+       "talker 排队",
+       2887.6,
+       2888.5
+      ],
+      [
+       "talker 生成语音 token",
+       2888.5,
+       4007.1
+      ],
+      [
+       "code2wav 等待开始",
+       4012.3,
+       4012.5
+      ],
+      [
+       "code2wav 合成波形",
+       4012.5,
+       4252.3
+      ],
+      [
+       "总计（到最后一个响应）",
+       0.0,
+       4256.0
+      ]
+     ]
+    }
+   }
+  },
+  "B": {
+   "name": "4 条两卡流水线",
+   "layout": "p4",
+   "run": "20261115_v2_a_p4_run1_run01",
+   "low_run": "20261116_v2b_sb_p4_run01",
+   "gpu_roles": {
+    "0": "thinker",
+    "2": "thinker",
+    "4": "thinker",
+    "6": "thinker",
+    "1": "talker",
+    "3": "talker",
+    "5": "talker",
+    "7": "talker"
+   },
+   "busy_by_level": {
+    "1": {
+     "0": 56.1,
+     "1": 32.9,
+     "2": 0.0,
+     "3": 0.0,
+     "4": 0.0,
+     "5": 0.0,
+     "6": 0.0,
+     "7": 0.0
+    },
+    "2": {
+     "0": 57.8,
+     "1": 33.7,
+     "2": 55.0,
+     "3": 28.0,
+     "4": 0.0,
+     "5": 0.0,
+     "6": 0.0,
+     "7": 0.0
+    },
+    "4": {
+     "0": 52.0,
+     "1": 39.0,
+     "2": 52.7,
+     "3": 32.0,
+     "4": 55.2,
+     "5": 26.1,
+     "6": 49.7,
+     "7": 26.0
+    },
+    "8": {
+     "0": 63.9,
+     "1": 46.3,
+     "2": 74.7,
+     "3": 56.5,
+     "4": 77.1,
+     "5": 47.6,
+     "6": 73.7,
+     "7": 54.4
+    },
+    "16": {
+     "0": 79.1,
+     "1": 69.9,
+     "2": 63.1,
+     "3": 66.1,
+     "4": 77.4,
+     "5": 70.6,
+     "6": 71.5,
+     "7": 61.2
+    },
+    "32": {
+     "0": 66.8,
+     "1": 88.4,
+     "2": 67.3,
+     "3": 79.3,
+     "4": 74.2,
+     "5": 82.0,
+     "6": 73.8,
+     "7": 83.9
+    },
+    "64": {
+     "0": 69.5,
+     "1": 86.5,
+     "2": 64.1,
+     "3": 95.0,
+     "4": 66.1,
+     "5": 89.9,
+     "6": 69.8,
+     "7": 91.1
+    },
+    "128": {
+     "0": 53.0,
+     "1": 94.3,
+     "2": 58.4,
+     "3": 89.3,
+     "4": 52.2,
+     "5": 89.9,
+     "6": 49.6,
+     "7": 86.7
+    },
+    "256": {
+     "0": 46.4,
+     "1": 92.2,
+     "2": 42.7,
+     "3": 93.2,
+     "4": 41.5,
+     "5": 85.2,
+     "6": 46.4,
+     "7": 89.6
+    }
+   },
+   "mem_max_mib": {
+    "0": 36796.0,
+    "1": 21990.0,
+    "2": 36798.0,
+    "3": 25808.0,
+    "4": 36798.0,
+    "5": 24658.0,
+    "6": 36800.0,
+    "7": 25032.0
+   },
+   "levels": [
+    {
+     "level": 1.0,
+     "n": 64,
+     "tp_rps": 0.5618387949504806,
+     "e2e_p50_s": 1.478453533,
+     "ttft_p50_s": 0.048500917,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 0.1564953844286283,
+      "talker": 0.06727436208978504,
+      "code2wav": 0.018019393435371147
+     },
+     "replicas": {
+      "thinker": 4,
+      "talker": 4,
+      "code2wav": 4
+     },
+     "gpu_util_by_role": {
+      "thinker": 14.01694214876033,
+      "talker": 8.219834710743802
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 2.602452,
+      "thinker.prefill": 34.814604,
+      "thinker.decode": 886.426796,
+      "talker.queue": 2.298884,
+      "talker.model_path": 417.843988,
+      "code2wav.service": 112.678933
+     },
+     "thinker_ms_per_token_p50": 26.374113131578948,
+     "hop_thinker_talker_p50_ms": 2.903752
+    },
+    {
+     "level": 2.0,
+     "n": 64,
+     "tp_rps": 0.9743049048570388,
+     "e2e_p50_s": 2.088188306,
+     "ttft_p50_s": 0.049295902,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 0.3113954722896181,
+      "talker": 0.13306502631066058,
+      "code2wav": 0.03600230573541802
+     },
+     "replicas": {
+      "thinker": 4,
+      "talker": 4,
+      "code2wav": 4
+     },
+     "gpu_util_by_role": {
+      "thinker": 28.195652173913043,
+      "talker": 15.439855072463768
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 2.615709,
+      "thinker.prefill": 34.857407,
+      "thinker.decode": 1236.973557,
+      "talker.queue": 2.362147,
+      "talker.model_path": 582.881114,
+      "code2wav.service": 149.627183
+     },
+     "thinker_ms_per_token_p50": 26.33860121052632,
+     "hop_thinker_talker_p50_ms": 3.304398
+    },
+    {
+     "level": 4.0,
+     "n": 64,
+     "tp_rps": 1.8706923090843344,
+     "e2e_p50_s": 2.098708116,
+     "ttft_p50_s": 0.050491621,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 0.5973115910138039,
+      "talker": 0.26865073847216253,
+      "code2wav": 0.07924180011047549
+     },
+     "replicas": {
+      "thinker": 4,
+      "talker": 4,
+      "code2wav": 4
+     },
+     "gpu_util_by_role": {
+      "thinker": 52.40395480225989,
+      "talker": 30.77683615819209
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 2.785199,
+      "thinker.prefill": 35.133157,
+      "thinker.decode": 1243.944766,
+      "talker.queue": 2.404872,
+      "talker.model_path": 590.563257,
+      "code2wav.service": 156.502836
+     },
+     "thinker_ms_per_token_p50": 26.417555145161288,
+     "hop_thinker_talker_p50_ms": 3.440222
+    },
+    {
+     "level": 8.0,
+     "n": 64,
+     "tp_rps": 3.4863316976978838,
+     "e2e_p50_s": 2.17853241,
+     "ttft_p50_s": 0.047428214,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 1.1609097240884196,
+      "talker": 0.5406625784577272,
+      "code2wav": 0.18485857881913467
+     },
+     "replicas": {
+      "thinker": 4,
+      "talker": 4,
+      "code2wav": 4
+     },
+     "gpu_util_by_role": {
+      "thinker": 72.33791208791209,
+      "talker": 51.18956043956044
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 1.695793,
+      "thinker.prefill": 26.856758,
+      "thinker.decode": 1250.707098,
+      "talker.queue": 1.981399,
+      "talker.model_path": 601.1797,
+      "code2wav.service": 190.462793
+     },
+     "thinker_ms_per_token_p50": 26.307122793650795,
+     "hop_thinker_talker_p50_ms": 3.07198
+    },
+    {
+     "level": 16.0,
+     "n": 96,
+     "tp_rps": 5.877434864303097,
+     "e2e_p50_s": 2.26675178,
+     "ttft_p50_s": 0.05508668,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 1.9332022257808323,
+      "talker": 1.0856797549021058,
+      "code2wav": 0.49126269597604255
+     },
+     "replicas": {
+      "thinker": 4,
+      "talker": 4,
+      "code2wav": 4
+     },
+     "gpu_util_by_role": {
+      "thinker": 73.59831460674157,
+      "talker": 67.11235955056179
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 2.010952,
+      "thinker.prefill": 27.498624,
+      "thinker.decode": 1215.90413,
+      "talker.queue": 1.091263,
+      "talker.model_path": 710.131189,
+      "code2wav.service": 234.661123
+     },
+     "thinker_ms_per_token_p50": 27.14524427419355,
+     "hop_thinker_talker_p50_ms": 5.057588
+    },
+    {
+     "level": 32.0,
+     "n": 96,
+     "tp_rps": 9.366434552014322,
+     "e2e_p50_s": 2.574507357,
+     "ttft_p50_s": 0.055783364,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 3.47649039111439,
+      "talker": 2.3997400454137265,
+      "code2wav": 0.9189736898007745
+     },
+     "replicas": {
+      "thinker": 4,
+      "talker": 4,
+      "code2wav": 4
+     },
+     "gpu_util_by_role": {
+      "thinker": 70.54464285714286,
+      "talker": 83.39732142857143
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 2.465713,
+      "thinker.prefill": 27.408153,
+      "thinker.decode": 1219.0110619999998,
+      "talker.queue": 1.053808,
+      "talker.model_path": 901.032847,
+      "code2wav.service": 262.746313
+     },
+     "thinker_ms_per_token_p50": 28.059626870370366,
+     "hop_thinker_talker_p50_ms": 4.167655
+    },
+    {
+     "level": 64.0,
+     "n": 128,
+     "tp_rps": 11.642166741053577,
+     "e2e_p50_s": 3.590413279,
+     "ttft_p50_s": 0.062229024,
+     "slo": 0.9609375,
+     "eff_batch": {
+      "thinker": 5.022006045962714,
+      "talker": 4.704001407667302,
+      "code2wav": 3.920583572283425
+     },
+     "replicas": {
+      "thinker": 4,
+      "talker": 4,
+      "code2wav": 4
+     },
+     "gpu_util_by_role": {
+      "thinker": 67.36065573770492,
+      "talker": 90.62704918032787
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 3.062981,
+      "thinker.prefill": 27.867596,
+      "thinker.decode": 1248.31918,
+      "talker.queue": 1.053457,
+      "talker.model_path": 1288.656402,
+      "code2wav.service": 919.910403
+     },
+     "thinker_ms_per_token_p50": 28.79469748387097,
+     "hop_thinker_talker_p50_ms": 3.961286
+    },
+    {
+     "level": 128.0,
+     "n": 256,
+     "tp_rps": 13.324482857194026,
+     "e2e_p50_s": 6.703709531,
+     "ttft_p50_s": 0.094308427,
+     "slo": 0.6015625,
+     "eff_batch": {
+      "thinker": 6.196927494744491,
+      "talker": 7.322238005096329,
+      "code2wav": 14.038381746835656
+     },
+     "replicas": {
+      "thinker": 4,
+      "talker": 4,
+      "code2wav": 4
+     },
+     "gpu_util_by_role": {
+      "thinker": 53.29207920792079,
+      "talker": 90.03960396039604
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 3.41154,
+      "thinker.prefill": 28.435737,
+      "thinker.decode": 1286.466872,
+      "talker.queue": 1.14638,
+      "talker.model_path": 1488.402949,
+      "code2wav.service": 3553.042806
+     },
+     "thinker_ms_per_token_p50": 29.081045500000002,
+     "hop_thinker_talker_p50_ms": 3.44229
+    },
+    {
+     "level": 256.0,
+     "n": 512,
+     "tp_rps": 15.321934260833766,
+     "e2e_p50_s": 11.81389175,
+     "ttft_p50_s": 0.119325266,
+     "slo": 0.00390625,
+     "eff_batch": {
+      "thinker": 7.608154675393483,
+      "talker": 10.328369372315398,
+      "code2wav": 36.47814417833591
+     },
+     "replicas": {
+      "thinker": 4,
+      "talker": 4,
+      "code2wav": 4
+     },
+     "gpu_util_by_role": {
+      "thinker": 44.75574712643678,
+      "talker": 90.88074712643679
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 4.319453,
+      "thinker.prefill": 28.22943,
+      "thinker.decode": 1287.169122,
+      "talker.queue": 1.34062,
+      "talker.model_path": 1556.876795,
+      "code2wav.service": 8524.17076
+     },
+     "thinker_ms_per_token_p50": 29.1045185625,
+     "hop_thinker_talker_p50_ms": 3.229657
+    }
+   ],
+   "critical_path": {
+    "8": {
+     "request_id": "w3b_small-c8-00028-f4f40e27",
+     "segments_ms": [
+      [
+       "预处理",
+       0.6,
+       2.9
+      ],
+      [
+       "thinker 排队",
+       4.6,
+       7.1
+      ],
+      [
+       "thinker 读入提示（prefill）",
+       7.1,
+       42.2
+      ],
+      [
+       "thinker 逐个生成文字 token（decode）",
+       42.2,
+       1254.7
+      ],
+      [
+       "talker 排队",
+       1270.4,
+       1272.4
+      ],
+      [
+       "talker 生成语音 token",
+       1272.4,
+       1875.5
+      ],
+      [
+       "code2wav 等待开始",
+       1879.3,
+       1879.6
+      ],
+      [
+       "code2wav 合成波形",
+       1879.6,
+       2143.6
+      ],
+      [
+       "总计（到最后一个响应）",
+       0.0,
+       2150.0
+      ]
+     ]
+    },
+    "64": {
+     "request_id": "w3b_closed-c64-00188-81e8d152",
+     "segments_ms": [
+      [
+       "预处理",
+       0.5,
+       2.6
+      ],
+      [
+       "thinker 排队",
+       24.2,
+       28.0
+      ],
+      [
+       "thinker 读入提示（prefill）",
+       28.0,
+       55.1
+      ],
+      [
+       "thinker 逐个生成文字 token（decode）",
+       55.1,
+       1357.5
+      ],
+      [
+       "talker 排队",
+       1378.6,
+       1379.7
+      ],
+      [
+       "talker 生成语音 token",
+       1379.7,
+       2879.3
+      ],
+      [
+       "code2wav 等待开始",
+       2882.1,
+       2882.2
+      ],
+      [
+       "code2wav 合成波形",
+       2882.2,
+       3506.2
+      ],
+      [
+       "总计（到最后一个响应）",
+       0.0,
+       3512.3
+      ]
+     ]
+    }
+   }
+  },
+  "C": {
+   "name": "2 张 thinker 卡 + 6 张 talker 卡",
+   "layout": "s2x6",
+   "run": "20261115_v2_a_s2x6_run1_run01",
+   "low_run": "20261116_v2b_sb_s2x6_run01",
+   "gpu_roles": {
+    "0": "thinker",
+    "1": "thinker",
+    "2": "talker",
+    "3": "talker",
+    "4": "talker",
+    "5": "talker",
+    "6": "talker",
+    "7": "talker"
+   },
+   "busy_by_level": {
+    "1": {
+     "0": 28.5,
+     "1": 25.4,
+     "2": 4.0,
+     "3": 3.8,
+     "4": 4.6,
+     "5": 5.0,
+     "6": 5.1,
+     "7": 5.3
+    },
+    "2": {
+     "0": 51.3,
+     "1": 56.5,
+     "2": 15.0,
+     "3": 9.5,
+     "4": 10.2,
+     "5": 9.0,
+     "6": 9.8,
+     "7": 13.5
+    },
+    "4": {
+     "0": 72.7,
+     "1": 73.6,
+     "2": 18.9,
+     "3": 18.2,
+     "4": 20.2,
+     "5": 20.4,
+     "6": 18.5,
+     "7": 24.7
+    },
+    "8": {
+     "0": 84.5,
+     "1": 80.2,
+     "2": 35.5,
+     "3": 34.7,
+     "4": 37.2,
+     "5": 32.9,
+     "6": 38.7,
+     "7": 35.9
+    },
+    "16": {
+     "0": 78.1,
+     "1": 73.4,
+     "2": 55.5,
+     "3": 48.2,
+     "4": 53.2,
+     "5": 53.7,
+     "6": 48.0,
+     "7": 39.0
+    },
+    "32": {
+     "0": 77.6,
+     "1": 63.1,
+     "2": 71.8,
+     "3": 57.6,
+     "4": 88.3,
+     "5": 64.5,
+     "6": 79.0,
+     "7": 69.7
+    },
+    "64": {
+     "0": 63.5,
+     "1": 66.1,
+     "2": 82.0,
+     "3": 77.5,
+     "4": 85.0,
+     "5": 77.8,
+     "6": 79.7,
+     "7": 79.8
+    },
+    "128": {
+     "0": 62.6,
+     "1": 61.7,
+     "2": 84.6,
+     "3": 86.4,
+     "4": 84.9,
+     "5": 83.6,
+     "6": 90.3,
+     "7": 84.2
+    },
+    "256": {
+     "0": 63.1,
+     "1": 59.8,
+     "2": 90.3,
+     "3": 90.1,
+     "4": 92.9,
+     "5": 92.2,
+     "6": 92.4,
+     "7": 91.6
+    }
+   },
+   "mem_max_mib": {
+    "0": 38142.0,
+    "1": 36534.0,
+    "2": 23546.0,
+    "3": 23898.0,
+    "4": 24364.0,
+    "5": 19710.0,
+    "6": 25378.0,
+    "7": 21582.0
+   },
+   "levels": [
+    {
+     "level": 1.0,
+     "n": 64,
+     "tp_rps": 0.5651447425823249,
+     "e2e_p50_s": 1.551472345,
+     "ttft_p50_s": 0.049107878,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 0.29236966203039133,
+      "talker": 0.04532320103596724,
+      "code2wav": 0.018019047869509374
+     },
+     "replicas": {
+      "thinker": 2,
+      "talker": 6,
+      "code2wav": 6
+     },
+     "gpu_util_by_role": {
+      "thinker": 26.9573268921095,
+      "talker": 4.63768115942029
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 2.780351,
+      "thinker.prefill": 34.313082,
+      "thinker.decode": 887.601105,
+      "talker.queue": 2.367358,
+      "talker.model_path": 455.554163,
+      "code2wav.service": 158.715797
+     },
+     "thinker_ms_per_token_p50": 26.347863818181818,
+     "hop_thinker_talker_p50_ms": 3.220663
+    },
+    {
+     "level": 2.0,
+     "n": 64,
+     "tp_rps": 1.0009464336396807,
+     "e2e_p50_s": 2.025946483,
+     "ttft_p50_s": 0.046832034,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 0.6280460874879816,
+      "talker": 0.08811365998082298,
+      "code2wav": 0.022849230899794667
+     },
+     "replicas": {
+      "thinker": 2,
+      "talker": 6,
+      "code2wav": 6
+     },
+     "gpu_util_by_role": {
+      "thinker": 53.91441441441441,
+      "talker": 11.169169169169168
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 2.460931,
+      "thinker.prefill": 34.076683,
+      "thinker.decode": 1161.426415,
+      "talker.queue": 2.262264,
+      "talker.model_path": 583.560465,
+      "code2wav.service": 141.294479
+     },
+     "thinker_ms_per_token_p50": 26.24777793939394,
+     "hop_thinker_talker_p50_ms": 3.545832
+    },
+    {
+     "level": 4.0,
+     "n": 64,
+     "tp_rps": 1.9252496255922533,
+     "e2e_p50_s": 2.121039766,
+     "ttft_p50_s": 0.048713978,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 1.2099836107953352,
+      "talker": 0.17489578895329388,
+      "code2wav": 0.05986846604893968
+     },
+     "replicas": {
+      "thinker": 2,
+      "talker": 6,
+      "code2wav": 6
+     },
+     "gpu_util_by_role": {
+      "thinker": 73.18313953488372,
+      "talker": 20.163759689922482
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 1.979811,
+      "thinker.prefill": 29.848223,
+      "thinker.decode": 1242.3091610000001,
+      "talker.queue": 2.439265,
+      "talker.model_path": 560.313569,
+      "code2wav.service": 182.1785
+     },
+     "thinker_ms_per_token_p50": 26.857125574999998,
+     "hop_thinker_talker_p50_ms": 3.447825
+    },
+    {
+     "level": 8.0,
+     "n": 64,
+     "tp_rps": 3.6587567715514284,
+     "e2e_p50_s": 2.017607245,
+     "ttft_p50_s": 0.050533246,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 2.4341711948583593,
+      "talker": 0.33852914078250035,
+      "code2wav": 0.10387325077498284
+     },
+     "replicas": {
+      "thinker": 2,
+      "talker": 6,
+      "code2wav": 6
+     },
+     "gpu_util_by_role": {
+      "thinker": 82.32183908045977,
+      "talker": 35.82183908045977
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 1.813674,
+      "thinker.prefill": 25.62352,
+      "thinker.decode": 1257.4084819999998,
+      "talker.queue": 2.165512,
+      "talker.model_path": 529.203538,
+      "code2wav.service": 156.412686
+     },
+     "thinker_ms_per_token_p50": 26.80495506451613,
+     "hop_thinker_talker_p50_ms": 2.94991
+    },
+    {
+     "level": 16.0,
+     "n": 96,
+     "tp_rps": 5.546078465458729,
+     "e2e_p50_s": 2.204664519,
+     "ttft_p50_s": 0.055289976,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 3.930372532995967,
+      "talker": 0.6113617353676394,
+      "code2wav": 0.41075759889258406
+     },
+     "replicas": {
+      "thinker": 2,
+      "talker": 6,
+      "code2wav": 6
+     },
+     "gpu_util_by_role": {
+      "thinker": 75.75274725274726,
+      "talker": 49.61172161172161
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 2.718037,
+      "thinker.prefill": 27.052387,
+      "thinker.decode": 1256.007325,
+      "talker.queue": 1.662994,
+      "talker.model_path": 621.356593,
+      "code2wav.service": 190.279656
+     },
+     "thinker_ms_per_token_p50": 28.810570492063494,
+     "hop_thinker_talker_p50_ms": 3.495785
+    },
+    {
+     "level": 32.0,
+     "n": 96,
+     "tp_rps": 9.599937622485312,
+     "e2e_p50_s": 2.386711114,
+     "ttft_p50_s": 0.063415852,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 7.76969701622297,
+      "talker": 1.3316148395323673,
+      "code2wav": 0.515212859687755
+     },
+     "replicas": {
+      "thinker": 2,
+      "talker": 6,
+      "code2wav": 6
+     },
+     "gpu_util_by_role": {
+      "thinker": 70.34545454545454,
+      "talker": 71.83333333333333
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 3.90651,
+      "thinker.prefill": 27.584433,
+      "thinker.decode": 1339.9104360000001,
+      "talker.queue": 1.017642,
+      "talker.model_path": 712.549475,
+      "code2wav.service": 234.297325
+     },
+     "thinker_ms_per_token_p50": 31.267549021276597,
+     "hop_thinker_talker_p50_ms": 4.386587
+    },
+    {
+     "level": 64.0,
+     "n": 128,
+     "tp_rps": 14.22820370530894,
+     "e2e_p50_s": 3.017851886,
+     "ttft_p50_s": 0.066893674,
+     "slo": 1.0,
+     "eff_batch": {
+      "thinker": 13.342198379762378,
+      "talker": 3.0495904203161373,
+      "code2wav": 1.4348007380011105
+     },
+     "replicas": {
+      "thinker": 2,
+      "talker": 6,
+      "code2wav": 6
+     },
+     "gpu_util_by_role": {
+      "thinker": 64.82692307692308,
+      "talker": 80.29166666666667
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 4.734994,
+      "thinker.prefill": 28.19576,
+      "thinker.decode": 1408.766181,
+      "talker.queue": 0.863707,
+      "talker.model_path": 1036.166199,
+      "code2wav.service": 327.186994
+     },
+     "thinker_ms_per_token_p50": 33.022054347826085,
+     "hop_thinker_talker_p50_ms": 4.187019
+    },
+    {
+     "level": 128.0,
+     "n": 256,
+     "tp_rps": 18.53156679121876,
+     "e2e_p50_s": 4.786498004,
+     "ttft_p50_s": 0.083085225,
+     "slo": 0.94921875,
+     "eff_batch": {
+      "thinker": 19.5026262644587,
+      "talker": 5.71004280738047,
+      "code2wav": 6.107726941295289
+     },
+     "replicas": {
+      "thinker": 2,
+      "talker": 6,
+      "code2wav": 6
+     },
+     "gpu_util_by_role": {
+      "thinker": 62.121794871794876,
+      "talker": 85.66025641025641
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 5.674184,
+      "thinker.prefill": 30.991221,
+      "thinker.decode": 1566.390659,
+      "talker.queue": 0.887637,
+      "talker.model_path": 1512.766274,
+      "code2wav.service": 1637.432806
+     },
+     "thinker_ms_per_token_p50": 35.49971333333333,
+     "hop_thinker_talker_p50_ms": 3.652954
+    },
+    {
+     "level": 256.0,
+     "n": 512,
+     "tp_rps": 19.72036258170625,
+     "e2e_p50_s": 9.13461126,
+     "ttft_p50_s": 0.123702335,
+     "slo": 0.080078125,
+     "eff_batch": {
+      "thinker": 24.460283683959734,
+      "talker": 8.139370865674048,
+      "code2wav": 19.736882352293193
+     },
+     "replicas": {
+      "thinker": 2,
+      "talker": 6,
+      "code2wav": 6
+     },
+     "gpu_util_by_role": {
+      "thinker": 61.904411764705884,
+      "talker": 91.90073529411764
+     },
+     "stage_p50_ms": {
+      "thinker.queue": 6.497194,
+      "thinker.prefill": 32.942179,
+      "thinker.decode": 1554.471612,
+      "talker.queue": 1.035974,
+      "talker.model_path": 1666.638325,
+      "code2wav.service": 5570.387856
+     },
+     "thinker_ms_per_token_p50": 33.86701611290323,
+     "hop_thinker_talker_p50_ms": 3.663726
+    }
+   ],
+   "critical_path": {
+    "8": {
+     "request_id": "w3b_small-c8-00063-a3e61139",
+     "segments_ms": [
+      [
+       "预处理",
+       0.6,
+       2.6
+      ],
+      [
+       "thinker 排队",
+       18.6,
+       20.1
+      ],
+      [
+       "thinker 读入提示（prefill）",
+       20.1,
+       46.7
+      ],
+      [
+       "thinker 逐个生成文字 token（decode）",
+       46.7,
+       1316.5
+      ],
+      [
+       "talker 排队",
+       1336.8,
+       1338.8
+      ],
+      [
+       "talker 生成语音 token",
+       1338.8,
+       1862.5
+      ],
+      [
+       "code2wav 等待开始",
+       1865.8,
+       1866.0
+      ],
+      [
+       "code2wav 合成波形",
+       1866.0,
+       1993.8
+      ],
+      [
+       "总计（到最后一个响应）",
+       0.0,
+       1996.5
+      ]
+     ]
+    },
+    "64": {
+     "request_id": "w3b_closed-c64-00177-fb4cd84b",
+     "segments_ms": [
+      [
+       "预处理",
+       0.4,
+       2.3
+      ],
+      [
+       "thinker 排队",
+       22.3,
+       24.5
+      ],
+      [
+       "thinker 读入提示（prefill）",
+       24.5,
+       51.5
+      ],
+      [
+       "thinker 逐个生成文字 token（decode）",
+       51.5,
+       1416.9
+      ],
+      [
+       "talker 排队",
+       1434.5,
+       1435.3
+      ],
+      [
+       "talker 生成语音 token",
+       1435.3,
+       2666.7
+      ],
+      [
+       "code2wav 等待开始",
+       2671.5,
+       2671.7
+      ],
+      [
+       "code2wav 合成波形",
+       2671.7,
+       2992.2
+      ],
+      [
+       "总计（到最后一个响应）",
+       0.0,
+       2995.0
+      ]
+     ]
+    }
+   }
+  }
+ }
+}

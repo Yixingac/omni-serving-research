@@ -1,0 +1,32 @@
+{
+ "plan_id": "exp11_diag",
+ "_comment": "实验 11 诊断（补充登记五）：正确性检查没有通过后，用同样的检查段跑 B 和 B 的重复。只在看到检查失败后生成，通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_exp09_11.py --exp11-diagnostic 生成。",
+ "experiments": [
+  {
+   "experiment_id": "exp11_diag_B",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/exp09_11/exp11_diag_B.json",
+   "priority": -290,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 600,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "实验 11 诊断（补充登记五）：组 B（SGLANG_OMNI_SPEECH_LOOKAHEAD=1，快照、没有旁路复制），2+6，打开 digest，段落和正确性检查完全相同。用来区分多出来的指纹偏差来自提前发射本身还是旁路复制。"
+  },
+  {
+   "experiment_id": "exp11_diag_B2",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/exp09_11/exp11_diag_B2.json",
+   "priority": -291,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 600,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "实验 11 诊断（补充登记五）：组 B2（SGLANG_OMNI_SPEECH_LOOKAHEAD=1，快照、没有旁路复制），2+6，打开 digest，段落和正确性检查完全相同。用来区分多出来的指纹偏差来自提前发射本身还是旁路复制。"
+  }
+ ]
+}

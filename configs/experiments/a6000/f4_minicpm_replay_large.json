@@ -1,0 +1,85 @@
+{
+  "runtime_profile": "unicorn",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "assets": "synthetic-v1",
+  "experiment_id": "f4_minicpm_replay_large",
+  "description": "用 f3 的大 trace（128 个会话、带模拟工具延迟）比较两种回放模式，在 1/2/4/8 倍加速下逐步接近饱和。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [],
+      "ready_timeout_s": 2400
+    }
+  ],
+  "phases": [
+    {
+      "kind": "replay",
+      "name": "replay_req_speed1",
+      "trace": "latest/f3_minicpm_agents_large/raw/agent_trace_agents_text_c16_toollat.jsonl",
+      "mode": "request",
+      "speed": 1.0,
+      "session_copies": 1
+    },
+    {
+      "kind": "replay",
+      "name": "replay_dep_speed1",
+      "trace": "latest/f3_minicpm_agents_large/raw/agent_trace_agents_text_c16_toollat.jsonl",
+      "mode": "dependency",
+      "speed": 1.0,
+      "session_copies": 1
+    },
+    {
+      "kind": "replay",
+      "name": "replay_req_speed2",
+      "trace": "latest/f3_minicpm_agents_large/raw/agent_trace_agents_text_c16_toollat.jsonl",
+      "mode": "request",
+      "speed": 2.0,
+      "session_copies": 1
+    },
+    {
+      "kind": "replay",
+      "name": "replay_dep_speed2",
+      "trace": "latest/f3_minicpm_agents_large/raw/agent_trace_agents_text_c16_toollat.jsonl",
+      "mode": "dependency",
+      "speed": 2.0,
+      "session_copies": 1
+    },
+    {
+      "kind": "replay",
+      "name": "replay_req_speed4",
+      "trace": "latest/f3_minicpm_agents_large/raw/agent_trace_agents_text_c16_toollat.jsonl",
+      "mode": "request",
+      "speed": 4.0,
+      "session_copies": 1
+    },
+    {
+      "kind": "replay",
+      "name": "replay_dep_speed4",
+      "trace": "latest/f3_minicpm_agents_large/raw/agent_trace_agents_text_c16_toollat.jsonl",
+      "mode": "dependency",
+      "speed": 4.0,
+      "session_copies": 1
+    },
+    {
+      "kind": "replay",
+      "name": "replay_req_speed8",
+      "trace": "latest/f3_minicpm_agents_large/raw/agent_trace_agents_text_c16_toollat.jsonl",
+      "mode": "request",
+      "speed": 8.0,
+      "session_copies": 1
+    },
+    {
+      "kind": "replay",
+      "name": "replay_dep_speed8",
+      "trace": "latest/f3_minicpm_agents_large/raw/agent_trace_agents_text_c16_toollat.jsonl",
+      "mode": "dependency",
+      "speed": 8.0,
+      "session_copies": 1
+    }
+  ]
+}

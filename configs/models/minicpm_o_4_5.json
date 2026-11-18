@@ -1,0 +1,3 @@
+{"model_id": "openbmb/MiniCPM-o-4_5", "revision": "fb09628e98b1f55d8d5b863e0eccfcdd11bff499", "license": "apache-2.0",
+ "model_path": "~/workspace/sglang-omni-learning/models/MiniCPM-o-4_5", "served_model_name": "MiniCPM-o-4_5",
+ "notes": "约 9B 参数（Qwen3-8B thinker + 音频/视觉编码器 + talker + code2wav），权重 19 GB，单张 48 GB A6000 可容纳权重。"}

@@ -1,0 +1,84 @@
+{
+ "plan_id": "a6000_8gpu_v2_batch2_part2",
+ "_comment": "plan v2 第二批的第二部分，通过 plan.d 加到正在运行的编排器：B1 的 S5:3、S6:2，加长的 B2。由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "v2b_b1_s5x3",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_b1_s5x3.json",
+   "priority": 58,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1000,
+   "timeout_s": 6000,
+   "max_retries": 1,
+   "description": "第二批 B1：一个服务：5 个 thinker（pipeline）副本 + 3 个 talker 副本，code2wav 单独进程、与 talker 同卡上的混合负载（40% W1 文本对话、40% W3b 文本提问语音回答、20% W2 语音提问文本回答，每个请求按权重抽取），闭环并发 16–256，再按测得容量开环 50%–120%。"
+  },
+  {
+   "experiment_id": "v2b_b1_s6x2",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_b1_s6x2.json",
+   "priority": 57,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1000,
+   "timeout_s": 6000,
+   "max_retries": 1,
+   "description": "第二批 B1：一个服务：6 个 thinker（pipeline）副本 + 2 个 talker 副本，code2wav 单独进程、与 talker 同卡上的混合负载（40% W1 文本对话、40% W3b 文本提问语音回答、20% W2 语音提问文本回答，每个请求按权重抽取），闭环并发 16–256，再按测得容量开环 50%–120%。"
+  },
+  {
+   "experiment_id": "v2b_b2l_r8",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_b2l_r8.json",
+   "priority": 50,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 2700,
+   "timeout_s": 9000,
+   "max_retries": 1,
+   "description": "第二批 B2（加长）：8 个完整副本（每卡一个服务，code2wav 单独进程），客户端按在途请求最少路由上的大规模 Agent（会话不重复），同时进行的会话 64–512，每档会话总数为并发的 8 倍（512 并发时 4 倍），每档约 2–3 分钟（第一批每档只有 6–40 秒）；文本 Agent 与语音 Agent（文本提问、最后一步语音回答），路由分别用在途请求最少和按会话固定。"
+  },
+  {
+   "experiment_id": "v2b_b2l_s2x6",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_b2l_s2x6.json",
+   "priority": 49,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1800,
+   "timeout_s": 7200,
+   "max_retries": 1,
+   "description": "第二批 B2（加长）：一个服务：2 个 thinker（pipeline）副本 + 6 个 talker 副本，code2wav 单独进程、与 talker 同卡上的大规模 Agent，每档会话总数为并发的 8 倍（512 并发时 4 倍），每档约 2–3 分钟（第一批每档只有 6–40 秒）；另加 256 个会话时工具延迟 0.5 s、2 s 两档（对数正态中位数，各 2048 个会话）。"
+  },
+  {
+   "experiment_id": "v2b_b2l_p4",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_b2l_p4.json",
+   "priority": 48,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1500,
+   "timeout_s": 7200,
+   "max_retries": 1,
+   "description": "第二批 B2（加长）：4 个拆分服务（每个 1 张 thinker 卡 + 1 张 talker 卡，code2wav 单独进程），客户端按在途请求最少路由上的大规模 Agent，每档会话总数为并发的 8 倍（512 并发时 4 倍），每档约 2–3 分钟（第一批每档只有 6–40 秒）。"
+  },
+  {
+   "experiment_id": "v2b_b2l_s4x4",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_b2l_s4x4.json",
+   "priority": 47,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1500,
+   "timeout_s": 7200,
+   "max_retries": 1,
+   "description": "第二批 B2（加长）：一个服务：4 个 thinker（pipeline）副本 + 4 个 talker 副本，code2wav 单独进程、与 talker 同卡上的大规模 Agent，每档会话总数为并发的 8 倍（512 并发时 4 倍），每档约 2–3 分钟（第一批每档只有 6–40 秒）。"
+  }
+ ]
+}

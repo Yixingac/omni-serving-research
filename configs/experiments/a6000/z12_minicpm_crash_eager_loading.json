@@ -1,0 +1,45 @@
+{
+  "runtime_profile": "unicorn",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "assets": "synthetic-v1",
+  "experiment_id": "z12_minicpm_crash_eager_loading",
+  "description": "定位语音负载下的 CUDA illegal memory access（第 17 节）。z10 开启 GPU core dump 后 16 分钟没有崩溃、延迟不变。开启 core dump 可能让驱动改变模块加载方式；这里不开 core dump，只设 CUDA_MODULE_LOADING=EAGER（PyTorch 默认是 LAZY：kernel 第一次用到时才加载），检验运行中延迟加载 kernel 是否与崩溃有关。负载与 z4、z10 相同。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [],
+      "ready_timeout_s": 2400,
+      "prefix": "env CUDA_MODULE_LOADING=EAGER"
+    }
+  ],
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "open_loop",
+      "name": "w3b_soak",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "rates_rps": [
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5
+      ],
+      "requests_per_rate": 180,
+      "max_error_rate": 0.2
+    }
+  ]
+}

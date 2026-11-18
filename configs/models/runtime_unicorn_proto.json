@@ -1,0 +1,22 @@
+{
+  "_comment": "实验 8 第三阶段：从 sglang-omni 的原型副本启动服务：git worktree，同一提交 520b49ee，加 configs/runtime/patches/sglang_omni_proto_exp08.patch（测量补丁 + 原型）。原型由每个服务自己的环境变量 SGLANG_OMNI_SPEECH_LOOKAHEAD 打开（0 关，1 开并做快照，nosnapshot 只用于正确性诊断）。SGLANG_OMNI_EXP_TORCH_SKIP 让 code2wav、talker 进程不开 torch profiler，只录 thinker 所在的进程；两组相同。",
+  "env_script": "~/workspace/sglang-omni-learning/scripts/env-unicorn.sh",
+  "cwd": "~/workspace/sglang-omni-learning/repos/sglang-omni-proto",
+  "python": "~/workspace/sglang-omni-learning/.venv/bin/python",
+  "ffmpeg": "~/workspace/sglang-omni-learning/.conda-runtime/bin/ffmpeg",
+  "warm_cache_script": "~/workspace/sglang-omni-learning/scripts/warm-cache.sh",
+  "env": {
+    "SGLANG_OMNI_EXP_TRACE": "thinker",
+    "SGLANG_OMNI_EXP_TORCH_SKIP": "code2wav,talker"
+  },
+  "required_imports": [
+    "torch",
+    "sglang",
+    "sglang_omni",
+    "onnx",
+    "onnxruntime",
+    "einops",
+    "aiohttp",
+    "psutil"
+  ]
+}

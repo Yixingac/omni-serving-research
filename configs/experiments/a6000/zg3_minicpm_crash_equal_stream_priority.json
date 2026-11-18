@@ -1,0 +1,47 @@
+{
+  "runtime_profile": "unicorn",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "assets": "synthetic-v1",
+  "experiment_id": "zg3_minicpm_crash_equal_stream_priority",
+  "description": "验证崩溃根因（第 17 节）。zp1 让 talker 改用独立 CUDA stream 后仍在约 6 分钟崩溃，所以共用 stream 0 不是必要条件。剩下的进程内耦合是队列优先级：code2wav 的 decode_stream 优先级为 -1（minicpm_o/config.py:26，“runs ahead of the default stream”），会抢在 talker 前面执行。这里只把它设为 0（--code2wav.factory.decode_stream_priority 0），其余与 z4 相同（正式运行环境，无补丁）。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [
+        "--code2wav.factory.decode_stream_priority",
+        "0"
+      ],
+      "ready_timeout_s": 2400
+    }
+  ],
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "open_loop",
+      "name": "w3b_soak",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "rates_rps": [
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5
+      ],
+      "requests_per_rate": 180,
+      "max_error_rate": 0.2
+    }
+  ]
+}

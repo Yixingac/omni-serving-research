@@ -1,0 +1,57 @@
+{
+  "runtime_profile": "unicorn",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "experiment_id": "x3m_minicpm_speech_1gpu_memsplit",
+  "description": "显存配比对照：与 x3 相同的 W3b、W3 扫描，只把 thinker 的 engine.mem_fraction_static 从默认 0.85 降到 0.6。在 Spark 上观察到，默认配比下 thinker 占走大部分显存，code2wav 因余量不足跳过 Flow CUDA graph；这里检验 A6000 上是否同样如此、对首个音频块时间和吞吐的影响。",
+  "assets": "synthetic-v1",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [
+        "--thinker.engine.mem_fraction_static",
+        "0.6"
+      ],
+      "ready_timeout_s": 2400
+    }
+  ],
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "closed_loop",
+      "name": "w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "concurrency": [
+        1,
+        2,
+        4,
+        8,
+        16
+      ],
+      "requests_per_level": 32,
+      "stop_if_p50_e2e_above_s": 90
+    },
+    {
+      "kind": "closed_loop",
+      "name": "w3",
+      "workload": "configs/workloads/w3_audio_speech.json",
+      "concurrency": [
+        1,
+        2,
+        4,
+        8
+      ],
+      "requests_per_level": 32,
+      "stop_if_p50_e2e_above_s": 90
+    }
+  ]
+}

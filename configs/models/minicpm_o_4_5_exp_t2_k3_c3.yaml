@@ -1,0 +1,25 @@
+# MiniCPM-o 4.5 语音流水线（实验 6–8 的放置 t2_k3_c3），一个服务，用 GPU 0, 1, 2, 3, 4, 5, 6, 7：
+# thinker 所在的 pipeline 进程 2 份（GPU 0, 1），talker 进程 3 份（GPU 2, 3, 4），
+# code2wav 单独进程 3 份（GPU 5, 6, 7，单独占卡）。
+# 显存比例与 2+6 基线相同（talker 0.40、code2wav 0.40），只改 code2wav 放在哪。
+# 由 scripts/slurm/make_plan_exp06_08.py 生成。
+config_cls: MiniCPMOSpeechPipelineConfig
+model_path: openbmb/MiniCPM-o-4_5
+
+stages:
+  talker:
+    gpu_memory_fraction: 0.4
+  code2wav:
+    process: code2wav
+    gpu_memory_fraction: 0.4
+
+processes:
+  pipeline:
+    num_replicas: 2
+    replica_devices: [0, 1]
+  talker:
+    num_replicas: 3
+    replica_devices: [2, 3, 4]
+  code2wav:
+    num_replicas: 3
+    replica_devices: [5, 6, 7]

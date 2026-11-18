@@ -1,0 +1,25 @@
+# 只用于功能测试（Spark，1 张 GPU）：talker+code2wav 进程复制两份，都放在 GPU 0，检查副本路径能否跑通。不用于性能比较。
+config_cls: MiniCPMOSpeechPipelineConfig
+# --config 文件会先按完整配置校验，model_path 是必填项；启动时传入的 --model-path 会覆盖这里的值。
+model_path: openbmb/MiniCPM-o-4_5
+
+# 同卡副本必须为这张卡上每个 GPU 阶段声明显存比例，合计不超过 1.0。GB10 是约 120 GiB 的统一内存，比例按它算
+# （与 A6000 版本的 x7c 数字不同）：GPU 0 合计 0.05 + 0.30 + 2 × (0.05 + 0.10) = 0.65。
+stages:
+  preprocessing:
+    gpu_memory_fraction: 0.01
+  audio_encoder:
+    gpu_memory_fraction: 0.02
+  image_encoder:
+    gpu_memory_fraction: 0.02
+  thinker:
+    gpu_memory_fraction: 0.30
+  talker:
+    gpu_memory_fraction: 0.05
+  code2wav:
+    gpu_memory_fraction: 0.10
+
+processes:
+  talker:
+    num_replicas: 2
+    replica_devices: [0, 0]

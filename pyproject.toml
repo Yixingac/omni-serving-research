@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omni-research"
+version = "0.1.0"
+description = "Trace-driven omni-serving research infrastructure: agent tracing, replay, orchestration, profiling, analysis"
+requires-python = ">=3.11"
+# The core (tracing, replay with the mock backend, orchestration, metrics) is stdlib-only so it
+# runs inside any serving environment. The real HTTP backend needs aiohttp; plots need matplotlib.
+dependencies = []
+
+[project.optional-dependencies]
+client = ["aiohttp>=3.9", "psutil>=5.9"]
+analysis = ["matplotlib>=3.8", "numpy>=1.26"]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "aiohttp>=3.9", "matplotlib>=3.8", "numpy>=1.26", "pyyaml>=6", "psutil>=5.9", "ruff>=0.6"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"

@@ -1,0 +1,35 @@
+diff --git a/sglang_omni/models/minicpm_o/components/token2wav/hift.py b/sglang_omni/models/minicpm_o/components/token2wav/hift.py
+index bed3305e..41729028 100644
+--- a/sglang_omni/models/minicpm_o/components/token2wav/hift.py
++++ b/sglang_omni/models/minicpm_o/components/token2wav/hift.py
+@@ -16,6 +16,8 @@
+ 
+ from __future__ import annotations
+ 
++import logging as _diag_logging
++import os as _diag_os
+ from collections.abc import Iterator
+ from contextlib import contextmanager
+ 
+@@ -34,12 +36,20 @@ from sglang_omni.models.minicpm_o.components.token2wav.hift_layers import (
+ )
+ 
+ 
++_DIAG_HIFT_CALLER_STREAM = _diag_os.environ.get("SGLANG_OMNI_DIAG_HIFT_CALLER_STREAM") == "1"
++if _DIAG_HIFT_CALLER_STREAM:
++    _diag_logging.getLogger(__name__).warning("DIAG: HiFT cuFFT stays on the caller stream (stream 0 unused by code2wav)")
++
++
+ @contextmanager
+ def default_stream_for_cufft(
+     device: torch.device,
+ ) -> Iterator[torch.cuda.Stream | None]:
+     """Run cuFFT on the default stream and yield the caller's stream."""
+-    if device.type == "cuda":
++    if device.type == "cuda" and _DIAG_HIFT_CALLER_STREAM:
++        # DIAG: keep cuFFT on the caller's stream, so this thread never touches stream 0.
++        yield None
++    elif device.type == "cuda":
+         caller_stream = torch.cuda.current_stream(device)
+         default_stream = torch.cuda.default_stream(device)
+         # note (zhaochenyang20): new cuFFT plans upload their tables on the

@@ -1,0 +1,22 @@
+{
+  "_comment": "实验 11：从 sglang-omni 的异步副本启动服务：git worktree，同一提交 520b49ee，加 configs/runtime/patches/sglang_omni_async_exp11.patch（测量补丁 + 实验 8 的原型 + 旁路拷贝隐藏状态 + 调度步编号和标注）。每个服务用环境变量 SGLANG_OMNI_SPEECH_LOOKAHEAD 选择：0 同步，1 实验 8 的快照，sidecopy 快照加旁路拷贝。SGLANG_OMNI_EXP_TORCH_SKIP 让 code2wav、talker 不开 torch profiler，只录 thinker 所在的进程。",
+  "env_script": "~/workspace/sglang-omni-learning/scripts/env-unicorn.sh",
+  "cwd": "~/workspace/sglang-omni-learning/repos/sglang-omni-async",
+  "python": "~/workspace/sglang-omni-learning/.venv/bin/python",
+  "ffmpeg": "~/workspace/sglang-omni-learning/.conda-runtime/bin/ffmpeg",
+  "warm_cache_script": "~/workspace/sglang-omni-learning/scripts/warm-cache.sh",
+  "env": {
+    "SGLANG_OMNI_EXP_TRACE": "thinker",
+    "SGLANG_OMNI_EXP_TORCH_SKIP": "code2wav,talker"
+  },
+  "required_imports": [
+    "torch",
+    "sglang",
+    "sglang_omni",
+    "onnx",
+    "onnxruntime",
+    "einops",
+    "aiohttp",
+    "psutil"
+  ]
+}

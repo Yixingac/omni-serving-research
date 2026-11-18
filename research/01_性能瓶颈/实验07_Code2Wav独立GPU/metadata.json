@@ -1,0 +1,359 @@
+{
+ "experiment_number": 7,
+ "name_zh": "Code2Wav 独立 GPU",
+ "question_zh": "把 code2wav 从 talker 的卡上搬到单独的卡上：同卡争用会不会减少？同样 8 张卡，哪种分法的吞吐和尾延迟更好？",
+ "status": "完成（5 种放置 × 3 个区组，2026-11-17 16:36–20:40）",
+ "hypotheses": "hypotheses.md（2026-11-17 14:33 之前登记，以 git 提交 fe9288a 为准；17:07 补充指标的具体算法，那时只看过一次运行的字段名）",
+ "merged_from": "原计划的实验 9（放置对比）并入本实验，见 research/实验总目录.md 的编号调整说明",
+ "model": {
+  "name": "MiniCPM-o 4.5",
+  "revision": "fb09628e98b1f55d8d5b863e0eccfcdd11bff499"
+ },
+ "software": {
+  "sglang_omni": "520b49ee + configs/runtime/patches/sglang_omni_instr_exp06_08.patch（测量补丁，和实验 6 相同的 git worktree）",
+  "sglang": "0.5.21",
+  "torch": "2.13.0",
+  "cuda_runtime": "13.0.96（pip 包 nvidia-cuda-runtime）",
+  "nvidia_driver": "580.126.18",
+  "runtime_profile": "configs/models/runtime_unicorn_instr.json（SGLANG_OMNI_EXP_TRACE=c2w,thinker）"
+ },
+ "hardware": {
+  "node": "compute-03（第二批节点）",
+  "gpus": "8 × NVIDIA RTX A6000 48 GB",
+  "slurm_job": 454290
+ },
+ "placements": {
+  "t2_k6_shared": {
+   "role": "基线（= 2+6，S2:6），等预算",
+   "thinker_gpus": [
+    0,
+    1
+   ],
+   "talker_gpus": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "code2wav_gpus": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "gpus_used": 8
+  },
+  "t2_k4_c2": {
+   "role": "等预算",
+   "thinker_gpus": [
+    0,
+    1
+   ],
+   "talker_gpus": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "code2wav_gpus": [
+    6,
+    7
+   ],
+   "gpus_used": 8
+  },
+  "t2_k3_c3": {
+   "role": "等预算；机制对照的隔离组",
+   "thinker_gpus": [
+    0,
+    1
+   ],
+   "talker_gpus": [
+    2,
+    3,
+    4
+   ],
+   "code2wav_gpus": [
+    5,
+    6,
+    7
+   ],
+   "gpus_used": 8
+  },
+  "t2_k2_c4": {
+   "role": "等预算",
+   "thinker_gpus": [
+    0,
+    1
+   ],
+   "talker_gpus": [
+    2,
+    3
+   ],
+   "code2wav_gpus": [
+    4,
+    5,
+    6,
+    7
+   ],
+   "gpus_used": 8
+  },
+  "t2_k3_shared": {
+   "role": "机制对照的同卡组（GPU 5–7 空着）",
+   "thinker_gpus": [
+    0,
+    1
+   ],
+   "talker_gpus": [
+    2,
+    3,
+    4
+   ],
+   "code2wav_gpus": [
+    2,
+    3,
+    4
+   ],
+   "gpus_used": 5
+  }
+ },
+ "placement_configs": "configs/models/minicpm_o_4_5_exp_<放置>.yaml（talker、code2wav 的 gpu_memory_fraction 都是 0.40，和基线相同）",
+ "workload": {
+  "id": "W3b_text_speech",
+  "file": "configs/workloads/w3b_text_speech.json",
+  "client_seed": 0,
+  "note": "文字提问，文字 + 语音回答，最多 64 个文字 token，thinker 温度 0。客户端带 seed 0，所以 thinker 不走提前发射（见实验 8），各放置相同"
+ },
+ "design": {
+  "phases": {
+   "w3b_closed": "闭环并发 8、64、128、256，每档预热一波后测 max(96, 3 × 并发) 个请求，开事件记录",
+   "w3b_c128_C": "闭环并发 128，256 个请求，第 10 秒开 3 秒 torch profiler（所有进程，含 talker 和 code2wav）",
+   "w3b_open": "开环泊松到达 5.5、8、9.5、10.5 请求/秒，各 90 秒，开事件记录（预先登记的速率，= 0.5X、0.75X、0.9X、1.0X，X = 10.6）",
+   "w3b_open_hi": "开环 15、18 请求/秒，各 60 秒，开事件记录（探索性，不参与判定）"
+  },
+  "open_loop_capacity_x": {
+   "value_rps": 10.6,
+   "source": "预跑 exp07_pilot_t2_k4_c2 的闭环并发 256 吞吐（等预算方案里最弱的）"
+  },
+  "pilot_capacity_rps": {
+   "t2_k4_c2": 10.6,
+   "t2_k3_c3": 15.1,
+   "t2_k2_c4": 20.6,
+   "t2_k3_shared": 11.0,
+   "note": "预跑，只用来定速率，不是正式数据；基线没有预跑，用实验 6 的 22.7"
+  },
+  "blocks": 3,
+  "randomization_seed": 20261117,
+  "order": {
+   "block1": [
+    "t2_k3_shared",
+    "t2_k3_c3",
+    "t2_k6_shared",
+    "t2_k4_c2",
+    "t2_k2_c4"
+   ],
+   "block2": [
+    "t2_k3_c3",
+    "t2_k3_shared",
+    "t2_k4_c2",
+    "t2_k6_shared",
+    "t2_k2_c4"
+   ],
+   "block3": [
+    "t2_k3_shared",
+    "t2_k4_c2",
+    "t2_k3_c3",
+    "t2_k2_c4",
+    "t2_k6_shared"
+   ]
+  },
+  "unit_of_replication": "运行（一次独立启动的服务）；对照按区组配对（方案 − 基线）",
+  "interval": "3 个区组的 t 区间（自由度 2，t = 4.303）",
+  "unusable_rule": "错误 + 超时 > 5% 的档位标为不可用，不参与判定"
+ },
+ "runs": [
+  {
+   "block": 1,
+   "placement": "t2_k3_shared",
+   "run_dir": "20261117_exp07_t2_k3_shared_block1_run01",
+   "time": "16:36:24–16:55:34",
+   "research_repo_commit_at_start": "e7433a2",
+   "server_ready_s": 325,
+   "server_restarts": []
+  },
+  {
+   "block": 1,
+   "placement": "t2_k3_c3",
+   "run_dir": "20261117_exp07_t2_k3_c3_block1_run01",
+   "time": "17:07:53–17:21:35",
+   "research_repo_commit_at_start": "c45bcfa",
+   "server_ready_s": 150,
+   "server_restarts": []
+  },
+  {
+   "block": 1,
+   "placement": "t2_k6_shared",
+   "run_dir": "20261117_exp07_t2_k6_shared_block1_run01",
+   "time": "17:21:42–17:36:41",
+   "research_repo_commit_at_start": "1611639",
+   "server_ready_s": 155,
+   "server_restarts": []
+  },
+  {
+   "block": 1,
+   "placement": "t2_k4_c2",
+   "run_dir": "20261117_exp07_t2_k4_c2_block1_run01",
+   "time": "17:36:50–17:50:55",
+   "research_repo_commit_at_start": "1611639",
+   "server_ready_s": 95,
+   "server_restarts": []
+  },
+  {
+   "block": 1,
+   "placement": "t2_k2_c4",
+   "run_dir": "20261117_exp07_t2_k2_c4_block1_run01",
+   "time": "17:50:59–18:05:53",
+   "research_repo_commit_at_start": "1611639",
+   "server_ready_s": 110,
+   "server_restarts": []
+  },
+  {
+   "block": 2,
+   "placement": "t2_k3_c3",
+   "run_dir": "20261117_exp07_t2_k3_c3_block2_run01",
+   "time": "18:06:01–18:19:33",
+   "research_repo_commit_at_start": "1611639",
+   "server_ready_s": 95,
+   "server_restarts": []
+  },
+  {
+   "block": 2,
+   "placement": "t2_k3_shared",
+   "run_dir": "20261117_exp07_t2_k3_shared_block2_run01",
+   "time": "18:19:37–18:34:13",
+   "research_repo_commit_at_start": "1611639",
+   "server_ready_s": 120,
+   "server_restarts": []
+  },
+  {
+   "block": 2,
+   "placement": "t2_k4_c2",
+   "run_dir": "20261117_exp07_t2_k4_c2_block2_run01",
+   "time": "18:34:21–18:51:01",
+   "research_repo_commit_at_start": "1611639",
+   "server_ready_s": 135,
+   "server_restarts": []
+  },
+  {
+   "block": 2,
+   "placement": "t2_k6_shared",
+   "run_dir": "20261117_exp07_t2_k6_shared_block2_run01",
+   "time": "18:51:07–19:06:12",
+   "research_repo_commit_at_start": "1611639",
+   "server_ready_s": 195,
+   "server_restarts": []
+  },
+  {
+   "block": 2,
+   "placement": "t2_k2_c4",
+   "run_dir": "20261117_exp07_t2_k2_c4_block2_run01",
+   "time": "19:06:22–19:19:21",
+   "research_repo_commit_at_start": "1611639",
+   "server_ready_s": 95,
+   "server_restarts": []
+  },
+  {
+   "block": 3,
+   "placement": "t2_k3_shared",
+   "run_dir": "20261117_exp07_t2_k3_shared_block3_run01",
+   "time": "19:19:31–19:34:56",
+   "research_repo_commit_at_start": "1611639",
+   "server_ready_s": 160,
+   "server_restarts": []
+  },
+  {
+   "block": 3,
+   "placement": "t2_k4_c2",
+   "run_dir": "20261117_exp07_t2_k4_c2_block3_run01",
+   "time": "19:35:01–19:49:20",
+   "research_repo_commit_at_start": "1611639",
+   "server_ready_s": 95,
+   "server_restarts": []
+  },
+  {
+   "block": 3,
+   "placement": "t2_k3_c3",
+   "run_dir": "20261117_exp07_t2_k3_c3_block3_run01",
+   "time": "19:49:26–20:04:52",
+   "research_repo_commit_at_start": "1611639",
+   "server_ready_s": 160,
+   "server_restarts": []
+  },
+  {
+   "block": 3,
+   "placement": "t2_k2_c4",
+   "run_dir": "20261117_exp07_t2_k2_c4_block3_run01",
+   "time": "20:05:03–20:18:14",
+   "research_repo_commit_at_start": "1611639",
+   "server_ready_s": 95,
+   "server_restarts": []
+  },
+  {
+   "block": 3,
+   "placement": "t2_k6_shared",
+   "run_dir": "20261117_exp07_t2_k6_shared_block3_run01",
+   "time": "20:18:24–20:40:40",
+   "research_repo_commit_at_start": "1611639",
+   "server_ready_s": 600,
+   "server_restarts": [],
+   "note": "启动慢（模型从 NFS 加载用了约 10 分钟），没有超时（上限 2400 秒），测量在就绪之后才开始"
+  }
+ ],
+ "runner_code_note": "运行期间集群上的研究仓库只做过 git pull --ff-only，改动都是分析脚本、文档和后续实验的配置，压测客户端和编排代码没有变（记录在 Job 的 code_state.txt）",
+ "plan": "configs/experiments/plan_exp07.json（由 scripts/slurm/make_plan_exp06_08.py 生成，经 plan.d 放进 Job 454290）；预跑 configs/experiments/plan_exp07_pilot.json",
+ "analysis": {
+  "scripts": [
+   "scripts/analysis/exp07_report.py",
+   "scripts/analysis/exp07_figures.py"
+  ],
+  "tests": "tests/test_exp07_report.py（先写测试、确认失败，再写实现）",
+  "reuses": "scripts/analysis/exp06_c2w_breakdown.py（code2wav 排队和计算的拆分，同实验 6）",
+  "passes": [
+   "第一遍（20:42–20:53）：登记的指标和判定",
+   "第二遍（21:07–21:17）：加了描述性指标（传递时间、code2wav 每秒语音的 GPU 时间、thinker 每 token、首个音频、SM 时钟和功耗），判定和第一遍逐字段相同；仓库里的 results/ 是第二遍的输出"
+  ]
+ },
+ "results": [
+  "results/summary.json",
+  "results/levels.csv"
+ ],
+ "figures": [
+  "figures/fig1_layouts.png",
+  "figures/fig2_closed_throughput.png",
+  "figures/fig3_open_latency.png",
+  "figures/fig4_gpu_busy.png",
+  "figures/fig5_stages.png",
+  "figures/fig6_tradeoff.png"
+ ],
+ "raw_data": "集群 results/experiments/<run_dir>（请求记录、事件、trace、日志；体积大且带机器名和路径，不进公开仓库）",
+ "arms_in_readme": {
+  "A": "t2_k6_shared",
+  "B": "t2_k4_c2",
+  "C": "t2_k3_c3",
+  "D": "t2_k2_c4",
+  "E": "t2_k3_shared"
+ },
+ "verdicts": {
+  "H7a": "不确定（4 项里 3 项支持；并发 256 的 flow 每帧时间区组 1 只短 7.6%）",
+  "H7b": "不确定（D 的并发 256 吞吐 3 个区组都更高，+6.9%、+12.0%、+5.8%，没到 +10%）",
+  "H7c": "不支持（并发 8 的吞吐差别 5–11%，区间都包含 0；开环 5.5、9.5 的 P50 差别 ≤ 2.3%）"
+ },
+ "requests": {
+  "measured": 100365,
+  "ok": 100365,
+  "without_audio": 0
+ }
+}

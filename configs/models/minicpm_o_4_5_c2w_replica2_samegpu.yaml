@@ -1,0 +1,30 @@
+# 只用于功能测试（Spark，1 张 GPU）：pipeline 进程 1 份；talker 进程 2 份；code2wav 放在自己的进程里，也复制 2 份。
+# 全部在 GPU 0。检查 plan v2 的 S 布局能否在运行时工作：talker 副本要把结果交给单独进程里的 code2wav 副本。不用于性能比较。
+config_cls: MiniCPMOSpeechPipelineConfig
+# --config 文件会先按完整配置校验，model_path 是必填项；启动时传入的 --model-path 会覆盖这里的值。
+model_path: openbmb/MiniCPM-o-4_5
+
+# 同卡副本必须为这张卡上每个 GPU 阶段声明显存比例，合计不超过 1.0。GB10 约 120 GiB 统一内存：
+# 0.01 + 0.02 + 0.02 + 0.30 + 2 × (0.05 + 0.08) = 0.61。
+stages:
+  preprocessing:
+    gpu_memory_fraction: 0.01
+  audio_encoder:
+    gpu_memory_fraction: 0.02
+  image_encoder:
+    gpu_memory_fraction: 0.02
+  thinker:
+    gpu_memory_fraction: 0.30
+  talker:
+    gpu_memory_fraction: 0.05
+  code2wav:
+    process: code2wav
+    gpu_memory_fraction: 0.08
+
+processes:
+  talker:
+    num_replicas: 2
+    replica_devices: [0, 0]
+  code2wav:
+    num_replicas: 2
+    replica_devices: [0, 0]

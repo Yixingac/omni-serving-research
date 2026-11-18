@@ -1,0 +1,111 @@
+{
+ "experiment_number": 11,
+ "name_zh": "thinker 提前发射以后的异步拷贝",
+ "question_zh": "thinker 提前发射以后，TTFT 为什么变长？请求结束时的阻塞拷贝能不能安全地去掉，能不能换来端到端的改善？",
+ "status": "正确性检查 COMPLETED（未通过）；性能对比 BLOCKED（按登记不做）；诊断 COMPLETED（2026-11-18 05:54–07:26）",
+ "commit_note": "每个运行记的 research_repo_commit 是运行开始时集群上研究仓库检出的提交（运行器和配置的版本），不是本目录报告的版本；报告以 PR #2 分支的最新提交为准",
+ "hypotheses": "hypotheses.md（预先登记；补充登记一 00:05、二 01:27、三 02:02、四 02:21，都在任何实验 11 数据之前；补充登记五 07:12，看到正确性检查失败后、诊断运行之前）",
+ "model": {
+  "name": "MiniCPM-o 4.5",
+  "revision": "fb09628e98b1f55d8d5b863e0eccfcdd11bff499"
+ },
+ "software": {
+  "sglang_omni": "520b49ee + configs/runtime/patches/sglang_omni_async_exp11.patch（测量补丁 + 实验 8 快照原型 + 旁路复制，研究仓库提交 d1a0325 的版本），工作副本 repos/sglang-omni-async，运行配置 runtime_unicorn_async",
+  "patch_note": "正确性检查 A 的运行清单记着研究仓库提交 b9821a6（那时仓库里的补丁文件是旧版），C、A2 是 c06c143、诊断是 5c1be74；实际运行的工作副本在 02:02（实验 11 开始之前）已更新到 d1a0325 的补丁，之后没有变过。06:02 核对：集群工作副本 10 个文件 = Mac 工作副本 = d1a0325 的补丁（逐字节），记在 code_state.txt。",
+  "sglang": "0.5.21",
+  "torch": "2.13.0",
+  "nvidia_driver": "580.126.18"
+ },
+ "hardware": {
+  "node": "compute-03",
+  "gpus": "8 × NVIDIA RTX A6000 48 GB",
+  "slurm_job": 454290
+ },
+ "placement": "t2_k6_shared（2+6）：GPU 0–1 thinker；GPU 2–7 talker 和 code2wav 同卡",
+ "arms": {
+  "A": "SGLANG_OMNI_SPEECH_LOOKAHEAD=0，同步执行",
+  "B": "=1，实验 8 的快照原型",
+  "C": "=sidecopy，快照 + 旁路复制"
+ },
+ "check": {
+  "workloads": "贪心（thinker、talker 温度 0，seed null）；并发 1、8、32、64；三种混合；客户端 1.5 秒超时的中止段及之后；W3XL",
+  "result": "未通过：6 段的指纹偏差 > 0.05 的比例，C 对 A 比 A2 对 A 高 5 个百分点以上；并发 1 逐位相同、无报错、行数都对"
+ },
+ "diagnostic": {
+  "result": "按补充登记五的规则：不能排除旁路复制的问题（C 对 B 有 3 段高出 B2 对 B 5 个百分点以上）；8 段合计 22.9% 对 22.4%，最大偏差 0.143"
+ },
+ "performance": "没有做（plan_exp11.json 没有放进队列）",
+ "runs": [
+  {
+   "run_dir": "20261118_exp11_check_A_run01",
+   "role": "正确性检查，组 A（同步执行）",
+   "status": "ok",
+   "start": "2026-11-18 05:54:11",
+   "end": "2026-11-18 06:04:22",
+   "phases": 11,
+   "server_restarts": 0,
+   "research_repo_commit": "b9821a6"
+  },
+  {
+   "run_dir": "20261118_exp11_check_C_run01",
+   "role": "正确性检查，组 C（快照 + 旁路复制）",
+   "status": "ok",
+   "start": "2026-11-18 06:55:25",
+   "end": "2026-11-18 07:01:35",
+   "phases": 11,
+   "server_restarts": 0,
+   "research_repo_commit": "c06c143"
+  },
+  {
+   "run_dir": "20261118_exp11_check_A2_run01",
+   "role": "正确性检查，A 的重复",
+   "status": "ok",
+   "start": "2026-11-18 07:01:44",
+   "end": "2026-11-18 07:08:19",
+   "phases": 11,
+   "server_restarts": 0,
+   "research_repo_commit": "c06c143"
+  },
+  {
+   "run_dir": "20261118_exp11_diag_B_run01",
+   "role": "诊断（补充登记五），组 B（快照，没有旁路复制）",
+   "status": "ok",
+   "start": "2026-11-18 07:15:20",
+   "end": "2026-11-18 07:21:16",
+   "phases": 11,
+   "server_restarts": 0,
+   "research_repo_commit": "5c1be74"
+  },
+  {
+   "run_dir": "20261118_exp11_diag_B2_run01",
+   "role": "诊断，B 的重复",
+   "status": "ok",
+   "start": "2026-11-18 07:21:23",
+   "end": "2026-11-18 07:26:26",
+   "phases": 11,
+   "server_restarts": 0,
+   "research_repo_commit": "5c1be74"
+  }
+ ],
+ "plans": [
+  "configs/experiments/plan_exp11_check.json",
+  "configs/experiments/plan_exp11_diag.json"
+ ],
+ "analysis": {
+  "commands": [
+   "见 reproduce.md 第 2 步"
+  ],
+  "outputs": [
+   "results/check.json",
+   "results/diag_lookahead_check.json",
+   "results/diag_sidecopy_check.json",
+   "results/diagnostic.json"
+  ]
+ },
+ "figures": [
+  "figures/fig0_timelines.png",
+  "figures/fig9_correctness.png",
+  "figures/fig11_diagnostic.png"
+ ],
+ "raw_data": "PROJECT_DATA_ROOT/experiments/<运行目录>（带机器名和路径，不进公开仓库）"
+}

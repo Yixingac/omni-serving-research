@@ -1,0 +1,95 @@
+{
+ "runtime_profile": "unicorn_instr",
+ "hardware_label": "a6000x8",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "exp08_lookahead_supp_block1",
+ "description": "实验 8 第一阶段的补测第 1 个区组：只要文字的两个条件（带种子 w3t、不带种子 w3t_ns）在并发 32、64 跑六波，第 5 秒起开 3 秒 kernel trace（原设计的窗口开得太晚，文字请求跑得快，录不到 decode 步）。顺序（种子 20261117）w3t_ns@64、w3t@32、w3t_ns@32、w3t@64。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "s0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "args": [
+    "--config",
+    "{research_repo}/configs/models/minicpm_o_4_5_exp_t2_k6_shared.yaml"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3t_ns_c64_C",
+   "workload": "configs/workloads/w3t_text_only_noseed.json",
+   "concurrency": [
+    64
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 6,
+   "torch_profile_window": {
+    "start_after_s": 5,
+    "duration_s": 3
+   }
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3t_c32_C",
+   "workload": "configs/workloads/w3t_text_only.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 6,
+   "torch_profile_window": {
+    "start_after_s": 5,
+    "duration_s": 3
+   }
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3t_ns_c32_C",
+   "workload": "configs/workloads/w3t_text_only_noseed.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 6,
+   "torch_profile_window": {
+    "start_after_s": 5,
+    "duration_s": 3
+   }
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3t_c64_C",
+   "workload": "configs/workloads/w3t_text_only.json",
+   "concurrency": [
+    64
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 6,
+   "torch_profile_window": {
+    "start_after_s": 5,
+    "duration_s": 3
+   }
+  }
+ ]
+}

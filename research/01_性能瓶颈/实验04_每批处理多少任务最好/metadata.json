@@ -1,0 +1,121 @@
+{
+ "experiment_number": 4,
+ "name_zh": "每批处理多少任务最好",
+ "question_zh": "每个阶段实际的 batch 有多大？batch 变大是更快还是更慢？",
+ "status": "完成（2026-11-18，只用已有数据，没有新的 GPU 运行；每种配置 1 次，结论初步；没有事先的预测，全部是描述）",
+ "commit_note": "每个运行记的 research_repo_commit 是运行开始时集群上研究仓库检出的提交（运行器和配置的版本），不是本目录报告的版本；报告以 PR #2 分支的最新提交为准",
+ "hypotheses": "hypotheses.md（没有事先的预测；相关的事先登记见实验 10）",
+ "model": {
+  "name": "MiniCPM-o 4.5",
+  "revision": "fb09628e98b1f55d8d5b863e0eccfcdd11bff499"
+ },
+ "software": {
+  "sglang_omni": "520b49ee（= 上游 1845546e + 两个 pre-Hopper 修复），没有打实验补丁；运行配置 configs/models/runtime_unicorn.json",
+  "sglang": "0.5.21",
+  "torch": "2.13.0",
+  "limits": "thinker max_running_requests=64（models/minicpm_o/stages.py:361）、talker 32（stages.py:144）、code2wav max_batch_size=16、max_batch_wait_ms=0（config.py:144–145）"
+ },
+ "hardware": {
+  "第一批": "第一批节点：8×RTX A6000，驱动 570 + cuda-compat，Slurm Job 625796",
+  "第二批": "compute-03：8×RTX A6000，驱动 580，Slurm Job 454290"
+ },
+ "workload": "W3b（文字提问、语音回答），闭环并发 1–256",
+ "runs": [
+  {
+   "run_dir": "20261115_v2_a_p4_run1_run01",
+   "role": "闭环（并发 16–256）",
+   "status": "ok",
+   "start": "2026-11-15 03:12:08",
+   "end": "2026-11-15 03:27:00",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261115_v2_a_s1x7_run1_run01",
+   "role": "闭环（并发 16–256）",
+   "status": "ok",
+   "start": "2026-11-15 03:27:14",
+   "end": "2026-11-15 03:42:46",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261116_v2b_a_s2x6_c03_run01",
+   "role": "闭环（并发 16–256）",
+   "status": "ok",
+   "start": "2026-11-16 19:08:23",
+   "end": "2026-11-16 19:25:26",
+   "server_restarts": 0,
+   "research_repo_commit": "78b44d5",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261116_v2b_a_r8_c03_run01",
+   "role": "闭环（并发 16–256）",
+   "status": "ok",
+   "start": "2026-11-16 19:25:36",
+   "end": "2026-11-16 19:39:54",
+   "server_restarts": 0,
+   "research_repo_commit": "62ffd33",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261116_v2b_sb_s2x6_run01",
+   "role": "小 batch 闭环（并发 1–8）",
+   "status": "ok",
+   "start": "2026-11-16 19:54:05",
+   "end": "2026-11-16 20:00:04",
+   "server_restarts": 0,
+   "research_repo_commit": "706afb0",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261116_v2b_sb_r8_run01",
+   "role": "小 batch 闭环（并发 1–8）",
+   "status": "ok",
+   "start": "2026-11-16 20:00:10",
+   "end": "2026-11-16 20:06:33",
+   "server_restarts": 0,
+   "research_repo_commit": "706afb0",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261116_v2b_sb_p4_run01",
+   "role": "小 batch 闭环（并发 1–8）",
+   "status": "ok",
+   "start": "2026-11-16 20:06:45",
+   "end": "2026-11-16 20:12:40",
+   "server_restarts": 0,
+   "research_repo_commit": "706afb0",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261116_v2b_sb_s1x7_run01",
+   "role": "小 batch 闭环（并发 1–8）",
+   "status": "ok",
+   "start": "2026-11-16 20:12:45",
+   "end": "2026-11-16 20:18:54",
+   "server_restarts": 0,
+   "research_repo_commit": "706afb0",
+   "slurm_job": 454290
+  }
+ ],
+ "analysis": {
+  "commands": [
+   "python scripts/analysis/exp04_report.py --data-root <results> --curve ... --out research/01_性能瓶颈/实验04_每批处理多少任务最好（完整参数见 reproduce.md）",
+   "python scripts/analysis/exp04_figures.py --out research/01_性能瓶颈/实验04_每批处理多少任务最好"
+  ],
+  "outputs": [
+   "results/summary.json"
+  ],
+  "where": "在 Mac 上的数据镜像上分析；镜像和集群上的原始文件逐个比过文件名和大小，一致"
+ },
+ "figures": [
+  "figures/fig1_thinker.png",
+  "figures/fig2_talker.png",
+  "figures/fig3_code2wav.png"
+ ],
+ "raw_data": "PROJECT_DATA_ROOT/experiments/<运行目录>（带机器名和路径，不进公开仓库）"
+}

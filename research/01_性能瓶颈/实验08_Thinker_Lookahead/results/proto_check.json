@@ -1,0 +1,791 @@
+{
+ "generated_by": "scripts/analysis/exp08_proto_check.py",
+ "runs": {
+  "off": "20261117_exp08_proto_check_off_run01",
+  "on": "20261117_exp08_proto_check_on_run01",
+  "nosnap": "20261117_exp08_proto_check_nosnap_run01"
+ },
+ "check_c1": {
+  "per_arm": {
+   "off": {
+    "requests": 18,
+    "errors": 0,
+    "prompts": 6,
+    "consistent_prompts": {
+     "text": 3,
+     "hidden": 2,
+     "codec": 3
+    }
+   },
+   "on": {
+    "requests": 18,
+    "errors": 0,
+    "prompts": 6,
+    "consistent_prompts": {
+     "text": 3,
+     "hidden": 2,
+     "codec": 3
+    }
+   },
+   "nosnap": {
+    "requests": 18,
+    "errors": 0,
+    "prompts": 6,
+    "consistent_prompts": {
+     "text": 3,
+     "hidden": 2,
+     "codec": 3
+    }
+   }
+  },
+  "vs_off": {
+   "on": {
+    "text": {
+     "same": 3,
+     "different": 0,
+     "not_comparable": 3,
+     "different_prompts": []
+    },
+    "hidden": {
+     "same": 2,
+     "different": 0,
+     "not_comparable": 4,
+     "different_prompts": []
+    },
+    "codec": {
+     "same": 3,
+     "different": 0,
+     "not_comparable": 3,
+     "different_prompts": []
+    }
+   },
+   "nosnap": {
+    "text": {
+     "same": 3,
+     "different": 0,
+     "not_comparable": 3,
+     "different_prompts": []
+    },
+    "hidden": {
+     "same": 0,
+     "different": 2,
+     "not_comparable": 4,
+     "different_prompts": [
+      0,
+      5
+     ]
+    },
+    "codec": {
+     "same": 0,
+     "different": 3,
+     "not_comparable": 3,
+     "different_prompts": [
+      0,
+      1,
+      5
+     ]
+    }
+   }
+  }
+ },
+ "check_c1_by_index": {
+  "on": {
+   "requests": 18,
+   "same": {
+    "text": 18,
+    "hidden": 18,
+    "codec": 18
+   },
+   "different_indices": {
+    "text": [],
+    "hidden": [],
+    "codec": []
+   }
+  },
+  "nosnap": {
+   "requests": 18,
+   "same": {
+    "text": 18,
+    "hidden": 0,
+    "codec": 0
+   },
+   "different_indices": {
+    "text": [],
+    "hidden": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16,
+     17
+    ],
+    "codec": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16,
+     17
+    ]
+   }
+  }
+ },
+ "check_c8": {
+  "off": {
+   "requests": 48,
+   "errors": 0,
+   "no_audio": 0,
+   "missing_hidden": 0,
+   "missing_codec": 0,
+   "rows_minus_tokens": {
+    "0": 48
+   }
+  },
+  "on": {
+   "requests": 48,
+   "errors": 0,
+   "no_audio": 0,
+   "missing_hidden": 0,
+   "missing_codec": 0,
+   "rows_minus_tokens": {
+    "0": 48
+   }
+  },
+  "nosnap": {
+   "requests": 48,
+   "errors": 0,
+   "no_audio": 0,
+   "missing_hidden": 0,
+   "missing_codec": 0,
+   "rows_minus_tokens": {
+    "0": 48
+   }
+  }
+ },
+ "c1_requests": {
+  "off": [
+   {
+    "index": 10,
+    "prompt": 0,
+    "status": "ok",
+    "text": "Streaming speech output needs a buffer on the client to ensure smooth playback, compensating for network latency and variations in data arrival. The buffer allows the client to accumulate enough data before playing it, preventing interruptions or gaps in the audio stream.",
+    "hidden": "141f4b56fdd39d4e",
+    "codec": "47b48a7c7614aa02",
+    "rows": 48,
+    "tokens": 48,
+    "audio_s": 14.72
+   },
+   {
+    "index": 5,
+    "prompt": 1,
+    "status": "ok",
+    "text": "Use fans to circulate air and keep the room well-ventilated. Install a temperature control system to maintain a consistent temperature.",
+    "hidden": "7e555f143c92bfc3",
+    "codec": "0abcb6c59f5b7e45",
+    "rows": 27,
+    "tokens": 27,
+    "audio_s": 7.08
+   },
+   {
+    "index": 7,
+    "prompt": 1,
+    "status": "ok",
+    "text": "Use fans to circulate air and keep the room well-ventilated. Install a temperature control system to maintain a consistent temperature.",
+    "hidden": "793178dae94db2e8",
+    "codec": "0abcb6c59f5b7e45",
+    "rows": 27,
+    "tokens": 27,
+    "audio_s": 7.08
+   },
+   {
+    "index": 8,
+    "prompt": 2,
+    "status": "ok",
+    "text": "A load balancer distributes incoming network traffic across multiple servers to ensure no single server becomes overwhelmed. This improves performance, availability, and reliability of applications.",
+    "hidden": "6a8d72ad92fd459a",
+    "codec": "ad1b48d32ec69757",
+    "rows": 32,
+    "tokens": 32,
+    "audio_s": 12.16
+   },
+   {
+    "index": 9,
+    "prompt": 2,
+    "status": "ok",
+    "text": "A load balancer distributes incoming network traffic across multiple servers to ensure no single server becomes overwhelmed. This improves performance, reliability, and availability of applications.",
+    "hidden": "d72dd2dced085353",
+    "codec": "8f9e2dfd310711f6",
+    "rows": 32,
+    "tokens": 32,
+    "audio_s": 13.64
+   },
+   {
+    "index": 11,
+    "prompt": 2,
+    "status": "ok",
+    "text": "A load balancer distributes incoming network traffic across multiple servers to ensure no single server becomes overwhelmed. This improves performance, reliability, and availability of applications.",
+    "hidden": "284aca49a1363d62",
+    "codec": "8f9e2dfd310711f6",
+    "rows": 32,
+    "tokens": 32,
+    "audio_s": 13.64
+   },
+   {
+    "index": 12,
+    "prompt": 2,
+    "status": "ok",
+    "text": "A load balancer distributes incoming network traffic across multiple servers to ensure no single server becomes overwhelmed. This improves performance, availability, and reliability of applications.",
+    "hidden": "d126a08ba0cffbd6",
+    "codec": "ad1b48d32ec69757",
+    "rows": 32,
+    "tokens": 32,
+    "audio_s": 12.16
+   },
+   {
+    "index": 13,
+    "prompt": 2,
+    "status": "ok",
+    "text": "A load balancer distributes incoming network traffic across multiple servers to ensure no single server becomes overwhelmed. This improves performance, reliability, and availability of applications.",
+    "hidden": "284aca49a1363d62",
+    "codec": "8f9e2dfd310711f6",
+    "rows": 32,
+    "tokens": 32,
+    "audio_s": 13.64
+   },
+   {
+    "index": 6,
+    "prompt": 3,
+    "status": "ok",
+    "text": "The sun slowly rises above the horizon, casting a golden glow across the calm ocean waters. Gentle waves shimmer in the light as seagulls begin to call in the early morning air.",
+    "hidden": "6c95d28199bc8325",
+    "codec": "2b43e424a0fa6e8c",
+    "rows": 39,
+    "tokens": 39,
+    "audio_s": 11.88
+   },
+   {
+    "index": 14,
+    "prompt": 3,
+    "status": "ok",
+    "text": "The sun slowly rises above the horizon, casting a golden glow across the calm ocean waters. Gentle waves shimmer in the light as seagulls begin to call in the early morning air.",
+    "hidden": "07e4cf3818ee2e56",
+    "codec": "2b43e424a0fa6e8c",
+    "rows": 39,
+    "tokens": 39,
+    "audio_s": 11.88
+   },
+   {
+    "index": 15,
+    "prompt": 3,
+    "status": "ok",
+    "text": "The sun slowly rises above the horizon, casting a golden glow across the calm ocean waters. Gentle waves shimmer in the light as the sky transitions from deep blue to warm hues of orange and pink.",
+    "hidden": "5384500374210f4f",
+    "codec": "850ae00c56e37fc2",
+    "rows": 41,
+    "tokens": 41,
+    "audio_s": 12.24
+   },
+   {
+    "index": 16,
+    "prompt": 3,
+    "status": "ok",
+    "text": "The sun slowly rises above the horizon, casting a golden glow across the calm ocean waters. Gentle waves shimmer in the light as seagulls begin to call in the early morning air.",
+    "hidden": "07e4cf3818ee2e56",
+    "codec": "2b43e424a0fa6e8c",
+    "rows": 39,
+    "tokens": 39,
+    "audio_s": 11.88
+   },
+   {
+    "index": 1,
+    "prompt": 4,
+    "status": "ok",
+    "text": "We measure tail latency because it reflects the worst-case performance experienced by a small fraction of users, which is critical for ensuring a good user experience. Focusing only on the average latency could mask these poor performance instances, leading to unsatisfied users.",
+    "hidden": "9e2bd4d03b68d05a",
+    "codec": "e7218ec5ef77c485",
+    "rows": 50,
+    "tokens": 50,
+    "audio_s": 16.24
+   },
+   {
+    "index": 2,
+    "prompt": 4,
+    "status": "ok",
+    "text": "We measure tail latency because it reflects the worst-case performance experienced by a small fraction of users, which is critical for ensuring a good user experience, even if the average latency appears acceptable. Focusing only on average latency can mask significant delays that impact a minority of users severely.",
+    "hidden": "7f400ac68c933b06",
+    "codec": "719ef1c07789b445",
+    "rows": 57,
+    "tokens": 57,
+    "audio_s": 18.08
+   },
+   {
+    "index": 3,
+    "prompt": 4,
+    "status": "ok",
+    "text": "We measure tail latency because it reflects the worst-case performance experienced by a small fraction of users, which is critical for ensuring a good user experience. Focusing only on the average latency could mask these poor performance instances, leading to unsatisfied users.",
+    "hidden": "9e2bd4d03b68d05a",
+    "codec": "e7218ec5ef77c485",
+    "rows": 50,
+    "tokens": 50,
+    "audio_s": 16.24
+   },
+   {
+    "index": 4,
+    "prompt": 4,
+    "status": "ok",
+    "text": "We measure tail latency because it reflects the worst-case performance experienced by a small fraction of users, which is critical for ensuring a good user experience, even if the average latency appears acceptable. Focusing only on average latency can mask significant delays that impact a minority of users severely.",
+    "hidden": "8a85bab50616de07",
+    "codec": "719ef1c07789b445",
+    "rows": 57,
+    "tokens": 57,
+    "audio_s": 18.08
+   },
+   {
+    "index": 17,
+    "prompt": 4,
+    "status": "ok",
+    "text": "We measure tail latency because it reflects the worst-case performance experienced by a small fraction of users, which is critical for ensuring a good user experience. Focusing only on the average latency could mask these poor performance instances, leading to unsatisfied users.",
+    "hidden": "9e2bd4d03b68d05a",
+    "codec": "e7218ec5ef77c485",
+    "rows": 50,
+    "tokens": 50,
+    "audio_s": 16.24
+   },
+   {
+    "index": 0,
+    "prompt": 5,
+    "status": "ok",
+    "text": "A bicycle gear system uses a chain to transfer power from the pedals to the rear wheel, allowing the rider to change the gear ratio for easier or harder pedaling. The gears consist of front chainrings and rear cogs, which work together to adjust the mechanical advantage based on terrain and rider effort.",
+    "hidden": "f6f769aa5bbbd8e2",
+    "codec": "d23b8d5fb67dda56",
+    "rows": 63,
+    "tokens": 63,
+    "audio_s": 16.56
+   }
+  ],
+  "on": [
+   {
+    "index": 10,
+    "prompt": 0,
+    "status": "ok",
+    "text": "Streaming speech output needs a buffer on the client to ensure smooth playback, compensating for network latency and variations in data arrival. The buffer allows the client to accumulate enough data before playing it, preventing interruptions or gaps in the audio stream.",
+    "hidden": "141f4b56fdd39d4e",
+    "codec": "47b48a7c7614aa02",
+    "rows": 48,
+    "tokens": 48,
+    "audio_s": 14.72
+   },
+   {
+    "index": 5,
+    "prompt": 1,
+    "status": "ok",
+    "text": "Use fans to circulate air and keep the room well-ventilated. Install a temperature control system to maintain a consistent temperature.",
+    "hidden": "7e555f143c92bfc3",
+    "codec": "0abcb6c59f5b7e45",
+    "rows": 27,
+    "tokens": 27,
+    "audio_s": 7.08
+   },
+   {
+    "index": 7,
+    "prompt": 1,
+    "status": "ok",
+    "text": "Use fans to circulate air and keep the room well-ventilated. Install a temperature control system to maintain a consistent temperature.",
+    "hidden": "793178dae94db2e8",
+    "codec": "0abcb6c59f5b7e45",
+    "rows": 27,
+    "tokens": 27,
+    "audio_s": 7.08
+   },
+   {
+    "index": 8,
+    "prompt": 2,
+    "status": "ok",
+    "text": "A load balancer distributes incoming network traffic across multiple servers to ensure no single server becomes overwhelmed. This improves performance, availability, and reliability of applications.",
+    "hidden": "6a8d72ad92fd459a",
+    "codec": "ad1b48d32ec69757",
+    "rows": 32,
+    "tokens": 32,
+    "audio_s": 12.16
+   },
+   {
+    "index": 9,
+    "prompt": 2,
+    "status": "ok",
+    "text": "A load balancer distributes incoming network traffic across multiple servers to ensure no single server becomes overwhelmed. This improves performance, reliability, and availability of applications.",
+    "hidden": "d72dd2dced085353",
+    "codec": "8f9e2dfd310711f6",
+    "rows": 32,
+    "tokens": 32,
+    "audio_s": 13.64
+   },
+   {
+    "index": 11,
+    "prompt": 2,
+    "status": "ok",
+    "text": "A load balancer distributes incoming network traffic across multiple servers to ensure no single server becomes overwhelmed. This improves performance, reliability, and availability of applications.",
+    "hidden": "284aca49a1363d62",
+    "codec": "8f9e2dfd310711f6",
+    "rows": 32,
+    "tokens": 32,
+    "audio_s": 13.64
+   },
+   {
+    "index": 12,
+    "prompt": 2,
+    "status": "ok",
+    "text": "A load balancer distributes incoming network traffic across multiple servers to ensure no single server becomes overwhelmed. This improves performance, availability, and reliability of applications.",
+    "hidden": "d126a08ba0cffbd6",
+    "codec": "ad1b48d32ec69757",
+    "rows": 32,
+    "tokens": 32,
+    "audio_s": 12.16
+   },
+   {
+    "index": 13,
+    "prompt": 2,
+    "status": "ok",
+    "text": "A load balancer distributes incoming network traffic across multiple servers to ensure no single server becomes overwhelmed. This improves performance, reliability, and availability of applications.",
+    "hidden": "284aca49a1363d62",
+    "codec": "8f9e2dfd310711f6",
+    "rows": 32,
+    "tokens": 32,
+    "audio_s": 13.64
+   },
+   {
+    "index": 6,
+    "prompt": 3,
+    "status": "ok",
+    "text": "The sun slowly rises above the horizon, casting a golden glow across the calm ocean waters. Gentle waves shimmer in the light as seagulls begin to call in the early morning air.",
+    "hidden": "6c95d28199bc8325",
+    "codec": "2b43e424a0fa6e8c",
+    "rows": 39,
+    "tokens": 39,
+    "audio_s": 11.88
+   },
+   {
+    "index": 14,
+    "prompt": 3,
+    "status": "ok",
+    "text": "The sun slowly rises above the horizon, casting a golden glow across the calm ocean waters. Gentle waves shimmer in the light as seagulls begin to call in the early morning air.",
+    "hidden": "07e4cf3818ee2e56",
+    "codec": "2b43e424a0fa6e8c",
+    "rows": 39,
+    "tokens": 39,
+    "audio_s": 11.88
+   },
+   {
+    "index": 15,
+    "prompt": 3,
+    "status": "ok",
+    "text": "The sun slowly rises above the horizon, casting a golden glow across the calm ocean waters. Gentle waves shimmer in the light as the sky transitions from deep blue to warm hues of orange and pink.",
+    "hidden": "5384500374210f4f",
+    "codec": "850ae00c56e37fc2",
+    "rows": 41,
+    "tokens": 41,
+    "audio_s": 12.24
+   },
+   {
+    "index": 16,
+    "prompt": 3,
+    "status": "ok",
+    "text": "The sun slowly rises above the horizon, casting a golden glow across the calm ocean waters. Gentle waves shimmer in the light as seagulls begin to call in the early morning air.",
+    "hidden": "07e4cf3818ee2e56",
+    "codec": "2b43e424a0fa6e8c",
+    "rows": 39,
+    "tokens": 39,
+    "audio_s": 11.88
+   },
+   {
+    "index": 1,
+    "prompt": 4,
+    "status": "ok",
+    "text": "We measure tail latency because it reflects the worst-case performance experienced by a small fraction of users, which is critical for ensuring a good user experience. Focusing only on the average latency could mask these poor performance instances, leading to unsatisfied users.",
+    "hidden": "9e2bd4d03b68d05a",
+    "codec": "e7218ec5ef77c485",
+    "rows": 50,
+    "tokens": 50,
+    "audio_s": 16.24
+   },
+   {
+    "index": 2,
+    "prompt": 4,
+    "status": "ok",
+    "text": "We measure tail latency because it reflects the worst-case performance experienced by a small fraction of users, which is critical for ensuring a good user experience, even if the average latency appears acceptable. Focusing only on average latency can mask significant delays that impact a minority of users severely.",
+    "hidden": "7f400ac68c933b06",
+    "codec": "719ef1c07789b445",
+    "rows": 57,
+    "tokens": 57,
+    "audio_s": 18.08
+   },
+   {
+    "index": 3,
+    "prompt": 4,
+    "status": "ok",
+    "text": "We measure tail latency because it reflects the worst-case performance experienced by a small fraction of users, which is critical for ensuring a good user experience. Focusing only on the average latency could mask these poor performance instances, leading to unsatisfied users.",
+    "hidden": "9e2bd4d03b68d05a",
+    "codec": "e7218ec5ef77c485",
+    "rows": 50,
+    "tokens": 50,
+    "audio_s": 16.24
+   },
+   {
+    "index": 4,
+    "prompt": 4,
+    "status": "ok",
+    "text": "We measure tail latency because it reflects the worst-case performance experienced by a small fraction of users, which is critical for ensuring a good user experience, even if the average latency appears acceptable. Focusing only on average latency can mask significant delays that impact a minority of users severely.",
+    "hidden": "8a85bab50616de07",
+    "codec": "719ef1c07789b445",
+    "rows": 57,
+    "tokens": 57,
+    "audio_s": 18.08
+   },
+   {
+    "index": 17,
+    "prompt": 4,
+    "status": "ok",
+    "text": "We measure tail latency because it reflects the worst-case performance experienced by a small fraction of users, which is critical for ensuring a good user experience. Focusing only on the average latency could mask these poor performance instances, leading to unsatisfied users.",
+    "hidden": "9e2bd4d03b68d05a",
+    "codec": "e7218ec5ef77c485",
+    "rows": 50,
+    "tokens": 50,
+    "audio_s": 16.24
+   },
+   {
+    "index": 0,
+    "prompt": 5,
+    "status": "ok",
+    "text": "A bicycle gear system uses a chain to transfer power from the pedals to the rear wheel, allowing the rider to change the gear ratio for easier or harder pedaling. The gears consist of front chainrings and rear cogs, which work together to adjust the mechanical advantage based on terrain and rider effort.",
+    "hidden": "f6f769aa5bbbd8e2",
+    "codec": "d23b8d5fb67dda56",
+    "rows": 63,
+    "tokens": 63,
+    "audio_s": 16.56
+   }
+  ],
+  "nosnap": [
+   {
+    "index": 10,
+    "prompt": 0,
+    "status": "ok",
+    "text": "Streaming speech output needs a buffer on the client to ensure smooth playback, compensating for network latency and variations in data arrival. The buffer allows the client to accumulate enough data before playing it, preventing interruptions or gaps in the audio stream.",
+    "hidden": "482e5d1a3791fc43",
+    "codec": "4fd2130ff0d2fb04",
+    "rows": 48,
+    "tokens": 48,
+    "audio_s": 15.4
+   },
+   {
+    "index": 5,
+    "prompt": 1,
+    "status": "ok",
+    "text": "Use fans to circulate air and keep the room well-ventilated. Install a temperature control system to maintain a consistent temperature.",
+    "hidden": "32c8a9db2b2fb599",
+    "codec": "a4b91ea081ba8847",
+    "rows": 27,
+    "tokens": 27,
+    "audio_s": 8.56
+   },
+   {
+    "index": 7,
+    "prompt": 1,
+    "status": "ok",
+    "text": "Use fans to circulate air and keep the room well-ventilated. Install a temperature control system to maintain a consistent temperature.",
+    "hidden": "92045ea6cf3908a6",
+    "codec": "a4b91ea081ba8847",
+    "rows": 27,
+    "tokens": 27,
+    "audio_s": 8.56
+   },
+   {
+    "index": 8,
+    "prompt": 2,
+    "status": "ok",
+    "text": "A load balancer distributes incoming network traffic across multiple servers to ensure no single server becomes overwhelmed. This improves performance, availability, and reliability of applications.",
+    "hidden": "b85853ec4cb394ad",
+    "codec": "c522ac4834dbf0a7",
+    "rows": 32,
+    "tokens": 32,
+    "audio_s": 12.76
+   },
+   {
+    "index": 9,
+    "prompt": 2,
+    "status": "ok",
+    "text": "A load balancer distributes incoming network traffic across multiple servers to ensure no single server becomes overwhelmed. This improves performance, reliability, and availability of applications.",
+    "hidden": "8f9ae08d036078e7",
+    "codec": "8de6a251dd451249",
+    "rows": 32,
+    "tokens": 32,
+    "audio_s": 12.28
+   },
+   {
+    "index": 11,
+    "prompt": 2,
+    "status": "ok",
+    "text": "A load balancer distributes incoming network traffic across multiple servers to ensure no single server becomes overwhelmed. This improves performance, reliability, and availability of applications.",
+    "hidden": "9dda8d288d26ebe7",
+    "codec": "8de6a251dd451249",
+    "rows": 32,
+    "tokens": 32,
+    "audio_s": 12.28
+   },
+   {
+    "index": 12,
+    "prompt": 2,
+    "status": "ok",
+    "text": "A load balancer distributes incoming network traffic across multiple servers to ensure no single server becomes overwhelmed. This improves performance, availability, and reliability of applications.",
+    "hidden": "1bfb20f6895cf80f",
+    "codec": "c522ac4834dbf0a7",
+    "rows": 32,
+    "tokens": 32,
+    "audio_s": 12.76
+   },
+   {
+    "index": 13,
+    "prompt": 2,
+    "status": "ok",
+    "text": "A load balancer distributes incoming network traffic across multiple servers to ensure no single server becomes overwhelmed. This improves performance, reliability, and availability of applications.",
+    "hidden": "9dda8d288d26ebe7",
+    "codec": "8de6a251dd451249",
+    "rows": 32,
+    "tokens": 32,
+    "audio_s": 12.28
+   },
+   {
+    "index": 6,
+    "prompt": 3,
+    "status": "ok",
+    "text": "The sun slowly rises above the horizon, casting a golden glow across the calm ocean waters. Gentle waves shimmer in the light as seagulls begin to call in the early morning air.",
+    "hidden": "539c27af85bff372",
+    "codec": "e7a8ee97f935e779",
+    "rows": 39,
+    "tokens": 39,
+    "audio_s": 12.28
+   },
+   {
+    "index": 14,
+    "prompt": 3,
+    "status": "ok",
+    "text": "The sun slowly rises above the horizon, casting a golden glow across the calm ocean waters. Gentle waves shimmer in the light as seagulls begin to call in the early morning air.",
+    "hidden": "26fc41884ab16970",
+    "codec": "e7a8ee97f935e779",
+    "rows": 39,
+    "tokens": 39,
+    "audio_s": 12.28
+   },
+   {
+    "index": 15,
+    "prompt": 3,
+    "status": "ok",
+    "text": "The sun slowly rises above the horizon, casting a golden glow across the calm ocean waters. Gentle waves shimmer in the light as the sky transitions from deep blue to warm hues of orange and pink.",
+    "hidden": "38a7abc051bc8218",
+    "codec": "3910f779020f3073",
+    "rows": 41,
+    "tokens": 41,
+    "audio_s": 13.88
+   },
+   {
+    "index": 16,
+    "prompt": 3,
+    "status": "ok",
+    "text": "The sun slowly rises above the horizon, casting a golden glow across the calm ocean waters. Gentle waves shimmer in the light as seagulls begin to call in the early morning air.",
+    "hidden": "26fc41884ab16970",
+    "codec": "e7a8ee97f935e779",
+    "rows": 39,
+    "tokens": 39,
+    "audio_s": 12.28
+   },
+   {
+    "index": 1,
+    "prompt": 4,
+    "status": "ok",
+    "text": "We measure tail latency because it reflects the worst-case performance experienced by a small fraction of users, which is critical for ensuring a good user experience. Focusing only on the average latency could mask these poor performance instances, leading to unsatisfied users.",
+    "hidden": "07423cf15d185956",
+    "codec": "096da4de03c5cc9a",
+    "rows": 50,
+    "tokens": 50,
+    "audio_s": 15.2
+   },
+   {
+    "index": 2,
+    "prompt": 4,
+    "status": "ok",
+    "text": "We measure tail latency because it reflects the worst-case performance experienced by a small fraction of users, which is critical for ensuring a good user experience, even if the average latency appears acceptable. Focusing only on average latency can mask significant delays that impact a minority of users severely.",
+    "hidden": "5337507963171cf8",
+    "codec": "977bc450ae823a13",
+    "rows": 57,
+    "tokens": 57,
+    "audio_s": 18.16
+   },
+   {
+    "index": 3,
+    "prompt": 4,
+    "status": "ok",
+    "text": "We measure tail latency because it reflects the worst-case performance experienced by a small fraction of users, which is critical for ensuring a good user experience. Focusing only on the average latency could mask these poor performance instances, leading to unsatisfied users.",
+    "hidden": "07423cf15d185956",
+    "codec": "096da4de03c5cc9a",
+    "rows": 50,
+    "tokens": 50,
+    "audio_s": 15.2
+   },
+   {
+    "index": 4,
+    "prompt": 4,
+    "status": "ok",
+    "text": "We measure tail latency because it reflects the worst-case performance experienced by a small fraction of users, which is critical for ensuring a good user experience, even if the average latency appears acceptable. Focusing only on average latency can mask significant delays that impact a minority of users severely.",
+    "hidden": "c371ce2eaede4436",
+    "codec": "977bc450ae823a13",
+    "rows": 57,
+    "tokens": 57,
+    "audio_s": 18.16
+   },
+   {
+    "index": 17,
+    "prompt": 4,
+    "status": "ok",
+    "text": "We measure tail latency because it reflects the worst-case performance experienced by a small fraction of users, which is critical for ensuring a good user experience. Focusing only on the average latency could mask these poor performance instances, leading to unsatisfied users.",
+    "hidden": "07423cf15d185956",
+    "codec": "096da4de03c5cc9a",
+    "rows": 50,
+    "tokens": 50,
+    "audio_s": 15.2
+   },
+   {
+    "index": 0,
+    "prompt": 5,
+    "status": "ok",
+    "text": "A bicycle gear system uses a chain to transfer power from the pedals to the rear wheel, allowing the rider to change the gear ratio for easier or harder pedaling. The gears consist of front chainrings and rear cogs, which work together to adjust the mechanical advantage based on terrain and rider effort.",
+    "hidden": "2bf5d55197d57939",
+    "codec": "a9072734e03b048c",
+    "rows": 63,
+    "tokens": 63,
+    "audio_s": 16.08
+   }
+  ]
+ }
+}

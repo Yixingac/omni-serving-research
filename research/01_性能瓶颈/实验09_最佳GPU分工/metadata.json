@@ -1,0 +1,307 @@
+{
+ "experiment_number": 9,
+ "name_zh": "8 张卡怎么分给三个阶段最好",
+ "question_zh": "固定 8 张 A6000，thinker、talker、code2wav 怎么分，能在高负载下得到最高的稳定吞吐和较低的延迟？",
+ "status": "COMPLETED（12 个正式运行全部成功，2026-11-17 23:12 – 2026-11-18 04:27）",
+ "commit_note": "每个运行记的 research_repo_commit 是运行开始时集群上研究仓库检出的提交（运行器和配置的版本），不是本目录报告的版本；报告以 PR #2 分支的最新提交为准",
+ "hypotheses": "hypotheses.md（预先登记 2026-11-17 22:38:34，提交 0e3d7f1，在任何实验 9 数据之前；补充登记一 23:44，提交 9bf3786，只看过 12 个运行中的第 1 个；补充登记二 2026-11-18 04:38，提交 f53d14a，看过全部数据后改正并列处理，只影响敏感度分析）",
+ "model": {
+  "name": "MiniCPM-o 4.5",
+  "revision": "fb09628e98b1f55d8d5b863e0eccfcdd11bff499"
+ },
+ "software": {
+  "sglang_omni": "520b49ee + configs/runtime/patches/sglang_omni_instr_exp06_08.patch（runtime_unicorn_instr，和实验 6、7 相同）",
+  "sglang": "0.5.21",
+  "torch": "2.13.0",
+  "transformers": "5.12.1",
+  "flashinfer-python": "0.6.18",
+  "triton": "3.7.1",
+  "nvidia_driver": "580.126.18"
+ },
+ "hardware": {
+  "node": "compute-03",
+  "gpus": "8 × NVIDIA RTX A6000 48 GB",
+  "slurm_job": 454290
+ },
+ "arms": {
+  "1": "t2_k6_shared：thinker GPU 0–1；talker 和 code2wav 同在 GPU 2–7（对照）",
+  "2": "t2_k2_c4：thinker GPU 0–1；talker GPU 2–3；code2wav GPU 4–7",
+  "3": "t2_k1_c5：thinker GPU 0–1；talker GPU 2；code2wav GPU 3–7",
+  "4": "t2_k3_c3：thinker GPU 0–1；talker GPU 2–4；code2wav GPU 5–7"
+ },
+ "workloads": {
+  "w3b": "configs/workloads/w3b_text_speech.json（6 个短问题，max_tokens 64，温度 0，seed 0）",
+  "w3l": "configs/workloads/w3l_long_speech.json（6 个要求约 100 词回答的问题，max_tokens 160，温度 0，seed 0）"
+ },
+ "design": {
+  "unit": "一次独立启动的服务（运行）",
+  "blocks": 3,
+  "randomization_seed": 20261118,
+  "order": {
+   "1": [
+    4,
+    3,
+    1,
+    2
+   ],
+   "2": [
+    4,
+    3,
+    1,
+    2
+   ],
+   "3": [
+    1,
+    3,
+    2,
+    4
+   ]
+  },
+  "open_loop_rates_rps": {
+   "w3b": [
+    7.5,
+    12.0,
+    15.5,
+    18.0,
+    21.0,
+    23.5
+   ],
+   "w3l": [
+    3.5,
+    5.5,
+    6.5,
+    8.0,
+    9.5,
+    10.5
+   ]
+  },
+  "plans": [
+   "configs/experiments/plan_exp09_pilot.json",
+   "configs/experiments/plan_exp09.json"
+  ]
+ },
+ "pilot": {
+  "runs": [
+   "20261117_exp09_pilot_t2_k6_shared_run01",
+   "20261117_exp09_pilot_t2_k2_c4_run01",
+   "20261117_exp09_pilot_t2_k1_c5_run01",
+   "20261117_exp09_pilot_t2_k3_c3_run01"
+  ],
+  "time": "2026-11-17 22:39 – 23:07",
+  "research_repo_commit": "cdabacc",
+  "use": "只用来定开环速率，不进入任何判定"
+ },
+ "runs": [
+  {
+   "run_dir": "20261117_exp09_t2_k3_c3_block1_run01",
+   "arm": 4,
+   "placement": "t2_k3_c3",
+   "block": 1,
+   "status": "ok",
+   "start": "2026-11-17 23:12:30",
+   "end": "2026-11-17 23:39:27",
+   "phases": 7,
+   "server_restarts": 0,
+   "research_repo_commit": "af62bb5",
+   "sglang_omni_commit": "520b49ee",
+   "used_in_analysis": true
+  },
+  {
+   "run_dir": "20261117_exp09_t2_k1_c5_block1_run01",
+   "arm": 3,
+   "placement": "t2_k1_c5",
+   "block": 1,
+   "status": "ok",
+   "start": "2026-11-17 23:39:36",
+   "end": "2026-11-18 00:04:36",
+   "phases": 7,
+   "server_restarts": 0,
+   "research_repo_commit": "7417cdf",
+   "sglang_omni_commit": "520b49ee",
+   "used_in_analysis": true
+  },
+  {
+   "run_dir": "20261118_exp09_t2_k6_shared_block1_run01",
+   "arm": 1,
+   "placement": "t2_k6_shared",
+   "block": 1,
+   "status": "ok",
+   "start": "2026-11-18 00:04:44",
+   "end": "2026-11-18 00:29:22",
+   "phases": 7,
+   "server_restarts": 0,
+   "research_repo_commit": "7417cdf",
+   "sglang_omni_commit": "520b49ee",
+   "used_in_analysis": true
+  },
+  {
+   "run_dir": "20261118_exp09_t2_k2_c4_block1_run01",
+   "arm": 2,
+   "placement": "t2_k2_c4",
+   "block": 1,
+   "status": "failed",
+   "start": "2026-11-18 00:29:58",
+   "end": "2026-11-18 00:38:56",
+   "phases": 0,
+   "server_restarts": 0,
+   "research_repo_commit": "7417cdf",
+   "sglang_omni_commit": "520b49ee",
+   "note": "服务启动时端口 29500 被占（EADDRINUSE），原因是端口占用文件的清理有竞争；按登记用新运行 ID 补跑一次（run02），这次照样保留和报告",
+   "used_in_analysis": false
+  },
+  {
+   "run_dir": "20261118_exp09_t2_k2_c4_block1_run02",
+   "arm": 2,
+   "placement": "t2_k2_c4",
+   "block": 1,
+   "status": "ok",
+   "start": "2026-11-18 00:39:25",
+   "end": "2026-11-18 01:06:57",
+   "phases": 7,
+   "server_restarts": 0,
+   "research_repo_commit": "7417cdf",
+   "sglang_omni_commit": "520b49ee",
+   "used_in_analysis": true
+  },
+  {
+   "run_dir": "20261118_exp09_t2_k3_c3_block2_run01",
+   "arm": 4,
+   "placement": "t2_k3_c3",
+   "block": 2,
+   "status": "ok",
+   "start": "2026-11-18 01:07:07",
+   "end": "2026-11-18 01:32:07",
+   "phases": 7,
+   "server_restarts": 0,
+   "research_repo_commit": "b9821a6",
+   "sglang_omni_commit": "520b49ee",
+   "used_in_analysis": true
+  },
+  {
+   "run_dir": "20261118_exp09_t2_k1_c5_block2_run01",
+   "arm": 3,
+   "placement": "t2_k1_c5",
+   "block": 2,
+   "status": "ok",
+   "start": "2026-11-18 01:32:15",
+   "end": "2026-11-18 01:56:35",
+   "phases": 7,
+   "server_restarts": 0,
+   "research_repo_commit": "b9821a6",
+   "sglang_omni_commit": "520b49ee",
+   "used_in_analysis": true
+  },
+  {
+   "run_dir": "20261118_exp09_t2_k6_shared_block2_run01",
+   "arm": 1,
+   "placement": "t2_k6_shared",
+   "block": 2,
+   "status": "ok",
+   "start": "2026-11-18 01:56:45",
+   "end": "2026-11-18 02:20:34",
+   "phases": 7,
+   "server_restarts": 0,
+   "research_repo_commit": "b9821a6",
+   "sglang_omni_commit": "520b49ee",
+   "used_in_analysis": true
+  },
+  {
+   "run_dir": "20261118_exp09_t2_k2_c4_block2_run01",
+   "arm": 2,
+   "placement": "t2_k2_c4",
+   "block": 2,
+   "status": "ok",
+   "start": "2026-11-18 02:20:43",
+   "end": "2026-11-18 02:43:46",
+   "phases": 7,
+   "server_restarts": 0,
+   "research_repo_commit": "b9821a6",
+   "sglang_omni_commit": "520b49ee",
+   "used_in_analysis": true
+  },
+  {
+   "run_dir": "20261118_exp09_t2_k6_shared_block3_run01",
+   "arm": 1,
+   "placement": "t2_k6_shared",
+   "block": 3,
+   "status": "ok",
+   "start": "2026-11-18 02:43:54",
+   "end": "2026-11-18 03:07:41",
+   "phases": 7,
+   "server_restarts": 0,
+   "research_repo_commit": "b9821a6",
+   "sglang_omni_commit": "520b49ee",
+   "used_in_analysis": true
+  },
+  {
+   "run_dir": "20261118_exp09_t2_k1_c5_block3_run01",
+   "arm": 3,
+   "placement": "t2_k1_c5",
+   "block": 3,
+   "status": "ok",
+   "start": "2026-11-18 03:07:48",
+   "end": "2026-11-18 03:32:11",
+   "phases": 7,
+   "server_restarts": 0,
+   "research_repo_commit": "b9821a6",
+   "sglang_omni_commit": "520b49ee",
+   "used_in_analysis": true
+  },
+  {
+   "run_dir": "20261118_exp09_t2_k2_c4_block3_run01",
+   "arm": 2,
+   "placement": "t2_k2_c4",
+   "block": 3,
+   "status": "ok",
+   "start": "2026-11-18 03:32:20",
+   "end": "2026-11-18 04:01:16",
+   "phases": 7,
+   "server_restarts": 0,
+   "research_repo_commit": "b9821a6",
+   "sglang_omni_commit": "520b49ee",
+   "used_in_analysis": true
+  },
+  {
+   "run_dir": "20261118_exp09_t2_k3_c3_block3_run01",
+   "arm": 4,
+   "placement": "t2_k3_c3",
+   "block": 3,
+   "status": "ok",
+   "start": "2026-11-18 04:01:28",
+   "end": "2026-11-18 04:27:36",
+   "phases": 7,
+   "server_restarts": 0,
+   "research_repo_commit": "b9821a6",
+   "sglang_omni_commit": "520b49ee",
+   "used_in_analysis": true
+  }
+ ],
+ "checkout_note": "实验 9 进行中集群上的仓库拉取过两次（af62bb5 → 7417cdf → b9821a6），每次都记在 code_state.txt；用 git diff 确认这几个提交之间实验 9 用到的文件（配置、负载、客户端、编排器、补丁）没有任何改动。research_repo_dirty 为 true 只因为一个 10 字节的未跟踪文件，和实验无关。",
+ "analysis": {
+  "commands": [
+   "python scripts/analysis/exp09_report.py --data-root <results> --run <12 个正式运行目录，方案 2 区组 1 用 run02> --out research/01_性能瓶颈/实验09_最佳GPU分工",
+   "python scripts/analysis/exp09_stalls.py --data-root <results> --run <同上> --out research/01_性能瓶颈/实验09_最佳GPU分工/results/stalls.json",
+   "python scripts/analysis/exp09_figures.py --out research/01_性能瓶颈/实验09_最佳GPU分工",
+   "python scripts/analysis/exp09_11_diagrams.py"
+  ],
+  "outputs": [
+   "results/summary.json",
+   "results/levels.csv",
+   "results/stalls.json"
+  ],
+  "analysis_code_commit": "f53d14a（exp09_report.py）；exp09_stalls.py 随本次提交"
+ },
+ "figures": [
+  "figures/fig0_request_path.png",
+  "figures/fig1_layouts.png",
+  "figures/fig2_stage_capacity.png",
+  "figures/fig3_closed_throughput.png",
+  "figures/fig4_open_latency.png",
+  "figures/fig5_queue_depth.png",
+  "figures/fig6_audio_rate.png",
+  "figures/fig7_gpu.png",
+  "figures/fig8_workloads.png",
+  "figures/fig9_model.png"
+ ],
+ "raw_data": "PROJECT_DATA_ROOT/experiments/<运行目录>（带机器名和路径，不进公开仓库）"
+}

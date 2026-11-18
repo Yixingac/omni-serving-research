@@ -1,0 +1,18 @@
+{
+ "generated_by": "scripts/analysis/exp06_clock_alignment.py（在集群上对 3 个区组的原始数据运行）",
+ "what": "每个 code2wav 批：打点事件里的 download_end_ns（.cpu() 返回后立刻取的墙钟）减去 torch trace 里这一批 DtoH 拷贝调用的结束时刻（baseTimeNanoseconds + (ts+dur)×1000）",
+ "runs": [
+  "20261117_exp06_c2w_block1_run01",
+  "20261117_exp06_c2w_block2_run01",
+  "20261117_exp06_c2w_block3_run01"
+ ],
+ "result": {
+  "batches": 182,
+  "median_us": 39.04,
+  "p05_us": 27.66,
+  "p95_us": 52.98,
+  "min_us": 22.27,
+  "max_us": 86.27
+ },
+ "reading": "差值为正且只有几十微秒：两个时钟一致到 0.1 毫秒以内，差值里还包括拷贝返回到 Python 取时间戳之间的开销。"
+}

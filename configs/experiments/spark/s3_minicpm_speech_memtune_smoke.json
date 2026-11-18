@@ -1,0 +1,40 @@
+{
+  "runtime_profile": "spark",
+  "hardware_label": "spark_gb10",
+  "seed": 0,
+  "experiment_id": "s3_minicpm_speech_memtune_smoke",
+  "description": "Spark GB10 A/B：与 s2 相同，只把 thinker 的 engine.mem_fraction_static 从默认 0.85 降到 0.6，检查 code2wav 能否在剩余显存里捕获 Flow CUDA graph（默认配置下因余量不足而跳过），以及对首个音频块时间的影响。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5_spark",
+      "gpus": [
+        0
+      ],
+      "ready_timeout_s": 3600,
+      "args": [
+        "--thinker.engine.mem_fraction_static",
+        "0.6"
+      ]
+    }
+  ],
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "closed_loop",
+      "name": "w3b_small",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "concurrency": [
+        1,
+        2
+      ],
+      "requests_per_level": 4,
+      "server_events": true
+    }
+  ]
+}

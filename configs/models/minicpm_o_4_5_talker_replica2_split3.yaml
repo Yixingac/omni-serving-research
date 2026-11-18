@@ -1,0 +1,9 @@
+# MiniCPM-o 4.5 语音流水线，3 张 GPU：thinker（含编码器）单独在 GPU 0；talker+code2wav 进程复制两份，分别在 GPU 1 和 GPU 2。
+# x7e 显示拆分部署在并发 32 时瓶颈转到 talker 那张卡上；这个布局检验再加一张 talker 卡能否抬高上限。没有进程共用一张卡，不需要声明显存比例。
+config_cls: MiniCPMOSpeechPipelineConfig
+# --config 文件会先按完整配置校验，model_path 是必填项；启动时传入的 --model-path 会覆盖这里的值。
+model_path: openbmb/MiniCPM-o-4_5
+processes:
+  talker:
+    num_replicas: 2
+    replica_devices: [1, 2]

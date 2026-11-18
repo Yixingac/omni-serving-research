@@ -1,0 +1,9 @@
+{"workload_id": "W3L_long_speech", "description": "文本提问，文本+语音回答，回答约 100 个英文词（实验 9 的长回答负载）。其他设置与 W3b 相同：温度 0、流式、客户端默认带 seed 0。max_tokens 160 让语音约 45–60 秒，低于 talker 每个请求 2048 个语音编码（约 82 秒）的默认上限。",
+ "input_modalities": ["text"], "output_modalities": ["text", "audio"], "max_tokens": 160, "stream": true, "temperature": 0.0,
+ "prompt": {"kind": "choice", "texts": [
+   "Explain in about 100 words how a CPU cache speeds up programs, as if teaching a new student.",
+   "In about 100 words, describe how a train timetable is planned for a busy city line.",
+   "Describe in about 100 words what happens, step by step, when you send an email.",
+   "In about 100 words, explain why the sky looks blue during the day and red at sunset.",
+   "Give an explanation of about 100 words of how a refrigerator keeps food cold.",
+   "In about 100 words, explain how a vaccine teaches the immune system to recognize a virus."]}}

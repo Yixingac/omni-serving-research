@@ -1,0 +1,40 @@
+{
+  "runtime_profile": "spark",
+  "hardware_label": "spark_gb10",
+  "seed": 0,
+  "experiment_id": "s13_minicpm_pipeline_replica_functional",
+  "description": "功能测试，不是性能实验。8 卡计划里的“thinker 池 + talker 池”布局需要复制 thinker 所在的 pipeline 进程。离线检查已通过；这里在 Spark 上把 pipeline 和 talker 各复制两份、都放在 GPU 0，检查服务能否启动、请求能否完成、两个 thinker 副本是否都接到请求。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5_spark",
+      "gpus": [
+        0
+      ],
+      "ready_timeout_s": 3600,
+      "args": [
+        "--config",
+        "{research_repo}/configs/models/minicpm_o_4_5_pipeline2_talker2_samegpu.yaml"
+      ]
+    }
+  ],
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "closed_loop",
+      "name": "w3b_small",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "concurrency": [
+        1,
+        4
+      ],
+      "requests_per_level": 8,
+      "server_events": true
+    }
+  ]
+}

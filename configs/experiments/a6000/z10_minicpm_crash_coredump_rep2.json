@@ -1,0 +1,45 @@
+{
+  "runtime_profile": "unicorn",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "assets": "synthetic-v1",
+  "experiment_id": "z10_minicpm_crash_coredump_rep2",
+  "description": "定位语音负载下的 CUDA illegal memory access（第 17 节：九次崩溃，退出的都是 talker 进程）。负载与 z4 相同：W3b 开环泊松到达 1.5 请求/秒，每 2 分钟一档，最多 8 档。服务启动时开启 GPU core dump：出现 GPU 异常时驱动把出错的 kernel 和位置写进实验目录，用 cuda-gdb 读取；只保留 kernel 信息，不保存显存内容，也不生成 CPU core dump，以免文件过大。与 CUDA_LAUNCH_BLOCKING 不同，它不改变执行时序。默认配置。 重复运行：第一次 16 分钟、1440 个请求没有崩溃，延迟与默认配置相同；检验这是否偶然。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [],
+      "ready_timeout_s": 2400,
+      "prefix": "env CUDA_ENABLE_COREDUMP_ON_EXCEPTION=1 CUDA_ENABLE_CPU_COREDUMP_ON_EXCEPTION=0 CUDA_ENABLE_LIGHTWEIGHT_COREDUMP=1 CUDA_COREDUMP_GENERATION_FLAGS=skip_global_memory,skip_shared_memory,skip_local_memory CUDA_COREDUMP_SHOW_PROGRESS=1 CUDA_COREDUMP_FILE={exp_dir}/cuda_core_%h_%p_%t"
+    }
+  ],
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "open_loop",
+      "name": "w3b_soak",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "rates_rps": [
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5
+      ],
+      "requests_per_rate": 180,
+      "max_error_rate": 0.2
+    }
+  ]
+}

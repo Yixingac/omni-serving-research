@@ -1,0 +1,45 @@
+{
+  "runtime_profile": "unicorn_diag2",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "assets": "synthetic-v1",
+  "experiment_id": "zg1_minicpm_crash_plan_guard",
+  "description": "验证崩溃根因（第 17 节）。三份代码阅读都指出 talker 的一个主机端竞争：图模式下 FlashInfer 的 fast_decode_plan 每一步在 CPU 上改写 wrapper 的页锁定计划表，再用非阻塞方式拷到 GPU；talker 提前一步工作，如果上一步的拷贝因为排在 code2wav 的高优先级工作后面还没执行，上一步会读到下一步的分块索引。这里用第二个诊断副本（sglang-omni 520b49ee 无改动 + SGLang 副本加 env 开关的保护补丁），其余与 z4 完全相同。开启保护：在同一个 wrapper 上重新规划之前，如果上一份计划的异步拷贝可能还没执行，就计数并等待它完成。若不再崩溃，说明这个竞争是崩溃的原因。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [],
+      "ready_timeout_s": 2400,
+      "prefix": "env SGLANG_DIAG_PLAN_GUARD=1"
+    }
+  ],
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "open_loop",
+      "name": "w3b_soak",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "rates_rps": [
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5
+      ],
+      "requests_per_rate": 180,
+      "max_error_rate": 0.2
+    }
+  ]
+}

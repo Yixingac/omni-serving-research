@@ -1,0 +1,1231 @@
+{
+ "generated_by": "scripts/analysis/next_c2w_kernel_census.py",
+ "label": "shared_c8",
+ "sources": [
+  {
+   "run": "20261117_exp06_c2w_block1_run01",
+   "phase": "w3b_c8_C",
+   "processes": [
+    "code2wav@r0",
+    "code2wav@r1",
+    "code2wav@r2",
+    "code2wav@r3",
+    "code2wav@r4",
+    "code2wav@r5"
+   ]
+  }
+ ],
+ "note": "kernel durations from CUPTI GPU timestamps inside short torch-profiler windows; family and sub-model labels are name heuristics, not CPU-side attribution",
+ "pooled": {
+  "kernel_total_ms": 1138.1623950000003,
+  "kernel_count": 43600,
+  "distinct_kernels": 195,
+  "graph_share": 0.2462213557846461,
+  "families": {
+   "attention": {
+    "total_ms": 183.61520499999997,
+    "share": 0.1613260162228431,
+    "count": 1440
+   },
+   "attention_prep": {
+    "total_ms": 59.73897200000013,
+    "share": 0.05248721295171602,
+    "count": 4320
+   },
+   "softmax": {
+    "total_ms": 8.631871,
+    "share": 0.007584041642844824,
+    "count": 90
+   },
+   "gemm": {
+    "total_ms": 351.5713489999997,
+    "share": 0.30889383671826515,
+    "count": 11529
+   },
+   "conv_f16": {
+    "total_ms": 143.09942800000027,
+    "share": 0.12572848007335566,
+    "count": 2907
+   },
+   "conv_f32_tf32": {
+    "total_ms": 109.28024500000001,
+    "share": 0.09601463330722676,
+    "count": 729
+   },
+   "layout_conversion": {
+    "total_ms": 33.39136200000003,
+    "share": 0.029337959281285183,
+    "count": 1557
+   },
+   "fft": {
+    "total_ms": 0.299168,
+    "share": 0.00026285176993569526,
+    "count": 18
+   },
+   "snake_weight_norm": {
+    "total_ms": 52.11621000000001,
+    "share": 0.04578978380321553,
+    "count": 1341
+   },
+   "inductor_fused": {
+    "total_ms": 138.7826279999999,
+    "share": 0.12193569969424256,
+    "count": 12960
+   },
+   "elementwise": {
+    "total_ms": 30.804874999999996,
+    "share": 0.0270654478968267,
+    "count": 3496
+   },
+   "reduction_norm": {
+    "total_ms": 4.666339000000002,
+    "share": 0.00409988857521514,
+    "count": 387
+   },
+   "copy_cast": {
+    "total_ms": 20.603354000000017,
+    "share": 0.018102297256095877,
+    "count": 2660
+   },
+   "other": {
+    "total_ms": 1.5613890000000001,
+    "share": 0.0013718508069316415,
+    "count": 166
+   }
+  },
+  "likely_submodel_share": {
+   "flow": 0.7663633299007387,
+   "hift": 0.1714052281616632,
+   "unknown": 0.06223144193759806
+  },
+  "top_kernels": [
+   {
+    "name": "fmha_cutlassF_f16_aligned_64x64_rf_sm80(PyTorchMemEffAttention::AttentionKernel<cutlass::half_t, cutlass::arch::Sm80, true, 64, 64, 64, true, true>::Params)",
+    "family": "attention",
+    "likely_submodel": "flow",
+    "precision": "fp16",
+    "count": 1440,
+    "total_ms": 183.61520499999997,
+    "share": 0.1613260162228431,
+    "mean_us": 127.51055902777777,
+    "median_us": 124.32,
+    "graph_share": 0.318912374386424,
+    "grid": [
+     18,
+     8,
+     2
+    ],
+    "block": [
+     32,
+     4,
+     1
+    ],
+    "registers_per_thread": 128,
+    "shared_memory_bytes": 18944,
+    "est_occupancy_pct": 29,
+    "cumulative_share": 0.1613260162228431
+   },
+   {
+    "name": "ampere_fp16_s16816gemm_fp16_256x128_ldg8_relu_f2f_stages_32x3_tn",
+    "family": "gemm",
+    "likely_submodel": "flow",
+    "precision": "fp16",
+    "count": 3220,
+    "total_ms": 102.58142099999962,
+    "share": 0.09012898462525605,
+    "mean_us": 31.857584161490568,
+    "median_us": 24.448,
+    "graph_share": 0.0,
+    "grid": [
+     2,
+     18,
+     1
+    ],
+    "block": [
+     256,
+     1,
+     1
+    ],
+    "registers_per_thread": 222,
+    "shared_memory_bytes": 73728,
+    "est_occupancy_pct": 0,
+    "cumulative_share": 0.25145500084809913
+   },
+   {
+    "name": "void cutlass__5x_cudnn::Kernel<cutlass_tensorop_f16_s16816fprop_optimized_f16_64x64_64x5_nhwc_align8>(cutlass_tensorop_f16_s16816fprop_optimized_f16_64x64_64x5_nhwc_align8::Params)",
+    "family": "conv_f16",
+    "likely_submodel": "flow",
+    "precision": "fp16",
+    "count": 2246,
+    "total_ms": 98.17235400000025,
+    "share": 0.08625513760714282,
+    "mean_us": 43.709863757791744,
+    "median_us": 35.617,
+    "graph_share": 0.4477035459494009,
+    "grid": [
+     116,
+     2,
+     1
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 118,
+    "shared_memory_bytes": 81920,
+    "est_occupancy_pct": 0,
+    "cumulative_share": 0.33771013845524195
+   },
+   {
+    "name": "sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize96x64x32_stage3_warpsize2x2x1_tensor16x8x16_execute_kernel__5x_cublas",
+    "family": "gemm",
+    "likely_submodel": "flow",
+    "precision": "fp16",
+    "count": 1452,
+    "total_ms": 92.60049800000016,
+    "share": 0.08135965342625832,
+    "mean_us": 63.77444765840231,
+    "median_us": 60.16,
+    "graph_share": 0.34913211805837063,
+    "grid": [
+     24,
+     32,
+     1
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 122,
+    "shared_memory_bytes": 30720,
+    "est_occupancy_pct": 25,
+    "cumulative_share": 0.4190697918815003
+   },
+   {
+    "name": "sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize192x128x32_stage3_warpsize4x2x1_tensor16x8x16_execute_kernel__5x_cublas",
+    "family": "gemm",
+    "likely_submodel": "flow",
+    "precision": "fp16",
+    "count": 2566,
+    "total_ms": 48.30998200000006,
+    "share": 0.04244559670239329,
+    "mean_us": 18.826961028838685,
+    "median_us": 19.2325,
+    "graph_share": 0.9975948241918202,
+    "grid": [
+     10,
+     4,
+     1
+    ],
+    "block": [
+     256,
+     1,
+     1
+    ],
+    "registers_per_thread": 203,
+    "shared_memory_bytes": 61440,
+    "est_occupancy_pct": 0,
+    "cumulative_share": 0.46151538858389357
+   },
+   {
+    "name": "sm86_xmma_fprop_implicit_gemm_f16f16_f16f32_f32_nhwckrsc_nhwc_tilesize128x64x32_stage4_warpsize2x2x1_g1_tensor16x8x16_execute_kernel__5x_cudnn",
+    "family": "conv_f16",
+    "likely_submodel": "flow",
+    "precision": "fp16",
+    "count": 644,
+    "total_ms": 44.44633699999999,
+    "share": 0.03905096249467984,
+    "mean_us": 69.01605124223602,
+    "median_us": 47.888000000000005,
+    "graph_share": 0.0,
+    "grid": [
+     8,
+     18,
+     2
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 160,
+    "shared_memory_bytes": 49152,
+    "est_occupancy_pct": 17,
+    "cumulative_share": 0.5005663510785734
+   },
+   {
+    "name": "triton_poi_fused__scaled_dot_product_efficient_attention__to_copy_constant_pad_nd_expand_native_layer_norm_scalar_tensor_slice_transpose_unsqueeze_view_where_3",
+    "family": "attention_prep",
+    "likely_submodel": "flow",
+    "precision": "-",
+    "count": 1440,
+    "total_ms": 42.157306000000126,
+    "share": 0.03703979870113361,
+    "mean_us": 29.275906944444532,
+    "median_us": 33.056,
+    "graph_share": 0.22703412310074927,
+    "grid": [
+     6498,
+     1,
+     1
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 24,
+    "shared_memory_bytes": 0,
+    "est_occupancy_pct": 100,
+    "cumulative_share": 0.537606149779707
+   },
+   {
+    "name": "void cutlass::Kernel2<cutlass_80_tensorop_f16_s16816gemm_relu_f16_128x128_32x4_tn_align8>(cutlass_80_tensorop_f16_s16816gemm_relu_f16_128x128_32x4_tn_align8::Params)",
+    "family": "gemm",
+    "likely_submodel": "flow",
+    "precision": "fp16",
+    "count": 828,
+    "total_ms": 41.98660900000001,
+    "share": 0.036889822739223435,
+    "mean_us": 50.70846497584542,
+    "median_us": 42.784,
+    "graph_share": 0.0,
+    "grid": [
+     72,
+     1,
+     1
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 222,
+    "shared_memory_bytes": 65536,
+    "est_occupancy_pct": 0,
+    "cumulative_share": 0.5744959725189305
+   },
+   {
+    "name": "triton_poi_fused_gelu_view_9",
+    "family": "inductor_fused",
+    "likely_submodel": "flow",
+    "precision": "-",
+    "count": 1440,
+    "total_ms": 39.09305399999994,
+    "share": 0.034347518571811474,
+    "mean_us": 27.147954166666622,
+    "median_us": 20.7835,
+    "graph_share": 0.3154333248049649,
+    "grid": [
+     7296,
+     1,
+     1
+    ],
+    "block": [
+     256,
+     1,
+     1
+    ],
+    "registers_per_thread": 16,
+    "shared_memory_bytes": 0,
+    "est_occupancy_pct": 100,
+    "cumulative_share": 0.608843491090742
+   },
+   {
+    "name": "void cudnn::engines_precompiled::nchwToNhwcKernel<float, float, float, false, true, (cudnnKernelDataType_t)2>(cudnn::engines_precompiled::nchw2nhwc_params_t<float>, float const*, float*)",
+    "family": "layout_conversion",
+    "likely_submodel": "hift",
+    "precision": "fp32",
+    "count": 1368,
+    "total_ms": 30.843101000000026,
+    "share": 0.02709903361374017,
+    "mean_us": 22.546126461988322,
+    "median_us": 9.024000000000001,
+    "graph_share": 0.0,
+    "grid": [
+     1,
+     8,
+     256
+    ],
+    "block": [
+     256,
+     1,
+     1
+    ],
+    "registers_per_thread": 32,
+    "shared_memory_bytes": 4224,
+    "est_occupancy_pct": 100,
+    "cumulative_share": 0.6359425247044822
+   },
+   {
+    "name": "sm86_xmma_fprop_implicit_gemm_tf32f32_tf32f32_f32_nhwckrsc_nchw_tilesize128x128x16_stage3_warpsize2x2x1_g1_tensor16x8x8_alignc4_execute_kernel__5x_cudnn",
+    "family": "conv_f32_tf32",
+    "likely_submodel": "hift",
+    "precision": "tf32",
+    "count": 270,
+    "total_ms": 30.301671999999996,
+    "share": 0.026623329090046055,
+    "mean_us": 112.2284148148148,
+    "median_us": 125.648,
+    "graph_share": 0.0,
+    "grid": [
+     1,
+     191,
+     1
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 230,
+    "shared_memory_bytes": 49152,
+    "est_occupancy_pct": 17,
+    "cumulative_share": 0.6625658537945283
+   },
+   {
+    "name": "sm86_xmma_fprop_implicit_gemm_indexed_tf32f32_tf32f32_f32_nhwckrsc_nchw_tilesize128x64x32_stage4_warpsize2x2x1_g1_tensor16x8x8_alignc4_execute_kernel__5x_cudnn",
+    "family": "conv_f32_tf32",
+    "likely_submodel": "hift",
+    "precision": "tf32",
+    "count": 171,
+    "total_ms": 28.514369000000006,
+    "share": 0.0250529881546473,
+    "mean_us": 166.75069590643278,
+    "median_us": 172.097,
+    "graph_share": 0.0,
+    "grid": [
+     1,
+     572,
+     1
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 212,
+    "shared_memory_bytes": 100352,
+    "est_occupancy_pct": 0,
+    "cumulative_share": 0.6876188419491756
+   },
+   {
+    "name": "sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize96x128x32_stage4_warpsize2x2x1_tensor16x8x16_execute_kernel__5x_cublas",
+    "family": "gemm",
+    "likely_submodel": "flow",
+    "precision": "fp16",
+    "count": 724,
+    "total_ms": 22.732075000000012,
+    "share": 0.019972611201936614,
+    "mean_us": 31.397893646408857,
+    "median_us": 33.039500000000004,
+    "graph_share": 0.9744344500007143,
+    "grid": [
+     19,
+     4,
+     1
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 203,
+    "shared_memory_bytes": 57344,
+    "est_occupancy_pct": 0,
+    "cumulative_share": 0.7075914531511122
+   },
+   {
+    "name": "ampere_fp16_s16816gemm_fp16_64x64_sliced1x2_ldg8_relu_f2f_stages_64x6_tn",
+    "family": "gemm",
+    "likely_submodel": "flow",
+    "precision": "fp16",
+    "count": 1440,
+    "total_ms": 21.60007399999998,
+    "share": 0.018978024660531837,
+    "mean_us": 15.000051388888876,
+    "median_us": 12.673,
+    "graph_share": 0.37198701263708617,
+    "grid": [
+     72,
+     1,
+     1
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 146,
+    "shared_memory_bytes": 98304,
+    "est_occupancy_pct": 0,
+    "cumulative_share": 0.726569477811644
+   },
+   {
+    "name": "triton_per_fused__to_copy_add_constant_pad_nd_convolution_mish_mul_native_layer_norm_split_squeeze_transpose_unsqueeze_view_8",
+    "family": "inductor_fused",
+    "likely_submodel": "flow",
+    "precision": "-",
+    "count": 1440,
+    "total_ms": 21.511079999999954,
+    "share": 0.01889983370958232,
+    "mean_us": 14.938249999999968,
+    "median_us": 15.872,
+    "graph_share": 0.39086842687582524,
+    "grid": [
+     1824,
+     1,
+     1
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 33,
+    "shared_memory_bytes": 16,
+    "est_occupancy_pct": 100,
+    "cumulative_share": 0.7454693115212264
+   },
+   {
+    "name": "triton_per_fused__scaled_dot_product_efficient_attention__to_copy_constant_pad_nd_expand_native_layer_norm_scalar_tensor_slice_transpose_unsqueeze_view_where_2",
+    "family": "attention_prep",
+    "likely_submodel": "flow",
+    "precision": "-",
+    "count": 2880,
+    "total_ms": 17.581666000000002,
+    "share": 0.015447414250582402,
+    "mean_us": 6.104745138888889,
+    "median_us": 4.896,
+    "graph_share": 0.29095439533432155,
+    "grid": [
+     1824,
+     1,
+     1
+    ],
+    "block": [
+     64,
+     1,
+     1
+    ],
+    "registers_per_thread": 38,
+    "shared_memory_bytes": 2048,
+    "est_occupancy_pct": 67,
+    "cumulative_share": 0.7609167257718088
+   },
+   {
+    "name": "triton_poi_fused__to_copy_add_constant_pad_nd_mul_native_layer_norm_split_transpose_unsqueeze_view_5",
+    "family": "inductor_fused",
+    "likely_submodel": "flow",
+    "precision": "-",
+    "count": 1440,
+    "total_ms": 16.064361000000005,
+    "share": 0.014114296053508254,
+    "mean_us": 11.155806250000005,
+    "median_us": 8.736,
+    "graph_share": 0.2932066827930466,
+    "grid": [
+     1828,
+     1,
+     1
+    ],
+    "block": [
+     256,
+     1,
+     1
+    ],
+    "registers_per_thread": 30,
+    "shared_memory_bytes": 0,
+    "est_occupancy_pct": 100,
+    "cumulative_share": 0.775031021825317
+   },
+   {
+    "name": "sm86_xmma_fprop_implicit_gemm_tf32f32_tf32f32_f32_nhwckrsc_nchw_tilesize128x128x16_stage6_warpsize2x2x1_g1_tensor16x8x8_alignc4_execute_kernel__5x_cudnn",
+    "family": "conv_f32_tf32",
+    "likely_submodel": "hift",
+    "precision": "tf32",
+    "count": 75,
+    "total_ms": 14.833227999999998,
+    "share": 0.013032611220650983,
+    "mean_us": 197.7763733333333,
+    "median_us": 160.001,
+    "graph_share": 0.0,
+    "grid": [
+     2,
+     39,
+     1
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 230,
+    "shared_memory_bytes": 98304,
+    "est_occupancy_pct": 0,
+    "cumulative_share": 0.788063633045968
+   },
+   {
+    "name": "triton_poi_fused__to_copy_constant_pad_nd_convolution_mish_transpose_unsqueeze_7",
+    "family": "inductor_fused",
+    "likely_submodel": "flow",
+    "precision": "-",
+    "count": 1440,
+    "total_ms": 14.375706999999995,
+    "share": 0.012630629041297742,
+    "mean_us": 9.983129861111108,
+    "median_us": 9.408,
+    "graph_share": 0.3368616235709312,
+    "grid": [
+     1828,
+     1,
+     1
+    ],
+    "block": [
+     256,
+     1,
+     1
+    ],
+    "registers_per_thread": 18,
+    "shared_memory_bytes": 0,
+    "est_occupancy_pct": 100,
+    "cumulative_share": 0.8006942620872658
+   },
+   {
+    "name": "triton_poi_fused_add_mul_split_view_10",
+    "family": "inductor_fused",
+    "likely_submodel": "unknown",
+    "precision": "-",
+    "count": 1440,
+    "total_ms": 13.193530000000008,
+    "share": 0.011591957402528665,
+    "mean_us": 9.162173611111117,
+    "median_us": 7.168,
+    "graph_share": 0.2668072153547996,
+    "grid": [
+     912,
+     1,
+     1
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 29,
+    "shared_memory_bytes": 0,
+    "est_occupancy_pct": 100,
+    "cumulative_share": 0.8122862194897945
+   },
+   {
+    "name": "void cudnn::cnn::conv2d_grouped_direct_kernel<false, true, false, false, false, false, 0, 0, int, float, float, float, float, float, float>(cudnn::cnn::GroupedDirectFpropParams, float const*, float const*, float*, float, float, float const*, float const*, float const*, float const*, cudnnActivationStruct)",
+    "family": "conv_f32_tf32",
+    "likely_submodel": "hift",
+    "precision": "fp32",
+    "count": 9,
+    "total_ms": 12.710732999999998,
+    "share": 0.011167767495955615,
+    "mean_us": 1412.3036666666665,
+    "median_us": 1099.714,
+    "graph_share": 0.0,
+    "grid": [
+     1287,
+     1,
+     1
+    ],
+    "block": [
+     1024,
+     1,
+     1
+    ],
+    "registers_per_thread": 46,
+    "shared_memory_bytes": 0,
+    "est_occupancy_pct": 67,
+    "cumulative_share": 0.8234539869857501
+   },
+   {
+    "name": "triton_per_fused__to_copy_add_mul_native_layer_norm_split_view_1",
+    "family": "inductor_fused",
+    "likely_submodel": "flow",
+    "precision": "-",
+    "count": 1440,
+    "total_ms": 12.070060999999997,
+    "share": 0.010604867155183067,
+    "mean_us": 8.381986805555554,
+    "median_us": 8.928,
+    "graph_share": 0.363705204141056,
+    "grid": [
+     1824,
+     1,
+     1
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 27,
+    "shared_memory_bytes": 16,
+    "est_occupancy_pct": 100,
+    "cumulative_share": 0.8340588541409332
+   },
+   {
+    "name": "triton_per_fused__to_copy_convolution_native_layer_norm_squeeze_transpose_unsqueeze_6",
+    "family": "inductor_fused",
+    "likely_submodel": "flow",
+    "precision": "-",
+    "count": 1440,
+    "total_ms": 10.387758999999976,
+    "share": 0.009126781068882506,
+    "mean_us": 7.2137215277777615,
+    "median_us": 7.2,
+    "graph_share": 0.40251395897806286,
+    "grid": [
+     1824,
+     1,
+     1
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 23,
+    "shared_memory_bytes": 16,
+    "est_occupancy_pct": 100,
+    "cumulative_share": 0.8431856352098157
+   },
+   {
+    "name": "triton_per_fused__to_copy_add_mul_native_layer_norm_split_view_4",
+    "family": "inductor_fused",
+    "likely_submodel": "flow",
+    "precision": "-",
+    "count": 1440,
+    "total_ms": 9.86898900000003,
+    "share": 0.008670984952019985,
+    "mean_us": 6.853464583333353,
+    "median_us": 7.424,
+    "graph_share": 0.37159024090512094,
+    "grid": [
+     1824,
+     1,
+     1
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 25,
+    "shared_memory_bytes": 16,
+    "est_occupancy_pct": 100,
+    "cumulative_share": 0.8518566201618357
+   },
+   {
+    "name": "_5x_cudnn_ampere_scudnn_128x32_relu_small_nn_v1",
+    "family": "conv_f32_tf32",
+    "likely_submodel": "hift",
+    "precision": "fp32",
+    "count": 63,
+    "total_ms": 8.49712,
+    "share": 0.007465648168774719,
+    "mean_us": 134.87492063492064,
+    "median_us": 129.249,
+    "graph_share": 0.0,
+    "grid": [
+     572,
+     2,
+     1
+    ],
+    "block": [
+     64,
+     1,
+     1
+    ],
+    "registers_per_thread": 128,
+    "shared_memory_bytes": 5376,
+    "est_occupancy_pct": 33,
+    "cumulative_share": 0.8593222683306104
+   },
+   {
+    "name": "sm86_xmma_fprop_implicit_gemm_tf32f32_tf32f32_f32_nhwckrsc_nchw_tilesize128x128x32_stage3_warpsize2x2x1_g1_tensor16x8x8_alignc4_execute_kernel__5x_cudnn",
+    "family": "conv_f32_tf32",
+    "likely_submodel": "hift",
+    "precision": "tf32",
+    "count": 60,
+    "total_ms": 8.009469000000003,
+    "share": 0.00703719349293736,
+    "mean_us": 133.49115000000003,
+    "median_us": 130.3205,
+    "graph_share": 0.0,
+    "grid": [
+     2,
+     39,
+     2
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 254,
+    "shared_memory_bytes": 98304,
+    "est_occupancy_pct": 0,
+    "cumulative_share": 0.8663594618235478
+   },
+   {
+    "name": "void at::native::elementwise_kernel<128, 2, at::native::gpu_kernel_impl_nocast<at::native::(anonymous namespace)::masked_fill_kernel(at::TensorIterator&, c10::Scalar const&)::{lambda()#1}::operator()() const::{lambda()#7}::operator()() const::{lambda(float, bool)#1}>(at::TensorIteratorBase&, at::native::(anonymous namespace)::masked_fill_kernel(at::TensorIterator&, c10::Scalar const&)::{lambda()#1}::operator()() const::{lambda()#7}::operator()() const::{lambda(float, bool)#1} const&)::{lambda(int)#1}>(int, at::native::gpu_kernel_impl_nocast<at::native::(anonymous namespace)::masked_fill_kernel(at::TensorIterator&, c10::Scalar const&)::{lambda()#1}::operator()() const::{lambda()#7}::operator()() const::{lambda(float, bool)#1}>(at::TensorIteratorBase&, at::native::(anonymous namespace)::masked_fill_kernel(at::TensorIterator&, c10::Scalar const&)::{lambda()#1}::operator()() const::{lambda()#7}::operator()() const::{lambda(float, bool)#1} const&)::{lambda(int)#1})",
+    "family": "elementwise",
+    "likely_submodel": "unknown",
+    "precision": "-",
+    "count": 90,
+    "total_ms": 6.898549999999999,
+    "share": 0.006061129791588306,
+    "mean_us": 76.65055555555554,
+    "median_us": 32.992000000000004,
+    "graph_share": 0.0,
+    "grid": [
+     6498,
+     1,
+     1
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 16,
+    "shared_memory_bytes": 0,
+    "est_occupancy_pct": 100,
+    "cumulative_share": 0.8724205916151362
+   },
+   {
+    "name": "void at::native::(anonymous namespace)::cunn_SoftMaxForward<8, c10::Half, float, float, at::native::(anonymous namespace)::SoftMaxForwardEpilogue>(float*, c10::Half const*, int)",
+    "family": "softmax",
+    "likely_submodel": "flow",
+    "precision": "fp16",
+    "count": 20,
+    "total_ms": 6.692532,
+    "share": 0.005880120472614981,
+    "mean_us": 334.6266,
+    "median_us": 317.153,
+    "graph_share": 0.0,
+    "grid": [
+     9168,
+     1,
+     1
+    ],
+    "block": [
+     1024,
+     1,
+     1
+    ],
+    "registers_per_thread": 37,
+    "shared_memory_bytes": 128,
+    "est_occupancy_pct": 67,
+    "cumulative_share": 0.8783007120877512
+   },
+   {
+    "name": "void at::native::vectorized_elementwise_kernel<4, at::native::float16_copy_kernel_cuda(at::TensorIteratorBase&)::{lambda(float)#1}, std::array<char*, 2ul> >(int, at::native::float16_copy_kernel_cuda(at::TensorIteratorBase&)::{lambda(float)#1}, std::array<char*, 2ul>)",
+    "family": "copy_cast",
+    "likely_submodel": "unknown",
+    "precision": "-",
+    "count": 846,
+    "total_ms": 6.36686900000001,
+    "share": 0.005593989950792574,
+    "mean_us": 7.5258498817967014,
+    "median_us": 2.24,
+    "graph_share": 0.05003464026038538,
+    "grid": [
+     1,
+     1,
+     1
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 30,
+    "shared_memory_bytes": 0,
+    "est_occupancy_pct": 100,
+    "cumulative_share": 0.8838947020385437
+   },
+   {
+    "name": "void cutlass__5x_cudnn::Kernel<cutlass_tensorop_s1688fprop_optimized_tf32_128x64_32x3_nhwc_align4>(cutlass_tensorop_s1688fprop_optimized_tf32_128x64_32x3_nhwc_align4::Params)",
+    "family": "conv_f32_tf32",
+    "likely_submodel": "hift",
+    "precision": "tf32",
+    "count": 72,
+    "total_ms": 6.306965,
+    "share": 0.005541357742714737,
+    "mean_us": 87.59673611111111,
+    "median_us": 76.5605,
+    "graph_share": 0.0,
+    "grid": [
+     28,
+     2,
+     1
+    ],
+    "block": [
+     128,
+     1,
+     1
+    ],
+    "registers_per_thread": 168,
+    "shared_memory_bytes": 73728,
+    "est_occupancy_pct": 0,
+    "cumulative_share": 0.8894360597812584
+   }
+  ]
+ },
+ "per_run": {
+  "20261117_exp06_c2w_block1_run01": {
+   "kernel_total_ms": 1138.1623950000003,
+   "kernel_count": 43600,
+   "distinct_kernels": 195,
+   "graph_share": 0.2462213557846461,
+   "families": {
+    "attention": {
+     "total_ms": 183.61520499999997,
+     "share": 0.1613260162228431,
+     "count": 1440
+    },
+    "attention_prep": {
+     "total_ms": 59.73897200000013,
+     "share": 0.05248721295171602,
+     "count": 4320
+    },
+    "softmax": {
+     "total_ms": 8.631871,
+     "share": 0.007584041642844824,
+     "count": 90
+    },
+    "gemm": {
+     "total_ms": 351.5713489999997,
+     "share": 0.30889383671826515,
+     "count": 11529
+    },
+    "conv_f16": {
+     "total_ms": 143.09942800000027,
+     "share": 0.12572848007335566,
+     "count": 2907
+    },
+    "conv_f32_tf32": {
+     "total_ms": 109.28024500000001,
+     "share": 0.09601463330722676,
+     "count": 729
+    },
+    "layout_conversion": {
+     "total_ms": 33.39136200000003,
+     "share": 0.029337959281285183,
+     "count": 1557
+    },
+    "fft": {
+     "total_ms": 0.299168,
+     "share": 0.00026285176993569526,
+     "count": 18
+    },
+    "snake_weight_norm": {
+     "total_ms": 52.11621000000001,
+     "share": 0.04578978380321553,
+     "count": 1341
+    },
+    "inductor_fused": {
+     "total_ms": 138.7826279999999,
+     "share": 0.12193569969424256,
+     "count": 12960
+    },
+    "elementwise": {
+     "total_ms": 30.804874999999996,
+     "share": 0.0270654478968267,
+     "count": 3496
+    },
+    "reduction_norm": {
+     "total_ms": 4.666339000000002,
+     "share": 0.00409988857521514,
+     "count": 387
+    },
+    "copy_cast": {
+     "total_ms": 20.603354000000017,
+     "share": 0.018102297256095877,
+     "count": 2660
+    },
+    "other": {
+     "total_ms": 1.5613890000000001,
+     "share": 0.0013718508069316415,
+     "count": 166
+    }
+   },
+   "likely_submodel_share": {
+    "flow": 0.7663633299007387,
+    "hift": 0.1714052281616632,
+    "unknown": 0.06223144193759806
+   },
+   "top_kernels": [
+    {
+     "name": "fmha_cutlassF_f16_aligned_64x64_rf_sm80(PyTorchMemEffAttention::AttentionKernel<cutlass::half_t, cutlass::arch::Sm80, true, 64, 64, 64, true, true>::Params)",
+     "family": "attention",
+     "likely_submodel": "flow",
+     "precision": "fp16",
+     "count": 1440,
+     "total_ms": 183.61520499999997,
+     "share": 0.1613260162228431,
+     "mean_us": 127.51055902777777,
+     "median_us": 124.32,
+     "graph_share": 0.318912374386424,
+     "grid": [
+      18,
+      8,
+      2
+     ],
+     "block": [
+      32,
+      4,
+      1
+     ],
+     "registers_per_thread": 128,
+     "shared_memory_bytes": 18944,
+     "est_occupancy_pct": 29,
+     "cumulative_share": 0.1613260162228431
+    },
+    {
+     "name": "ampere_fp16_s16816gemm_fp16_256x128_ldg8_relu_f2f_stages_32x3_tn",
+     "family": "gemm",
+     "likely_submodel": "flow",
+     "precision": "fp16",
+     "count": 3220,
+     "total_ms": 102.58142099999962,
+     "share": 0.09012898462525605,
+     "mean_us": 31.857584161490568,
+     "median_us": 24.448,
+     "graph_share": 0.0,
+     "grid": [
+      2,
+      18,
+      1
+     ],
+     "block": [
+      256,
+      1,
+      1
+     ],
+     "registers_per_thread": 222,
+     "shared_memory_bytes": 73728,
+     "est_occupancy_pct": 0,
+     "cumulative_share": 0.25145500084809913
+    },
+    {
+     "name": "void cutlass__5x_cudnn::Kernel<cutlass_tensorop_f16_s16816fprop_optimized_f16_64x64_64x5_nhwc_align8>(cutlass_tensorop_f16_s16816fprop_optimized_f16_64x64_64x5_nhwc_align8::Params)",
+     "family": "conv_f16",
+     "likely_submodel": "flow",
+     "precision": "fp16",
+     "count": 2246,
+     "total_ms": 98.17235400000025,
+     "share": 0.08625513760714282,
+     "mean_us": 43.709863757791744,
+     "median_us": 35.617,
+     "graph_share": 0.4477035459494009,
+     "grid": [
+      116,
+      2,
+      1
+     ],
+     "block": [
+      128,
+      1,
+      1
+     ],
+     "registers_per_thread": 118,
+     "shared_memory_bytes": 81920,
+     "est_occupancy_pct": 0,
+     "cumulative_share": 0.33771013845524195
+    },
+    {
+     "name": "sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize96x64x32_stage3_warpsize2x2x1_tensor16x8x16_execute_kernel__5x_cublas",
+     "family": "gemm",
+     "likely_submodel": "flow",
+     "precision": "fp16",
+     "count": 1452,
+     "total_ms": 92.60049800000016,
+     "share": 0.08135965342625832,
+     "mean_us": 63.77444765840231,
+     "median_us": 60.16,
+     "graph_share": 0.34913211805837063,
+     "grid": [
+      24,
+      32,
+      1
+     ],
+     "block": [
+      128,
+      1,
+      1
+     ],
+     "registers_per_thread": 122,
+     "shared_memory_bytes": 30720,
+     "est_occupancy_pct": 25,
+     "cumulative_share": 0.4190697918815003
+    },
+    {
+     "name": "sm80_xmma_gemm_f16f16_f16f32_f32_tn_n_tilesize192x128x32_stage3_warpsize4x2x1_tensor16x8x16_execute_kernel__5x_cublas",
+     "family": "gemm",
+     "likely_submodel": "flow",
+     "precision": "fp16",
+     "count": 2566,
+     "total_ms": 48.30998200000006,
+     "share": 0.04244559670239329,
+     "mean_us": 18.826961028838685,
+     "median_us": 19.2325,
+     "graph_share": 0.9975948241918202,
+     "grid": [
+      10,
+      4,
+      1
+     ],
+     "block": [
+      256,
+      1,
+      1
+     ],
+     "registers_per_thread": 203,
+     "shared_memory_bytes": 61440,
+     "est_occupancy_pct": 0,
+     "cumulative_share": 0.46151538858389357
+    },
+    {
+     "name": "sm86_xmma_fprop_implicit_gemm_f16f16_f16f32_f32_nhwckrsc_nhwc_tilesize128x64x32_stage4_warpsize2x2x1_g1_tensor16x8x16_execute_kernel__5x_cudnn",
+     "family": "conv_f16",
+     "likely_submodel": "flow",
+     "precision": "fp16",
+     "count": 644,
+     "total_ms": 44.44633699999999,
+     "share": 0.03905096249467984,
+     "mean_us": 69.01605124223602,
+     "median_us": 47.888000000000005,
+     "graph_share": 0.0,
+     "grid": [
+      8,
+      18,
+      2
+     ],
+     "block": [
+      128,
+      1,
+      1
+     ],
+     "registers_per_thread": 160,
+     "shared_memory_bytes": 49152,
+     "est_occupancy_pct": 17,
+     "cumulative_share": 0.5005663510785734
+    },
+    {
+     "name": "triton_poi_fused__scaled_dot_product_efficient_attention__to_copy_constant_pad_nd_expand_native_layer_norm_scalar_tensor_slice_transpose_unsqueeze_view_where_3",
+     "family": "attention_prep",
+     "likely_submodel": "flow",
+     "precision": "-",
+     "count": 1440,
+     "total_ms": 42.157306000000126,
+     "share": 0.03703979870113361,
+     "mean_us": 29.275906944444532,
+     "median_us": 33.056,
+     "graph_share": 0.22703412310074927,
+     "grid": [
+      6498,
+      1,
+      1
+     ],
+     "block": [
+      128,
+      1,
+      1
+     ],
+     "registers_per_thread": 24,
+     "shared_memory_bytes": 0,
+     "est_occupancy_pct": 100,
+     "cumulative_share": 0.537606149779707
+    },
+    {
+     "name": "void cutlass::Kernel2<cutlass_80_tensorop_f16_s16816gemm_relu_f16_128x128_32x4_tn_align8>(cutlass_80_tensorop_f16_s16816gemm_relu_f16_128x128_32x4_tn_align8::Params)",
+     "family": "gemm",
+     "likely_submodel": "flow",
+     "precision": "fp16",
+     "count": 828,
+     "total_ms": 41.98660900000001,
+     "share": 0.036889822739223435,
+     "mean_us": 50.70846497584542,
+     "median_us": 42.784,
+     "graph_share": 0.0,
+     "grid": [
+      72,
+      1,
+      1
+     ],
+     "block": [
+      128,
+      1,
+      1
+     ],
+     "registers_per_thread": 222,
+     "shared_memory_bytes": 65536,
+     "est_occupancy_pct": 0,
+     "cumulative_share": 0.5744959725189305
+    },
+    {
+     "name": "triton_poi_fused_gelu_view_9",
+     "family": "inductor_fused",
+     "likely_submodel": "flow",
+     "precision": "-",
+     "count": 1440,
+     "total_ms": 39.09305399999994,
+     "share": 0.034347518571811474,
+     "mean_us": 27.147954166666622,
+     "median_us": 20.7835,
+     "graph_share": 0.3154333248049649,
+     "grid": [
+      7296,
+      1,
+      1
+     ],
+     "block": [
+      256,
+      1,
+      1
+     ],
+     "registers_per_thread": 16,
+     "shared_memory_bytes": 0,
+     "est_occupancy_pct": 100,
+     "cumulative_share": 0.608843491090742
+    },
+    {
+     "name": "void cudnn::engines_precompiled::nchwToNhwcKernel<float, float, float, false, true, (cudnnKernelDataType_t)2>(cudnn::engines_precompiled::nchw2nhwc_params_t<float>, float const*, float*)",
+     "family": "layout_conversion",
+     "likely_submodel": "hift",
+     "precision": "fp32",
+     "count": 1368,
+     "total_ms": 30.843101000000026,
+     "share": 0.02709903361374017,
+     "mean_us": 22.546126461988322,
+     "median_us": 9.024000000000001,
+     "graph_share": 0.0,
+     "grid": [
+      1,
+      8,
+      256
+     ],
+     "block": [
+      256,
+      1,
+      1
+     ],
+     "registers_per_thread": 32,
+     "shared_memory_bytes": 4224,
+     "est_occupancy_pct": 100,
+     "cumulative_share": 0.6359425247044822
+    }
+   ]
+  }
+ }
+}

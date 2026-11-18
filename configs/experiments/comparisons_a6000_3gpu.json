@@ -1,0 +1,39 @@
+{
+  "_comment": "Job 409712 结果出来后要做的对比。dir 相对于 PROJECT_DATA_ROOT；latest/<实验名> 指向最近一次成功的运行。",
+  "comparisons": [
+    {"name": "placement_2gpu_w3b", "question": "相同 2 卡预算下，哪种放置让语音输出的吞吐和延迟更好？（与上游 H200 上的结论对照）",
+     "variable": "放置方式（1 卡对照 / 两个完整副本 / thinker 与 talker 拆分 / 只复制 talker）",
+     "phase": "w3b",
+     "experiments": [
+       {"label": "1 卡（x3）", "dir": "latest/x3_minicpm_speech_1gpu"},
+       {"label": "2 卡：两个副本（x7a）", "dir": "latest/x7a_minicpm_2gpu_two_replicas"},
+       {"label": "2 卡：拆分（x7b）", "dir": "latest/x7b_minicpm_2gpu_disagg"},
+       {"label": "2 卡：只复制 talker（x7c）", "dir": "latest/x7c_minicpm_2gpu_talker_replica"}]},
+    {"name": "placement_2gpu_agent_replay", "question": "在 Agent 负载（依赖感知回放）下，几种放置的差别是否与固定负载下一致？",
+     "variable": "放置方式", "phase": "replay_text_dep_x4",
+     "experiments": [
+       {"label": "1 卡（x3r）", "dir": "latest/x3r_minicpm_speech_1gpu_agent_replay"},
+       {"label": "两个副本（x7a）", "dir": "latest/x7a_minicpm_2gpu_two_replicas"},
+       {"label": "拆分（x7b）", "dir": "latest/x7b_minicpm_2gpu_disagg"},
+       {"label": "只复制 talker（x7c）", "dir": "latest/x7c_minicpm_2gpu_talker_replica"}]},
+    {"name": "memsplit_w3b", "question": "降低 thinker 的显存占比（让 code2wav 能捕获 CUDA graph）是否改变语音输出的延迟和吞吐？",
+     "variable": "thinker engine.mem_fraction_static：0.85（默认）vs 0.6", "phase": "w3b",
+     "experiments": [
+       {"label": "默认 0.85（x3）", "dir": "latest/x3_minicpm_speech_1gpu"},
+       {"label": "0.6（x3m）", "dir": "latest/x3m_minicpm_speech_1gpu_memsplit"}]},
+    {"name": "cpu_quota_video_10s", "question": "CPU 配额减半时，10 秒视频理解的延迟和吞吐如何变化？",
+     "variable": "step 的 CPU 数：8 vs 4", "phase": "w4_video_10s",
+     "experiments": [
+       {"label": "8 CPU（x4）", "dir": "latest/x4_minicpm_av_text_1gpu"},
+       {"label": "4 CPU（x4c）", "dir": "latest/x4c_minicpm_video_4cpu"}]},
+    {"name": "cpu_quota_video_20s", "question": "同上，20 秒视频。", "variable": "step 的 CPU 数：8 vs 4", "phase": "w4_video_20s",
+     "experiments": [
+       {"label": "8 CPU（x4）", "dir": "latest/x4_minicpm_av_text_1gpu"},
+       {"label": "4 CPU（x4c）", "dir": "latest/x4c_minicpm_video_4cpu"}]},
+    {"name": "events_overhead_w3b", "question": "服务端请求事件记录本身有多少开销？",
+     "variable": "同一实验内：开启 vs 关闭 request event recorder", "phase": "w3b_events",
+     "experiments": [
+       {"label": "开启事件记录", "dir": "latest/x8_minicpm_profiled_1gpu", "phase": "w3b_events"},
+       {"label": "关闭事件记录", "dir": "latest/x8_minicpm_profiled_1gpu", "phase": "w3b_noevents"}]}
+  ]
+}

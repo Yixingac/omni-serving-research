@@ -1,0 +1,177 @@
+{
+ "runtime_profile": "unicorn_async",
+ "hardware_label": "a6000x8",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "exp11_diag_B",
+ "description": "实验 11 诊断（补充登记五）：组 B（SGLANG_OMNI_SPEECH_LOOKAHEAD=1，快照、没有旁路复制），2+6，打开 digest，段落和正确性检查完全相同。用来区分多出来的指纹偏差来自提前发射本身还是旁路复制。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "s0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "args": [
+    "--config",
+    "{research_repo}/configs/models/minicpm_o_4_5_exp_t2_k6_shared.yaml"
+   ],
+   "ready_timeout_s": 2400,
+   "env": {
+    "SGLANG_OMNI_SPEECH_LOOKAHEAD": "1",
+    "SGLANG_OMNI_PORT_CLAIM_DIR": "{exp_dir}/port_claims",
+    "SGLANG_OMNI_EXP_TRACE": "thinker,c2w,digest"
+   }
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "smoke",
+   "name": "chk_c1",
+   "workload": "configs/workloads/w3b_greedy_check.json",
+   "requests": 18,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "chk_c8",
+   "workload": "configs/workloads/w3b_greedy_check.json",
+   "concurrency": [
+    8
+   ],
+   "requests_per_level": 48,
+   "requests_per_concurrency": 6,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "chk_c32",
+   "workload": "configs/workloads/w3b_greedy_check.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "chk_c64",
+   "workload": "configs/workloads/w3b_greedy_check.json",
+   "concurrency": [
+    64
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "chk_mix_text",
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3t_text_only_noseed.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3b_greedy_check.json",
+     "weight": 0.5
+    }
+   ],
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 1,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "chk_mix_long",
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_greedy_check.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_greedy_check.json",
+     "weight": 0.5
+    }
+   ],
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 1,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "chk_mix_seed",
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3b_greedy_check.json",
+     "weight": 0.5
+    }
+   ],
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 1,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "chk_timeout",
+   "workload": "configs/workloads/w3l_greedy_timeout.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 64,
+   "requests_per_concurrency": 2,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "chk_after",
+   "workload": "configs/workloads/w3b_greedy_check.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "chk_w3xl",
+   "workload": "configs/workloads/w3xl_long_speech_noseed.json",
+   "concurrency": [
+    8
+   ],
+   "requests_per_level": 32,
+   "requests_per_concurrency": 4,
+   "server_events": true
+  }
+ ]
+}

@@ -1,0 +1,19 @@
+{
+ "plan_id": "a6000_8gpu_exp05",
+ "_comment": "实验 5（GPU 为什么会等待）的第一次补测：2+6 分工在并发 128 的稳定负载下，talker 卡被什么卡住。通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "exp05_talker_s2x6",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/exp05_talker_s2x6.json",
+   "priority": 6,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 900,
+   "timeout_s": 2700,
+   "max_retries": 1,
+   "description": "实验 5（GPU 为什么会等待）第一次补测：一个服务：2 个 thinker（pipeline）副本 + 6 个 talker 副本，code2wav 单独进程、与 talker 同卡。W3b 闭环并发 128：先预热一波（128 个请求），再跑三段，每段 384 个请求（另加 128 个预热）：只记事件 → 第 12 秒起开 3 秒 torch profiler → 再只记事件（看先后顺序的影响"
+  }
+ ]
+}

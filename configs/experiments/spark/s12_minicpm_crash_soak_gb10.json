@@ -1,0 +1,50 @@
+{
+  "runtime_profile": "spark",
+  "hardware_label": "spark_gb10",
+  "seed": 0,
+  "experiment_id": "s12_minicpm_crash_soak_gb10",
+  "description": "Spark 实验：A6000 上默认语音流水线在开环负载下平均约 5 分钟崩溃一次（talker 进程 illegal memory access）。这里检验 GB10 上是否复现：默认配置，W3b 开环 0.4 请求/秒（GB10 较慢，按容量约一半设定），每 2 分钟一档，最多 15 档。如果复现，崩溃定位可以在 Spark 上做，不必占用 A6000。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5_spark",
+      "gpus": [
+        0
+      ],
+      "ready_timeout_s": 3600,
+      "args": []
+    }
+  ],
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "open_loop",
+      "name": "w3b_soak",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "rates_rps": [
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4,
+        0.4
+      ],
+      "requests_per_rate": 48,
+      "max_error_rate": 0.2
+    }
+  ]
+}

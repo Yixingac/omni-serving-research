@@ -1,0 +1,84 @@
+{
+ "plan_id": "exp06_exp08a",
+ "_comment": "实验 6 的 3 个区组、实验 8 第一阶段的 3 个区组，依次运行。冒烟测试检查通过后才放。通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_exp06_08.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "exp06_c2w_block1",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/exp06_08/exp06_c2w_block1.json",
+   "priority": 19,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 900,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "实验 6（code2wav 时间拆解）第 1 个区组：2+6，打点版 sglang-omni。并发顺序（种子 20261117）128、256、64、8；每个并发依次跑 A、B、C 三段（A 不打点、B 打点、C 打点并在中间开 3 秒 torch profiler），每段先预热一波再测 max(96, 3×并发) 个请求。"
+  },
+  {
+   "experiment_id": "exp06_c2w_block2",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/exp06_08/exp06_c2w_block2.json",
+   "priority": 18,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 900,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "实验 6（code2wav 时间拆解）第 2 个区组：2+6，打点版 sglang-omni。并发顺序（种子 20261117）64、8、256、128；每个并发依次跑 B、C、A 三段（A 不打点、B 打点、C 打点并在中间开 3 秒 torch profiler），每段先预热一波再测 max(96, 3×并发) 个请求。"
+  },
+  {
+   "experiment_id": "exp06_c2w_block3",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/exp06_08/exp06_c2w_block3.json",
+   "priority": 17,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 900,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "实验 6（code2wav 时间拆解）第 3 个区组：2+6，打点版 sglang-omni。并发顺序（种子 20261117）256、8、64、128；每个并发依次跑 C、A、B 三段（A 不打点、B 打点、C 打点并在中间开 3 秒 torch profiler），每段先预热一波再测 max(96, 3×并发) 个请求。"
+  },
+  {
+   "experiment_id": "exp08_lookahead_block1",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/exp06_08/exp08_lookahead_block1.json",
+   "priority": 14,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1100,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "实验 8 第一阶段第 1 个区组：2+6，打点版 sglang-omni。2×2：只要文字（w3t）或文字+语音（w3b），请求带种子 0 或不带（_ns），并发 8、32、64；顺序（种子 20261117）w3t_ns@32、w3t_ns@64、w3b@8、w3b@64、w3b_ns@64、w3t@8、w3t@32、w3b_ns@8、w3b@32、w3b_ns@32、w3t@64、w3t_ns"
+  },
+  {
+   "experiment_id": "exp08_lookahead_block2",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/exp06_08/exp08_lookahead_block2.json",
+   "priority": 13,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1100,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "实验 8 第一阶段第 2 个区组：2+6，打点版 sglang-omni。2×2：只要文字（w3t）或文字+语音（w3b），请求带种子 0 或不带（_ns），并发 8、32、64；顺序（种子 20261117）w3b@32、w3b_ns@64、w3b_ns@8、w3t@32、w3b_ns@32、w3t_ns@32、w3t@64、w3t_ns@8、w3b@8、w3t_ns@64、w3t@8、w3b@"
+  },
+  {
+   "experiment_id": "exp08_lookahead_block3",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/exp06_08/exp08_lookahead_block3.json",
+   "priority": 12,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1100,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "实验 8 第一阶段第 3 个区组：2+6，打点版 sglang-omni。2×2：只要文字（w3t）或文字+语音（w3b），请求带种子 0 或不带（_ns），并发 8、32、64；顺序（种子 20261117）w3t_ns@64、w3b_ns@64、w3t@64、w3t_ns@8、w3t_ns@32、w3t@32、w3b@8、w3b@64、w3b@32、w3b_ns@32、w3t@8、w3b_ns"
+  }
+ ]
+}

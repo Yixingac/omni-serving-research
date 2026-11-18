@@ -1,0 +1,61 @@
+{
+  "runtime_profile": "unicorn",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "experiment_id": "x4c_minicpm_video_4cpu",
+  "description": "CPU 配额对照：与 x4 相同的 10 秒、20 秒视频阶段，但 step 只分配 4 个 CPU（x4 是 8 个），检验视频预处理对 CPU 的敏感度。当前固定版本的 MiniCPM-o 预处理没有并发参数，无法直接做线程池 A/B。",
+  "assets": "synthetic-v1",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [
+        "--text-only"
+      ],
+      "ready_timeout_s": 2400
+    }
+  ],
+  "phases": [
+    {
+      "kind": "closed_loop",
+      "name": "w4_video_10s",
+      "workload": "configs/workloads/w4_video_text.json",
+      "workload_overrides": {
+        "video": {
+          "tag": "count_circles",
+          "target_s": 10
+        }
+      },
+      "concurrency": [
+        1,
+        2,
+        4,
+        8
+      ],
+      "requests_per_level": 24,
+      "stop_if_p50_e2e_above_s": 90
+    },
+    {
+      "kind": "closed_loop",
+      "name": "w4_video_20s",
+      "workload": "configs/workloads/w4_video_text.json",
+      "workload_overrides": {
+        "video": {
+          "tag": "count_circles",
+          "target_s": 20
+        }
+      },
+      "concurrency": [
+        1,
+        2,
+        4,
+        8
+      ],
+      "requests_per_level": 24,
+      "stop_if_p50_e2e_above_s": 90
+    }
+  ]
+}

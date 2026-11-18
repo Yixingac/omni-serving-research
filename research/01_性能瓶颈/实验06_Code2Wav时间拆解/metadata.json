@@ -1,0 +1,149 @@
+{
+ "experiment_number": 6,
+ "name_zh": "Code2Wav 时间拆解",
+ "question_zh": "2+6 分工下，code2wav 阶段从并发 8 的约 0.16 秒涨到并发 256 的约 5.5 秒：这段时间里排队、凑批、CPU 发命令、GPU 计算、同步各占多少？",
+ "status": "完成（3 个区组，2026-11-17）",
+ "hypotheses": "hypotheses.md（2026-11-17 14:30 美东登记，早于任何正式数据）",
+ "model": {
+  "name": "MiniCPM-o 4.5",
+  "revision": "fb09628e98b1f55d8d5b863e0eccfcdd11bff499"
+ },
+ "software": {
+  "sglang_omni": "520b49ee + configs/runtime/patches/sglang_omni_instr_exp06_08.patch（测量补丁，git worktree）",
+  "sglang": "0.5.21",
+  "torch": "2.13.0",
+  "cuda_runtime": "13.0.96（pip 包 nvidia-cuda-runtime）",
+  "nvidia_driver": "580.126.18",
+  "runtime_profile": "configs/models/runtime_unicorn_instr.json（SGLANG_OMNI_EXP_TRACE=c2w,thinker）"
+ },
+ "hardware": {
+  "node": "compute-03（第二批节点）",
+  "gpus": "8 × NVIDIA RTX A6000 48 GB",
+  "slurm_job": 454290
+ },
+ "placement": {
+  "name": "t2_k6_shared（= S2:6）",
+  "config": "configs/models/minicpm_o_4_5_exp_t2_k6_shared.yaml",
+  "gpus": {
+   "0-1": "pipeline 进程（预处理 + thinker + 文字解码）各 1 份",
+   "2-7": "talker 进程 + code2wav 进程各 1 份（同卡）"
+  },
+  "gpu_memory_fraction": {
+   "talker": 0.4,
+   "code2wav": 0.4
+  }
+ },
+ "workload": {
+  "id": "W3b_text_speech",
+  "file": "configs/workloads/w3b_text_speech.json",
+  "client_seed": 0,
+  "note": "文字提问，文字 + 语音回答，最多 64 个文字 token，thinker 温度 0"
+ },
+ "design": {
+  "levels": [
+   8,
+   64,
+   128,
+   256
+  ],
+  "per_level": "预热一波（并发数个请求，不计入）+ A、B、C 三段，各测 max(96, 3 × 并发) 个请求",
+  "modes": {
+   "A": "不打点、不开 profiler（正式性能）",
+   "B": "打点（code2wav 每个请求、每一批的事件）",
+   "C": "打点 + 3 秒 torch profiler 窗口（并发 8/64/128/256 分别在第 10/7/10/18 秒打开）"
+  },
+  "blocks": 3,
+  "randomization_seed": 20261117,
+  "level_order": {
+   "block1": [
+    128,
+    256,
+    64,
+    8
+   ],
+   "block2": [
+    64,
+    8,
+    256,
+    128
+   ],
+   "block3": [
+    256,
+    8,
+    64,
+    128
+   ]
+  },
+  "mode_order": {
+   "block1": "ABC",
+   "block2": "BCA",
+   "block3": "CAB"
+  },
+  "unit_of_replication": "区组（一次独立启动的服务）",
+  "interval": "3 个区组均值的 t 区间（自由度 2，t=4.303）"
+ },
+ "runs": [
+  {
+   "block": 1,
+   "run_dir": "20261117_exp06_c2w_block1_run01",
+   "config": "configs/experiments/exp06_08/exp06_c2w_block1.json",
+   "time_est": "14:58:52–15:06:59",
+   "research_repo_commit_at_start": "3cfcacb",
+   "server_restarts": [
+    "w3b_c64_C：code2wav@r1 段错误"
+   ]
+  },
+  {
+   "block": 2,
+   "run_dir": "20261117_exp06_c2w_block2_run01",
+   "config": "configs/experiments/exp06_08/exp06_c2w_block2.json",
+   "time_est": "15:09:26–15:19:02",
+   "research_repo_commit_at_start": "f782138",
+   "server_restarts": [
+    "w3b_c128_C：code2wav@r1 段错误"
+   ]
+  },
+  {
+   "block": 3,
+   "run_dir": "20261117_exp06_c2w_block3_run01",
+   "config": "configs/experiments/exp06_08/exp06_c2w_block3.json",
+   "time_est": "15:26:31–15:37:14",
+   "research_repo_commit_at_start": "c3323f5",
+   "server_restarts": [
+    "w3b_c128_C：code2wav@r0 段错误"
+   ]
+  }
+ ],
+ "plan": "configs/experiments/plan_exp06_exp08a.json（由 scripts/slurm/make_plan_exp06_08.py 生成，经 plan.d 放进 Job 454290）",
+ "smoke_test": "20261117_exp06_smoke_instr_run01（打点版 GPU 冒烟测试，不是正式数据）",
+ "analysis": {
+  "scripts": [
+   "scripts/analysis/exp06_c2w_breakdown.py",
+   "scripts/analysis/exp06_report.py",
+   "scripts/analysis/exp06_figures.py",
+   "scripts/analysis/exp06_clock_alignment.py"
+  ],
+  "tests": "tests/test_exp06_c2w_breakdown.py",
+  "patch_check": "configs/runtime/patches/check_sglang_omni_instr.py（未打补丁时失败、打补丁后通过）",
+  "timeline_figure_source": "区组 1、w3b_c128_C：code2wav@r0 和同卡 talker@r0 的 trace，及 code2wav@r0 的事件文件"
+ },
+ "results": [
+  "results/summary.json",
+  "results/requests.csv",
+  "results/batches.csv",
+  "results/figures_data.json",
+  "results/clock_alignment.json"
+ ],
+ "figures": [
+  "figures/fig1_typical_request.png",
+  "figures/fig2_breakdown_by_level.png",
+  "figures/fig3_cpu_gpu_timeline.png",
+  "figures/fig4_queue_depth.png",
+  "figures/fig5_batch_size.png",
+  "figures/fig6_kernel.png"
+ ],
+ "raw_data": "集群 results/experiments/<run_dir>（事件、trace、日志；体积大且带机器名和路径，不进公开仓库）",
+ "not_done": [
+  "nsys / ncu（工具在节点上，但没有测试它们和 CUDA 13 运行时是否兼容，本实验没用）"
+ ]
+}

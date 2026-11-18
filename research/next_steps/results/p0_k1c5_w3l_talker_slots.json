@@ -1,0 +1,45 @@
+{
+ "generated_by": "scripts/analysis/next_talker_slots.py",
+ "phase": "w3l_closed_A",
+ "last_level": true,
+ "cap": 32,
+ "min_tokens_per_req": 200.0,
+ "runs": {
+  "20261117_exp09_t2_k1_c5_block1_run01": {
+   "window_s": 39.19585561752319,
+   "lines": 234,
+   "at_cap_share": 0.8376068376068376,
+   "at_cap_with_queue_share": 0.8376068376068376,
+   "above_cap_lines": 0,
+   "running_p50": 32,
+   "queue_p50": 53,
+   "queue_p90": 62,
+   "queue_max": 74,
+   "graph_share": 1.0
+  },
+  "20261118_exp09_t2_k1_c5_block2_run01": {
+   "window_s": 40.882184743881226,
+   "lines": 242,
+   "at_cap_share": 0.8099173553719008,
+   "at_cap_with_queue_share": 0.8099173553719008,
+   "above_cap_lines": 0,
+   "running_p50": 32,
+   "queue_p50": 58,
+   "queue_p90": 65,
+   "queue_max": 87,
+   "graph_share": 1.0
+  },
+  "20261118_exp09_t2_k1_c5_block3_run01": {
+   "window_s": 38.30314111709595,
+   "lines": 233,
+   "at_cap_share": 0.8283261802575107,
+   "at_cap_with_queue_share": 0.8283261802575107,
+   "above_cap_lines": 0,
+   "running_p50": 32,
+   "queue_p50": 53,
+   "queue_p90": 61,
+   "queue_max": 72,
+   "graph_share": 1.0
+  }
+ }
+}

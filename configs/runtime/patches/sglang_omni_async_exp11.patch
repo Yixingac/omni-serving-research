@@ -1,0 +1,994 @@
+diff --git a/sglang_omni/model_runner/base.py b/sglang_omni/model_runner/base.py
+index 454be8d4d..1aca1b12a 100644
+--- a/sglang_omni/model_runner/base.py
++++ b/sglang_omni/model_runner/base.py
+@@ -894,6 +894,20 @@ class ModelRunner(Generic[RequestDataInput]):
+ 
+         return all(_history_free(req) for req in batch.reqs)
+ 
++    def lookahead_blockers(self, batch: ScheduleBatch) -> dict[str, int]:
++        """How many requests of a batch each lookahead_eligible condition rejects."""
++        return {
++            "sampling": sum(
++                1
++                for req in batch.reqs
++                if req.sampling_params.repetition_penalty != 1.0
++                or req.sampling_params.frequency_penalty != 0.0
++                or req.sampling_params.presence_penalty != 0.0
++                or req.sampling_params.min_new_tokens != 0
++                or req.custom_logit_processor is not None
++            )
++        }
++
+     def post_process_outputs(
+         self,
+         result: GenerationBatchResult,
+diff --git a/sglang_omni/model_runner/thinker_model_runner.py b/sglang_omni/model_runner/thinker_model_runner.py
+index ea97a6bee..71311b666 100644
+--- a/sglang_omni/model_runner/thinker_model_runner.py
++++ b/sglang_omni/model_runner/thinker_model_runner.py
+@@ -539,6 +539,41 @@ class ThinkerModelRunner(ModelRunner):
+                 pass
+         return True
+ 
++    def lookahead_blockers(self, batch: ScheduleBatch) -> dict[str, int]:
++        """How many requests of a batch each lookahead_eligible condition rejects."""
++        from sglang_omni.models.qwen3_omni.request_builders import (
++            should_generate_audio_output,
++        )
++
++        counts = {"no_request_data": 0, "speech": 0, "logprob": 0, "sampling": 0}
++        for req in batch.reqs:
++            try:
++                data = req.omni_data  # noqa: leading-underscore  # upstream spelling
++            except AttributeError:
++                data = None
++            if data is None:
++                counts["no_request_data"] += 1
++            elif should_generate_audio_output(data.stage_payload):
++                counts["speech"] += 1
++            elif getattr(data, "return_logprob", False):
++                counts["logprob"] += 1
++            else:
++                pass
++            sp = req.sampling_params
++            if (
++                sp.repetition_penalty != 1.0
++                or sp.presence_penalty != 0.0
++                or sp.frequency_penalty != 0.0
++                or sp.min_new_tokens > 0
++                or sp.sampling_seed is not None
++                or sp.logit_bias is not None
++                or sp.custom_params
++            ):
++                counts["sampling"] += 1
++            else:
++                pass
++        return counts
++
+     def async_host_buf(self, like: torch.Tensor, n: int) -> torch.Tensor:
+         # note (jiaxin deng): two pinned buffers ping-ponged so resolve(N) reads
+         # one while launch(N+1) writes the other.
+diff --git a/sglang_omni/models/minicpm_o/components/code2wav.py b/sglang_omni/models/minicpm_o/components/code2wav.py
+index 648cd690a..54129c6ff 100644
+--- a/sglang_omni/models/minicpm_o/components/code2wav.py
++++ b/sglang_omni/models/minicpm_o/components/code2wav.py
+@@ -21,6 +21,7 @@ from sglang_omni.models.minicpm_o.components.token2wav.vocoder import (
+     Token2Wav,
+ )
+ from sglang_omni.models.weight_loader import resolve_dtype, resolve_model_path
++from sglang_omni.profiler import exp_trace
+ from sglang_omni.preprocessing.cache_key import hash_bytes, reference_path_cache_key
+ from sglang_omni.utils.channels_last_conv import is_channels_last_conv_device
+ 
+@@ -426,7 +427,18 @@ class MiniCPMOCode2Wav(nn.Module):
+         else:
+             pass
+ 
++        is_tracing = exp_trace.active("c2w")
++        references_start_ns = exp_trace.now_ns()
+         speaker_prompts = self.prepare_references(references)
++        if is_tracing:
++            exp_trace.set_vocode_record(
++                {
++                    "references_start_ns": references_start_ns,
++                    "references_end_ns": exp_trace.now_ns(),
++                }
++            )
++        else:
++            pass
+         device_module = torch.get_device_module(self.token2wav.device)
+         with device_module.stream(self.decode_stream):
+             return self.decode_waveforms(token_sequences, speaker_prompts)
+@@ -437,6 +449,10 @@ class MiniCPMOCode2Wav(nn.Module):
+         speaker_prompts: Sequence[SpeakerPrompt],
+     ) -> list[np.ndarray]:
+         """Run flow and HiFT. The caller selects the decode stream."""
++        record = exp_trace.vocode_record() if exp_trace.active("c2w") else None
++        is_tracing = record is not None
++        gpu_spans = exp_trace.GpuSpans(is_tracing)
++        upload_start_ns = exp_trace.now_ns()
+         token2wav_device = self.token2wav.device
+         token_lengths = [len(tokens) for tokens in token_sequences]
+         speech_tokens = pad_sequence(
+@@ -446,7 +462,12 @@ class MiniCPMOCode2Wav(nn.Module):
+         speech_token_lengths = torch.tensor(
+             token_lengths, dtype=torch.int32, device=token2wav_device
+         )
+-        mel = self.flow_mel(speech_tokens, speech_token_lengths, speaker_prompts)
++        gpu_spans.mark("flow_start")
++        flow_issue_start_ns = exp_trace.now_ns()
++        with exp_trace.annotate("c2w.flow", exp_trace.configured("c2w")):
++            mel = self.flow_mel(speech_tokens, speech_token_lengths, speaker_prompts)
++        flow_issue_end_ns = exp_trace.now_ns()
++        gpu_spans.mark("flow_end")
+ 
+         mel_upsample_rate = self.token2wav.flow.up_rate
+         rows_by_token_length: defaultdict[int, list[int]] = defaultdict(list)
+@@ -454,19 +475,46 @@ class MiniCPMOCode2Wav(nn.Module):
+             rows_by_token_length[token_length].append(row)
+         waveforms_by_row: dict[int, torch.Tensor] = {}
+         # note (MayDomine): padding changes HiFT's noncausal convolution boundaries.
+-        for token_length, row_indices in rows_by_token_length.items():
+-            speech_mel = (
+-                mel[row_indices, :, : token_length * mel_upsample_rate]
+-                .float()
+-                .contiguous()
+-            )
+-            group_waveforms, _ = self.token2wav.hift(speech_feat=speech_mel)
+-            for group_row, row in enumerate(row_indices):
+-                waveforms_by_row[row] = group_waveforms[group_row].reshape(-1)[
+-                    : token_length * SAMPLES_PER_CODEC_TOKEN
+-                ]
+-        host_waveforms = torch.cat(
+-            [waveforms_by_row[row] for row in range(len(token_lengths))]
+-        ).cpu()
++        with exp_trace.annotate("c2w.hift", exp_trace.configured("c2w")):
++            for token_length, row_indices in rows_by_token_length.items():
++                speech_mel = (
++                    mel[row_indices, :, : token_length * mel_upsample_rate]
++                    .float()
++                    .contiguous()
++                )
++                group_waveforms, _ = self.token2wav.hift(speech_feat=speech_mel)
++                for group_row, row in enumerate(row_indices):
++                    waveforms_by_row[row] = group_waveforms[group_row].reshape(-1)[
++                        : token_length * SAMPLES_PER_CODEC_TOKEN
++                    ]
++        hift_issue_end_ns = exp_trace.now_ns()
++        gpu_spans.mark("hift_end")
++        with exp_trace.annotate("c2w.download", exp_trace.configured("c2w")):
++            host_waveforms = torch.cat(
++                [waveforms_by_row[row] for row in range(len(token_lengths))]
++            ).cpu()
++        download_end_ns = exp_trace.now_ns()
+         sample_counts = [length * SAMPLES_PER_CODEC_TOKEN for length in token_lengths]
+-        return [waveform.numpy() for waveform in host_waveforms.split(sample_counts)]
++        waveforms = [waveform.numpy() for waveform in host_waveforms.split(sample_counts)]
++        if is_tracing:
++            flow_decoder = self.token2wav.flow.decoder
++            record.update(
++                {
++                    "upload_start_ns": upload_start_ns,
++                    "flow_issue_start_ns": flow_issue_start_ns,
++                    "flow_issue_end_ns": flow_issue_end_ns,
++                    "hift_issue_end_ns": hift_issue_end_ns,
++                    "download_end_ns": download_end_ns,
++                    "split_end_ns": exp_trace.now_ns(),
++                    "rows": len(token_lengths),
++                    "token_lengths": token_lengths,
++                    "hift_groups": len(rows_by_token_length),
++                    "flow_solve_path": flow_decoder.last_solve_path,
++                    "flow_solve_rows": flow_decoder.last_solve_rows,
++                    "flow_solve_frames": flow_decoder.last_solve_frames,
++                    **{f"gpu_{name}_ms": value for name, value in gpu_spans.spans_ms().items()},
++                }
++            )
++        else:
++            pass
++        return waveforms
+diff --git a/sglang_omni/models/minicpm_o/components/token2wav/flow.py b/sglang_omni/models/minicpm_o/components/token2wav/flow.py
+index 85aca4e18..fc8e6a1b7 100644
+--- a/sglang_omni/models/minicpm_o/components/token2wav/flow.py
++++ b/sglang_omni/models/minicpm_o/components/token2wav/flow.py
+@@ -100,6 +100,10 @@ class CausalConditionalCFM(torch.nn.Module):
+         self.inference_cfg_rate = inference_cfg_rate
+         self.out_channels = estimator.out_channels
+         self.graph_runner: FlowCudaGraphRunner | None = None
++        # note (research): how the last solve ran, read by the code2wav measurement.
++        self.last_solve_path = "none"
++        self.last_solve_rows = 0
++        self.last_solve_frames = 0
+         self.register_buffer(
+             "rand_noise",
+             torch.randn([1, self.out_channels, 50 * 600]),
+@@ -156,6 +160,16 @@ class CausalConditionalCFM(torch.nn.Module):
+             if packed_capacity is not None
+             else None
+         )
++        if graph_shape is not None and packed_layout is not None:
++            self.last_solve_path = "packed_graph"
++        elif graph_shape is not None:
++            self.last_solve_path = "dense_graph"
++        elif packed_layout is not None:
++            self.last_solve_path = "packed_eager"
++        else:
++            self.last_solve_path = "eager"
++        self.last_solve_rows = int(x.shape[0])
++        self.last_solve_frames = int(x.shape[2])
+         with (
+             graph_runner.lock if graph_shape is not None else nullcontext(),
+             packed_runner.lock if packed_layout is not None else nullcontext(),
+diff --git a/sglang_omni/models/minicpm_o/stages.py b/sglang_omni/models/minicpm_o/stages.py
+index 12512fe02..2c19d4a11 100644
+--- a/sglang_omni/models/minicpm_o/stages.py
++++ b/sglang_omni/models/minicpm_o/stages.py
+@@ -27,6 +27,7 @@ from sglang_omni.models.minicpm_o.native_config import TALKER_CONTEXT_LENGTH
+ from sglang_omni.models.minicpm_o.payload_types import MiniCPMOPipelineState
+ from sglang_omni.models.minicpm_o.request_builders import build_encoder_request
+ from sglang_omni.models.minicpm_o.routing import TALKER_STAGE, code2wav_reference_audio
++from sglang_omni.profiler import exp_trace
+ from sglang_omni.proto import StagePayload
+ from sglang_omni.scheduling.generation_batch_policy import (
+     build_generation_batch_overrides,
+@@ -216,6 +217,7 @@ def vocode_code2wav_payloads(
+     model: MiniCPMOCode2Wav, payloads: list[StagePayload]
+ ) -> list[StagePayload]:
+     """Vocode talker payloads in one batch, one speaker reference per row."""
++    prepare_start_ns = exp_trace.now_ns()
+     codec_tokens: list[list[int]] = []
+     references: list[bytes | None] = []
+     for payload in payloads:
+@@ -232,10 +234,12 @@ def vocode_code2wav_payloads(
+     )
+     # note (Junnan Li): model.vocode rejects empty rows, which turns without speech produce.
+     voiced = [index for index, tokens in enumerate(codec_tokens) if tokens]
++    prepare_end_ns = exp_trace.now_ns()
+     voiced_waveforms = model.vocode(
+         [codec_tokens[index] for index in voiced],
+         [references[index] for index in voiced],
+     )
++    postprocess_start_ns = exp_trace.now_ns()
+     waveforms = [np.zeros(0, dtype=np.float32) for _ in codec_tokens]
+     for index, waveform in zip(voiced, voiced_waveforms, strict=True):
+         waveforms[index] = waveform
+@@ -251,6 +255,31 @@ def vocode_code2wav_payloads(
+             )
+         )
+         outputs.append(payload)
++    record = exp_trace.vocode_record()
++    if exp_trace.active("c2w") and record is not None:
++        metadata = {
++            **record,
++            "batch_id": exp_trace.current_batch_id() or -1,
++            "prepare_start_ns": prepare_start_ns,
++            "prepare_end_ns": prepare_end_ns,
++            "postprocess_start_ns": postprocess_start_ns,
++            "request_codec_tokens": [len(tokens) for tokens in codec_tokens],
++            "request_ids": [payload.request_id for payload in payloads],
++        }
++        if exp_trace.configured("digest"):
++            metadata["request_codec_sha256"] = [
++                exp_trace.digest(tokens) for tokens in codec_tokens
++            ]
++        else:
++            pass
++        exp_trace.emit_for_requests(
++            [payload.request_id for payload in payloads],
++            "exp_vocode",
++            metadata,
++            exp_trace.now_ns(),
++        )
++    else:
++        pass
+     return outputs
+ 
+ 
+@@ -320,6 +349,7 @@ def create_code2wav_executor(
+         abort_callback=model.release_reference,
+         shutdown_callback=model.close_reference_pool,
+         request_arrival_hook=prefetch_reference,
++        trace_part="c2w" if exp_trace.configured("c2w") else None,
+     )
+ 
+ 
+diff --git a/sglang_omni/models/minicpm_o/thinker_model_runner.py b/sglang_omni/models/minicpm_o/thinker_model_runner.py
+index bfd3f6d42..94d0417a1 100644
+--- a/sglang_omni/models/minicpm_o/thinker_model_runner.py
++++ b/sglang_omni/models/minicpm_o/thinker_model_runner.py
+@@ -3,6 +3,7 @@
+ 
+ from __future__ import annotations
+ 
++import os
+ from typing import TYPE_CHECKING
+ 
+ import torch
+@@ -12,6 +13,7 @@ from sglang_omni.model_runner.base import ModelRunner
+ from sglang_omni.model_runner.thinker_model_runner import ThinkerModelRunner
+ from sglang_omni.models.minicpm_o.payload_types import MiniCPMOPipelineState
+ from sglang_omni.models.minicpm_o.routing import THINKER_STAGE
++from sglang_omni.profiler import exp_trace
+ from sglang_omni.scheduling.types import (
+     RequestOutput,
+     SchedulerOutput,
+@@ -35,6 +37,29 @@ else:
+     pass
+ 
+ 
++SPEECH_LOOKAHEAD_MODES: dict[str | None, tuple[bool, bool]] = {
++    None: (False, False),
++    "": (False, False),
++    "0": (False, False),
++    "1": (True, True),
++    "nosnapshot": (True, False),
++    # note (research, 实验 11): snapshot as in "1", but copy hidden rows on a side stream that waits only for the
++    # snapshot, so neither the per-step row copy nor the end-of-request copy queues behind the next decode step.
++    "sidecopy": (True, True),
++}
++
++
++def speech_lookahead_mode(value: str | None) -> tuple[bool, bool]:
++    """(speech may run ahead, hidden states are snapshotted at launch) for SGLANG_OMNI_SPEECH_LOOKAHEAD."""
++    if value not in SPEECH_LOOKAHEAD_MODES:
++        raise ValueError(
++            f"SGLANG_OMNI_SPEECH_LOOKAHEAD must be 0, 1, nosnapshot or sidecopy, got {value!r}"
++        )
++    else:
++        pass
++    return SPEECH_LOOKAHEAD_MODES[value]
++
++
+ class MiniCPMOThinkerModelRunner(ThinkerModelRunner):
+     """Run the thinker and accumulate hidden states for speech conditioning."""
+ 
+@@ -72,6 +97,19 @@ class MiniCPMOThinkerModelRunner(ThinkerModelRunner):
+             else get_server_return_hidden_states_mode()
+         )
+         self.pending_hidden: dict[str, list[torch.Tensor]] = {}
++        # note (research): prototype switch; the next lookahead launch replays the decode graph into the
++        # same hidden-state buffer, so speech steps snapshot it at launch before they may run ahead.
++        self.speech_lookahead, self.snapshot_hidden = speech_lookahead_mode(
++            os.environ.get("SGLANG_OMNI_SPEECH_LOOKAHEAD")
++        )
++        self.side_copy = os.environ.get("SGLANG_OMNI_SPEECH_LOOKAHEAD") == "sidecopy"
++        self.hidden_copy_stream: torch.cuda.Stream | None = None
++        # id(snapshot) -> (snapshot, event recorded right after the snapshot copy on the launch stream). The tensor
++        # itself is kept so a lookup can check identity: an id or address reused after a free never matches.
++        self.hidden_ready: dict[int, tuple[torch.Tensor, torch.cuda.Event]] = {}
++        # request -> event after the last row copied on the launch stream (sync steps), for the side stream to wait on
++        self.main_row_ready: dict[str, torch.cuda.Event] = {}
++        self.fingerprint_matrix: torch.Tensor | None = None
+ 
+     def requested_capture_hidden_mode_prefill(
+         self, schedule_batch: ScheduleBatch, requests: list[SchedulerRequest]
+@@ -136,6 +174,16 @@ class MiniCPMOThinkerModelRunner(ThinkerModelRunner):
+         outputs: dict[str, RequestOutput],
+     ) -> None:
+         """Collect request outputs; the raw result is part of the runner interface."""
++        step_ready, step_ptr = None, None
++        raw = result.logits_output.hidden_states if result is not None and result.logits_output is not None else None
++        if self.side_copy and raw is not None:
++            entry = self.hidden_ready.pop(id(raw), None)
++            if entry is not None and entry[0] is raw:
++                step_ready, step_ptr = entry[1], raw.untyped_storage().data_ptr()
++            else:
++                pass
++        else:
++            pass
+         for sched_req in scheduler_output.requests:
+             req_output = outputs.get(sched_req.request_id)
+             if req_output is None or req_output.extra is None:
+@@ -155,11 +203,94 @@ class MiniCPMOThinkerModelRunner(ThinkerModelRunner):
+                 pass
+             seq = self.pending_hidden.setdefault(sched_req.request_id, [])
+             hidden_rows = hidden.reshape(-1, hidden.shape[-1])
+-            if known_tts:
++            ready = step_ready if step_ready is not None and hidden.untyped_storage().data_ptr() == step_ptr else None
++            if ready is not None:
++                # A lookahead step: the next step is already queued on the launch stream, so copy on the side
++                # stream after the snapshot only. record_stream keeps the snapshot's memory from being reused
++                # by the allocator until the side stream has read it.
++                side = self.side_stream(hidden.device)
++                side.wait_event(ready)
++                with torch.cuda.stream(side):
++                    rows = hidden_rows.detach().clone().unbind(0) if known_tts else [hidden_rows[-1].detach().clone()]
++                hidden.record_stream(side)
++                seq.extend(rows)
++            elif known_tts:
+                 seq.extend(hidden_rows.detach().clone().unbind(0))
+             else:
+                 # note (MayDomine): CUDA graph replay overwrites the original hidden buffer.
+                 seq.append(hidden_rows[-1].detach().clone())
++            if self.side_copy and ready is None:
++                event = torch.cuda.Event()
++                event.record()
++                self.main_row_ready[sched_req.request_id] = event
++            else:
++                pass
++
++    def side_stream(self, device: torch.device) -> torch.cuda.Stream:
++        if self.hidden_copy_stream is None:
++            self.hidden_copy_stream = torch.cuda.Stream(device=device)
++        else:
++            pass
++        return self.hidden_copy_stream
++
++    def lookahead_eligible(self, batch: ScheduleBatch) -> bool:
++        """With the speech switch on, speech requests may run ahead; every other rejection stays."""
++        if not self.speech_lookahead:
++            return super().lookahead_eligible(batch)
++        else:
++            pass
++        for req in batch.reqs:
++            try:
++                data = req.omni_data  # noqa: leading-underscore  # upstream spelling
++            except AttributeError:
++                data = None
++            if data is None or getattr(data, "return_logprob", False):
++                return False
++            else:
++                pass
++            sp = req.sampling_params
++            if (
++                sp.repetition_penalty != 1.0
++                or sp.presence_penalty != 0.0
++                or sp.frequency_penalty != 0.0
++                or sp.min_new_tokens > 0
++                or sp.sampling_seed is not None
++                or sp.logit_bias is not None
++                or sp.custom_params
++            ):
++                return False
++            else:
++                pass
++        return True
++
++    def post_decode_launch(
++        self,
++        result: GenerationBatchResult | None,
++        forward_batch: ForwardBatch | None,
++        requests: list[SchedulerRequest],
++    ) -> torch.Tensor | None:
++        """Snapshot this step's hidden states before the next launch can overwrite the graph buffer."""
++        if (
++            self.snapshot_hidden
++            and result is not None
++            and result.logits_output is not None
++            and result.logits_output.hidden_states is not None
++        ):
++            result.logits_output.hidden_states = (
++                result.logits_output.hidden_states.clone()
++            )
++            if getattr(self, "side_copy", False):  # set in __init__; also safe on objects built without it
++                event = torch.cuda.Event()
++                event.record()
++                snapshot = result.logits_output.hidden_states
++                self.hidden_ready[id(snapshot)] = (snapshot, event)
++                while len(self.hidden_ready) > 8:  # entries of steps that never resolved (failed batches)
++                    self.hidden_ready.pop(next(iter(self.hidden_ready)))
++            else:
++                pass
++        else:
++            pass
++        return super().post_decode_launch(result, forward_batch, requests)
+ 
+     def finalize_skip_rids(self, scheduler_output: SchedulerOutput) -> set[str]:
+         """Do not advance generation state for non-final prefill chunks."""
+@@ -186,9 +317,51 @@ class MiniCPMOThinkerModelRunner(ThinkerModelRunner):
+             seq = seq[-len(known_tts_output_ids) - 1 : -1]
+         else:
+             pass
+-        stacked = torch.stack(seq).to("cpu")
++        main_ready = self.main_row_ready.pop(request_id, None)
++        # note (research, 实验 11): the annotation marks this copy in torch traces and NVTX, in every mode.
++        with exp_trace.annotate("thinker.request_finished_copy", exp_trace.configured("thinker")):
++            if self.side_copy:
++                side = self.side_stream(seq[0].device)
++                if main_ready is not None:
++                    side.wait_event(main_ready)
++                else:
++                    pass
++                with torch.cuda.stream(side):
++                    # Waits for the side stream only (row copies of finished steps), not the queued next step.
++                    stacked = torch.stack(seq).to("cpu")
++            else:
++                stacked = torch.stack(seq).to("cpu")
+         req_data.extra_model_outputs["hidden_states_seq"] = list(stacked.unbind(0))
++        if exp_trace.active("digest"):
++            exp_trace.emit_for_requests(
++                [request_id],
++                "exp_thinker_hidden",
++                {
++                    "rows": int(stacked.shape[0]),
++                    "hidden_sha256": exp_trace.digest(stacked),
++                    "speech_lookahead": self.speech_lookahead,
++                    "snapshot_hidden": self.snapshot_hidden,
++                    "side_copy": self.side_copy,
++                    "hidden_fingerprint": self.fingerprint(stacked),
++                },
++                exp_trace.now_ns(),
++            )
++        else:
++            pass
++
++    def fingerprint(self, stacked: torch.Tensor) -> dict[str, list]:
++        """Per row: the L2 norm and a projection on 4 fixed random directions (实验 11 compares these within a
++        tolerance where exact hashes cannot match, e.g. after batching changed the numerics)."""
++        x = stacked.float().reshape(stacked.shape[0], -1)
++        if self.fingerprint_matrix is None or self.fingerprint_matrix.shape[0] != x.shape[1]:
++            generator = torch.Generator().manual_seed(20261118)
++            self.fingerprint_matrix = torch.randn(x.shape[1], 4, generator=generator) / x.shape[1] ** 0.5
++        else:
++            pass
++        return {"norm": [round(float(v), 4) for v in x.norm(dim=1)],
++                "proj": [[round(float(v), 4) for v in row] for row in x @ self.fingerprint_matrix]}
+ 
+     def reset_request(self, request_id: str) -> None:
+         """Drop accumulated hidden states on abort (no terminal flush runs)."""
+         self.pending_hidden.pop(request_id, None)
++        self.main_row_ready.pop(request_id, None)
+diff --git a/sglang_omni/pipeline/stage/runtime.py b/sglang_omni/pipeline/stage/runtime.py
+index e8067693b..d4a98f7d7 100644
+--- a/sglang_omni/pipeline/stage/runtime.py
++++ b/sglang_omni/pipeline/stage/runtime.py
+@@ -2319,7 +2319,18 @@ class Stage:
+ 
+     def on_profiler_start(self, msg: ProfilerStartMessage) -> None:
+         run_id = msg.run_id
+-        if msg.enable_torch and not TorchProfiler.is_active():
++        # note (research): measurement switch; listed stages keep request events but stay out of the
++        # torch profiler, so a trace window covers only the stages under study.
++        skipped_prefixes = tuple(
++            prefix
++            for prefix in os.environ.get("SGLANG_OMNI_EXP_TORCH_SKIP", "").split(",")
++            if prefix
++        )
++        if (
++            msg.enable_torch
++            and not TorchProfiler.is_active()
++            and not self.name.startswith(skipped_prefixes)
++        ):
+             base_tpl = msg.trace_path_template.format(run_id=run_id, stage=self.name)
+             template = f"{base_tpl}_pid{os.getpid()}"
+             prof_dir = os.environ.get("SGLANG_TORCH_PROFILER_DIR")
+diff --git a/sglang_omni/profiler/exp_trace.py b/sglang_omni/profiler/exp_trace.py
+new file mode 100644
+index 000000000..e7c18d99c
+--- /dev/null
++++ b/sglang_omni/profiler/exp_trace.py
+@@ -0,0 +1,134 @@
++# SPDX-License-Identifier: Apache-2.0
++"""Opt-in measurement points for research experiments on code2wav batching and thinker lookahead.
++
++Nothing here runs unless SGLANG_OMNI_EXP_TRACE names the part (comma list of c2w, thinker and digest;
++digest adds hashes of thinker hidden states and codec tokens for comparing runs).
++Events go through the request event recorder, so they are written only while request events are
++switched on, land in the same per-process JSONL files and use the same wall clock (time.time_ns).
++No call here synchronizes a CUDA stream: GPU spans come from CUDA events that are read after a
++synchronization the instrumented code already performs.
++"""
++
++from __future__ import annotations
++
++import contextlib
++import hashlib
++import os
++import threading
++import time
++from collections.abc import Iterator
++
++import torch
++
++from sglang_omni.profiler.event_recorder import emit, get_active_stage, get_recorder
++
++PARTS = frozenset(
++    part.strip()
++    for part in os.environ.get("SGLANG_OMNI_EXP_TRACE", "").split(",")
++    if part.strip()
++)
++THINKER_STEP_REQUEST_ID = "__thinker_step__"
++
++EventMetadata = dict[str, int | float | str | bool | list[int] | list[str]]
++
++thread_state = threading.local()
++
++
++def digest(values: torch.Tensor | list[int]) -> str:
++    """First 16 hex digits of SHA-256 over the dtype and raw bytes; bfloat16 is read as int16."""
++    tensor = values if isinstance(values, torch.Tensor) else torch.tensor(values, dtype=torch.int64)
++    tensor = tensor.detach().contiguous().cpu()
++    raw = tensor.view(torch.int16) if tensor.dtype == torch.bfloat16 else tensor
++    return hashlib.sha256(str(tensor.dtype).encode() + raw.numpy().tobytes()).hexdigest()[:16]
++
++
++def configured(part: str) -> bool:
++    """The part is switched on for this process, whether or not events are being recorded."""
++    return part in PARTS
++
++
++def active(part: str) -> bool:
++    """The part is switched on and request events are being recorded right now."""
++    return part in PARTS and get_recorder().is_active()
++
++
++def now_ns() -> int:
++    return time.time_ns()
++
++
++def stage_starts_with(prefix: str) -> bool:
++    return (get_active_stage() or "").startswith(prefix)
++
++
++def set_batch_id(batch_id: int | None) -> None:
++    """Bind the code2wav batch the scheduler thread is computing, for the vocode measurement."""
++    thread_state.batch_id = batch_id
++    thread_state.vocode_record = None
++
++
++def current_batch_id() -> int | None:
++    return getattr(thread_state, "batch_id", None)
++
++
++def set_vocode_record(record: EventMetadata | None) -> None:
++    thread_state.vocode_record = record
++
++
++def vocode_record() -> EventMetadata | None:
++    return getattr(thread_state, "vocode_record", None)
++
++
++def emit_for_requests(
++    request_ids: list[str],
++    event_name: str,
++    metadata: EventMetadata,
++    timestamp_ns: int,
++) -> None:
++    """One event per request, sharing the timestamp and metadata of their batch."""
++    for request_id in request_ids:
++        emit(
++            request_id=request_id,
++            stage=None,
++            event_name=event_name,
++            metadata=metadata,
++            timestamp_ns=timestamp_ns,
++        )
++
++
++@contextlib.contextmanager
++def annotate(range_name: str, is_enabled: bool) -> Iterator[None]:
++    """A torch profiler range and an NVTX range around a block when is_enabled."""
++    if is_enabled:
++        with torch.profiler.record_function(range_name):
++            torch.cuda.nvtx.range_push(range_name)
++            try:
++                yield
++            finally:
++                torch.cuda.nvtx.range_pop()
++    else:
++        yield
++
++
++class GpuSpans:
++    """CUDA events recorded on the current stream; read only after the caller's own sync."""
++
++    def __init__(self, is_enabled: bool) -> None:
++        self.is_enabled = is_enabled
++        self.marks: list[tuple[str, torch.cuda.Event]] = []
++
++    def mark(self, point_name: str) -> None:
++        if self.is_enabled:
++            event = torch.cuda.Event(enable_timing=True)
++            event.record()
++            self.marks.append((point_name, event))
++        else:
++            pass
++
++    def spans_ms(self) -> dict[str, float]:
++        """Milliseconds between consecutive marks, keyed first_to_second."""
++        return {
++            f"{first_name}_to_{second_name}": float(first.elapsed_time(second))
++            for (first_name, first), (second_name, second) in zip(
++                self.marks, self.marks[1:]
++            )
++        }
+diff --git a/sglang_omni/scheduling/omni_scheduler.py b/sglang_omni/scheduling/omni_scheduler.py
+index 88e0de93a..48edddfe8 100644
+--- a/sglang_omni/scheduling/omni_scheduler.py
++++ b/sglang_omni/scheduling/omni_scheduler.py
+@@ -67,6 +67,8 @@ from sglang_omni.model_runner.base import ModelRunner, PendingStep
+ from sglang_omni.model_runner.mlx_model_worker import MlxSchedulerPendingStep
+ from sglang_omni.model_runner.model_worker import ModelWorker
+ from sglang_omni.model_runner.weight_checker import WeightCheckResult
++from sglang_omni.profiler import exp_trace
++from sglang_omni.profiler.event_recorder import emit as emit_request_event
+ from sglang_omni.pipeline.stage.stream_queue import StreamItem
+ from sglang_omni.platforms import current_platform
+ from sglang_omni.profiler.duplex_events import emit_session_stage_bypassed
+@@ -2410,6 +2412,16 @@ class OmniScheduler(Generic[RequestDataT]):
+                 else:
+                     pass
+                 data.output_ids = list(req.output_ids)
++                if exp_trace.active("digest") and exp_trace.stage_starts_with("thinker"):
++                    # note (research): emitted here because on_request_finished runs before the output ids are set
++                    exp_trace.emit_for_requests(
++                        [rid],
++                        "exp_thinker_output",
++                        {"output_ids_sha256": exp_trace.digest(data.output_ids), "output_len": len(data.output_ids)},
++                        exp_trace.now_ns(),
++                    )
++                else:
++                    pass
+                 data.weight_version = get_serving().weight_version
+                 self.flush_stream_output(rid, data)
+                 session_unit = self.active_session_unit(rid)
+@@ -3638,7 +3650,18 @@ class OmniScheduler(Generic[RequestDataT]):
+         D1 in design.md section 1.3). Prefill / empty batches flush any in-flight
+         decode first and run synchronously (the in-flight step is never stranded).
+         """
++        # note (research): per-iteration thinker measurement, off unless SGLANG_OMNI_EXP_TRACE has thinker.
++        is_tracing_stage = exp_trace.configured("thinker") and exp_trace.stage_starts_with(
++            "thinker"
++        )
++        # note (research, 实验 11): a step index and a profiler range per launch, so GPU kernels in a torch trace can
++        # be tied to the scheduler step (and its mode) that launched them, including steps outside CUDA graphs.
++        step_index = 0
+         while self.running:
++            is_tracing_step = is_tracing_stage and exp_trace.active("thinker")
++            step_start_ns = exp_trace.now_ns()
++            step_index += 1
++            flush_reason = "none"
+             self.process_admin_requests()
+             recv_reqs = self.recv_requests()
+             recv_reqs.extend(self.take_deferred_request_payloads())
+@@ -3659,6 +3682,7 @@ class OmniScheduler(Generic[RequestDataT]):
+                     or (self.waiting_queue and not self.running_batch.batch_is_full)
+                 )
+             ):
++                flush_reason = "mixed_chunk"
+                 self.resolve_pending_async()
+             elif (
+                 self.async_decode_resolve_before_prefill
+@@ -3669,6 +3693,7 @@ class OmniScheduler(Generic[RequestDataT]):
+                 continue
+             else:
+                 pass
++            top_flush_ns = exp_trace.now_ns() - step_start_ns
+ 
+             batch = self.get_next_batch_to_run()
+             self.cur_batch = batch
+@@ -3682,10 +3707,41 @@ class OmniScheduler(Generic[RequestDataT]):
+                 and self.batch_is_decode(batch)
+                 and (runner is None or runner.lookahead_eligible(batch))
+             )
++            step_record: exp_trace.EventMetadata = {}
++            if is_tracing_step and batch is not None:
++                if use_lookahead:
++                    blocked_by = "none"
++                elif len(batch.reqs) < self.async_decode_min_batch_size:
++                    blocked_by = "below_min_batch"
++                elif not self.batch_is_decode(batch):
++                    blocked_by = "not_decode"
++                else:
++                    blocked_by = "runner_ineligible"
++                step_record = {
++                    "step_index": step_index,
++                    "batch_size": len(batch.reqs),
++                    "forward_mode": batch.forward_mode.name,
++                    "use_lookahead": use_lookahead,
++                    "blocked_by": blocked_by,
++                    "waiting_requests": len(self.waiting_queue),
++                    "has_chunked_request": self.chunked_req is not None,
++                    **(
++                        {
++                            f"blocker_{name}": count
++                            for name, count in runner.lookahead_blockers(batch).items()
++                        }
++                        if runner is not None and blocked_by == "runner_ineligible"
++                        else {}
++                    ),
++                }
++            else:
++                pass
+ 
+             if use_lookahead:
++                launch_start_ns = exp_trace.now_ns()
+                 try:
+-                    sched_output, pending_step = self.run_batch_launch(batch)
++                    with exp_trace.annotate(f"thinker.step{step_index}.{batch.forward_mode.name}.la", is_tracing_step):
++                        sched_output, pending_step = self.run_batch_launch(batch)
+                 except Exception as exc:
+                     self.handle_batch_failure(batch, exc)
+                 else:
+@@ -3695,6 +3751,8 @@ class OmniScheduler(Generic[RequestDataT]):
+                         scheduler_output=sched_output,
+                         device_step=pending_step,
+                     )
++                    step_record["launch_ns"] = exp_trace.now_ns() - launch_start_ns
++                    resolve_start_ns = exp_trace.now_ns()
+                     if prev_pending is not None:
+                         if self.session_bridge is not None:
+                             self.previous_pending_decode = prev_pending
+@@ -3714,6 +3772,7 @@ class OmniScheduler(Generic[RequestDataT]):
+                                 self.handle_batch_failure(prev_pending.batch, exc)
+                     else:
+                         pass
++                    step_record["resolve_ns"] = exp_trace.now_ns() - resolve_start_ns
+             else:
+                 # Prefill, empty batches, decode batches below the configured
+                 # threshold and batches the runner marks ineligible for the
+@@ -3722,7 +3781,10 @@ class OmniScheduler(Generic[RequestDataT]):
+                 # leaves the lookahead, then run this batch synchronously. Skip
+                 # the drain call when nothing is pending, since it would no-op.
+                 if self.async_pending is not None:
++                    flush_reason = "sync_batch" if flush_reason == "none" else flush_reason
++                    drain_start_ns = exp_trace.now_ns()
+                     self.resolve_pending_async()
++                    step_record["drain_ns"] = exp_trace.now_ns() - drain_start_ns
+                     # Stale-batch overrun: `batch` was built (get_next_batch_to_run,
+                     # top of loop) BEFORE this drain, which can finish OR retract reqs
+                     # still present in it. Drop them before run_batch so they are not
+@@ -3733,17 +3795,37 @@ class OmniScheduler(Generic[RequestDataT]):
+                 else:
+                     pass
+                 if batch:
+-                    result = self.run_batch(batch)
++                    run_start_ns = exp_trace.now_ns()
++                    with exp_trace.annotate(f"thinker.step{step_index}.{batch.forward_mode.name}.sync", is_tracing_step):
++                        result = self.run_batch(batch)
++                    run_end_ns = exp_trace.now_ns()
+                     if result is not _FAILED_BATCH_RESULT:
+                         self.process_batch_result(batch, result)
+                     else:
+                         pass
++                    step_record["run_ns"] = run_end_ns - run_start_ns
++                    step_record["process_ns"] = exp_trace.now_ns() - run_end_ns
+                 else:
+                     self._sched_idled = True  # noqa: leading-underscore
+                     self.self_check_during_idle()
+                     self.sleep_during_idle()
+ 
+             self.last_batch = batch
++            if is_tracing_step and (step_record or flush_reason != "none"):
++                emit_request_event(
++                    request_id=exp_trace.THINKER_STEP_REQUEST_ID,
++                    stage=None,
++                    event_name="exp_thinker_step",
++                    metadata={
++                        **step_record,
++                        "flush_reason": flush_reason,
++                        "top_flush_ns": top_flush_ns,
++                        "step_start_ns": step_start_ns,
++                    },
++                    timestamp_ns=exp_trace.now_ns(),
++                )
++            else:
++                pass
+             if envs.SGLANG_ENABLE_STRICT_MEM_CHECK_DURING_BUSY.get():
+                 self.self_check_during_busy()
+             else:
+diff --git a/sglang_omni/scheduling/simple_scheduler.py b/sglang_omni/scheduling/simple_scheduler.py
+index 9eec6bab7..cb6dfe721 100644
+--- a/sglang_omni/scheduling/simple_scheduler.py
++++ b/sglang_omni/scheduling/simple_scheduler.py
+@@ -19,6 +19,7 @@ import time
+ from collections.abc import Coroutine, Sequence
+ from typing import Awaitable, Callable, Generic, Protocol
+ 
++from sglang_omni.profiler import exp_trace
+ from sglang_omni.proto.request import StagePayload
+ from sglang_omni.scheduling.message import IncomingMessage, OutgoingMessage
+ from sglang_omni.scheduling.threaded_simple_scheduler import ComputeInput, ComputeResult
+@@ -63,6 +64,7 @@ class SimpleScheduler(Generic[ComputeInput, ComputeResult]):
+         abort_callback: Callable[[str], None] | None = None,
+         shutdown_callback: Callable[[], None] | None = None,
+         request_arrival_hook: RequestArrivalHook | None = None,
++        trace_part: str | None = None,
+     ):
+         self.inbox: _queue_mod.Queue[IncomingMessage] = _queue_mod.Queue()
+         self.outbox: _queue_mod.Queue[OutgoingMessage] = _queue_mod.Queue()
+@@ -96,6 +98,10 @@ class SimpleScheduler(Generic[ComputeInput, ComputeResult]):
+         self.abort_lock = threading.Lock()
+         self.running = False
+         self.pending_messages: collections.deque[IncomingMessage] = collections.deque()
++        # note (research): trace_part names the exp_trace part that measures this scheduler's batches.
++        self.trace_part = trace_part
++        self.trace_dequeue: dict[str, tuple[int, int]] = {}
++        self.trace_batch_count = 0
+ 
+     def cleanup_aborted_request(self, request_id: str) -> None:
+         if self.abort_callback is None:
+@@ -146,8 +152,22 @@ class SimpleScheduler(Generic[ComputeInput, ComputeResult]):
+         except _queue_mod.Empty:
+             return None
+ 
++    def is_tracing(self) -> bool:
++        return self.trace_part is not None and exp_trace.active(self.trace_part)
++
++    def record_dequeue(self, message: IncomingMessage) -> None:
++        """When a request left the inbox for a batch, and how many messages were still waiting."""
++        if self.is_tracing():
++            self.trace_dequeue[message.request_id] = (
++                exp_trace.now_ns(),
++                self.inbox.qsize() + len(self.pending_messages),
++            )
++        else:
++            pass
++
+     def collect_batch(self, first_msg: IncomingMessage) -> list[IncomingMessage]:
+         batch = [first_msg]
++        self.record_dequeue(first_msg)
+         if self.batch_fn is None or self.max_batch_size <= 1:
+             return batch
+         else:
+@@ -189,6 +209,7 @@ class SimpleScheduler(Generic[ComputeInput, ComputeResult]):
+                 else:
+                     pass
+                 batch.append(msg)
++                self.record_dequeue(msg)
+                 if deadline is None:
+                     deadline = time.monotonic() + self.max_batch_wait_s
+                 else:
+@@ -280,6 +301,50 @@ class SimpleScheduler(Generic[ComputeInput, ComputeResult]):
+             else:
+                 self.emit_result(msg.request_id, result, self.outbox)
+ 
++    def run_traced_batch(
++        self, batch: list[IncomingMessage], loop: asyncio.AbstractEventLoop
++    ) -> None:
++        """run_batch with batch formation and compute boundaries recorded per request."""
++        self.trace_batch_count += 1
++        batch_id = self.trace_batch_count
++        request_ids = [message.request_id for message in batch]
++        formed_ns = exp_trace.now_ns()
++        batch_cost = sum(self.message_cost(message) for message in batch)
++        queue_depth = self.inbox.qsize() + len(self.pending_messages)
++        for message in batch:
++            dequeue_ns, depth_at_dequeue = self.trace_dequeue.pop(
++                message.request_id, (formed_ns, -1)
++            )
++            exp_trace.emit_for_requests(
++                [message.request_id],
++                "exp_batch_formed",
++                {
++                    "batch_id": batch_id,
++                    "batch_size": len(batch),
++                    "batch_cost": batch_cost,
++                    "dequeue_ns": dequeue_ns,
++                    "queue_depth_at_dequeue": depth_at_dequeue,
++                    "queue_depth_at_formed": queue_depth,
++                },
++                formed_ns,
++            )
++        exp_trace.set_batch_id(batch_id)
++        compute_start_ns = exp_trace.now_ns()
++        try:
++            self.run_batch(batch, loop)
++        finally:
++            exp_trace.set_batch_id(None)
++            exp_trace.emit_for_requests(
++                request_ids,
++                "exp_batch_done",
++                {
++                    "batch_id": batch_id,
++                    "batch_size": len(batch),
++                    "compute_start_ns": compute_start_ns,
++                },
++                exp_trace.now_ns(),
++            )
++
+     @staticmethod
+     async def await_result(result: Awaitable[ComputeResult]) -> ComputeResult:
+         return await result
+@@ -321,7 +386,10 @@ class SimpleScheduler(Generic[ComputeInput, ComputeResult]):
+                     batch = [msg]
+                     try:
+                         batch = self.collect_batch(msg)
+-                        self.run_batch(batch, loop)
++                        if self.is_tracing():
++                            self.run_traced_batch(batch, loop)
++                        else:
++                            self.run_batch(batch, loop)
+                     except Exception as exc:
+                         logger.exception(
+                             "SimpleScheduler: compute_fn failed for %s", msg.request_id

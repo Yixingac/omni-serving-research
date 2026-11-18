@@ -1,0 +1,414 @@
+{
+ "runtime_profile": "unicorn_batch",
+ "hardware_label": "a6000x8",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "exp10_graph_block1",
+ "description": "实验 10 第 1 个区组第 1 个：放置 t2_k4_c2，flow CUDA graph 开。W3b（并发 128）和 MIX（W3b、W3L 各半，并发 96）各 7 种组批设置（fifo 批上限 1/2/4/8/16、按长度 8/16），控制文件切换，顺序随机（种子 20261118），每段预热一波、测两波，开事件。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "s0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "args": [
+    "--config",
+    "{research_repo}/configs/models/minicpm_o_4_5_exp_t2_k4_c2.yaml"
+   ],
+   "ready_timeout_s": 2400,
+   "env": {
+    "SGLANG_OMNI_C2W_CONTROL": "{exp_dir}/c2w_control.json",
+    "SGLANG_OMNI_PORT_CLAIM_DIR": "{exp_dir}/port_claims"
+   }
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_fifo16",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 16,
+    "policy": "fifo",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_fifo16",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    128
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_fifo2",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 2,
+    "policy": "fifo",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_fifo2",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    128
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_length16",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 16,
+    "policy": "length",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_length16",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    128
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_fifo4",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 4,
+    "policy": "fifo",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_fifo4",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    128
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_fifo1",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 1,
+    "policy": "fifo",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_fifo1",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    128
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_fifo8",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "fifo",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_fifo8",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    128
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_length8",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_length8",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    128
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_fifo2",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 2,
+    "policy": "fifo",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "mix_fifo2",
+   "concurrency": [
+    96
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_fifo8",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "fifo",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "mix_fifo8",
+   "concurrency": [
+    96
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_fifo4",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 4,
+    "policy": "fifo",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "mix_fifo4",
+   "concurrency": [
+    96
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_length8",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "mix_length8",
+   "concurrency": [
+    96
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_length16",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 16,
+    "policy": "length",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "mix_length16",
+   "concurrency": [
+    96
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_fifo1",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 1,
+    "policy": "fifo",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "mix_fifo1",
+   "concurrency": [
+    96
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_fifo16",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 16,
+    "policy": "fifo",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "mix_fifo16",
+   "concurrency": [
+    96
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  }
+ ]
+}

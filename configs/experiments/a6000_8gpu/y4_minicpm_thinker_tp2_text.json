@@ -1,0 +1,48 @@
+{
+  "runtime_profile": "unicorn",
+  "seed": 0,
+  "assets": "synthetic-v1",
+  "experiment_id": "y4_minicpm_thinker_tp2_text",
+  "hardware_label": "a6000x2",
+  "description": "thinker 张量并行：MiniCPM-o text-only，thinker TP=2（GPU 0,1）。与两个 TP=1 副本（y4b）比较延迟与吞吐的取舍。拿到拓扑后，再决定是否在 NVLink 对与非 NVLink 对上各跑一次。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0,
+        1
+      ],
+      "args": [
+        "--text-only",
+        "--thinker.process",
+        "thinker",
+        "--thinker.tp_size",
+        "2",
+        "--thinker.gpu",
+        "[0, 1]"
+      ],
+      "ready_timeout_s": 2400
+    }
+  ],
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w1",
+      "workload": "configs/workloads/w1_text_chat.json",
+      "requests": 2
+    },
+    {
+      "kind": "closed_loop",
+      "name": "w1",
+      "workload": "configs/workloads/w1_text_chat.json",
+      "concurrency": [
+        1,
+        4,
+        16,
+        64
+      ],
+      "requests_per_level": 64
+    }
+  ]
+}

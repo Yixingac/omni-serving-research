@@ -1,0 +1,58 @@
+{
+ "plan_id": "a6000_8gpu_v2_batch2_part6",
+ "_comment": "plan v2 第二批的第六部分，通过 plan.d 追加、优先运行：4 种 8 卡布局在并发 1/2/4/8 下的小 batch 实时服务。由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "v2b_sb_s2x6",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_sb_s2x6.json",
+   "priority": 88,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 600,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "第二批小 batch 实时服务：一个服务：2 个 thinker（pipeline）副本 + 6 个 talker 副本，code2wav 单独进程、与 talker 同卡。W3b 闭环并发 1, 2, 4, 8，每档 64 个请求（另有 4 个预热），开事件记录，看小 batch 下的 TTFT、端到端 ÷ 语音秒和各阶段时间。"
+  },
+  {
+   "experiment_id": "v2b_sb_r8",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_sb_r8.json",
+   "priority": 87,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 600,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "第二批小 batch 实时服务：8 个完整副本（每卡一个服务，code2wav 单独进程），客户端按在途请求最少路由。W3b 闭环并发 1, 2, 4, 8，每档 64 个请求（另有 4 个预热），开事件记录，看小 batch 下的 TTFT、端到端 ÷ 语音秒和各阶段时间。"
+  },
+  {
+   "experiment_id": "v2b_sb_p4",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_sb_p4.json",
+   "priority": 86,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 600,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "第二批小 batch 实时服务：4 个拆分服务（每个 1 张 thinker 卡 + 1 张 talker 卡，code2wav 单独进程），客户端按在途请求最少路由。W3b 闭环并发 1, 2, 4, 8，每档 64 个请求（另有 4 个预热），开事件记录，看小 batch 下的 TTFT、端到端 ÷ 语音秒和各阶段时间。"
+  },
+  {
+   "experiment_id": "v2b_sb_s1x7",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_sb_s1x7.json",
+   "priority": 85,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 600,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "第二批小 batch 实时服务：一个服务：1 个 thinker（pipeline）副本 + 7 个 talker 副本，code2wav 单独进程、与 talker 同卡。W3b 闭环并发 1, 2, 4, 8，每档 64 个请求（另有 4 个预热），开事件记录，看小 batch 下的 TTFT、端到端 ÷ 语音秒和各阶段时间。"
+  }
+ ]
+}

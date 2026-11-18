@@ -1,0 +1,19 @@
+{
+ "plan_id": "exp10_check",
+ "_comment": "实验 10 正确性检查（排在实验 9 正式运行之后）。通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_exp09_11.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "exp10_check",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/exp09_11/exp10_check.json",
+   "priority": -200,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 900,
+   "timeout_s": 2400,
+   "max_retries": 1,
+   "description": "实验 10 正确性检查：放置 t2_k4_c2，flow CUDA graph 开，打开 digest。贪心负载（thinker、talker 温度 0，不带种子），并发 32，依次 fifo1、fifo16、length16、length8、fifo16（控制文件切换），每段 96 个请求。比较语音编码相同的请求在各组批方式下的波形。"
+  }
+ ]
+}

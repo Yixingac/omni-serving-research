@@ -1,0 +1,339 @@
+{
+ "runtime_profile": "unicorn_instr",
+ "hardware_label": "a6000x8",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "exp08_lookahead_block2",
+ "description": "实验 8 第一阶段第 2 个区组：2+6，打点版 sglang-omni。2×2：只要文字（w3t）或文字+语音（w3b），请求带种子 0 或不带（_ns），并发 8、32、64；顺序（种子 20261117）w3b@32、w3b_ns@64、w3b_ns@8、w3t@32、w3b_ns@32、w3t_ns@32、w3t@64、w3t_ns@8、w3b@8、w3t_ns@64、w3t@8、w3b@64。每个条件先跑开事件的一段（含 thinker 每轮记录），再跑一段在中间开 3 秒 torch profiler。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "s0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "args": [
+    "--config",
+    "{research_repo}/configs/models/minicpm_o_4_5_exp_t2_k6_shared.yaml"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_c32_B",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_c32_C",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "torch_profile_window": {
+    "start_after_s": 8,
+    "duration_s": 3
+   }
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_ns_c64_B",
+   "workload": "configs/workloads/w3b_text_speech_noseed.json",
+   "concurrency": [
+    64
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_ns_c64_C",
+   "workload": "configs/workloads/w3b_text_speech_noseed.json",
+   "concurrency": [
+    64
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "torch_profile_window": {
+    "start_after_s": 7,
+    "duration_s": 3
+   }
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_ns_c8_B",
+   "workload": "configs/workloads/w3b_text_speech_noseed.json",
+   "concurrency": [
+    8
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_ns_c8_C",
+   "workload": "configs/workloads/w3b_text_speech_noseed.json",
+   "concurrency": [
+    8
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "torch_profile_window": {
+    "start_after_s": 10,
+    "duration_s": 3
+   }
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3t_c32_B",
+   "workload": "configs/workloads/w3t_text_only.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3t_c32_C",
+   "workload": "configs/workloads/w3t_text_only.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "torch_profile_window": {
+    "start_after_s": 8,
+    "duration_s": 3
+   }
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_ns_c32_B",
+   "workload": "configs/workloads/w3b_text_speech_noseed.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_ns_c32_C",
+   "workload": "configs/workloads/w3b_text_speech_noseed.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "torch_profile_window": {
+    "start_after_s": 8,
+    "duration_s": 3
+   }
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3t_ns_c32_B",
+   "workload": "configs/workloads/w3t_text_only_noseed.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3t_ns_c32_C",
+   "workload": "configs/workloads/w3t_text_only_noseed.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "torch_profile_window": {
+    "start_after_s": 8,
+    "duration_s": 3
+   }
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3t_c64_B",
+   "workload": "configs/workloads/w3t_text_only.json",
+   "concurrency": [
+    64
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3t_c64_C",
+   "workload": "configs/workloads/w3t_text_only.json",
+   "concurrency": [
+    64
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "torch_profile_window": {
+    "start_after_s": 7,
+    "duration_s": 3
+   }
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3t_ns_c8_B",
+   "workload": "configs/workloads/w3t_text_only_noseed.json",
+   "concurrency": [
+    8
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3t_ns_c8_C",
+   "workload": "configs/workloads/w3t_text_only_noseed.json",
+   "concurrency": [
+    8
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "torch_profile_window": {
+    "start_after_s": 10,
+    "duration_s": 3
+   }
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_c8_B",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    8
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_c8_C",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    8
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "torch_profile_window": {
+    "start_after_s": 10,
+    "duration_s": 3
+   }
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3t_ns_c64_B",
+   "workload": "configs/workloads/w3t_text_only_noseed.json",
+   "concurrency": [
+    64
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3t_ns_c64_C",
+   "workload": "configs/workloads/w3t_text_only_noseed.json",
+   "concurrency": [
+    64
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "torch_profile_window": {
+    "start_after_s": 7,
+    "duration_s": 3
+   }
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3t_c8_B",
+   "workload": "configs/workloads/w3t_text_only.json",
+   "concurrency": [
+    8
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3t_c8_C",
+   "workload": "configs/workloads/w3t_text_only.json",
+   "concurrency": [
+    8
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "torch_profile_window": {
+    "start_after_s": 10,
+    "duration_s": 3
+   }
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_c64_B",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    64
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_c64_C",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    64
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "torch_profile_window": {
+    "start_after_s": 7,
+    "duration_s": 3
+   }
+  }
+ ]
+}

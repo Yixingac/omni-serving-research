@@ -1,0 +1,3 @@
+{"model_id": "Qwen/Qwen3-Omni-30B-A3B-Instruct", "revision": "26291f793822fb6be9555850f06dfe95f2d7e695",
+ "model_path": "~/workspace/sglang-omni-learning/models/Qwen3-Omni-30B-A3B-Instruct", "served_model_name": "qwen3-omni",
+ "notes": "BF16 权重 66 GB，单张 48 GB 卡放不下 thinker，需要 thinker TP=2；语音输出另需一张卡给 talker（已在 A6000 上验证）。"}

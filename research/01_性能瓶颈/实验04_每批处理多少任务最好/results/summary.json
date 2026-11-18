@@ -1,0 +1,1306 @@
+{
+ "generated_by": "scripts/analysis/exp04_report.py",
+ "config_limits": {
+  "thinker_max_running_per_replica": 64,
+  "talker_max_running_per_replica": 32,
+  "code2wav_max_batch_size": 16,
+  "code2wav_max_batch_wait_ms": 0
+ },
+ "rule": {
+  "back_to_back_max_gap_s": 10.0,
+  "backlogged_mean_batch": 2.0
+ },
+ "curves": {
+  "s2x6": {
+   "label": "2+6",
+   "levels": [
+    {
+     "concurrency": 1.0,
+     "run": "20261116_v2b_sb_s2x6_run01",
+     "eff_batch": {
+      "thinker": 0.29236966203039133,
+      "talker": 0.04532320103596724,
+      "code2wav": 0.018019047869509374
+     },
+     "replicas": {
+      "thinker": 2,
+      "talker": 6,
+      "code2wav": 6
+     },
+     "unit": {
+      "thinker_ms_per_token": 26.34728215909091,
+      "talker_ms_per_audio_s": 38.616319102564105,
+      "code2wav_ms_per_audio_s": 11.729560748792272
+     },
+     "gpu_util": {
+      "thinker": 26.9573268921095,
+      "talker": 4.63768115942029
+     },
+     "thinker_tokens_per_s_per_replica": 11.096767410960892,
+     "talker_audio_s_per_s_per_replica": 1.1736799904617994,
+     "output_tokens_p50": 34.0,
+     "output_audio_s_p50": 11.76,
+     "code2wav_service_ms_p50": 158.6308315,
+     "code2wav_batches": {
+      "batches": 68,
+      "requests": 68,
+      "mean_size": 1.0,
+      "max_size": 1,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 2.0,
+     "run": "20261116_v2b_sb_s2x6_run01",
+     "eff_batch": {
+      "thinker": 0.6280460874879816,
+      "talker": 0.08811365998082298,
+      "code2wav": 0.022849230899794667
+     },
+     "replicas": {
+      "thinker": 2,
+      "talker": 6,
+      "code2wav": 6
+     },
+     "unit": {
+      "thinker_ms_per_token": 26.247374212121215,
+      "talker_ms_per_audio_s": 37.9221900187714,
+      "code2wav_ms_per_audio_s": 9.694128389830507
+     },
+     "gpu_util": {
+      "thinker": 53.91441441441441,
+      "talker": 11.169169169169168
+     },
+     "thinker_tokens_per_s_per_replica": 23.927958751696604,
+     "talker_audio_s_per_s_per_replica": 2.323538275010143,
+     "output_tokens_p50": 45.0,
+     "output_audio_s_p50": 15.52,
+     "code2wav_service_ms_p50": 141.048551,
+     "code2wav_batches": {
+      "batches": 68,
+      "requests": 68,
+      "mean_size": 1.0,
+      "max_size": 1,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 4.0,
+     "run": "20261116_v2b_sb_s2x6_run01",
+     "eff_batch": {
+      "thinker": 1.2099836107953352,
+      "talker": 0.17489578895329388,
+      "code2wav": 0.05986846604893968
+     },
+     "replicas": {
+      "thinker": 2,
+      "talker": 6,
+      "code2wav": 6
+     },
+     "unit": {
+      "thinker_ms_per_token": 26.854804489423074,
+      "talker_ms_per_audio_s": 38.07489773348312,
+      "code2wav_ms_per_audio_s": 13.336778169023596
+     },
+     "gpu_util": {
+      "thinker": 73.18313953488372,
+      "talker": 20.163759689922482
+     },
+     "thinker_tokens_per_s_per_replica": 45.0565041824041,
+     "talker_audio_s_per_s_per_replica": 4.593467070549483,
+     "output_tokens_p50": 47.0,
+     "output_audio_s_p50": 14.5,
+     "code2wav_service_ms_p50": 181.104116,
+     "code2wav_batches": {
+      "batches": 68,
+      "requests": 68,
+      "mean_size": 1.0,
+      "max_size": 1,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 8.0,
+     "run": "20261116_v2b_sb_s2x6_run01",
+     "eff_batch": {
+      "thinker": 2.4341711948583593,
+      "talker": 0.33852914078250035,
+      "code2wav": 0.10387325077498284
+     },
+     "replicas": {
+      "thinker": 2,
+      "talker": 6,
+      "code2wav": 6
+     },
+     "unit": {
+      "thinker_ms_per_token": 26.796855683051717,
+      "talker_ms_per_audio_s": 36.87367184300341,
+      "code2wav_ms_per_audio_s": 11.628207993059542
+     },
+     "gpu_util": {
+      "thinker": 82.32183908045977,
+      "talker": 35.82183908045977
+     },
+     "thinker_tokens_per_s_per_replica": 90.83794097521324,
+     "talker_audio_s_per_s_per_replica": 9.180781947180412,
+     "output_tokens_p50": 48.0,
+     "output_audio_s_p50": 14.24,
+     "code2wav_service_ms_p50": 156.2444565,
+     "code2wav_batches": {
+      "batches": 68,
+      "requests": 68,
+      "mean_size": 1.0,
+      "max_size": 1,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 16.0,
+     "run": "20261116_v2b_a_s2x6_c03_run01",
+     "eff_batch": {
+      "thinker": 4.074166751598315,
+      "talker": 0.630268458266324,
+      "code2wav": 0.37228399832702225
+     },
+     "replicas": {
+      "thinker": 2,
+      "talker": 6,
+      "code2wav": 6
+     },
+     "unit": {
+      "thinker_ms_per_token": 29.654734324596774,
+      "talker_ms_per_audio_s": 42.9681124752769,
+      "code2wav_ms_per_audio_s": 15.406494131516116
+     },
+     "gpu_util": {
+      "thinker": 75.58988764044943,
+      "talker": 45.11048689138577
+     },
+     "thinker_tokens_per_s_per_replica": 137.38672236962327,
+     "talker_audio_s_per_s_per_replica": 14.66828357026317,
+     "output_tokens_p50": 44.0,
+     "output_audio_s_p50": 14.44,
+     "code2wav_service_ms_p50": 217.0251045,
+     "code2wav_batches": {
+      "batches": 106,
+      "requests": 112,
+      "mean_size": 1.0566037735849056,
+      "max_size": 3,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 32.0,
+     "run": "20261116_v2b_a_s2x6_c03_run01",
+     "eff_batch": {
+      "thinker": 7.924004554380065,
+      "talker": 1.3740092384626945,
+      "code2wav": 0.4586862242048845
+     },
+     "replicas": {
+      "thinker": 2,
+      "talker": 6,
+      "code2wav": 6
+     },
+     "unit": {
+      "thinker_ms_per_token": 30.67252072640509,
+      "talker_ms_per_audio_s": 52.67921369756942,
+      "code2wav_ms_per_audio_s": 16.839942098092642
+     },
+     "gpu_util": {
+      "thinker": 70.69090909090909,
+      "talker": 75.7909090909091
+     },
+     "thinker_tokens_per_s_per_replica": 258.34213708945407,
+     "talker_audio_s_per_s_per_replica": 26.082569234059967,
+     "output_tokens_p50": 43.5,
+     "output_audio_s_p50": 13.760000000000002,
+     "code2wav_service_ms_p50": 219.2826245,
+     "code2wav_batches": {
+      "batches": 127,
+      "requests": 128,
+      "mean_size": 1.0078740157480315,
+      "max_size": 2,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 64.0,
+     "run": "20261116_v2b_a_s2x6_c03_run01",
+     "eff_batch": {
+      "thinker": 13.235387752256372,
+      "talker": 3.018294921448415,
+      "code2wav": 1.4232913090664514
+     },
+     "replicas": {
+      "thinker": 2,
+      "talker": 6,
+      "code2wav": 6
+     },
+     "unit": {
+      "thinker_ms_per_token": 33.760798634652986,
+      "talker_ms_per_audio_s": 76.48918368296845,
+      "code2wav_ms_per_audio_s": 23.5269280054246
+     },
+     "gpu_util": {
+      "thinker": 65.04807692307692,
+      "talker": 80.44551282051282
+     },
+     "thinker_tokens_per_s_per_replica": 392.03420201888287,
+     "talker_audio_s_per_s_per_replica": 39.46041487327949,
+     "output_tokens_p50": 45.0,
+     "output_audio_s_p50": 14.219999999999999,
+     "code2wav_service_ms_p50": 333.379592,
+     "code2wav_batches": {
+      "batches": 144,
+      "requests": 192,
+      "mean_size": 1.3333333333333333,
+      "max_size": 4,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 128.0,
+     "run": "20261116_v2b_a_s2x6_c03_run01",
+     "eff_batch": {
+      "thinker": 19.93144918512982,
+      "talker": 5.710117898262774,
+      "code2wav": 5.791868986061326
+     },
+     "replicas": {
+      "thinker": 2,
+      "talker": 6,
+      "code2wav": 6
+     },
+     "unit": {
+      "thinker_ms_per_token": 35.56642089405488,
+      "talker_ms_per_audio_s": 108.01591673125267,
+      "code2wav_ms_per_audio_s": 113.5972373904759
+     },
+     "gpu_util": {
+      "thinker": 59.190789473684205,
+      "talker": 85.23026315789474
+     },
+     "thinker_tokens_per_s_per_replica": 560.4007567840899,
+     "talker_audio_s_per_s_per_replica": 52.86367112422648,
+     "output_tokens_p50": 45.0,
+     "output_audio_s_p50": 14.219999999999999,
+     "code2wav_service_ms_p50": 1534.8493315,
+     "code2wav_batches": {
+      "batches": 107,
+      "requests": 384,
+      "mean_size": 3.588785046728972,
+      "max_size": 10,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 256.0,
+     "run": "20261116_v2b_a_s2x6_c03_run01",
+     "eff_batch": {
+      "thinker": 24.872853165301564,
+      "talker": 7.98417773088788,
+      "code2wav": 18.574874492653155
+     },
+     "replicas": {
+      "thinker": 2,
+      "talker": 6,
+      "code2wav": 6
+     },
+     "unit": {
+      "thinker_ms_per_token": 34.20876708797654,
+      "talker_ms_per_audio_s": 116.08167182222552,
+      "code2wav_ms_per_audio_s": 386.2832872512105
+     },
+     "gpu_util": {
+      "thinker": 57.425925925925924,
+      "talker": 86.67654320987656
+     },
+     "thinker_tokens_per_s_per_replica": 727.0900205591946,
+     "talker_audio_s_per_s_per_replica": 68.7806921243806,
+     "output_tokens_p50": 45.0,
+     "output_audio_s_p50": 14.08,
+     "code2wav_service_ms_p50": 5320.5341165,
+     "code2wav_batches": {
+      "batches": 120,
+      "requests": 768,
+      "mean_size": 6.4,
+      "max_size": 16,
+      "share_at_cap": 0.21666666666666667
+     }
+    }
+   ]
+  },
+  "r8": {
+   "label": "8 个完整副本",
+   "levels": [
+    {
+     "concurrency": 1.0,
+     "run": "20261116_v2b_sb_r8_run01",
+     "eff_batch": {
+      "thinker": 0.07833327266519176,
+      "talker": 0.03339403572165451,
+      "code2wav": 0.009118705304274355
+     },
+     "replicas": {
+      "thinker": 8,
+      "talker": 8,
+      "code2wav": 8
+     },
+     "unit": {
+      "thinker_ms_per_token": 26.432102416911043,
+      "talker_ms_per_audio_s": 37.943244341125606,
+      "code2wav_ms_per_audio_s": 10.301734378930817
+     },
+     "gpu_util": {
+      "full replica": 10.931592039800995
+     },
+     "thinker_tokens_per_s_per_replica": 2.963565721320555,
+     "talker_audio_s_per_s_per_replica": 0.880104911995089,
+     "output_tokens_p50": 34.0,
+     "output_audio_s_p50": 10.6,
+     "code2wav_service_ms_p50": 114.03503549999999,
+     "code2wav_batches": {
+      "batches": 68,
+      "requests": 68,
+      "mean_size": 1.0,
+      "max_size": 1,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 2.0,
+     "run": "20261116_v2b_sb_r8_run01",
+     "eff_batch": {
+      "thinker": 0.1561615114255541,
+      "talker": 0.0663018741295003,
+      "code2wav": 0.01770164853851556
+     },
+     "replicas": {
+      "thinker": 8,
+      "talker": 8,
+      "code2wav": 8
+     },
+     "unit": {
+      "thinker_ms_per_token": 26.06966497530395,
+      "talker_ms_per_audio_s": 37.52026754493464,
+      "code2wav_ms_per_audio_s": 9.790427288135593
+     },
+     "gpu_util": {
+      "full replica": 21.559210526315788
+     },
+     "thinker_tokens_per_s_per_replica": 5.990161805818657,
+     "talker_audio_s_per_s_per_replica": 1.7670949187688099,
+     "output_tokens_p50": 48.0,
+     "output_audio_s_p50": 15.6,
+     "code2wav_service_ms_p50": 148.9090755,
+     "code2wav_batches": {
+      "batches": 68,
+      "requests": 68,
+      "mean_size": 1.0,
+      "max_size": 1,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 4.0,
+     "run": "20261116_v2b_sb_r8_run01",
+     "eff_batch": {
+      "thinker": 0.30036078622568946,
+      "talker": 0.13620592406030263,
+      "code2wav": 0.03818118980914737
+     },
+     "replicas": {
+      "thinker": 8,
+      "talker": 8,
+      "code2wav": 8
+     },
+     "unit": {
+      "thinker_ms_per_token": 26.694436669642858,
+      "talker_ms_per_audio_s": 38.80249931796757,
+      "code2wav_ms_per_audio_s": 10.123123268288083
+     },
+     "gpu_util": {
+      "full replica": 42.12428571428572
+     },
+     "thinker_tokens_per_s_per_replica": 11.25181212635449,
+     "talker_audio_s_per_s_per_replica": 3.5102358470304056,
+     "output_tokens_p50": 48.0,
+     "output_audio_s_p50": 15.6,
+     "code2wav_service_ms_p50": 159.8429185,
+     "code2wav_batches": {
+      "batches": 68,
+      "requests": 68,
+      "mean_size": 1.0,
+      "max_size": 1,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 8.0,
+     "run": "20261116_v2b_sb_r8_run01",
+     "eff_batch": {
+      "thinker": 0.5888245284975272,
+      "talker": 0.2660109412467263,
+      "code2wav": 0.0852844557277166
+     },
+     "replicas": {
+      "thinker": 8,
+      "talker": 8,
+      "code2wav": 8
+     },
+     "unit": {
+      "thinker_ms_per_token": 26.651815775717704,
+      "talker_ms_per_audio_s": 38.59224726614188,
+      "code2wav_ms_per_audio_s": 10.266646103369837
+     },
+     "gpu_util": {
+      "full replica": 80.09444444444445
+     },
+     "thinker_tokens_per_s_per_replica": 22.093223720764325,
+     "talker_audio_s_per_s_per_replica": 6.892859579081977,
+     "output_tokens_p50": 48.0,
+     "output_audio_s_p50": 15.6,
+     "code2wav_service_ms_p50": 159.866575,
+     "code2wav_batches": {
+      "batches": 68,
+      "requests": 68,
+      "mean_size": 1.0,
+      "max_size": 1,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 16.0,
+     "run": "20261116_v2b_a_r8_c03_run01",
+     "eff_batch": {
+      "thinker": 0.9973257040889685,
+      "talker": 0.5905505951123663,
+      "code2wav": 0.19335522702667518
+     },
+     "replicas": {
+      "thinker": 8,
+      "talker": 8,
+      "code2wav": 8
+     },
+     "unit": {
+      "thinker_ms_per_token": 34.63799194464809,
+      "talker_ms_per_audio_s": 71.54598976951695,
+      "code2wav_ms_per_audio_s": 18.726319941034514
+     },
+     "gpu_util": {
+      "full replica": 86.86915887850468
+     },
+     "thinker_tokens_per_s_per_replica": 28.792826838308248,
+     "talker_audio_s_per_s_per_replica": 8.25413970810671,
+     "output_tokens_p50": 47.0,
+     "output_audio_s_p50": 14.46,
+     "code2wav_service_ms_p50": 261.154555,
+     "code2wav_batches": {
+      "batches": 112,
+      "requests": 112,
+      "mean_size": 1.0,
+      "max_size": 1,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 32.0,
+     "run": "20261116_v2b_a_r8_c03_run01",
+     "eff_batch": {
+      "thinker": 1.8890340330461595,
+      "talker": 1.1731813070840251,
+      "code2wav": 0.3400215718537392
+     },
+     "replicas": {
+      "thinker": 8,
+      "talker": 8,
+      "code2wav": 8
+     },
+     "unit": {
+      "thinker_ms_per_token": 43.63287859160073,
+      "talker_ms_per_audio_s": 88.6703856503704,
+      "code2wav_ms_per_audio_s": 23.647496207705373
+     },
+     "gpu_util": {
+      "full replica": 89.3458904109589
+     },
+     "thinker_tokens_per_s_per_replica": 43.29382094469,
+     "talker_audio_s_per_s_per_replica": 13.230813179384478,
+     "output_tokens_p50": 43.5,
+     "output_audio_s_p50": 13.98,
+     "code2wav_service_ms_p50": 294.949563,
+     "code2wav_batches": {
+      "batches": 124,
+      "requests": 128,
+      "mean_size": 1.032258064516129,
+      "max_size": 2,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 64.0,
+     "run": "20261116_v2b_a_r8_c03_run01",
+     "eff_batch": {
+      "thinker": 3.5614971580257255,
+      "talker": 2.2540875617908798,
+      "code2wav": 0.7693401821218705
+     },
+     "replicas": {
+      "thinker": 8,
+      "talker": 8,
+      "code2wav": 8
+     },
+     "unit": {
+      "thinker_ms_per_token": 58.990835413306456,
+      "talker_ms_per_audio_s": 108.68732981705034,
+      "code2wav_ms_per_audio_s": 26.476071806914952
+     },
+     "gpu_util": {
+      "full replica": 91.26909722222223
+     },
+     "thinker_tokens_per_s_per_replica": 60.37373658251948,
+     "talker_audio_s_per_s_per_replica": 20.73919347899252,
+     "output_tokens_p50": 44.5,
+     "output_audio_s_p50": 14.04,
+     "code2wav_service_ms_p50": 356.5215515,
+     "code2wav_batches": {
+      "batches": 169,
+      "requests": 192,
+      "mean_size": 1.136094674556213,
+      "max_size": 5,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 128.0,
+     "run": "20261116_v2b_a_r8_c03_run01",
+     "eff_batch": {
+      "thinker": 6.338567723949962,
+      "talker": 4.237787198385387,
+      "code2wav": 2.5713933884380618
+     },
+     "replicas": {
+      "thinker": 8,
+      "talker": 8,
+      "code2wav": 8
+     },
+     "unit": {
+      "thinker_ms_per_token": 70.64881533333333,
+      "talker_ms_per_audio_s": 133.1747447435202,
+      "code2wav_ms_per_audio_s": 50.43568759723993
+     },
+     "gpu_util": {
+      "full replica": 92.75127551020408
+     },
+     "thinker_tokens_per_s_per_replica": 89.71937737446132,
+     "talker_audio_s_per_s_per_replica": 31.82125264476306,
+     "output_tokens_p50": 46.0,
+     "output_audio_s_p50": 14.08,
+     "code2wav_service_ms_p50": 700.7395670000001,
+     "code2wav_batches": {
+      "batches": 223,
+      "requests": 384,
+      "mean_size": 1.7219730941704037,
+      "max_size": 7,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 256.0,
+     "run": "20261116_v2b_a_r8_c03_run01",
+     "eff_batch": {
+      "thinker": 9.874964198159798,
+      "talker": 7.5665682755409245,
+      "code2wav": 10.207975453468348
+     },
+     "replicas": {
+      "thinker": 8,
+      "talker": 8,
+      "code2wav": 8
+     },
+     "unit": {
+      "thinker_ms_per_token": 81.35927686290322,
+      "talker_ms_per_audio_s": 166.1254805476763,
+      "code2wav_ms_per_audio_s": 215.57662057479558
+     },
+     "gpu_util": {
+      "full replica": 95.19237588652483
+     },
+     "thinker_tokens_per_s_per_replica": 121.37477837714671,
+     "talker_audio_s_per_s_per_replica": 45.547307075324895,
+     "output_tokens_p50": 45.0,
+     "output_audio_s_p50": 14.24,
+     "code2wav_service_ms_p50": 3085.3951465,
+     "code2wav_batches": {
+      "batches": 135,
+      "requests": 768,
+      "mean_size": 5.688888888888889,
+      "max_size": 15,
+      "share_at_cap": 0.0
+     },
+     "code2wav_ms_per_request_from_gaps": {
+      "replicas": 8,
+      "pairs": 127,
+      "median_of_replica_medians_ms": 286.3625015531268
+     }
+    }
+   ]
+  },
+  "p4": {
+   "label": "4 组 1+1",
+   "levels": [
+    {
+     "concurrency": 1.0,
+     "run": "20261116_v2b_sb_p4_run01",
+     "eff_batch": {
+      "thinker": 0.1564953844286283,
+      "talker": 0.06727436208978504,
+      "code2wav": 0.018019393435371147
+     },
+     "replicas": {
+      "thinker": 4,
+      "talker": 4,
+      "code2wav": 4
+     },
+     "unit": {
+      "thinker_ms_per_token": 26.373040990031896,
+      "talker_ms_per_audio_s": 38.26827302399104,
+      "code2wav_ms_per_audio_s": 10.266957472181907
+     },
+     "gpu_util": {
+      "thinker": 14.01694214876033,
+      "talker": 8.219834710743802
+     },
+     "thinker_tokens_per_s_per_replica": 5.933915034211571,
+     "talker_audio_s_per_s_per_replica": 1.7579670252590072,
+     "output_tokens_p50": 34.0,
+     "output_audio_s_p50": 10.6,
+     "code2wav_service_ms_p50": 112.2658725,
+     "code2wav_batches": {
+      "batches": 68,
+      "requests": 68,
+      "mean_size": 1.0,
+      "max_size": 1,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 2.0,
+     "run": "20261116_v2b_sb_p4_run01",
+     "eff_batch": {
+      "thinker": 0.3113954722896181,
+      "talker": 0.13306502631066058,
+      "code2wav": 0.03600230573541802
+     },
+     "replicas": {
+      "thinker": 4,
+      "talker": 4,
+      "code2wav": 4
+     },
+     "unit": {
+      "thinker_ms_per_token": 26.337487855263163,
+      "talker_ms_per_audio_s": 38.12661046772876,
+      "code2wav_ms_per_audio_s": 9.733139400859919
+     },
+     "gpu_util": {
+      "thinker": 28.195652173913043,
+      "talker": 15.439855072463768
+     },
+     "thinker_tokens_per_s_per_replica": 11.823279198110395,
+     "talker_audio_s_per_s_per_replica": 3.490082771016057,
+     "output_tokens_p50": 48.0,
+     "output_audio_s_p50": 15.6,
+     "code2wav_service_ms_p50": 148.944558,
+     "code2wav_batches": {
+      "batches": 68,
+      "requests": 68,
+      "mean_size": 1.0,
+      "max_size": 1,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 4.0,
+     "run": "20261116_v2b_sb_p4_run01",
+     "eff_batch": {
+      "thinker": 0.5973115910138039,
+      "talker": 0.26865073847216253,
+      "code2wav": 0.07924180011047549
+     },
+     "replicas": {
+      "thinker": 4,
+      "talker": 4,
+      "code2wav": 4
+     },
+     "unit": {
+      "thinker_ms_per_token": 26.416327602883676,
+      "talker_ms_per_audio_s": 37.84676342948718,
+      "code2wav_ms_per_audio_s": 10.011301497718383
+     },
+     "gpu_util": {
+      "thinker": 52.40395480225989,
+      "talker": 30.77683615819209
+     },
+     "thinker_tokens_per_s_per_replica": 22.61145455163873,
+     "talker_audio_s_per_s_per_replica": 7.098380789487834,
+     "output_tokens_p50": 48.0,
+     "output_audio_s_p50": 15.6,
+     "code2wav_service_ms_p50": 156.4827635,
+     "code2wav_batches": {
+      "batches": 68,
+      "requests": 68,
+      "mean_size": 1.0,
+      "max_size": 1,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 8.0,
+     "run": "20261116_v2b_sb_p4_run01",
+     "eff_batch": {
+      "thinker": 1.1609097240884196,
+      "talker": 0.5406625784577272,
+      "code2wav": 0.18485857881913467
+     },
+     "replicas": {
+      "thinker": 4,
+      "talker": 4,
+      "code2wav": 4
+     },
+     "unit": {
+      "thinker_ms_per_token": 26.302406554232803,
+      "talker_ms_per_audio_s": 41.71007135951642,
+      "code2wav_ms_per_audio_s": 14.128946670653217
+     },
+     "gpu_util": {
+      "thinker": 72.33791208791209,
+      "talker": 51.18956043956044
+     },
+     "thinker_tokens_per_s_per_replica": 44.13701543601136,
+     "talker_audio_s_per_s_per_replica": 12.962398788473221,
+     "output_tokens_p50": 48.0,
+     "output_audio_s_p50": 14.8,
+     "code2wav_service_ms_p50": 189.4795295,
+     "code2wav_batches": {
+      "batches": 68,
+      "requests": 68,
+      "mean_size": 1.0,
+      "max_size": 1,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 16.0,
+     "run": "20261115_v2_a_p4_run1_run01",
+     "eff_batch": {
+      "thinker": 1.9332022257808323,
+      "talker": 1.0856797549021058,
+      "code2wav": 0.49126269597604255
+     },
+     "replicas": {
+      "thinker": 4,
+      "talker": 4,
+      "code2wav": 4
+     },
+     "unit": {
+      "thinker_ms_per_token": 27.139408724398365,
+      "talker_ms_per_audio_s": 50.055201276670694,
+      "code2wav_ms_per_audio_s": 17.60865406181308
+     },
+     "gpu_util": {
+      "thinker": 73.59831460674157,
+      "talker": 67.11235955056179
+     },
+     "thinker_tokens_per_s_per_replica": 71.23228974560824,
+     "talker_audio_s_per_s_per_replica": 21.689649171545938,
+     "output_tokens_p50": 46.0,
+     "output_audio_s_p50": 14.46,
+     "code2wav_service_ms_p50": 234.17675450000002,
+     "code2wav_batches": {
+      "batches": 105,
+      "requests": 112,
+      "mean_size": 1.0666666666666667,
+      "max_size": 3,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 32.0,
+     "run": "20261115_v2_a_p4_run1_run01",
+     "eff_batch": {
+      "thinker": 3.47649039111439,
+      "talker": 2.3997400454137265,
+      "code2wav": 0.9189736898007745
+     },
+     "replicas": {
+      "thinker": 4,
+      "talker": 4,
+      "code2wav": 4
+     },
+     "unit": {
+      "thinker_ms_per_token": 28.05777843518518,
+      "talker_ms_per_audio_s": 66.18853766327206,
+      "code2wav_ms_per_audio_s": 19.77798312599957
+     },
+     "gpu_util": {
+      "thinker": 70.54464285714286,
+      "talker": 83.39732142857143
+     },
+     "thinker_tokens_per_s_per_replica": 123.9046918538205,
+     "talker_audio_s_per_s_per_replica": 36.256127271192746,
+     "output_tokens_p50": 43.5,
+     "output_audio_s_p50": 13.34,
+     "code2wav_service_ms_p50": 260.065015,
+     "code2wav_batches": {
+      "batches": 116,
+      "requests": 128,
+      "mean_size": 1.103448275862069,
+      "max_size": 3,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 64.0,
+     "run": "20261115_v2_a_p4_run1_run01",
+     "eff_batch": {
+      "thinker": 5.022006045962714,
+      "talker": 4.704001407667302,
+      "code2wav": 3.920583572283425
+     },
+     "replicas": {
+      "thinker": 4,
+      "talker": 4,
+      "code2wav": 4
+     },
+     "unit": {
+      "thinker_ms_per_token": 28.787467030824374,
+      "talker_ms_per_audio_s": 97.37428281448999,
+      "code2wav_ms_per_audio_s": 65.30993727702116
+     },
+     "gpu_util": {
+      "thinker": 67.36065573770492,
+      "talker": 90.62704918032787
+     },
+     "thinker_tokens_per_s_per_replica": 174.4511262691284,
+     "talker_audio_s_per_s_per_replica": 48.30845754858091,
+     "output_tokens_p50": 44.0,
+     "output_audio_s_p50": 13.96,
+     "code2wav_service_ms_p50": 919.4875695000001,
+     "code2wav_batches": {
+      "batches": 81,
+      "requests": 192,
+      "mean_size": 2.3703703703703702,
+      "max_size": 10,
+      "share_at_cap": 0.0
+     },
+     "code2wav_ms_per_request_from_gaps": {
+      "replicas": 4,
+      "pairs": 77,
+      "median_of_replica_medians_ms": 225.66662629445395
+     }
+    },
+    {
+     "concurrency": 128.0,
+     "run": "20261115_v2_a_p4_run1_run01",
+     "eff_batch": {
+      "thinker": 6.196927494744491,
+      "talker": 7.322238005096329,
+      "code2wav": 14.038381746835656
+     },
+     "replicas": {
+      "thinker": 4,
+      "talker": 4,
+      "code2wav": 4
+     },
+     "unit": {
+      "thinker_ms_per_token": 29.074978427419357,
+      "talker_ms_per_audio_s": 112.39319357606088,
+      "code2wav_ms_per_audio_s": 256.85925514366625
+     },
+     "gpu_util": {
+      "thinker": 53.29207920792079,
+      "talker": 90.03960396039604
+     },
+     "thinker_tokens_per_s_per_replica": 213.13609948891437,
+     "talker_audio_s_per_s_per_replica": 65.14841132386798,
+     "output_tokens_p50": 45.0,
+     "output_audio_s_p50": 13.96,
+     "code2wav_service_ms_p50": 3552.401958,
+     "code2wav_batches": {
+      "batches": 49,
+      "requests": 384,
+      "mean_size": 7.836734693877551,
+      "max_size": 16,
+      "share_at_cap": 0.04081632653061224
+     },
+     "code2wav_ms_per_request_from_gaps": {
+      "replicas": 4,
+      "pairs": 45,
+      "median_of_replica_medians_ms": 188.7884919460003
+     }
+    },
+    {
+     "concurrency": 256.0,
+     "run": "20261115_v2_a_p4_run1_run01",
+     "eff_batch": {
+      "thinker": 7.608154675393483,
+      "talker": 10.328369372315398,
+      "code2wav": 36.47814417833591
+     },
+     "replicas": {
+      "thinker": 4,
+      "talker": 4,
+      "code2wav": 4
+     },
+     "unit": {
+      "thinker_ms_per_token": 29.10293105625,
+      "talker_ms_per_audio_s": 120.30158143248175,
+      "code2wav_ms_per_audio_s": 609.5595593412514
+     },
+     "gpu_util": {
+      "thinker": 44.75574712643678,
+      "talker": 90.88074712643679
+     },
+     "thinker_tokens_per_s_per_replica": 261.4222828858193,
+     "talker_audio_s_per_s_per_replica": 85.85397838774139,
+     "output_tokens_p50": 45.0,
+     "output_audio_s_p50": 13.98,
+     "code2wav_service_ms_p50": 8520.2760875,
+     "code2wav_batches": {
+      "batches": 57,
+      "requests": 768,
+      "mean_size": 13.473684210526315,
+      "max_size": 16,
+      "share_at_cap": 0.7192982456140351
+     },
+     "code2wav_ms_per_request_from_gaps": {
+      "replicas": 4,
+      "pairs": 53,
+      "median_of_replica_medians_ms": 176.2572978933652
+     }
+    }
+   ]
+  },
+  "s1x7": {
+   "label": "1+7",
+   "levels": [
+    {
+     "concurrency": 1.0,
+     "run": "20261116_v2b_sb_s1x7_run01",
+     "eff_batch": {
+      "thinker": 0.5818756219954939,
+      "talker": 0.0383477966180569,
+      "code2wav": 0.016570012810644245
+     },
+     "replicas": {
+      "thinker": 1,
+      "talker": 7,
+      "code2wav": 7
+     },
+     "unit": {
+      "thinker_ms_per_token": 25.846913228494625,
+      "talker_ms_per_audio_s": 38.12500603660035,
+      "code2wav_ms_per_audio_s": 11.457564415325571
+     },
+     "gpu_util": {
+      "thinker": 52.327044025157235,
+      "talker": 3.968104222821204
+     },
+     "thinker_tokens_per_s_per_replica": 22.51238346534982,
+     "talker_audio_s_per_s_per_replica": 1.005843686457195,
+     "output_tokens_p50": 34.0,
+     "output_audio_s_p50": 10.6,
+     "code2wav_service_ms_p50": 158.3452315,
+     "code2wav_batches": {
+      "batches": 68,
+      "requests": 68,
+      "mean_size": 1.0,
+      "max_size": 1,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 2.0,
+     "run": "20261116_v2b_sb_s1x7_run01",
+     "eff_batch": {
+      "thinker": 1.2428998401247748,
+      "talker": 0.0738403022591172,
+      "code2wav": 0.024739444780023115
+     },
+     "replicas": {
+      "thinker": 1,
+      "talker": 7,
+      "code2wav": 7
+     },
+     "unit": {
+      "thinker_ms_per_token": 25.869687402308557,
+      "talker_ms_per_audio_s": 37.46117897862233,
+      "code2wav_ms_per_audio_s": 12.340666205108533
+     },
+     "gpu_util": {
+      "thinker": 75.41246290801188,
+      "talker": 8.267910131411615
+     },
+     "thinker_tokens_per_s_per_replica": 48.044640849191744,
+     "talker_audio_s_per_s_per_replica": 1.9711152791335012,
+     "output_tokens_p50": 47.5,
+     "output_audio_s_p50": 14.42,
+     "code2wav_service_ms_p50": 172.4854445,
+     "code2wav_batches": {
+      "batches": 68,
+      "requests": 68,
+      "mean_size": 1.0,
+      "max_size": 1,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 4.0,
+     "run": "20261116_v2b_sb_s1x7_run01",
+     "eff_batch": {
+      "thinker": 2.459609340802286,
+      "talker": 0.14885368916396563,
+      "code2wav": 0.044543366446270154
+     },
+     "replicas": {
+      "thinker": 1,
+      "talker": 7,
+      "code2wav": 7
+     },
+     "unit": {
+      "thinker_ms_per_token": 26.63632846164021,
+      "talker_ms_per_audio_s": 37.28458763514918,
+      "code2wav_ms_per_audio_s": 11.217986186856498
+     },
+     "gpu_util": {
+      "thinker": 84.72514619883042,
+      "talker": 16.312447786131997
+     },
+     "thinker_tokens_per_s_per_replica": 92.34040435957397,
+     "talker_audio_s_per_s_per_replica": 3.9923651729927485,
+     "output_tokens_p50": 49.0,
+     "output_audio_s_p50": 14.24,
+     "code2wav_service_ms_p50": 155.3229005,
+     "code2wav_batches": {
+      "batches": 68,
+      "requests": 68,
+      "mean_size": 1.0,
+      "max_size": 1,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 8.0,
+     "run": "20261116_v2b_sb_s1x7_run01",
+     "eff_batch": {
+      "thinker": 5.057020708690641,
+      "talker": 0.28554676794098116,
+      "code2wav": 0.07694058007716734
+     },
+     "replicas": {
+      "thinker": 1,
+      "talker": 7,
+      "code2wav": 7
+     },
+     "unit": {
+      "thinker_ms_per_token": 28.15534295165945,
+      "talker_ms_per_audio_s": 36.99457633284619,
+      "code2wav_ms_per_audio_s": 9.271444139147679
+     },
+     "gpu_util": {
+      "thinker": 81.93258426966293,
+      "talker": 28.823434991974317
+     },
+     "thinker_tokens_per_s_per_replica": 179.6114051025113,
+     "talker_audio_s_per_s_per_replica": 7.718611651931643,
+     "output_tokens_p50": 49.0,
+     "output_audio_s_p50": 14.24,
+     "code2wav_service_ms_p50": 129.3560665,
+     "code2wav_batches": {
+      "batches": 68,
+      "requests": 68,
+      "mean_size": 1.0,
+      "max_size": 1,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 16.0,
+     "run": "20261115_v2_a_s1x7_run1_run01",
+     "eff_batch": {
+      "thinker": 8.25172701765239,
+      "talker": 0.519266776472067,
+      "code2wav": 0.3025013990618345
+     },
+     "replicas": {
+      "thinker": 1,
+      "talker": 7,
+      "code2wav": 7
+     },
+     "unit": {
+      "thinker_ms_per_token": 31.022563497384482,
+      "talker_ms_per_audio_s": 40.24688463721533,
+      "code2wav_ms_per_audio_s": 13.81726049789916
+     },
+     "gpu_util": {
+      "thinker": 77.04395604395604,
+      "talker": 42.41444270015699
+     },
+     "thinker_tokens_per_s_per_replica": 265.9911395893539,
+     "talker_audio_s_per_s_per_replica": 12.902036546498644,
+     "output_tokens_p50": 47.0,
+     "output_audio_s_p50": 14.14,
+     "code2wav_service_ms_p50": 191.48881599999999,
+     "code2wav_batches": {
+      "batches": 107,
+      "requests": 112,
+      "mean_size": 1.0467289719626167,
+      "max_size": 2,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 32.0,
+     "run": "20261115_v2_a_s1x7_run1_run01",
+     "eff_batch": {
+      "thinker": 17.108033494561464,
+      "talker": 1.0510194482277373,
+      "code2wav": 0.37877066085424327
+     },
+     "replicas": {
+      "thinker": 1,
+      "talker": 7,
+      "code2wav": 7
+     },
+     "unit": {
+      "thinker_ms_per_token": 36.076619326086956,
+      "talker_ms_per_audio_s": 48.50602268359984,
+      "code2wav_ms_per_audio_s": 16.95032533040162
+     },
+     "gpu_util": {
+      "thinker": 69.32142857142857,
+      "talker": 68.90816326530611
+     },
+     "thinker_tokens_per_s_per_replica": 474.2138763038328,
+     "talker_audio_s_per_s_per_replica": 21.667813398831665,
+     "output_tokens_p50": 44.0,
+     "output_audio_s_p50": 13.84,
+     "code2wav_service_ms_p50": 214.3118805,
+     "code2wav_batches": {
+      "batches": 126,
+      "requests": 128,
+      "mean_size": 1.0158730158730158,
+      "max_size": 2,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 64.0,
+     "run": "20261115_v2_a_s1x7_run1_run01",
+     "eff_batch": {
+      "thinker": 31.03756092125312,
+      "talker": 2.055957912617052,
+      "code2wav": 0.8485363337190057
+     },
+     "replicas": {
+      "thinker": 1,
+      "talker": 7,
+      "code2wav": 7
+     },
+     "unit": {
+      "thinker_ms_per_token": 44.261164009090905,
+      "talker_ms_per_audio_s": 64.02742817706846,
+      "code2wav_ms_per_audio_s": 19.26538077839804
+     },
+     "gpu_util": {
+      "thinker": 56.37931034482759,
+      "talker": 76.84482758620689
+     },
+     "thinker_tokens_per_s_per_replica": 701.2368882770061,
+     "talker_audio_s_per_s_per_replica": 32.110580904972174,
+     "output_tokens_p50": 45.0,
+     "output_audio_s_p50": 14.28,
+     "code2wav_service_ms_p50": 264.8421885,
+     "code2wav_batches": {
+      "batches": 168,
+      "requests": 192,
+      "mean_size": 1.1428571428571428,
+      "max_size": 4,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 128.0,
+     "run": "20261115_v2_a_s1x7_run1_run01",
+     "eff_batch": {
+      "thinker": 51.149056521588804,
+      "talker": 3.4641298729670416,
+      "code2wav": 1.4466642509014063
+     },
+     "replicas": {
+      "thinker": 1,
+      "talker": 7,
+      "code2wav": 7
+     },
+     "unit": {
+      "thinker_ms_per_token": 54.71117233333334,
+      "talker_ms_per_audio_s": 83.4795223174938,
+      "code2wav_ms_per_audio_s": 22.17335486396996
+     },
+     "gpu_util": {
+      "thinker": 49.32142857142857,
+      "talker": 83.79001721170395
+     },
+     "thinker_tokens_per_s_per_replica": 934.8923508704587,
+     "talker_audio_s_per_s_per_replica": 41.496762041738535,
+     "output_tokens_p50": 49.0,
+     "output_audio_s_p50": 14.44,
+     "code2wav_service_ms_p50": 301.8501295,
+     "code2wav_batches": {
+      "batches": 309,
+      "requests": 384,
+      "mean_size": 1.2427184466019416,
+      "max_size": 5,
+      "share_at_cap": 0.0
+     }
+    },
+    {
+     "concurrency": 256.0,
+     "run": "20261115_v2_a_s1x7_run1_run01",
+     "eff_batch": {
+      "thinker": 56.426656254581744,
+      "talker": 3.3841248732520377,
+      "code2wav": 1.3663241800807087
+     },
+     "replicas": {
+      "thinker": 1,
+      "talker": 7,
+      "code2wav": 7
+     },
+     "unit": {
+      "thinker_ms_per_token": 55.25117042857143,
+      "talker_ms_per_audio_s": 78.18221462642981,
+      "code2wav_ms_per_audio_s": 22.695890020475687
+     },
+     "gpu_util": {
+      "thinker": 52.46296296296296,
+      "talker": 90.87037037037037
+     },
+     "thinker_tokens_per_s_per_replica": 1021.2753108557217,
+     "talker_audio_s_per_s_per_replica": 43.28509865603143,
+     "output_tokens_p50": 49.0,
+     "output_audio_s_p50": 14.44,
+     "code2wav_service_ms_p50": 304.54791650000004,
+     "code2wav_batches": {
+      "batches": 627,
+      "requests": 768,
+      "mean_size": 1.2248803827751196,
+      "max_size": 5,
+      "share_at_cap": 0.0
+     }
+    }
+   ]
+  }
+ }
+}

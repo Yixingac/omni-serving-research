@@ -1,0 +1,49 @@
+{
+  "runtime_profile": "unicorn",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "assets": "synthetic-v1",
+  "experiment_id": "f1_minicpm_text_saturation",
+  "description": "容量刻画（文本）：x2 在并发 64 时吞吐仍随并发线性增长（12 请求/秒，延迟中位数 4.2 秒），没有到饱和点。这里把闭环并发加到 128/256，并用开环 Poisson 到达测饱和拐点和满足 SLO 的有效吞吐（goodput）。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [
+        "--text-only"
+      ],
+      "ready_timeout_s": 2400
+    }
+  ],
+  "phases": [
+    {
+      "kind": "closed_loop",
+      "name": "w1_c128_256",
+      "workload": "configs/workloads/w1_text_chat.json",
+      "concurrency": [
+        128,
+        256
+      ],
+      "requests_per_level": 512,
+      "stop_if_p50_e2e_above_s": 60
+    },
+    {
+      "kind": "open_loop",
+      "name": "w1_open",
+      "workload": "configs/workloads/w1_text_chat.json",
+      "rates_rps": [
+        8,
+        12,
+        16,
+        20,
+        24,
+        32
+      ],
+      "requests_per_rate": 300,
+      "max_error_rate": 0.2
+    }
+  ]
+}

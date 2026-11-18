@@ -1,0 +1,45 @@
+{
+ "plan_id": "exp08_supp",
+ "_comment": "实验 8 第一阶段的补测（文字条件在并发 32、64 的 kernel trace），排在实验 7 之前。通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_exp06_08.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "exp08_lookahead_supp_block1",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/exp06_08/exp08_lookahead_supp_block1.json",
+   "priority": 4,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 420,
+   "timeout_s": 2400,
+   "max_retries": 1,
+   "description": "实验 8 第一阶段的补测第 1 个区组：只要文字的两个条件（带种子 w3t、不带种子 w3t_ns）在并发 32、64 跑六波，第 5 秒起开 3 秒 kernel trace（原设计的窗口开得太晚，文字请求跑得快，录不到 decode 步）。顺序（种子 20261117）w3t_ns@64、w3t@32、w3t_ns@32、w3t@64。"
+  },
+  {
+   "experiment_id": "exp08_lookahead_supp_block2",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/exp06_08/exp08_lookahead_supp_block2.json",
+   "priority": 3,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 420,
+   "timeout_s": 2400,
+   "max_retries": 1,
+   "description": "实验 8 第一阶段的补测第 2 个区组：只要文字的两个条件（带种子 w3t、不带种子 w3t_ns）在并发 32、64 跑六波，第 5 秒起开 3 秒 kernel trace（原设计的窗口开得太晚，文字请求跑得快，录不到 decode 步）。顺序（种子 20261117）w3t@32、w3t@64、w3t_ns@64、w3t_ns@32。"
+  },
+  {
+   "experiment_id": "exp08_lookahead_supp_block3",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/exp06_08/exp08_lookahead_supp_block3.json",
+   "priority": 2,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 420,
+   "timeout_s": 2400,
+   "max_retries": 1,
+   "description": "实验 8 第一阶段的补测第 3 个区组：只要文字的两个条件（带种子 w3t、不带种子 w3t_ns）在并发 32、64 跑六波，第 5 秒起开 3 秒 kernel trace（原设计的窗口开得太晚，文字请求跑得快，录不到 decode 步）。顺序（种子 20261117）w3t@32、w3t@64、w3t_ns@32、w3t_ns@64。"
+  }
+ ]
+}

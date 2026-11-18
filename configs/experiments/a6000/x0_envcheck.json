@@ -1,0 +1,15 @@
+{
+  "runtime_profile": "unicorn",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "experiment_id": "x0_envcheck",
+  "description": "运行环境检查：导入 torch/sglang/sglang_omni，记录驱动、GPU、拓扑和包版本。不启动服务。",
+  "servers": [],
+  "phases": [
+    {
+      "kind": "idle",
+      "name": "idle",
+      "seconds": 1
+    }
+  ]
+}

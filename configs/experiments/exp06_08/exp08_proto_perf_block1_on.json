@@ -1,0 +1,147 @@
+{
+ "runtime_profile": "unicorn_proto",
+ "hardware_label": "a6000x8",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "exp08_proto_perf_block1_on",
+ "description": "实验 8 第三阶段性能对比第 1 个区组、on（SGLANG_OMNI_SPEECH_LOOKAHEAD=1）。2+6，原型副本，W3b 不带种子；并发顺序（种子 20261117）32、8、64，每档 ABC 三段；本区组两组的顺序 off→on。C 段只给 thinker 所在的进程开 torch profiler。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "s0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "args": [
+    "--config",
+    "{research_repo}/configs/models/minicpm_o_4_5_exp_t2_k6_shared.yaml"
+   ],
+   "ready_timeout_s": 2400,
+   "env": {
+    "SGLANG_OMNI_SPEECH_LOOKAHEAD": "1"
+   }
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_ns_c32_A",
+   "workload": "configs/workloads/w3b_text_speech_noseed.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_ns_c32_B",
+   "workload": "configs/workloads/w3b_text_speech_noseed.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_ns_c32_C",
+   "workload": "configs/workloads/w3b_text_speech_noseed.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "torch_profile_window": {
+    "start_after_s": 8,
+    "duration_s": 3
+   }
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_ns_c8_A",
+   "workload": "configs/workloads/w3b_text_speech_noseed.json",
+   "concurrency": [
+    8
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_ns_c8_B",
+   "workload": "configs/workloads/w3b_text_speech_noseed.json",
+   "concurrency": [
+    8
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_ns_c8_C",
+   "workload": "configs/workloads/w3b_text_speech_noseed.json",
+   "concurrency": [
+    8
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "torch_profile_window": {
+    "start_after_s": 10,
+    "duration_s": 3
+   }
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_ns_c64_A",
+   "workload": "configs/workloads/w3b_text_speech_noseed.json",
+   "concurrency": [
+    64
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_ns_c64_B",
+   "workload": "configs/workloads/w3b_text_speech_noseed.json",
+   "concurrency": [
+    64
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_ns_c64_C",
+   "workload": "configs/workloads/w3b_text_speech_noseed.json",
+   "concurrency": [
+    64
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "torch_profile_window": {
+    "start_after_s": 7,
+    "duration_s": 3
+   }
+  }
+ ]
+}

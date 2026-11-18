@@ -1,0 +1,44 @@
+{
+  "runtime_profile": "unicorn",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "assets": "synthetic-v1",
+  "experiment_id": "z4_minicpm_crash_default_rep2",
+  "description": "定位语音负载下的 CUDA illegal memory access（f2、x7c、f5 各崩溃一次，见 docs/05_findings 第 17 节）。负载与 f5 崩溃时相同：W3b 开环泊松到达，每 2 分钟一档、速率不变；某档错误率超过 20% 即停止，崩溃后很快释放 GPU。默认配置，作对照：同样负载下的崩溃频率。 重复运行：z6、z7 只关一种 CUDA graph 时仍然崩溃，检验 z3 不崩溃是否可重复（与默认配置并排运行）。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [],
+      "ready_timeout_s": 2400
+    }
+  ],
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "open_loop",
+      "name": "w3b_soak",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "rates_rps": [
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5
+      ],
+      "requests_per_rate": 180,
+      "max_error_rate": 0.2
+    }
+  ]
+}

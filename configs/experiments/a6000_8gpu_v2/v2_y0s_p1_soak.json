@@ -1,0 +1,74 @@
+{
+ "runtime_profile": "unicorn",
+ "hardware_label": "a6000x2",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "v2_y0s_p1_soak",
+ "description": "plan v2 稳定性门槛：1 个拆分服务（每个 1 张 thinker 卡 + 1 张 talker 卡，code2wav 单独进程），客户端按在途请求最少路由。先用闭环（并发 8, 16, 32）测容量，再以一半容量开环 14 档 × 2 分钟。崩溃后自动重启并记录，不重跑。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 10,
+ "servers": [
+  {
+   "name": "p0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1
+   ],
+   "args": [
+    "--talker.gpu",
+    "1",
+    "--code2wav.gpu",
+    "1",
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "closed_loop",
+   "name": "probe",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    8,
+    16,
+    32
+   ],
+   "requests_per_level": 48
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_soak",
+   "capacity_from": "probe",
+   "capacity_fractions": [
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5
+   ],
+   "duration_per_rate_s": 120,
+   "min_requests_per_rate": 96,
+   "max_error_rate": 1.0,
+   "rerun_crashed_levels": false,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  }
+ ]
+}

@@ -1,0 +1,103 @@
+{
+ "runtime_profile": "unicorn",
+ "hardware_label": "a6000x8",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "v2b_sb_p4",
+ "description": "第二批小 batch 实时服务：4 个拆分服务（每个 1 张 thinker 卡 + 1 张 talker 卡，code2wav 单独进程），客户端按在途请求最少路由。W3b 闭环并发 1, 2, 4, 8，每档 64 个请求（另有 4 个预热），开事件记录，看小 batch 下的 TTFT、端到端 ÷ 语音秒和各阶段时间。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "p0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1
+   ],
+   "args": [
+    "--talker.gpu",
+    "1",
+    "--code2wav.gpu",
+    "1",
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "p1",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    2,
+    3
+   ],
+   "args": [
+    "--talker.gpu",
+    "1",
+    "--code2wav.gpu",
+    "1",
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "p2",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    4,
+    5
+   ],
+   "args": [
+    "--talker.gpu",
+    "1",
+    "--code2wav.gpu",
+    "1",
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  },
+  {
+   "name": "p3",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    6,
+    7
+   ],
+   "args": [
+    "--talker.gpu",
+    "1",
+    "--code2wav.gpu",
+    "1",
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_small",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    1,
+    2,
+    4,
+    8
+   ],
+   "requests_per_level": 64,
+   "warmup": 4,
+   "server_events": true
+  }
+ ],
+ "routing": "least_outstanding"
+}

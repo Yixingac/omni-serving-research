@@ -1,0 +1,41 @@
+{
+  "runtime_profile": "unicorn",
+  "seed": 0,
+  "assets": "synthetic-v1",
+  "experiment_id": "y6_minicpm_video20s_cpu4",
+  "hardware_label": "a6000x1",
+  "description": "CPU 配额扩展：20 秒视频理解，step 分配 4 个 CPU（与 8 个 CPU 的 x4 对照）。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [
+        "--text-only"
+      ],
+      "ready_timeout_s": 2400
+    }
+  ],
+  "phases": [
+    {
+      "kind": "closed_loop",
+      "name": "w4_video_20s",
+      "workload": "configs/workloads/w4_video_text.json",
+      "workload_overrides": {
+        "video": {
+          "tag": "count_circles",
+          "target_s": 20
+        }
+      },
+      "concurrency": [
+        1,
+        2,
+        4,
+        8
+      ],
+      "requests_per_level": 24
+    }
+  ]
+}

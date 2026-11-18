@@ -1,0 +1,42 @@
+{
+  "runtime_profile": "unicorn",
+  "hardware_label": "a6000x1",
+  "seed": 0,
+  "assets": "synthetic-v1",
+  "experiment_id": "f5_minicpm_speech_openloop",
+  "description": "单卡语音输出（W3b）的开环饱和曲线：泊松到达 0.5–3 请求/秒，每档 90 个请求，用全新的服务，前面不跑闭环高负载。补上 f2 因崩溃没有得到的部分；闭环测得的上限约 2.9 请求/秒。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0
+      ],
+      "args": [],
+      "ready_timeout_s": 2400
+    }
+  ],
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "open_loop",
+      "name": "w3b_open",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "rates_rps": [
+        0.5,
+        1.0,
+        1.5,
+        2.0,
+        2.5,
+        3.0
+      ],
+      "requests_per_rate": 90,
+      "max_error_rate": 0.2
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "runtime_profile": "unicorn",
+  "seed": 0,
+  "assets": "synthetic-v1",
+  "experiment_id": "y3c_minicpm_4gpu_talker_replica3",
+  "hardware_label": "a6000x4",
+  "description": "4 卡预算：一个 thinker（GPU 0）配三份 talker+code2wav（GPU 1-3）。Spark 上 thinker 占单请求语音延迟的大部分，这里检验只扩语音阶段的效果。",
+  "servers": [
+    {
+      "name": "s0",
+      "model": "minicpm_o_4_5",
+      "gpus": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "args": [
+        "--config",
+        "{research_repo}/configs/models/minicpm_o_4_5_talker_replica3_4gpu.yaml"
+      ],
+      "ready_timeout_s": 2400
+    }
+  ],
+  "phases": [
+    {
+      "kind": "smoke",
+      "name": "smoke_w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "requests": 2
+    },
+    {
+      "kind": "closed_loop",
+      "name": "w3b",
+      "workload": "configs/workloads/w3b_text_speech.json",
+      "concurrency": [
+        8,
+        16,
+        32,
+        64
+      ],
+      "requests_per_level": 128,
+      "stop_if_p50_e2e_above_s": 90
+    },
+    {
+      "kind": "replay",
+      "name": "replay_text_dep",
+      "trace": "latest/x5_minicpm_agents/raw/agent_trace_agents_text_c4.jsonl",
+      "mode": "dependency",
+      "speed": 1.0,
+      "session_copies": 16,
+      "session_arrival": "poisson:1.0"
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+ "runtime_profile": "unicorn_instr",
+ "hardware_label": "a6000x8",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "exp09_t2_k1_c5_block3",
+ "description": "实验 9 第 3 个区组第 2 个（区组内顺序随机，种子 20261118）：方案 3，放置 t2_k1_c5（thinker 2 卡、talker 1 份、code2wav 5 份（单独占卡，用 8 张卡）），打点版 sglang-omni。W3b 闭环 A/B 段、开环 7.5/12/15.5/18/21/23.5 请求/秒各 60 秒；W3L 闭环 A/B 段、开环 3.5/5.5/6.5/8/9.5/10.5 请求/秒各 90 秒（速率由预跑按登记规则定）。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "s0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "args": [
+    "--config",
+    "{research_repo}/configs/models/minicpm_o_4_5_exp_t2_k1_c5.yaml"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_closed_A",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    8,
+    64,
+    128,
+    256
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3b_closed_B",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "concurrency": [
+    64,
+    128,
+    256
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_open",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "rates_rps": [
+    7.5,
+    12.0,
+    15.5,
+    18.0,
+    21.0,
+    23.5
+   ],
+   "duration_per_rate_s": 60,
+   "min_requests_per_rate": 96,
+   "max_error_rate": 0.5
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3l_closed_A",
+   "workload": "configs/workloads/w3l_long_speech.json",
+   "concurrency": [
+    16,
+    64,
+    128
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3l_closed_B",
+   "workload": "configs/workloads/w3l_long_speech.json",
+   "concurrency": [
+    128
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "server_events": true
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3l_open",
+   "workload": "configs/workloads/w3l_long_speech.json",
+   "rates_rps": [
+    3.5,
+    5.5,
+    6.5,
+    8.0,
+    9.5,
+    10.5
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 48,
+   "max_error_rate": 0.5
+  }
+ ]
+}

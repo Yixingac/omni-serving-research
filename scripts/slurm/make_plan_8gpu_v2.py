@@ -1,0 +1,622 @@
+"""Generate plan v2's experiments (docs/04_experiments/plan_8gpu_v2.md: batch 1 = phase 0, A, B; batch 2 so far).
+
+    python3 scripts/slurm/make_plan_8gpu_v2.py          # rewrites the files below
+    python3 scripts/slurm/make_plan_8gpu_v2.py --check  # exit 1 if any generated file is stale
+
+Writes configs/models/minicpm_o_4_5_v2_s<T>x<K>.yaml (one service with T pipeline replicas and K
+talker replicas), configs/experiments/a6000_8gpu_v2/*.json, configs/experiments/plan_a6000_8gpu_v2.json
+(batch 1), configs/experiments/plan_a6000_8gpu_v2_batch2.json, ..._batch2_part2.json and
+..._batch2_part3.json, ..._part4.json, ..._part5.json, ..._part6.json and ..._part7.json (the last six
+through plan.d).
+Every MiniCPM-o speech layout runs code2wav in its own process (--code2wav.process code2wav), the
+workaround for the talker crash (baseline_results.md section 17), except the same-process control in
+the stability gate. Experiments restart a server that exits and re-run the affected load level.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[2]
+EXP_DIR = "configs/experiments/a6000_8gpu_v2"
+PLAN = "configs/experiments/plan_a6000_8gpu_v2.json"
+PLAN2 = "configs/experiments/plan_a6000_8gpu_v2_batch2.json"
+PLAN3 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part2.json"
+PLAN4 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part3.json"
+PLAN5 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part4.json"
+PLAN6 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part5.json"
+PLAN7 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part6.json"
+PLAN8 = "configs/experiments/plan_a6000_8gpu_v2_batch2_part7.json"
+
+W1 = "configs/workloads/w1_text_chat.json"
+W2 = "configs/workloads/w2_audio_text.json"
+W3B = "configs/workloads/w3b_text_speech.json"
+C2W = ["--code2wav.process", "code2wav"]
+OPEN_FRACTIONS = [0.5, 0.75, 0.9, 1.0, 1.2]
+# Per-GPU share of the 56 CPUs / 800 GB the job holds (one CPU left for the orchestrator when the
+# gate's four experiments run side by side).
+CPUS = {1: 7, 2: 14, 4: 27, 8: 54}
+MEM_GB = {1: 95, 2: 190, 4: 390, 8: 780}
+S_LAYOUTS = {4: [(1, 3), (2, 2)], 8: [(1, 7), (2, 6), (3, 5), (4, 4)]}
+S_LAYOUTS_BATCH2 = [(5, 3), (6, 2)]  # thinker-heavier pools for B1/B2 (batch 1: B1 favoured thinker GPUs)
+# Talker GPUs host a talker and a code2wav process; sglang-omni then wants a memory fraction for both.
+TALKER_FRACTION = 0.40
+CODE2WAV_FRACTION = 0.40
+
+
+# ---------------------------------------------------------------------------------------------
+# servers
+
+
+def r_servers(n: int, args: list[str] = C2W) -> list[dict]:
+    return [{"name": f"r{i}", "model": "minicpm_o_4_5", "gpus": [i], "args": list(args), "ready_timeout_s": 2400} for i in range(n)]
+
+
+def p_servers(pairs: int) -> list[dict]:
+    return [{"name": f"p{k}", "model": "minicpm_o_4_5", "gpus": [2 * k, 2 * k + 1],
+             "args": ["--talker.gpu", "1", "--code2wav.gpu", "1", *C2W], "ready_timeout_s": 2400} for k in range(pairs)]
+
+
+def s_server(t: int, k: int) -> list[dict]:
+    return [{"name": "s0", "model": "minicpm_o_4_5", "gpus": list(range(t + k)),
+             "args": ["--config", f"{{research_repo}}/configs/models/minicpm_o_4_5_v2_s{t}x{k}.yaml"], "ready_timeout_s": 2400}]
+
+
+def s_yaml(t: int, k: int) -> str:
+    talker = list(range(t, t + k))
+    lines = [
+        f"# MiniCPM-o 4.5 语音流水线，{t + k} 张 GPU，一个服务（plan v2 的 S{t}:{k}）：thinker 所在的 pipeline 进程"
+        + (f"复制 {t} 份（GPU {', '.join(map(str, range(t)))}）" if t > 1 else "在 GPU 0"),
+        f"# talker 进程复制 {k} 份（GPU {talker[0]}–{talker[-1]}）。code2wav 放在自己的进程里，同样复制 {k} 份，与 talker 副本同卡。",
+        "# code2wav 不和 talker 在同一进程，是为了避开第 17 节的崩溃（talker 与 HiFT 在同一进程里并发时出错）。",
+        "# 由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+        "config_cls: MiniCPMOSpeechPipelineConfig",
+        "# --config 文件会先按完整配置校验，model_path 是必填项；启动时传入的 --model-path 会覆盖这里的值。",
+        "model_path: openbmb/MiniCPM-o-4_5",
+        "",
+        "# talker 卡上有 talker、code2wav 两个进程，sglang-omni 要求这两个阶段都声明显存比例（每卡合计不超过 1.0）。",
+        f"# talker 的比例决定它的 KV 池：{TALKER_FRACTION} × 46 GB 减去进程已用部分，约 15 GB，远大于 W3b 所需。",
+        "# thinker 卡上只有一个进程，不设比例，沿用默认值（与 Job 409712 的拆分实验一致）。",
+        "stages:",
+        "  talker:",
+        f"    gpu_memory_fraction: {TALKER_FRACTION}",
+        "  code2wav:",
+        "    process: code2wav",
+        f"    gpu_memory_fraction: {CODE2WAV_FRACTION}",
+        "",
+        "processes:",
+    ]
+    if t > 1:
+        lines += ["  pipeline:", f"    num_replicas: {t}", f"    replica_devices: [{', '.join(map(str, range(t)))}]"]
+    lines += ["  talker:", f"    num_replicas: {k}", f"    replica_devices: [{', '.join(map(str, talker))}]",
+              "  code2wav:", f"    num_replicas: {k}", f"    replica_devices: [{', '.join(map(str, talker))}]"]
+    return "\n".join(lines) + "\n"
+
+
+# ---------------------------------------------------------------------------------------------
+# phases
+
+
+def smoke() -> dict:
+    return {"kind": "smoke", "name": "smoke_w3b", "workload": W3B, "requests": 2}
+
+
+def closed(name: str, levels: list[int], workload: str | None = None, mix: list[dict] | None = None, events: bool = True) -> dict:
+    ph = {"kind": "closed_loop", "name": name, "concurrency": levels, "requests_per_level": 96,
+          "requests_per_concurrency": 2, "server_events": events, "stop_if_p50_e2e_above_s": 90}
+    if mix:
+        ph["workload_mix"] = mix
+    else:
+        ph["workload"] = workload or W3B
+    return ph
+
+
+def open_from(name: str, capacity_from: str, workload: str | None = None, mix: list[dict] | None = None,
+              fractions: list[float] = OPEN_FRACTIONS, step_s: int = 120, rerun: bool = True, max_err: float = 0.2) -> dict:
+    ph = {"kind": "open_loop", "name": name, "capacity_from": capacity_from, "capacity_fractions": fractions,
+          "duration_per_rate_s": step_s, "min_requests_per_rate": 96, "max_error_rate": max_err}
+    if not rerun:
+        ph["rerun_crashed_levels"] = False
+    if mix:
+        ph["workload_mix"] = mix
+    else:
+        ph["workload"] = workload or W3B
+    return ph
+
+
+def profile_c64() -> dict:
+    return {"kind": "closed_loop", "name": "w3b_torch_profile_c64", "workload": W3B, "concurrency": [64],
+            "requests_per_level": 64, "warmup": 16, "torch_profile": True}
+
+
+MIX = [{"workload": W1, "weight": 0.4}, {"workload": W3B, "weight": 0.4}, {"workload": W2, "weight": 0.2}]
+
+
+def agent_levels(levels: list[int], tag: str, seed0: int, routing: str | None = None,
+                 per_slot: dict[int, int] | None = None) -> list[dict]:
+    """Text and voice agents at each level of concurrent sessions, twice as many sessions in total
+    unless ``per_slot`` gives another multiple per level; every session is unique (unique_tasks). The
+    voice agent asks in text and speaks the final answer: only 24 synthetic spoken questions exist,
+    and repeating them would inflate prefix-cache hits."""
+    n = lambda c: (per_slot or {}).get(c, 2) * c  # noqa: E731
+    out = []
+    for i, c in enumerate(levels):
+        ph = {"kind": "agent", "name": f"{tag}text_c{c}", "sessions": n(c), "concurrency": c, "seed": seed0 + i,
+              "unique_tasks": True, "agent": {"max_steps": 5}, "server_events": c == 256}
+        if routing:
+            ph["routing"] = routing
+        out.append(ph)
+    for i, c in enumerate(levels):
+        ph = {"kind": "agent", "name": f"{tag}voice_c{c}", "sessions": n(c), "concurrency": c, "seed": seed0 + 50 + i,
+              "unique_tasks": True, "agent": {"max_steps": 5, "speak_final": True, "think_time_s": [1.0, 0.5]}}
+        if routing:
+            ph["routing"] = routing
+        out.append(ph)
+    return out
+
+
+# ---------------------------------------------------------------------------------------------
+# experiments
+
+
+def base(eid: str, gpus: int, servers: list[dict], phases: list[dict], desc: str, routing: str | None = None,
+         restarts: int = 4) -> dict:
+    cfg = {"runtime_profile": "unicorn", "hardware_label": f"a6000x{gpus}", "seed": 0, "assets": "synthetic-v1",
+           "experiment_id": eid, "description": desc, "restart_dead_servers": True, "max_server_restarts": restarts,
+           "servers": servers, "phases": phases}
+    if routing:
+        cfg["routing"] = routing
+    return cfg
+
+
+LEVELS = {1: [1, 2, 4, 8, 16, 32], 2: [4, 8, 16, 32, 64], 4: [8, 16, 32, 64, 128], 8: [16, 32, 64, 128, 256]}
+
+
+def layout(name: str, n: int) -> tuple[list[dict], str, str | None]:
+    """Servers, a Chinese one-line description and the client routing for a layout name."""
+    if name.startswith("r"):
+        return r_servers(n), f"{n} 个完整副本（每卡一个服务，code2wav 单独进程），客户端按在途请求最少路由", "least_outstanding" if n > 1 else None
+    if name.startswith("p"):
+        k = n // 2
+        return p_servers(k), f"{k} 个拆分服务（每个 1 张 thinker 卡 + 1 张 talker 卡，code2wav 单独进程），客户端按在途请求最少路由", "least_outstanding" if k > 1 else None
+    t, k = (int(x) for x in name[1:].split("x"))
+    return s_server(t, k), f"一个服务：{t} 个 thinker（pipeline）副本 + {k} 个 talker 副本，code2wav 单独进程、与 talker 同卡", None
+
+
+def a_config(eid: str, name: str, n: int, run: int, profile: bool = False) -> dict:
+    servers, what, routing = layout(name, n)
+    phases = [smoke(), closed("w3b_closed", LEVELS[n]), open_from("w3b_open", "w3b_closed")]
+    if profile:
+        phases.append(profile_c64())
+    desc = (f"plan v2 A（{n} 卡，第 {run} 次）：{what}。W3b 闭环并发 {LEVELS[n][0]}–{LEVELS[n][-1]}（每档 max(96, 2×并发) 个请求，"
+            f"开事件记录），再按闭环测得的容量做开环泊松 {', '.join(f'{int(f * 100)}%' for f in OPEN_FRACTIONS)}，每档 2 分钟。"
+            + ("最后在并发 64 开一个 torch profiler 窗口。" if profile else ""))
+    return base(eid, n, servers, phases, desc, routing)
+
+
+def b1_config(eid: str, name: str, batch: str = "plan v2 B1") -> dict:
+    servers, what, routing = layout(name, 8)
+    return base(eid, 8, servers, [smoke(), closed("mix_closed", LEVELS[8], mix=MIX), open_from("mix_open", "mix_closed", mix=MIX)],
+                f"{batch}：{what}上的混合负载（40% W1 文本对话、40% W3b 文本提问语音回答、20% W2 语音提问文本回答，每个请求按权重抽取），"
+                "闭环并发 16–256，再按测得容量开环 50%–120%。", routing)
+
+
+def gate_configs() -> list[tuple[dict, dict]]:
+    """Y0s: four experiments side by side on 1 + 2 + 4 + 1 GPUs."""
+    out = []
+    control = base("v2_y0s_r1_default_soak", 1, r_servers(1, args=[]),
+                   [smoke(), {"kind": "open_loop", "name": "w3b_soak", "workload": W3B, "rates_rps": [1.5] * 16,
+                              "requests_per_rate": 180, "max_error_rate": 1.0, "rerun_crashed_levels": False}],
+                   "plan v2 稳定性门槛的对照：单卡默认配置（talker 与 code2wav 同进程），W3b 开环 1.5 请求/秒（约为容量的一半）"
+                   "× 16 档 × 2 分钟。服务崩溃后自动重启、接着跑下一档，用来数每小时崩溃几次（第 17 节平均约 3 分钟一次）。",
+                   restarts=20)
+    out.append((control, {"priority": 98, "est": 2700, "timeout": 7200}))
+    for eid, name, n, probe, prio in (("v2_y0s_p1_soak", "p1", 2, [8, 16, 32], 97), ("v2_y0s_s1x3_soak", "s1x3", 4, [16, 32, 64], 96)):
+        servers, what, routing = layout(name, n)
+        cfg = base(eid, n, servers,
+                   [smoke(), {"kind": "closed_loop", "name": "probe", "workload": W3B, "concurrency": probe, "requests_per_level": 48},
+                    open_from("w3b_soak", "probe", fractions=[0.5] * 14, rerun=False, max_err=1.0)],
+                   f"plan v2 稳定性门槛：{what}。先用闭环（并发 {', '.join(map(str, probe))}）测容量，再以一半容量开环 14 档 × 2 分钟。"
+                   "崩溃后自动重启并记录，不重跑。", routing, restarts=10)
+        out.append((cfg, {"priority": prio, "est": 2400, "timeout": 6000}))
+    r1 = a_config("v2_a_r1", "r1", 1, 1)
+    r1["description"] = r1["description"].replace("plan v2 A（1 卡，第 1 次）", "plan v2 A 的单卡基线 R1（与稳定性门槛同时运行；并发 1–16 与 x3 对照）")
+    out.append((r1, {"priority": 95, "est": 1800, "timeout": 5400}))
+    return out
+
+
+def all_entries() -> tuple[list[tuple[dict | None, dict]], dict[str, str]]:
+    entries: list[tuple[dict | None, dict]] = []
+    yamls = {f"configs/models/minicpm_o_4_5_v2_s{t}x{k}.yaml": s_yaml(t, k)
+             for t, k in [tk for n in (4, 8) for tk in S_LAYOUTS[n]] + S_LAYOUTS_BATCH2}
+    entries.append((None, {"experiment_id": "v2_y0_env_topology", "gpus": 8, "priority": 100, "est": 900, "timeout": 2700,
+                           "command": "bash scripts/slurm/env_topology.sh unicorn minicpm_o_4_5",
+                           "description": "Y0：GPU 拓扑、NVLink、点对点拷贝带宽、NVLink 对上的 NCCL all-reduce，计时预热 MiniCPM-o 权重文件（P7）"}))
+    entries += [(cfg, meta) for cfg, meta in gate_configs()]
+    names8 = ["r8", "p4", "s1x7", "s2x6", "s3x5", "s4x4"]
+    prio = 90
+    for run, order in ((1, names8), (2, list(reversed(names8)))):
+        for name in order:
+            eid = f"v2_a_{name}_run{run}"
+            prof = run == 1 and name in ("r8", "s2x6")
+            entries.append((a_config(eid, name, 8, run, profile=prof), {"priority": prio, "est": 1700 if prof else 1500, "timeout": 6000}))
+            prio -= 1
+    # B2: agents on R8 (two routings), the predicted best pooled layout (S2:6, hypothesis A-H1) and P4.
+    lv = [64, 128, 256, 512]
+    servers, _, _ = layout("r8", 8)
+    b2_r8 = base("v2_b2_r8", 8, servers, [smoke(), *agent_levels(lv, "lo_", 7100, "least_outstanding"),
+                                           *agent_levels(lv, "sa_", 7200, "session_affinity")],
+                 "plan v2 B2：8 个完整副本上的大规模 Agent（会话不重复），同时进行的会话 64–512，每档会话总数为并发的 2 倍；"
+                 "文本 Agent 与语音 Agent（文本提问、最后一步语音回答），客户端路由分别用在途请求最少和按会话固定。", "least_outstanding")
+    servers, what, _ = layout("s2x6", 8)
+    b2_s26 = base("v2_b2_s2x6", 8, servers, [smoke(), *agent_levels(lv, "", 7300),
+                  {"kind": "agent", "name": "toollat0p5_text_c256", "sessions": 512, "concurrency": 256, "seed": 7390,
+                   "unique_tasks": True, "agent": {"max_steps": 5}, "tool_latency": [0.5, 0.5]},
+                  {"kind": "agent", "name": "toollat2_text_c256", "sessions": 512, "concurrency": 256, "seed": 7391,
+                   "unique_tasks": True, "agent": {"max_steps": 5}, "tool_latency": [2.0, 0.5]}],
+                  f"plan v2 B2：{what}（按假设 A-H1 预选的池化布局）上的大规模 Agent，同 v2_b2_r8；另加 256 个会话时工具延迟 0.5 s、2 s"
+                  "（对数正态中位数）两档，与 text_c256（无工具延迟）一起看工具等待让各池空闲多少。")
+    servers, what, routing = layout("p4", 8)
+    b2_p4 = base("v2_b2_p4", 8, servers, [smoke(), *agent_levels(lv, "", 7400)],
+                 f"plan v2 B2：{what}上的大规模 Agent，同 v2_b2_r8 的在途请求最少路由部分。", routing)
+    entries += [(b2_r8, {"priority": 78, "est": 2700, "timeout": 9000}), (b2_s26, {"priority": 77, "est": 2400, "timeout": 9000}),
+                (b2_p4, {"priority": 76, "est": 1800, "timeout": 7200})]
+    names4 = ["r4", "p2", "s1x3", "s2x2"]
+    prio = 70
+    for run, order in ((1, names4), (2, list(reversed(names4)))):
+        for name in order:
+            entries.append((a_config(f"v2_a_{name}_run{run}", name, 4, run), {"priority": prio, "est": 1500, "timeout": 6000}))
+            prio -= 1
+    for k, name in enumerate(("r8", "s2x6", "p4")):
+        entries.append((b1_config(f"v2_b1_{name}", name), {"priority": 60 - k, "est": 1800, "timeout": 6000}))
+    for k, name in enumerate(("r2", "p1")):
+        entries.append((a_config(f"v2_a_{name}", name, 2, 1), {"priority": 50 - k, "est": 1500, "timeout": 5400}))
+    return entries, yamls
+
+
+def batch2_entries() -> list[tuple[dict | None, dict]]:
+    """Batch 2, first part, for Job 454290 on compute-03. Batch 1 ran on another 8×A6000 node of the
+    shared gpu partition (same GPUs, NVLink pairs and CPU model; driver 570 with cuda-compat there, 580 here)."""
+    entries: list[tuple[dict | None, dict]] = [(None, {
+        "experiment_id": "v2b_y0_env_topology", "gpus": 8, "priority": 100, "est": 600, "timeout": 2700,
+        "command": "bash scripts/slurm/env_topology.sh unicorn minicpm_o_4_5",
+        "description": "第二批 Y0（compute-03）：拓扑、点对点拷贝带宽、NCCL all-reduce（第一批的 Y0 因为 nvidia-smi 表头的 ANSI 码什么都没测），"
+                       "计时预热 MiniCPM-o 权重"})]
+    # The batch-1 best layout and R8 once more on this node, so batch-2 results can be set against
+    # batch 1 (two runs each on the other node).
+    for k, name in enumerate(("s2x6", "r8")):
+        cfg = a_config(f"v2b_a_{name}_c03", name, 8, 3)
+        cfg["description"] = cfg["description"].replace("plan v2 A（8 卡，第 3 次）", "第二批 A 的跨节点对照（compute-03，与第一批在另一台 8 卡节点上的两次比较）")
+        entries.append((cfg, {"priority": 90 - k, "est": 1100, "timeout": 6000}))
+    # B1 favoured the thinker-heavier layouts (P4 > R8 > S2:6 at every level): the pooled 1:1 and 3:5 next.
+    for k, name in enumerate(("s4x4", "s3x5")):
+        entries.append((b1_config(f"v2b_b1_{name}", name, "第二批 B1"), {"priority": 60 - k, "est": 1000, "timeout": 6000}))
+    return entries
+
+
+# Batch-1 agent levels lasted 6-40 s (two sessions per slot), too short for a steady state: about
+# 2-3 minutes per level now.
+B2_LONG = {64: 8, 128: 8, 256: 8, 512: 4}
+
+
+def batch2_part2_entries() -> list[tuple[dict | None, dict]]:
+    """Batch 2, second part (added to the running orchestrator through plan.d): B1 on the two
+    thinker-heavier pools, and B2 again with ~2-3 minute levels on R8 (both routings), P4, S2:6
+    (with the tool-latency levels) and S4:4."""
+    entries: list[tuple[dict | None, dict]] = []
+    for k, name in enumerate(("s5x3", "s6x2")):
+        entries.append((b1_config(f"v2b_b1_{name}", name, "第二批 B1"), {"priority": 58 - k, "est": 1000, "timeout": 6000}))
+    lv = [64, 128, 256, 512]
+    what_long = "每档会话总数为并发的 8 倍（512 并发时 4 倍），每档约 2–3 分钟（第一批每档只有 6–40 秒）"
+    servers, what, routing = layout("r8", 8)
+    entries.append((base("v2b_b2l_r8", 8, servers, [smoke(), *agent_levels(lv, "lo_", 8100, "least_outstanding", B2_LONG),
+                                                    *agent_levels(lv, "sa_", 8200, "session_affinity", B2_LONG)],
+                         f"第二批 B2（加长）：{what}上的大规模 Agent（会话不重复），同时进行的会话 64–512，{what_long}；"
+                         "文本 Agent 与语音 Agent（文本提问、最后一步语音回答），路由分别用在途请求最少和按会话固定。", routing),
+                    {"priority": 50, "est": 2700, "timeout": 9000}))
+    servers, what, _ = layout("s2x6", 8)
+    entries.append((base("v2b_b2l_s2x6", 8, servers, [smoke(), *agent_levels(lv, "", 8300, per_slot=B2_LONG),
+                         {"kind": "agent", "name": "toollat0p5_text_c256", "sessions": 2048, "concurrency": 256, "seed": 8390,
+                          "unique_tasks": True, "agent": {"max_steps": 5}, "tool_latency": [0.5, 0.5]},
+                         {"kind": "agent", "name": "toollat2_text_c256", "sessions": 2048, "concurrency": 256, "seed": 8391,
+                          "unique_tasks": True, "agent": {"max_steps": 5}, "tool_latency": [2.0, 0.5]}],
+                         f"第二批 B2（加长）：{what}上的大规模 Agent，{what_long}；另加 256 个会话时工具延迟 0.5 s、2 s 两档"
+                         "（对数正态中位数，各 2048 个会话）。"), {"priority": 49, "est": 1800, "timeout": 7200}))
+    for k, name in enumerate(("p4", "s4x4")):
+        servers, what, routing = layout(name, 8)
+        entries.append((base(f"v2b_b2l_{name}", 8, servers, [smoke(), *agent_levels(lv, "", 8400 + 100 * k, per_slot=B2_LONG)],
+                             f"第二批 B2（加长）：{what}上的大规模 Agent，{what_long}。", routing),
+                        {"priority": 48 - k, "est": 1500, "timeout": 7200}))
+    return entries
+
+
+# Batch-1 open loops topped out at 120% of the closed-loop "capacity", and the pooled layouts were
+# still far inside the SLO there (e2e per audio second p90 0.28-0.31 against 0.5): the closed loop
+# with two requests per slot under-reads capacity (drain). The same absolute rates for every layout.
+AOH_RATES = [16, 20, 24, 28, 32, 36, 40]
+
+
+def batch2_part3_entries() -> list[tuple[dict | None, dict]]:
+    """Batch 2, third part (plan.d): W3b open loop at fixed absolute rates, to find where each 8-GPU
+    layout leaves the speech SLO."""
+    entries: list[tuple[dict | None, dict]] = []
+    for k, name in enumerate(("s2x6", "s3x5", "s1x7", "r8", "s4x4", "p4")):
+        servers, what, routing = layout(name, 8)
+        ph = {"kind": "open_loop", "name": "w3b_open_abs", "workload": W3B, "rates_rps": AOH_RATES,
+              "duration_per_rate_s": 90, "min_requests_per_rate": 96, "max_error_rate": 0.2, "server_events": False}
+        cfg = base(f"v2b_aoh_{name}", 8, servers, [smoke(), ph],
+                   f"第二批 A 的高负载开环：{what}。W3b 开环泊松，所有布局用同一组绝对速率 "
+                   f"{', '.join(map(str, AOH_RATES))} 请求/秒，每档 90 秒；第一批的开环最高只到闭环容量的 120%，池化布局在那里还远没离开 SLO。",
+                   routing)
+        entries.append((cfg, {"priority": 80 - k, "est": 900, "timeout": 5400}))
+    return entries
+
+
+W4 = "configs/workloads/w4_video_text.json"
+# compute-03 GPU pairs by link (Y0 in batch 2): NV4 0-3, 1-2, 4-5, 6-7; PIX 1-3, 2-3; NODE 0-1, 0-2,
+# 4-6, 4-7, 5-6, 5-7; everything across the two sockets is SYS. Thinker GPU first, talker GPU second.
+G1_PAIRS = {"v2b_g1a_links": [("node", 0, 2), ("pix", 1, 3), ("nv4a", 4, 5), ("nv4b", 6, 7)],
+            "v2b_g1b_links": [("sysa", 0, 4), ("sysb", 1, 5), ("pix", 2, 3), ("nv4", 6, 7)]}
+
+
+def batch2_part4_entries() -> list[tuple[dict | None, dict]]:
+    """Batch 2, fourth part (plan.d): G1, the thinker -> talker link (four 2-GPU split services on
+    chosen GPU pairs, side by side, requests in turn so each gets the same load), and F1, video
+    understanding on 1, 2, 4 and 8 full replicas (7 CPUs per GPU), one after another."""
+    entries: list[tuple[dict | None, dict]] = []
+    for k, (eid, pairs) in enumerate(G1_PAIRS.items()):
+        servers = [{"name": f"g_{lab}", "model": "minicpm_o_4_5", "gpus": [a, b],
+                    "args": ["--talker.gpu", "1", "--code2wav.gpu", "1", *C2W], "ready_timeout_s": 2400} for lab, a, b in pairs]
+        phases = [smoke(),
+                  {"kind": "closed_loop", "name": "w3b_closed", "workload": W3B, "concurrency": [16, 32], "requests_per_level": 96,
+                   "requests_per_concurrency": 3, "server_events": True},
+                  {"kind": "open_loop", "name": "w3b_open_abs", "workload": W3B, "rates_rps": [6, 10, 13, 15], "duration_per_rate_s": 120,
+                   "min_requests_per_rate": 96, "max_error_rate": 0.2, "server_events": True}]
+        what = "、".join(f"{lab.rstrip('ab')}（GPU {a}→{b}）" for lab, a, b in pairs)
+        entries.append((base(eid, 8, servers, phases,
+                             f"第二批 G1：4 个 2 卡拆分服务（thinker 卡 → talker 卡，code2wav 单独进程）同时运行，卡对的连接分别是 {what}；"
+                             "客户端轮流分配请求，每个服务承受相同的负载。W3b 闭环并发 16、32，开环 6、10、13、15 请求/秒（合计），开事件记录，"
+                             "按服务比较延迟和跨卡传递时间。", "round_robin"),
+                        {"priority": 45 - k, "est": 1000, "timeout": 5400}))
+    prev = None
+    for k, n in enumerate((1, 2, 4, 8)):
+        servers = [{"name": f"r{i}", "model": "minicpm_o_4_5", "gpus": [i], "args": ["--text-only"], "ready_timeout_s": 2400} for i in range(n)]
+        levels = [n * c for c in (1, 2, 4, 8)]
+        phases = [{"kind": "smoke", "name": "smoke_w4", "workload": W4, "requests": 2}]
+        for sec in (10, 20):
+            phases.append({"kind": "closed_loop", "name": f"w4_video_{sec}s", "workload": W4,
+                           "workload_overrides": {"video": {"tag": "count_circles", "target_s": sec}}, "concurrency": levels,
+                           "requests_per_level": 24, "requests_per_concurrency": 3, "stop_if_p50_e2e_above_s": 90})
+        eid = f"v2b_f1_r{n}"
+        cfg = base(eid, n, servers, phases,
+                   f"第二批 F1：{n} 个完整副本（--text-only，每卡一个服务）上的视频理解（W4，10 秒和 20 秒合成视频，文本输出），"
+                   f"闭环并发 {', '.join(map(str, levels))}（每个副本 1、2、4、8），每档 max(24, 3×并发) 个请求；每卡 7 个 CPU。"
+                   "看视频吞吐是否随副本数线性增长，以及 GPU 空闲比例。", "least_outstanding" if n > 1 else None)
+        entries.append((cfg, {"priority": 40 - k, "est": 1500, "timeout": 7200, "deps": [prev] if prev else []}))
+        prev = eid
+    return entries
+
+
+# D replays the live B2 run at 256 concurrent text agents (2048 unique sessions, least-outstanding
+# routing on R8) on a fresh R8 each time. (name, mode, payload, speed, max_sessions, copies)
+D_TRACE = "latest/v2b_b2l_r8/raw/agent_trace_lo_text_c256.jsonl"
+D_RUNS = [("dep_orig_1x", "dependency", "auto", 1.0, None, 1), ("dep_prefix_1x", "dependency", "prefix_surrogate", 1.0, None, 1),
+          ("dep_sur_1x", "dependency", "surrogate", 1.0, None, 1), ("dep_orig_copy4_1x", "dependency", "auto", 1.0, 512, 4),
+          ("req_orig_1x", "request", "auto", 1.0, None, 1), ("dep_orig_2x", "dependency", "auto", 2.0, None, 1),
+          ("dep_orig_4x", "dependency", "auto", 4.0, None, 1), ("req_orig_4x", "request", "auto", 4.0, None, 1),
+          ("dep_prefix_4x", "dependency", "prefix_surrogate", 4.0, None, 1), ("dep_sur_4x", "dependency", "surrogate", 4.0, None, 1)]
+D_PAYLOAD = {"auto": "原文", "prefix_surrogate": "保留前缀的替代内容", "surrogate": "完全替代"}
+
+
+def batch2_part5_entries() -> list[tuple[dict | None, dict]]:
+    """Batch 2, fifth part (plan.d, after v2b_b2l_r8 has recorded its trace): D, trace replay method."""
+    entries: list[tuple[dict | None, dict]] = []
+    servers, what, routing = layout("r8", 8)
+    for k, (name, mode, payload, speed, max_sessions, copies) in enumerate(D_RUNS):
+        ph = {"kind": "replay", "name": "replay", "trace": D_TRACE, "mode": mode, "payload": payload, "speed": speed,
+              "session_copies": copies, "routing": "least_outstanding", "request_timeout_s": 300}
+        if max_sessions:
+            ph["max_sessions"] = max_sessions
+        amp = f"前 {max_sessions} 个会话复制 {copies} 份" if max_sessions else "全部 2048 个不重复会话"
+        cfg = base(f"v2b_d_{name}", 8, servers, [smoke(), ph],
+                   f"第二批 D（回放方法）：在新启动的 {what}上回放 v2b_b2l_r8 的 lo_text_c256（256 个并发文本 Agent 的实时运行）。"
+                   f"{'依赖感知' if mode == 'dependency' else '请求级'}回放，内容用{D_PAYLOAD[payload]}，{amp}，{speed:g} 倍速。", routing)
+        entries.append((cfg, {"priority": 30 - k, "est": 600, "timeout": 3600}))
+    return entries
+
+
+SMALL_BATCH_LEVELS = [1, 2, 4, 8]
+
+
+def batch2_part6_entries() -> list[tuple[dict | None, dict]]:
+    """Batch 2, sixth part (plan.d, ahead of the rest): small-batch real-time serving. The 8-GPU
+    layouts started at concurrency 16 in batch 1; only R1 and the 2-GPU layouts saw 1-8."""
+    entries: list[tuple[dict | None, dict]] = []
+    for k, name in enumerate(("s2x6", "r8", "p4", "s1x7")):
+        servers, what, routing = layout(name, 8)
+        ph = {"kind": "closed_loop", "name": "w3b_small", "workload": W3B, "concurrency": SMALL_BATCH_LEVELS,
+              "requests_per_level": 64, "warmup": 4, "server_events": True}
+        cfg = base(f"v2b_sb_{name}", 8, servers, [smoke(), ph],
+                   f"第二批小 batch 实时服务：{what}。W3b 闭环并发 {', '.join(map(str, SMALL_BATCH_LEVELS))}，每档 64 个请求（另有 4 个预热），"
+                   "开事件记录，看小 batch 下的 TTFT、端到端 ÷ 语音秒和各阶段时间。", routing)
+        entries.append((cfg, {"priority": 88 - k, "est": 600, "timeout": 3600}))
+    return entries
+
+
+def batch2_part7_entries() -> list[tuple[dict | None, dict]]:
+    """Batch 2, seventh part (plan.d, after the queue drained): the four 4x replays again, whose first
+    runs lost 20-46% of their requests to the client's open-file limit (1024; now raised at client
+    start), and F1 R1 once more with server events, to find where video requests wait."""
+    entries: list[tuple[dict | None, dict]] = []
+    servers, what, routing = layout("r8", 8)
+    for k, (name, mode, payload, speed, max_sessions, copies) in enumerate(r for r in D_RUNS if r[3] == 4.0):
+        ph = {"kind": "replay", "name": "replay", "trace": D_TRACE, "mode": mode, "payload": payload, "speed": speed,
+              "session_copies": copies, "routing": "least_outstanding", "request_timeout_s": 300}
+        cfg = base(f"v2b_d_{name}_r2", 8, servers, [smoke(), ph],
+                   f"第二批 D 重跑：v2b_d_{name} 第一次运行时，客户端在约一千个请求在途时用完了文件句柄（软上限 1024），"
+                   f"20%–46% 的请求失败或被跳过；现在客户端启动时会调高软上限。其余与 v2b_d_{name} 相同："
+                   f"{'依赖感知' if mode == 'dependency' else '请求级'}回放，内容用{D_PAYLOAD[payload]}，全部 2048 个不重复会话，4 倍速。", routing)
+        entries.append((cfg, {"priority": 20 - k, "est": 600, "timeout": 3600}))
+    servers = [{"name": "r0", "model": "minicpm_o_4_5", "gpus": [0], "args": ["--text-only"], "ready_timeout_s": 2400}]
+    phases = [{"kind": "smoke", "name": "smoke_w4", "workload": W4, "requests": 2},
+              {"kind": "closed_loop", "name": "w4_video_10s", "workload": W4,
+               "workload_overrides": {"video": {"tag": "count_circles", "target_s": 10}}, "concurrency": [1, 2, 4],
+               "requests_per_level": 24, "requests_per_concurrency": 3, "server_events": True, "stop_if_p50_e2e_above_s": 90}]
+    entries.append((base("v2b_f1_r1_events", 1, servers, phases,
+                         "第二批 F1 补充：1 个完整副本（--text-only），10 秒视频，闭环并发 1、2、4，每档 24 个请求，开事件记录。"
+                         "F1 里每个副本的吞吐不随并发增长（请求被逐个处理），CPU 和 GPU 都没有用满；这次看请求在哪个阶段排队。"),
+                    {"priority": 10, "est": 400, "timeout": 2400}))
+    return entries
+
+
+PLAN_EXP01 = "configs/experiments/plan_a6000_8gpu_exp01.json"
+
+
+def exp01_entries() -> list[tuple[dict | None, dict]]:
+    """实验 1（8 张 GPU 在做什么）: GPU kernel timelines for the three main layouts. Batch 1's torch
+    profiler windows hold no GPU activity (CUPTI failed to start under driver 570 + cuda-compat);
+    compute-03 runs driver 580. Each layout: W3b closed loop at concurrency 8 and 64, first with
+    server events only (the baseline, to measure the profiler's own overhead), then with the torch
+    profiler (CPU ops, CUDA runtime calls and GPU kernels, plus server events)."""
+    entries: list[tuple[dict | None, dict]] = []
+    for k, name in enumerate(("r8", "p4", "s2x6")):
+        servers, what, routing = layout(name, 8)
+        phases = [smoke()]
+        for c, n, warm in ((8, 32, 8), (64, 64, 16)):
+            for prof in (False, True):
+                ph = {"kind": "closed_loop", "name": f"w3b_{'prof' if prof else 'base'}_c{c}", "workload": W3B, "concurrency": [c],
+                      "requests_per_level": n, "requests_per_concurrency": 1, "warmup": warm}
+                ph["torch_profile" if prof else "server_events"] = True
+                phases.append(ph)
+        cfg = base(f"exp01_prof_{name}", 8, servers, phases,
+                   f"实验 1（8 张 GPU 在做什么）：{what}。W3b 闭环并发 8（32 个请求）和 64（64 个请求），每个并发先只开事件记录跑一遍，"
+                   "再开 torch profiler（CPU 操作、CUDA 调用和 GPU kernel）跑一遍，用来画每张 GPU 的工作时间线，并量出 profiler 本身的开销。", routing)
+        entries.append((cfg, {"priority": 8 - k, "est": 900, "timeout": 3600}))
+    return entries
+
+
+PLAN_EXP05 = "configs/experiments/plan_a6000_8gpu_exp05.json"
+
+
+def exp05_entries() -> list[tuple[dict | None, dict]]:
+    """实验 5 (GPU 为什么会等待), first run: what limits the talker GPUs of S2:6 at a steady high load,
+    the talker's CPU-side overhead or code2wav's compute. Lessons from 实验 1: warm up at the target
+    concurrency first, run each measured phase for three waves, profile only a few seconds inside a
+    steady phase (a whole-phase trace is gigabytes), and repeat the baseline after the profiled phase
+    to see order effects. The runner also records CPU per process now (pid -> stage)."""
+    servers, what, routing = layout("s2x6", 8)
+    c = 128
+    def phase(name: str, n: int, warm: int, **extra) -> dict:
+        return {"kind": "closed_loop", "name": name, "workload": W3B, "concurrency": [c], "requests_per_level": n,
+                "requests_per_concurrency": 1, "warmup": warm, **extra}
+    phases = [smoke(),
+              phase(f"w3b_warm_c{c}", c, 0),
+              phase(f"w3b_base_c{c}", 3 * c, c, server_events=True),
+              phase(f"w3b_prof_c{c}", 3 * c, c, torch_profile_window={"start_after_s": 12, "duration_s": 3}),
+              phase(f"w3b_base2_c{c}", 3 * c, c, server_events=True)]
+    cfg = base("exp05_talker_s2x6", 8, servers, phases,
+               f"实验 5（GPU 为什么会等待）第一次补测：{what}。W3b 闭环并发 {c}：先预热一波（{c} 个请求），再跑三段，每段 {3 * c} 个请求（另加 {c} 个预热）："
+               "只记事件 → 第 12 秒起开 3 秒 torch profiler → 再只记事件（看先后顺序的影响）。看高负载时 talker 卡被什么卡住：talker 的 CPU 开销，还是 code2wav 的计算。", routing)
+    return [(cfg, {"priority": 6, "est": 900, "timeout": 2700})]
+
+
+def plan_entry(cfg: dict | None, meta: dict) -> dict:
+    eid = cfg["experiment_id"] if cfg else meta["experiment_id"]
+    gpus = int(cfg["hardware_label"].removeprefix("a6000x")) if cfg else meta["gpus"]
+    return {"experiment_id": eid,
+            "command": meta.get("command") or f"bash scripts/slurm/run_experiment.sh {EXP_DIR}/{eid}.json",
+            "priority": meta["priority"], "required_gpus": gpus, "required_cpus": CPUS[gpus], "required_memory_gb": MEM_GB[gpus],
+            "dependencies": meta.get("deps", []), "estimated_duration_s": meta["est"], "timeout_s": meta["timeout"], "max_retries": 1,
+            "description": (meta.get("description") or cfg["description"])[:200]}
+
+
+def render() -> dict[str, str]:
+    entries, yamls = all_entries()
+    files = dict(yamls)
+    plan = {"plan_id": "a6000_8gpu_v2_batch1",
+            "_comment": "plan v2 第一批（阶段 0、A、B），由 scripts/slurm/make_plan_8gpu_v2.py 生成。没有依赖关系：按优先级排队，"
+                        "某个实验失败不会挡住后面的实验。B 用的 S2:6、P4 是按假设预选的，A 的结果如果指向别的布局，再通过 plan.d 追加。",
+            "experiments": [plan_entry(c, m) for c, m in entries]}
+    files[PLAN] = json.dumps(plan, ensure_ascii=False, indent=1) + "\n"
+    entries2 = batch2_entries()
+    plan2 = {"plan_id": "a6000_8gpu_v2_batch2",
+             "_comment": "plan v2 第二批的第一部分（compute-03 上的 Y0、跨节点对照、B1 的另外两个布局），由 scripts/slurm/make_plan_8gpu_v2.py 生成。"
+                         "其余部分看结果再通过 plan.d 追加。",
+             "experiments": [plan_entry(c, m) for c, m in entries2]}
+    files[PLAN2] = json.dumps(plan2, ensure_ascii=False, indent=1) + "\n"
+    entries3 = batch2_part2_entries()
+    plan3 = {"plan_id": "a6000_8gpu_v2_batch2_part2",
+             "_comment": "plan v2 第二批的第二部分，通过 plan.d 加到正在运行的编排器：B1 的 S5:3、S6:2，加长的 B2。"
+                         "由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+             "experiments": [plan_entry(c, m) for c, m in entries3]}
+    files[PLAN3] = json.dumps(plan3, ensure_ascii=False, indent=1) + "\n"
+    entries4 = batch2_part3_entries()
+    plan4 = {"plan_id": "a6000_8gpu_v2_batch2_part3",
+             "_comment": "plan v2 第二批的第三部分，通过 plan.d 追加：6 种 8 卡布局在相同绝对速率下的高负载开环。"
+                         "由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+             "experiments": [plan_entry(c, m) for c, m in entries4]}
+    files[PLAN4] = json.dumps(plan4, ensure_ascii=False, indent=1) + "\n"
+    entries5 = batch2_part4_entries()
+    plan5 = {"plan_id": "a6000_8gpu_v2_batch2_part4",
+             "_comment": "plan v2 第二批的第四部分，通过 plan.d 追加：G1（thinker 到 talker 的卡间连接）和 F1（视频随副本数的扩展，依次运行）。"
+                         "由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+             "experiments": [plan_entry(c, m) for c, m in entries5]}
+    files[PLAN5] = json.dumps(plan5, ensure_ascii=False, indent=1) + "\n"
+    entries6 = batch2_part5_entries()
+    plan6 = {"plan_id": "a6000_8gpu_v2_batch2_part5",
+             "_comment": "plan v2 第二批的第五部分（D：trace 回放方法），在 v2b_b2l_r8 录下 trace 之后通过 plan.d 追加。"
+                         "由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+             "experiments": [plan_entry(c, m) for c, m in entries6]}
+    files[PLAN6] = json.dumps(plan6, ensure_ascii=False, indent=1) + "\n"
+    entries7 = batch2_part6_entries()
+    plan7 = {"plan_id": "a6000_8gpu_v2_batch2_part6",
+             "_comment": "plan v2 第二批的第六部分，通过 plan.d 追加、优先运行：4 种 8 卡布局在并发 1/2/4/8 下的小 batch 实时服务。"
+                         "由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+             "experiments": [plan_entry(c, m) for c, m in entries7]}
+    files[PLAN7] = json.dumps(plan7, ensure_ascii=False, indent=1) + "\n"
+    entries8 = batch2_part7_entries()
+    plan8 = {"plan_id": "a6000_8gpu_v2_batch2_part7",
+             "_comment": "plan v2 第二批的第七部分，队列跑完后通过 plan.d 追加：客户端句柄上限修好后重跑 D 的 4 个 4 倍速回放，"
+                         "再用开了事件记录的单副本视频实验看 F1 的请求在哪里排队。由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+             "experiments": [plan_entry(c, m) for c, m in entries8]}
+    files[PLAN8] = json.dumps(plan8, ensure_ascii=False, indent=1) + "\n"
+    entries9 = exp01_entries()
+    plan9 = {"plan_id": "a6000_8gpu_exp01",
+             "_comment": "实验 1（8 张 GPU 在做什么）的补测：三种主要分工（R8、P4、S2:6）在并发 8 和 64 下的 GPU kernel 时间线，"
+                         "每个并发先跑一遍不开 profiler 的对照。通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+             "experiments": [plan_entry(c, m) for c, m in entries9]}
+    files[PLAN_EXP01] = json.dumps(plan9, ensure_ascii=False, indent=1) + "\n"
+    entries10 = exp05_entries()
+    plan10 = {"plan_id": "a6000_8gpu_exp05",
+              "_comment": "实验 5（GPU 为什么会等待）的第一次补测：2+6 分工在并发 128 的稳定负载下，talker 卡被什么卡住。"
+                          "通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_8gpu_v2.py 生成。",
+              "experiments": [plan_entry(c, m) for c, m in entries10]}
+    files[PLAN_EXP05] = json.dumps(plan10, ensure_ascii=False, indent=1) + "\n"
+    for cfg, _ in entries + entries2 + entries3 + entries4 + entries5 + entries6 + entries7 + entries8 + entries9 + entries10:
+        if cfg:
+            files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
+    return files
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--check", action="store_true", help="only report files that differ from what would be generated")
+    a = ap.parse_args()
+    files = render()
+    stale = [p for p, text in files.items() if not (REPO / p).exists() or (REPO / p).read_text() != text]
+    if a.check:
+        for p in stale:
+            print(f"stale: {p}")
+        return 1 if stale else 0
+    for p, text in files.items():
+        (REPO / p).parent.mkdir(parents=True, exist_ok=True)
+        (REPO / p).write_text(text)
+    print(f"wrote {len(files)} files ({len(stale)} changed)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

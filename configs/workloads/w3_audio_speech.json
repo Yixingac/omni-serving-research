@@ -1,0 +1,4 @@
+{"workload_id": "W3_audio_speech", "description": "语音提问输入，文本+语音回答（经过 talker 和 code2wav）。",
+ "input_modalities": ["audio", "text"], "output_modalities": ["text", "audio"], "max_tokens": 64, "stream": true, "temperature": 0.0,
+ "audio": {"tag": "agent_question"},
+ "prompt": {"kind": "fixed", "text": "Listen to the question in the audio and answer it in one short sentence."}}

@@ -1,0 +1,71 @@
+{
+ "plan_id": "a6000_8gpu_v2_batch2",
+ "_comment": "plan v2 第二批的第一部分（compute-03 上的 Y0、跨节点对照、B1 的另外两个布局），由 scripts/slurm/make_plan_8gpu_v2.py 生成。其余部分看结果再通过 plan.d 追加。",
+ "experiments": [
+  {
+   "experiment_id": "v2b_y0_env_topology",
+   "command": "bash scripts/slurm/env_topology.sh unicorn minicpm_o_4_5",
+   "priority": 100,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 600,
+   "timeout_s": 2700,
+   "max_retries": 1,
+   "description": "第二批 Y0（compute-03）：拓扑、点对点拷贝带宽、NCCL all-reduce（第一批的 Y0 因为 nvidia-smi 表头的 ANSI 码什么都没测），计时预热 MiniCPM-o 权重"
+  },
+  {
+   "experiment_id": "v2b_a_s2x6_c03",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_a_s2x6_c03.json",
+   "priority": 90,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1100,
+   "timeout_s": 6000,
+   "max_retries": 1,
+   "description": "第二批 A 的跨节点对照（compute-03，与第一批在另一台 8 卡节点上的两次比较）：一个服务：2 个 thinker（pipeline）副本 + 6 个 talker 副本，code2wav 单独进程、与 talker 同卡。W3b 闭环并发 16–256（每档 max(96, 2×并发) 个请求，开事件记录），再按闭环测得的容量做开环泊松 50%, 75%, 90%, 100%, 120"
+  },
+  {
+   "experiment_id": "v2b_a_r8_c03",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_a_r8_c03.json",
+   "priority": 89,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1100,
+   "timeout_s": 6000,
+   "max_retries": 1,
+   "description": "第二批 A 的跨节点对照（compute-03，与第一批在另一台 8 卡节点上的两次比较）：8 个完整副本（每卡一个服务，code2wav 单独进程），客户端按在途请求最少路由。W3b 闭环并发 16–256（每档 max(96, 2×并发) 个请求，开事件记录），再按闭环测得的容量做开环泊松 50%, 75%, 90%, 100%, 120%，每档 2 分钟。"
+  },
+  {
+   "experiment_id": "v2b_b1_s4x4",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_b1_s4x4.json",
+   "priority": 60,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1000,
+   "timeout_s": 6000,
+   "max_retries": 1,
+   "description": "第二批 B1：一个服务：4 个 thinker（pipeline）副本 + 4 个 talker 副本，code2wav 单独进程、与 talker 同卡上的混合负载（40% W1 文本对话、40% W3b 文本提问语音回答、20% W2 语音提问文本回答，每个请求按权重抽取），闭环并发 16–256，再按测得容量开环 50%–120%。"
+  },
+  {
+   "experiment_id": "v2b_b1_s3x5",
+   "command": "bash scripts/slurm/run_experiment.sh configs/experiments/a6000_8gpu_v2/v2b_b1_s3x5.json",
+   "priority": 59,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1000,
+   "timeout_s": 6000,
+   "max_retries": 1,
+   "description": "第二批 B1：一个服务：3 个 thinker（pipeline）副本 + 5 个 talker 副本，code2wav 单独进程、与 talker 同卡上的混合负载（40% W1 文本对话、40% W3b 文本提问语音回答、20% W2 语音提问文本回答，每个请求按权重抽取），闭环并发 16–256，再按测得容量开环 50%–120%。"
+  }
+ ]
+}

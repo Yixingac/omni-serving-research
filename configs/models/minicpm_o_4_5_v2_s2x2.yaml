@@ -1,0 +1,28 @@
+# MiniCPM-o 4.5 语音流水线，4 张 GPU，一个服务（plan v2 的 S2:2）：thinker 所在的 pipeline 进程复制 2 份（GPU 0, 1）
+# talker 进程复制 2 份（GPU 2–3）。code2wav 放在自己的进程里，同样复制 2 份，与 talker 副本同卡。
+# code2wav 不和 talker 在同一进程，是为了避开第 17 节的崩溃（talker 与 HiFT 在同一进程里并发时出错）。
+# 由 scripts/slurm/make_plan_8gpu_v2.py 生成。
+config_cls: MiniCPMOSpeechPipelineConfig
+# --config 文件会先按完整配置校验，model_path 是必填项；启动时传入的 --model-path 会覆盖这里的值。
+model_path: openbmb/MiniCPM-o-4_5
+
+# talker 卡上有 talker、code2wav 两个进程，sglang-omni 要求这两个阶段都声明显存比例（每卡合计不超过 1.0）。
+# talker 的比例决定它的 KV 池：0.4 × 46 GB 减去进程已用部分，约 15 GB，远大于 W3b 所需。
+# thinker 卡上只有一个进程，不设比例，沿用默认值（与 Job 409712 的拆分实验一致）。
+stages:
+  talker:
+    gpu_memory_fraction: 0.4
+  code2wav:
+    process: code2wav
+    gpu_memory_fraction: 0.4
+
+processes:
+  pipeline:
+    num_replicas: 2
+    replica_devices: [0, 1]
+  talker:
+    num_replicas: 2
+    replica_devices: [2, 3]
+  code2wav:
+    num_replicas: 2
+    replica_devices: [2, 3]
