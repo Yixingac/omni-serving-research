@@ -1,0 +1,153 @@
+{
+ "runtime_profile": "unicorn_batch",
+ "hardware_label": "a6000x8",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "exp10_check",
+ "description": "实验 10 正确性检查：放置 t2_k4_c2，flow CUDA graph 开，打开 digest。贪心负载（thinker、talker 温度 0，不带种子），并发 32，依次 fifo1、fifo16、length16、length8、fifo16（控制文件切换），每段 96 个请求。比较语音编码相同的请求在各组批方式下的波形。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "s0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "args": [
+    "--config",
+    "{research_repo}/configs/models/minicpm_o_4_5_exp_t2_k4_c2.yaml"
+   ],
+   "ready_timeout_s": 2400,
+   "env": {
+    "SGLANG_OMNI_C2W_CONTROL": "{exp_dir}/c2w_control.json",
+    "SGLANG_OMNI_EXP_TRACE": "c2w,thinker,digest"
+   }
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "control",
+   "name": "ctl_chk_fifo1",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 1,
+    "policy": "fifo",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "chk_fifo1",
+   "workload": "configs/workloads/w3b_greedy_check.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "control",
+   "name": "ctl_chk_fifo16",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 16,
+    "policy": "fifo",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "chk_fifo16",
+   "workload": "configs/workloads/w3b_greedy_check.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "control",
+   "name": "ctl_chk_length16",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 16,
+    "policy": "length",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "chk_length16",
+   "workload": "configs/workloads/w3b_greedy_check.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "control",
+   "name": "ctl_chk_length8",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "chk_length8",
+   "workload": "configs/workloads/w3b_greedy_check.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  },
+  {
+   "kind": "control",
+   "name": "ctl_chk_fifo16b",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 16,
+    "policy": "fifo",
+    "window": 64
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "chk_fifo16b",
+   "workload": "configs/workloads/w3b_greedy_check.json",
+   "concurrency": [
+    32
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "server_events": true
+  }
+ ]
+}
