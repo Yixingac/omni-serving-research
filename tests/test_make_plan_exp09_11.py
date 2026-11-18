@@ -18,7 +18,8 @@ def test_exp10_validation_alternates_the_order_and_switches_by_control_file():
         assert cfg["experiment_id"] == f"exp10_validation_t2_k2_c4_length8_block{block}"
         assert cfg["runtime_profile"] == mp.BATCH_RUNTIME
         srv = cfg["servers"][0]
-        assert srv["gpus"] == list(range(8)) and srv["env"] == {"SGLANG_OMNI_C2W_CONTROL": "{exp_dir}/c2w_control.json"}
+        assert srv["gpus"] == list(range(8)) and srv["env"] == {"SGLANG_OMNI_C2W_CONTROL": "{exp_dir}/c2w_control.json",
+                                                              "SGLANG_OMNI_PORT_CLAIM_DIR": "{exp_dir}/port_claims"}
         assert srv["args"][-1].endswith("minicpm_o_4_5_exp_t2_k2_c4.yaml")
         opens = [p for p in cfg["phases"] if p["kind"] == "open_loop"]
         assert [p["name"] for p in opens] == (["val_length8", "val_fifo16"] if block == 2 else ["val_fifo16", "val_length8"])
@@ -40,3 +41,15 @@ def test_exp10_validation_needs_a_known_placement_and_setting():
         except ValueError:
             continue
         raise AssertionError(f"accepted {placement} {setting}")
+
+
+def test_exp10_and_exp11_servers_claim_ports_in_a_fresh_directory_per_run():
+    """Stale claim files left by a killed server let two starting processes take the same port (实验 9, 2026-11-18
+    00:38); a directory inside the run directory never holds claims of an earlier run. 实验 9 keeps its setting."""
+    entries = [mp.exp10_check_entry(), *mp.exp10_entries(), *mp.exp11_check_entries(), *mp.exp11_entries(),
+               *mp.exp10_validation_entries("t2_k2_c4", "length8")]
+    for cfg, _ in entries:
+        for srv in cfg["servers"]:
+            assert srv["env"]["SGLANG_OMNI_PORT_CLAIM_DIR"] == "{exp_dir}/port_claims", cfg["experiment_id"]
+    for cfg, _ in mp.exp09_entries():
+        assert all("SGLANG_OMNI_PORT_CLAIM_DIR" not in (srv.get("env") or {}) for srv in cfg["servers"])

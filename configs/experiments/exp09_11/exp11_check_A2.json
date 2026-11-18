@@ -28,6 +28,7 @@
    "ready_timeout_s": 2400,
    "env": {
     "SGLANG_OMNI_SPEECH_LOOKAHEAD": "0",
+    "SGLANG_OMNI_PORT_CLAIM_DIR": "{exp_dir}/port_claims",
     "SGLANG_OMNI_EXP_TRACE": "thinker,c2w,digest"
    }
   }

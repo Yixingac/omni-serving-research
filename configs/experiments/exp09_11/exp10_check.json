@@ -28,6 +28,7 @@
    "ready_timeout_s": 2400,
    "env": {
     "SGLANG_OMNI_C2W_CONTROL": "{exp_dir}/c2w_control.json",
+    "SGLANG_OMNI_PORT_CLAIM_DIR": "{exp_dir}/port_claims",
     "SGLANG_OMNI_EXP_TRACE": "c2w,thinker,digest"
    }
   }

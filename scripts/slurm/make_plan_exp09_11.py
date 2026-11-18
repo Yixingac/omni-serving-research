@@ -157,6 +157,10 @@ def exp09_entries() -> list[tuple[dict, dict]]:
 # ---------------------------------------------------------------- 实验 10
 
 BATCH_RUNTIME = "unicorn_batch"
+# Port claims of sglang-omni go to a directory inside the run directory (实验 10 and 11 only; 实验 9 keeps /tmp). In the
+# shared /tmp directory, claim files of a killed server stay behind, and two processes that start together can both
+# take over the same stale claim (2026-11-18 00:38, 实验 9 方案 2 区组 1: EADDRINUSE on 29500).
+PORT_CLAIM_ENV = {"SGLANG_OMNI_PORT_CLAIM_DIR": "{exp_dir}/port_claims"}
 EXP10_PLACEMENT = "t2_k4_c2"  # code2wav is clearly the bottleneck there, on two cards of its own (实验 7)
 EXP10_NOGRAPH_YAML = "configs/models/minicpm_o_4_5_exp10_t2_k4_c2_nograph.yaml"
 GREEDY = "configs/workloads/w3b_greedy_check.json"
@@ -185,7 +189,7 @@ def batch_server(graph: bool, digest: bool = False) -> list[dict]:
     srv = placement_server(EXP10_PLACEMENT)
     if not graph:
         srv[0]["args"] = ["--config", f"{{research_repo}}/{EXP10_NOGRAPH_YAML}"]
-    env = {"SGLANG_OMNI_C2W_CONTROL": "{exp_dir}/c2w_control.json"}
+    env = {"SGLANG_OMNI_C2W_CONTROL": "{exp_dir}/c2w_control.json", **PORT_CLAIM_ENV}
     if digest:
         env["SGLANG_OMNI_EXP_TRACE"] = "c2w,thinker,digest"
     srv[0]["env"] = env
@@ -251,7 +255,7 @@ def exp10_validation_entries(placement: str, setting: str) -> list[tuple[dict, d
                        {"kind": "open_loop", "name": f"val_{s}", "workload": W3B, "rates_rps": EXP09_RATES_W3B, "duration_per_rate_s": 60,
                         "min_requests_per_rate": 96, "max_error_rate": 0.5, "server_events": True}]
         srv = placement_server(placement)
-        srv[0]["env"] = {"SGLANG_OMNI_C2W_CONTROL": "{exp_dir}/c2w_control.json"}
+        srv[0]["env"] = {"SGLANG_OMNI_C2W_CONTROL": "{exp_dir}/c2w_control.json", **PORT_CLAIM_ENV}
         cfg = base(f"exp10_validation_{placement}_{setting}_block{block}", 8, srv, phases,
                    f"实验 10 完整服务验证第 {block} 个区组：放置 {placement}（实验 9 登记容量最高的方案），flow CUDA graph 开。"
                    f"W3b 开环 {'/'.join(f'{r:g}' for r in EXP09_RATES_W3B)} 请求/秒各 60 秒，同一运行里 {order[0]} 和 {order[1]} 各一段"
@@ -294,7 +298,7 @@ PLAN_EXP11 = "configs/experiments/plan_exp11.json"
 
 def async_server(arm: str, digest: bool) -> list[dict]:
     srv = placement_server_s26()
-    env = {"SGLANG_OMNI_SPEECH_LOOKAHEAD": EXP11_ARMS[arm.rstrip("2")]}
+    env = {"SGLANG_OMNI_SPEECH_LOOKAHEAD": EXP11_ARMS[arm.rstrip("2")], **PORT_CLAIM_ENV}
     if digest:
         env["SGLANG_OMNI_EXP_TRACE"] = "thinker,c2w,digest"
     srv[0]["env"] = env
