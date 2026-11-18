@@ -293,7 +293,7 @@ index 12512fe02..2c19d4a11 100644
  
  
 diff --git a/sglang_omni/models/minicpm_o/thinker_model_runner.py b/sglang_omni/models/minicpm_o/thinker_model_runner.py
-index bfd3f6d42..7da209be0 100644
+index bfd3f6d42..94d0417a1 100644
 --- a/sglang_omni/models/minicpm_o/thinker_model_runner.py
 +++ b/sglang_omni/models/minicpm_o/thinker_model_runner.py
 @@ -3,6 +3,7 @@
@@ -475,7 +475,7 @@ index bfd3f6d42..7da209be0 100644
  
      def finalize_skip_rids(self, scheduler_output: SchedulerOutput) -> set[str]:
          """Do not advance generation state for non-final prefill chunks."""
-@@ -186,9 +317,54 @@ class MiniCPMOThinkerModelRunner(ThinkerModelRunner):
+@@ -186,9 +317,51 @@ class MiniCPMOThinkerModelRunner(ThinkerModelRunner):
              seq = seq[-len(known_tts_output_ids) - 1 : -1]
          else:
              pass
@@ -506,9 +506,6 @@ index bfd3f6d42..7da209be0 100644
 +                    "snapshot_hidden": self.snapshot_hidden,
 +                    "side_copy": self.side_copy,
 +                    "hidden_fingerprint": self.fingerprint(stacked),
-+                    # the request's output tokens, so runs can be paired on identical text (实验 11)
-+                    "output_ids_sha256": exp_trace.digest(list(getattr(req_data, "output_ids", None) or [])),
-+                    "output_len": len(getattr(req_data, "output_ids", None) or []),
 +                },
 +                exp_trace.now_ns(),
 +            )
@@ -696,7 +693,7 @@ index 000000000..e7c18d99c
 +            )
 +        }
 diff --git a/sglang_omni/scheduling/omni_scheduler.py b/sglang_omni/scheduling/omni_scheduler.py
-index 88e0de93a..0bc2d116a 100644
+index 88e0de93a..48edddfe8 100644
 --- a/sglang_omni/scheduling/omni_scheduler.py
 +++ b/sglang_omni/scheduling/omni_scheduler.py
 @@ -67,6 +67,8 @@ from sglang_omni.model_runner.base import ModelRunner, PendingStep
@@ -708,7 +705,24 @@ index 88e0de93a..0bc2d116a 100644
  from sglang_omni.pipeline.stage.stream_queue import StreamItem
  from sglang_omni.platforms import current_platform
  from sglang_omni.profiler.duplex_events import emit_session_stage_bypassed
-@@ -3638,7 +3640,18 @@ class OmniScheduler(Generic[RequestDataT]):
+@@ -2410,6 +2412,16 @@ class OmniScheduler(Generic[RequestDataT]):
+                 else:
+                     pass
+                 data.output_ids = list(req.output_ids)
++                if exp_trace.active("digest") and exp_trace.stage_starts_with("thinker"):
++                    # note (research): emitted here because on_request_finished runs before the output ids are set
++                    exp_trace.emit_for_requests(
++                        [rid],
++                        "exp_thinker_output",
++                        {"output_ids_sha256": exp_trace.digest(data.output_ids), "output_len": len(data.output_ids)},
++                        exp_trace.now_ns(),
++                    )
++                else:
++                    pass
+                 data.weight_version = get_serving().weight_version
+                 self.flush_stream_output(rid, data)
+                 session_unit = self.active_session_unit(rid)
+@@ -3638,7 +3650,18 @@ class OmniScheduler(Generic[RequestDataT]):
          D1 in design.md section 1.3). Prefill / empty batches flush any in-flight
          decode first and run synchronously (the in-flight step is never stranded).
          """
@@ -727,7 +741,7 @@ index 88e0de93a..0bc2d116a 100644
              self.process_admin_requests()
              recv_reqs = self.recv_requests()
              recv_reqs.extend(self.take_deferred_request_payloads())
-@@ -3659,6 +3672,7 @@ class OmniScheduler(Generic[RequestDataT]):
+@@ -3659,6 +3682,7 @@ class OmniScheduler(Generic[RequestDataT]):
                      or (self.waiting_queue and not self.running_batch.batch_is_full)
                  )
              ):
@@ -735,7 +749,7 @@ index 88e0de93a..0bc2d116a 100644
                  self.resolve_pending_async()
              elif (
                  self.async_decode_resolve_before_prefill
-@@ -3669,6 +3683,7 @@ class OmniScheduler(Generic[RequestDataT]):
+@@ -3669,6 +3693,7 @@ class OmniScheduler(Generic[RequestDataT]):
                  continue
              else:
                  pass
@@ -743,7 +757,7 @@ index 88e0de93a..0bc2d116a 100644
  
              batch = self.get_next_batch_to_run()
              self.cur_batch = batch
-@@ -3682,10 +3697,41 @@ class OmniScheduler(Generic[RequestDataT]):
+@@ -3682,10 +3707,41 @@ class OmniScheduler(Generic[RequestDataT]):
                  and self.batch_is_decode(batch)
                  and (runner is None or runner.lookahead_eligible(batch))
              )
@@ -786,7 +800,7 @@ index 88e0de93a..0bc2d116a 100644
                  except Exception as exc:
                      self.handle_batch_failure(batch, exc)
                  else:
-@@ -3695,6 +3741,8 @@ class OmniScheduler(Generic[RequestDataT]):
+@@ -3695,6 +3751,8 @@ class OmniScheduler(Generic[RequestDataT]):
                          scheduler_output=sched_output,
                          device_step=pending_step,
                      )
@@ -795,7 +809,7 @@ index 88e0de93a..0bc2d116a 100644
                      if prev_pending is not None:
                          if self.session_bridge is not None:
                              self.previous_pending_decode = prev_pending
-@@ -3714,6 +3762,7 @@ class OmniScheduler(Generic[RequestDataT]):
+@@ -3714,6 +3772,7 @@ class OmniScheduler(Generic[RequestDataT]):
                                  self.handle_batch_failure(prev_pending.batch, exc)
                      else:
                          pass
@@ -803,7 +817,7 @@ index 88e0de93a..0bc2d116a 100644
              else:
                  # Prefill, empty batches, decode batches below the configured
                  # threshold and batches the runner marks ineligible for the
-@@ -3722,7 +3771,10 @@ class OmniScheduler(Generic[RequestDataT]):
+@@ -3722,7 +3781,10 @@ class OmniScheduler(Generic[RequestDataT]):
                  # leaves the lookahead, then run this batch synchronously. Skip
                  # the drain call when nothing is pending, since it would no-op.
                  if self.async_pending is not None:
@@ -814,7 +828,7 @@ index 88e0de93a..0bc2d116a 100644
                      # Stale-batch overrun: `batch` was built (get_next_batch_to_run,
                      # top of loop) BEFORE this drain, which can finish OR retract reqs
                      # still present in it. Drop them before run_batch so they are not
-@@ -3733,17 +3785,37 @@ class OmniScheduler(Generic[RequestDataT]):
+@@ -3733,17 +3795,37 @@ class OmniScheduler(Generic[RequestDataT]):
                  else:
                      pass
                  if batch:

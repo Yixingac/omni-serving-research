@@ -14,7 +14,9 @@ about control flow and data, not real concurrency (the GPU correctness runs cove
 5. at the end of a request the side stream waits for the last launch-stream row, stacks and copies there, and the
    values equal the default path's; mode 1 does not touch the side stream;
 6. the fingerprint (row norms and 4 random projections) is deterministic and changes with the data;
-7. reset_request drops the request's pending event.
+7. reset_request drops the request's pending event;
+8. the output-token digest is emitted by the scheduler after it sets the output ids (on_request_finished runs before
+   that, so a digest there would always hash an empty list), and the hidden-state event no longer carries one.
 On a checkout without the patch, check 1 fails first.
 """
 
@@ -163,9 +165,21 @@ def main() -> int:
         r.reset_request("b")
         assert "b" not in r.main_row_ready and "b" not in r.pending_hidden
 
+    # 8. the output-token digest comes after the output ids are set
+    import inspect
+
+    import sglang_omni.models.minicpm_o.thinker_model_runner as minicpm_runner
+    import sglang_omni.scheduling.omni_scheduler as omni_scheduler
+
+    scheduler_source = inspect.getsource(omni_scheduler)
+    assigned = scheduler_source.find("data.output_ids = list(req.output_ids)")
+    emitted = scheduler_source.find('"exp_thinker_output"')
+    assert 0 <= assigned < emitted, "the output digest must be emitted after data.output_ids is set"
+    assert "output_ids_sha256" not in inspect.getsource(minicpm_runner), "on_request_finished must not hash output ids"
+
     print("async prototype: sidecopy mode; lookahead rows copied on the side stream after their snapshot only; sync rows "
           "marked on the launch stream; stale entries never match; end-of-request copy on the side stream equals the "
-          "default; fingerprint deterministic; reset clears pending events")
+          "default; fingerprint deterministic; reset clears pending events; output digest after the output ids are set")
     return 0
 
 
