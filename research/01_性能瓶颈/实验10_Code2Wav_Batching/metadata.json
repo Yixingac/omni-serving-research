@@ -2,7 +2,7 @@
  "experiment_number": 10,
  "name_zh": "code2wav 组批和补齐",
  "question_zh": "主动改变 code2wav 的批上限和组批方式，能不能省 GPU？长度差异造成的补齐是不是主要浪费？CUDA graph 起什么作用？",
- "status": "ANALYZED（正确性检查和 6 个性能运行完成，2026-11-18 04:27–05:54；完整服务验证在运行）",
+ "status": "COMPLETED（正确性检查、6 个性能运行、3 个完整服务验证运行，2026-11-18 04:27–06:55）",
  "hypotheses": "hypotheses.md（预先登记；补充登记一 00:27、二 01:55、三 02:13，都在任何实验 10 数据之前）",
  "model": {
   "name": "MiniCPM-o 4.5",
@@ -122,11 +122,41 @@
  "validation": {
   "trigger": "满足：graph 开时，length8 在 MIX 上 3 个区组都比 fifo16 多 25–36% 的语音秒/秒（还有 6 个设置也满足），按登记选平均增幅最大的 length8",
   "placement": "t2_k2_c4（实验 9 登记容量最高的方案）",
-  "runs": "exp10_validation_t2_k2_c4_length8_block{1,2,3}（06:02 放进队列）"
+  "runs": [
+   {
+    "run_dir": "20261118_exp10_validation_t2_k2_c4_length8_block1_run01",
+    "status": "ok",
+    "start": "2026-11-18 06:04:32",
+    "end": "2026-11-18 06:19:50",
+    "phases": 5,
+    "server_restarts": 0,
+    "research_repo_commit": "c06c143"
+   },
+   {
+    "run_dir": "20261118_exp10_validation_t2_k2_c4_length8_block2_run01",
+    "status": "ok",
+    "start": "2026-11-18 06:19:57",
+    "end": "2026-11-18 06:39:36",
+    "phases": 5,
+    "server_restarts": 0,
+    "research_repo_commit": "c06c143"
+   },
+   {
+    "run_dir": "20261118_exp10_validation_t2_k2_c4_length8_block3_run01",
+    "status": "ok",
+    "start": "2026-11-18 06:39:47",
+    "end": "2026-11-18 06:55:14",
+    "phases": 5,
+    "server_restarts": 0,
+    "research_repo_commit": "c06c143"
+   }
+  ],
+  "verdict": "不确定（21、23.5 请求/秒两档的 P50 变化在 −3.5% 到 +2.5% 之间；不饱和时 code2wav 平均每批 1.2 个请求）",
+  "design": "W3b 开环 7.5/12/15.5/18/21/23.5 请求/秒各 60 秒，同一运行里 fifo16 和 length8 各一段（区组 1、3 先 fifo16），graph 开，开事件"
  },
  "analysis": {
   "commands": [
-   "python scripts/analysis/exp10_report.py --data-root <results> --run <6 个性能运行目录> --check-run 20261118_exp10_check_run01 --out research/01_性能瓶颈/实验10_Code2Wav_Batching",
+   "python scripts/analysis/exp10_report.py --data-root <results> --run <6 个性能运行目录> --check-run 20261118_exp10_check_run01 --validation-run <3 个验证运行目录> --out research/01_性能瓶颈/实验10_Code2Wav_Batching",
    "python scripts/analysis/exp10_figures.py --out research/01_性能瓶颈/实验10_Code2Wav_Batching",
    "python scripts/analysis/exp09_11_diagrams.py"
   ],
