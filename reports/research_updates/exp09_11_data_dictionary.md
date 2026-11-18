@@ -112,6 +112,7 @@
 | `talker_gen_ms_per_audio_s`、`talker_queue_ms` | B 段：talker 每生成 1 秒语音用的毫秒数；在 talker 前排队的毫秒数 |
 | `usable` | 错误 + 超时 ≤ 测量请求的 5%。只对闭环档位起作用 |
 | `restart_here`、`after_restart` | 服务是否在这一段重启；这一段是否在某次重启之后 |
+| `crash_affected_dropped` | 运行器标成 crash_affected 的请求数（服务进程在这一档退出，运行器重启后重跑这一档）；这些请求不进任何统计 |
 
 ### `levels.csv`
 
@@ -135,21 +136,25 @@
   - 三个区组的区间：`audio_s_per_s`、`gpu_ms_per_audio_s`、`padding`、`graph_share`、`wait_long_p95`、`wait_long_max`、`batch_size_mean`、`throughput_rps`、`e2e_p50_s`、`e2e_p95_s`；
   - 以及 `control_ok`、`usable`、`audio_mismatch`、`blocks`（每个区组一个值）。
   - 无效的格子（不可用，或控制文件没有生效）不进区间，原始值仍在 `runs[]` 里。
-- `verdicts`：H10a–H10e，每项有 `verdict` 和每个区组的数字。
+- `contrasts["<graph|nograph>|<负载>|<设置>_vs_fifo16|<指标>"]`：同一运行里这种设置相对 fifo16 的变化（补齐比例是差值，其余是相对变化），按区组配对的区间；`contrasts["nograph_vs_graph|<负载>|<设置>|gpu_ms_per_audio_s"]`：graph 关相对开的 E 变化。
+- `verdicts`：H10a–H10e，每项有 `verdict` 和每个区组的数字；H10a 另有 graph 开时的比值，H10c 另有 `also_reported`（G0 MIX、G1 W3b、G0 W3b），只报告不判定。
   - 正确性规则没通过时，H10c、H10d 写“停止（正确性规则未通过）”；
   - 没有正确性检查运行时，写“数据不足（缺正确性检查）”。
 - `correctness`：
   - `audio_codec_mismatch`：所有性能运行里，语音秒数和编码数对不上（差超过 1 个编码）的请求数；
   - `waveform_length_mismatch`：正确性检查里，同一编码却得到不同样本数的请求数；
-  - `ok`：两者都为 0；没有检查运行时为空。
+  - `ok`：检查运行的 5 个比较都有配对的请求、没有样本数不同、每一批都按设置执行、没有服务重启，并且所有带事件的段里语音和编码都对得上；没有检查运行时为空；
+  - `reasons`：没通过的原因。
 - `validation`：
-  - `candidates`：G1 上 W3b 或 MIX 每个区组都比 fifo16 多 ≥ 5% 语音秒/秒的设置，以及每个区组的增幅；
+  - `candidates`：G1 上 W3b 或 MIX 每个区组都比 fifo16 多 ≥ 5% 语音秒/秒的设置，以及每个区组的增幅和平均增幅（正确性没通过时不含按长度组批的设置）；
+  - `chosen`：按补充登记一选出的那一个（平均增幅最大，并列时批上限较小）；
   - `decision`：是否在实验 9 最好的放置上做完整服务验证；
   - `verdict`（只有做了验证才有）：按补充登记一的判定，`rows` 是每个区组在 21 和 23.5 请求/秒两档的 P50 降幅（`p50_reduction`，失败按无穷大处理）和完成请求/秒之比（`throughput_ratio`）。
 - `validation_runs[]`（只有做了验证才有）：每次验证运行的 `placement`、`setting`、`block`、`restarts`；
   - `phases["fifo16" | "<候选设置>"]["<速率>"]`：`e2e_p50`、`e2e_p95`、`e2e_p99`（截尾，秒）、`failed`、`throughput_rps`、`audio_s_per_s`、`steady`、`growth_slope_rps`；
   - `control`：每段逐批核对控制文件是否生效。
-- `flags`：`unusable`、`control_invalid`、`after_restart`。
+- `flags`：`unusable`、`control_invalid`、`restart_here`、`after_restart`，以及 `graph_not_off`（graph 关的运行里仍有批走了 graph）。
+- `check`（正确性检查运行）另有 `lengths`（同一编码哈希的样本数是否一致：`hashes`、`requests`、`inconsistent_hashes`）、`control`、`control_ok`、`correspondence`、`restarts`。
 - `check`：正确性检查运行。
   - `requests_with_digest`：每段带摘要的请求数；
   - `vs_fifo1["<段>"]`：和批上限 1 的同一请求比较，字段 `pairs`、`sample_mismatch`（样本数不同的请求数）、`rel_diff_max`、`rel_diff_p95`、`rms_rel_change_max`。
@@ -159,17 +164,19 @@
 | 字段 | 含义 |
 |---|---|
 | `client` | 同实验 9 的 `client` |
-| `batches` | 这一段（大多数请求属于这一段的）批数 |
+| `batches` | 这一段所有的批（包括预热那一波），E、补齐、graph 比例和批大小都按这些批算 |
 | `batch_size` | `mean`、`p50`、`at_cap`（等于批上限的批占多少） |
 | `gpu_ms_per_audio_s` | flow + HiFT 的 CUDA event 跨度之和 ÷ 有效语音秒数。越低越省；同卡有别的进程时，跨度里包括等待 |
-| `padding` | 补齐比例 = 1 − 真实帧数之和 ÷（行数 × 最长一行的帧数），按帧加权 |
+| `padding` | 补齐比例 = 1 −（参考音 + 语音编码数之和）÷（行数 × 最长一行），按帧加权；任何一批缺参考音长度时为空 |
 | `graph_share` | flow 走 CUDA graph（`dense_graph` 或 `packed_graph`）的批占多少 |
 | `control` | 逐批核对实际生效的批上限和策略：`batches`、`mismatched`、`ok` |
 | `correspondence` | 每批的请求 ID 和语音长度是否和客户端收到的对得上：`checked`、`mismatched` |
 | `wait` | 按语音长度的中位数分成短、长两类（`split_s`），每类在收件队列里等待的 `n`、`p50`、`p95`、`max`（毫秒） |
 | `queue_ms` | 所有请求在收件队列里的等待（毫秒） |
 | `audio_s_per_s`、`wait_long_p95`、`wait_long_max` | 从上面提出来的常用值 |
-| `usable`、`after_restart` | 错误 + 超时 ≤ 5%；是否在某次服务重启之后 |
+| `usable`、`restart_here`、`after_restart` | 错误 + 超时 ≤ 5%；服务是否在这一段重启（是则这一段无效）；是否在某次重启之后 |
+| `crash_affected_dropped` | 剔除的 crash_affected 请求数 |
+| `codec_tokens` | 这一段所有请求语音编码数的 `n`、`p10`、`p50`、`p90`，用来看每段实际的长度分布 |
 
 ## 五、实验 11 的结果文件
 
@@ -183,7 +190,7 @@
 
 ### `check.json`（`exp11_check.py`，正确性检查）
 
-- `runs`：A、C、A2 各是哪个运行。
+- `runs`：A、C、A2 各是哪个运行；`run_meta`：每次运行的状态和服务重启记录。
 - `gate`：
   - `pass`：是否通过；`reasons`：没通过的原因；
   - `c1_exact`：并发 1 时 C 和 A 逐个请求比较。`pairs` 是比较的请求数，`text`、`hidden`、`codec` 分别是文字、隐藏状态哈希、语音编码哈希完全相同的个数。
@@ -191,6 +198,8 @@
     - `errors`；
     - `rows`：隐藏状态行数是否等于文字 token 数，有 `checked`、`mismatched`；
     - `C_vs_A`、`A2_vs_A`：输出 token 完全相同的请求里，比较隐藏状态指纹（每行的范数和 4 个随机投影）。字段有 `pairs`、`over_tolerance`（相对偏差超过 0.05 的个数）、`share_over`、`max_deviation`。
+    - 相对偏差：范数相对参考行的范数，投影相对“范数 ÷ √4096”（补充登记四）。
+    - 输出 token 的哈希来自调度器给 output_ids 赋值之后发出的 `exp_thinker_output` 事件。
 - `lengths`：长回答段的 token 数和语音时长，以及 `codec_at_talker_cap`（语音到了 talker 上限 2048 个编码的请求数）。
 - `errors`：每组每段的失败数。
 
@@ -201,7 +210,8 @@
   - `levels["<负载>"]["<并发>"]["A" | "B" | "C"]`：每段一个格子，字段见下表。
 - `verdicts`：
   - H11a–H11e，每项有 `verdict` 和每个区组的数字；
-  - H11a 的 `parts` 是四个比较各自的结果；
+  - H11a 的 `parts` 是四个比较各自的结果，含每个区组的 `ttft_increase_ms`；某个区组 TTFT 没变长时记“不适用（TTFT 没有变长）”；
+  - H11c 另有 `copy_part`（满足 / 不满足 / 数据不足）；
   - H11d 分 `C_vs_B`、`C_vs_A`。
 - `recommendation`：按登记的规则：
   - `default_on`、`advice`；
@@ -215,7 +225,7 @@
 
 | 段 | 字段 | 含义 |
 |---|---|---|
-| 全部 | `client`、`usable`、`after_restart` | 客户端统计；这段是否可用；是否在重启之后 |
+| 全部 | `client`、`usable`、`restart_here`、`after_restart`、`crash_affected_dropped` | 客户端统计（已剔除 crash_affected 请求）；这段是否可用；服务是否在这一段重启；是否在重启之后；剔除了多少请求 |
 | A（不打点） | `e2e_p50`、`e2e_p95`、`e2e_p99`、`failed` | 截尾的端到端延迟（秒） |
 | A | `throughput_rps`、`ttft_p50_ms`、`ttft_p95_ms` | 吞吐；客户端 TTFT |
 | A | `thinker_mem_max_mib` | thinker 两张卡在这段时间里的最大显存 |
@@ -223,14 +233,16 @@
 | B | `lookahead_share`、`mixed_share` | 提前发射的轮次比例；MIXED（解码和 prefill 混在一起）的轮次比例 |
 | B | `ms_per_token` | 每个请求在 thinker 里平均每个 token 用的毫秒数（prefill 结束到 thinker 结束 ÷（token 数 − 1））的中位数 |
 | B | `tokens_mean` | 平均输出 token 数 |
-| B | `ttft_mean_ms`、`queue_wait_mean_ms`、`ttft_segments_mean_ms` | TTFT 和它的 9 段拆分（均值，各段之和等于 TTFT），见下表 |
+| B | `ttft_mean_ms`、`queue_wait_mean_ms`、`ttft_segments_mean_ms` | TTFT 和它的 9 段拆分（均值，只用 9 段齐全的请求，各段之和等于 TTFT），见下表 |
+| B | `ttft_split_requests` | `complete`（9 段齐全的请求数）、`ok`（成功的请求数） |
 | B | `clock` | 两种时钟的对齐：`offset_ns`、`n`、`spread_ns`、`p05_p95_ns` |
 | C（thinker 的 trace） | `procs[]` | 每个 thinker 进程一项（trace 时间单位微秒）：`window`、`index_jumps`（步号不连续的次数）、`gap_p50`、`gap_p95`、`gap_p99`、`between_step_idle_share`、`total_idle_share`、`by_type`（按“模式.发射方式”分的空档）、`graph_steps`、`non_graph_steps`、`n_steps`、`blocking` |
 | C | `blocking` | 超过 1 毫秒的阻塞调用：`sync`（同步调用）、`small`（≤ 1 KB 的拷贝）、`large`（> 1 KB 的拷贝）、`unknown`。每类有 `n`、`inside`（落在 `thinker.request_finished_copy` 标注里的个数）、`share_inside` |
 | C | `steps`、`large_copies`、`large_inside`、`large_copies_per_1k_steps` | 所有进程合计 |
-| C | `between_idle_share` | 按时间加权的空档比例 = 每步之前的空档之和 ÷ 时间窗（两个进程的平均）。H11c 用这个 |
-| C | `total_idle_share` | GPU 完全没有工作的时间 ÷ 时间窗 |
-| C | `gap_p50_ms`、`gap_p95_ms`、`gap_p99_ms` | 每步之前的空档百分位（两个进程的中位数） |
+| C | `between_idle_share` | 按时间加权的空档比例 = 所有 thinker 进程每步之前的空档之和 ÷ 窗口之和。H11c 用这个。注意：不在任何调度步标注里的 GPU 工作也算空档 |
+| C | `total_idle_share` | GPU 完全没有工作的时间之和 ÷ 窗口之和 |
+| C | `gap_p50_ms`、`gap_p95_ms`、`gap_p99_ms`、`steps_with_gap` | 每步之前空档的百分位（各进程的空档合在一起算）和个数 |
+| C | `gaps_by_kind` | 按“模式.发射方式.graph/eager”分开的空档：`steps`、`gap_sum_ms`、`gap_p50_ms`、`gap_p95_ms`、`gap_p99_ms` |
 | C | `decode_busy_ms_p50` | DECODE 步的 GPU 忙碌时间（这一步 kernel 区间的并集）的中位数 |
 
 ### TTFT 的 9 段（`exp11_ttft.py`）
@@ -264,4 +276,5 @@
   - `clock`、`requests`；
   - `complete`：9 段都有的请求数；
   - `median_ms`、`mean_ms`：每段和 `ttft` 的中位数、均值。
-- `contrasts["<组>"]["<并发>"]["<段>"]`：基准组和这一组的区间，以及配对差 `diff`。用的是每个区组的中位数。
+- `contrasts["<组>"]["<并发>"]["<段>"]`：基准组和这一组的区间，以及配对差 `diff`，用每个区组的中位数（描述性）。
+- `contrasts_mean`：同样的结构，用每个区组的均值（只用 9 段齐全的请求）。H11a 登记的是均值。
