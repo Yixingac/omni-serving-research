@@ -107,3 +107,20 @@
 | `events_run_levels` | 事件补测运行本身的每档数字，字段同 `runs[]` |
 | `scaling.<段>` | `best_rps`、`best_little_rps`（各副本数下各档的最大值）、`efficiency`、`efficiency_little`（扩展效率）、`gpu_busy_at_best`（吞吐最高那一档的 GPU 忙碌比例）、`gpu_busy_phase`（整段平均） |
 | `verdicts` | `linear`（首尾时间算的效率）、`linear_little`（对照）、`gpu_flat`（整段平均，主要）、`gpu_flat_best_level`（最初的指标）、`linear_overall`、`gpu_flat_overall` |
+
+## 五、实验 13（`exp13_report.py`）
+
+### `summary.json`
+
+| 字段 | 含义 |
+|---|---|
+| `rule.tolerance` | 判定用的 5%（取自预测 G-H1） |
+| `topology.links` | 每对 GPU 的连接类型（nvidia-smi topo：`NV4`、`PIX`、`NODE`、`SYS`），键是“GPU-GPU” |
+| `topology.pairs[]` | 每对 GPU：`pair`、`link`、`GBps`（两个方向的点对点拷贝带宽）、`peer_access` |
+| `topology.bandwidth_by_link` | 按连接类型：`pairs`（几对）、`median_GBps`、`min_GBps`、`max_GBps`（两个方向都算） |
+| `topology.allreduce[]` | NCCL all-reduce：`link`、`devices`、`MiB`、`algbw_GBps`、`busbw_GBps`、`p2p_disabled` |
+| `runs[].phases.<段>.<服务>` | 每个服务：`gpus`（thinker 卡、talker 卡）、`link`、`requests`、`hop_events`、`hop_thinker_talker_p50_ms`、`hop_thinker_talker_p90_ms`（thinker 交给 talker）、`hop_talker_code2wav_p50_ms`（同一张卡上 talker 交给 code2wav）、`levels.<档>`（`n`、`ok`、`e2e_p50_s`、`e2e_p90_s`、`slo`） |
+| `verdicts.<段>` | `verdict`、`hop_by_link_p50_ms`（每种连接的传递中位数）、`hop_spread_ms`、`hop_spread_share_of_e2e`、`e2e_top_level_p50_s`（每个服务最高一档的端到端中位数，键是“服务#组”）、`e2e_rel_non_nvlink`、`same_link_spread`、`e2e_median_s` |
+| `verdict_overall` | 两段一致时取该结论，否则“不确定” |
+
+服务属于哪个请求，按服务端事件里的请求编号认领（请求记录里只有服务的地址）。

@@ -1,0 +1,1144 @@
+{
+ "generated_by": "scripts/analysis/exp13_report.py",
+ "rule": {
+  "tolerance": 0.05
+ },
+ "topology": {
+  "run": "20261116_v2b_y0_env_topology_run01",
+  "links": {
+   "0-1": "NODE",
+   "0-2": "NODE",
+   "0-3": "NV4",
+   "0-4": "SYS",
+   "0-5": "SYS",
+   "0-6": "SYS",
+   "0-7": "SYS",
+   "1-2": "NV4",
+   "1-3": "PIX",
+   "1-4": "SYS",
+   "1-5": "SYS",
+   "1-6": "SYS",
+   "1-7": "SYS",
+   "2-3": "PIX",
+   "2-4": "SYS",
+   "2-5": "SYS",
+   "2-6": "SYS",
+   "2-7": "SYS",
+   "3-4": "SYS",
+   "3-5": "SYS",
+   "3-6": "SYS",
+   "3-7": "SYS",
+   "4-5": "NV4",
+   "4-6": "NODE",
+   "4-7": "NODE",
+   "5-6": "NODE",
+   "5-7": "NODE",
+   "6-7": "NV4"
+  },
+  "bandwidth_by_link": {
+   "NODE": {
+    "pairs": 6,
+    "median_GBps": 2.72,
+    "min_GBps": 2.72,
+    "max_GBps": 2.73
+   },
+   "NV4": {
+    "pairs": 4,
+    "median_GBps": 52.665,
+    "min_GBps": 52.42,
+    "max_GBps": 52.74
+   },
+   "PIX": {
+    "pairs": 2,
+    "median_GBps": 2.725,
+    "min_GBps": 2.72,
+    "max_GBps": 2.73
+   },
+   "SYS": {
+    "pairs": 16,
+    "median_GBps": 2.72,
+    "min_GBps": 2.72,
+    "max_GBps": 2.73
+   }
+  },
+  "pairs": [
+   {
+    "pair": [
+     0,
+     1
+    ],
+    "link": "NODE",
+    "GBps": [
+     2.72,
+     2.72
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     0,
+     2
+    ],
+    "link": "NODE",
+    "GBps": [
+     2.72,
+     2.72
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     0,
+     3
+    ],
+    "link": "NV4",
+    "GBps": [
+     52.42,
+     52.68
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     0,
+     4
+    ],
+    "link": "SYS",
+    "GBps": [
+     2.72,
+     2.73
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     0,
+     5
+    ],
+    "link": "SYS",
+    "GBps": [
+     2.72,
+     2.72
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     0,
+     6
+    ],
+    "link": "SYS",
+    "GBps": [
+     2.72,
+     2.73
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     0,
+     7
+    ],
+    "link": "SYS",
+    "GBps": [
+     2.72,
+     2.72
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     1,
+     2
+    ],
+    "link": "NV4",
+    "GBps": [
+     52.65,
+     52.7
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     1,
+     3
+    ],
+    "link": "PIX",
+    "GBps": [
+     2.72,
+     2.73
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     1,
+     4
+    ],
+    "link": "SYS",
+    "GBps": [
+     2.72,
+     2.72
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     1,
+     5
+    ],
+    "link": "SYS",
+    "GBps": [
+     2.72,
+     2.72
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     1,
+     6
+    ],
+    "link": "SYS",
+    "GBps": [
+     2.72,
+     2.72
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     1,
+     7
+    ],
+    "link": "SYS",
+    "GBps": [
+     2.72,
+     2.72
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     2,
+     3
+    ],
+    "link": "PIX",
+    "GBps": [
+     2.72,
+     2.73
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     2,
+     4
+    ],
+    "link": "SYS",
+    "GBps": [
+     2.72,
+     2.72
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     2,
+     5
+    ],
+    "link": "SYS",
+    "GBps": [
+     2.72,
+     2.73
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     2,
+     6
+    ],
+    "link": "SYS",
+    "GBps": [
+     2.72,
+     2.72
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     2,
+     7
+    ],
+    "link": "SYS",
+    "GBps": [
+     2.72,
+     2.72
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     3,
+     4
+    ],
+    "link": "SYS",
+    "GBps": [
+     2.72,
+     2.72
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     3,
+     5
+    ],
+    "link": "SYS",
+    "GBps": [
+     2.73,
+     2.72
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     3,
+     6
+    ],
+    "link": "SYS",
+    "GBps": [
+     2.73,
+     2.73
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     3,
+     7
+    ],
+    "link": "SYS",
+    "GBps": [
+     2.72,
+     2.73
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     4,
+     5
+    ],
+    "link": "NV4",
+    "GBps": [
+     52.69,
+     52.74
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     4,
+     6
+    ],
+    "link": "NODE",
+    "GBps": [
+     2.73,
+     2.72
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     4,
+     7
+    ],
+    "link": "NODE",
+    "GBps": [
+     2.72,
+     2.72
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     5,
+     6
+    ],
+    "link": "NODE",
+    "GBps": [
+     2.72,
+     2.72
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     5,
+     7
+    ],
+    "link": "NODE",
+    "GBps": [
+     2.72,
+     2.72
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   },
+   {
+    "pair": [
+     6,
+     7
+    ],
+    "link": "NV4",
+    "GBps": [
+     52.59,
+     52.65
+    ],
+    "peer_access": [
+     true,
+     true
+    ]
+   }
+  ],
+  "allreduce": [
+   {
+    "link": "NV4",
+    "devices": [
+     0,
+     3
+    ],
+    "MiB": 256,
+    "algbw_GBps": 43.13,
+    "busbw_GBps": 43.13,
+    "p2p_disabled": false
+   },
+   {
+    "link": "NODE",
+    "devices": [
+     0,
+     1
+    ],
+    "MiB": 256,
+    "algbw_GBps": 14.6,
+    "busbw_GBps": 14.6,
+    "p2p_disabled": true
+   }
+  ]
+ },
+ "runs": [
+  {
+   "run": "20261116_v2b_g1a_links_run01",
+   "experiment_id": "v2b_g1a_links",
+   "phases": {
+    "w3b_closed": {
+     "g_node": {
+      "gpus": [
+       0,
+       2
+      ],
+      "link": "NODE",
+      "requests": 48,
+      "hop_events": 48,
+      "hop_thinker_talker_p50_ms": 4.0735315,
+      "hop_thinker_talker_p90_ms": 6.369366600000002,
+      "hop_talker_code2wav_p50_ms": 1.455042,
+      "levels": {
+       "16": {
+        "n": 24,
+        "ok": 24,
+        "e2e_p50_s": 2.4252883435,
+        "e2e_p90_s": 2.8532599232,
+        "slo": 1.0
+       },
+       "32": {
+        "n": 24,
+        "ok": 24,
+        "e2e_p50_s": 3.0675907870000003,
+        "e2e_p90_s": 3.4887065345,
+        "slo": 1.0
+       }
+      }
+     },
+     "g_nv4a": {
+      "gpus": [
+       4,
+       5
+      ],
+      "link": "NV4",
+      "requests": 48,
+      "hop_events": 48,
+      "hop_thinker_talker_p50_ms": 3.7443904999999997,
+      "hop_thinker_talker_p90_ms": 6.230958600000001,
+      "hop_talker_code2wav_p50_ms": 1.3967855,
+      "levels": {
+       "16": {
+        "n": 24,
+        "ok": 24,
+        "e2e_p50_s": 2.050893163,
+        "e2e_p90_s": 2.9061635145999998,
+        "slo": 1.0
+       },
+       "32": {
+        "n": 24,
+        "ok": 24,
+        "e2e_p50_s": 2.6308534989999997,
+        "e2e_p90_s": 3.1947053134999996,
+        "slo": 1.0
+       }
+      }
+     },
+     "g_nv4b": {
+      "gpus": [
+       6,
+       7
+      ],
+      "link": "NV4",
+      "requests": 48,
+      "hop_events": 48,
+      "hop_thinker_talker_p50_ms": 4.0062505,
+      "hop_thinker_talker_p90_ms": 7.3145352,
+      "hop_talker_code2wav_p50_ms": 1.4340225,
+      "levels": {
+       "16": {
+        "n": 24,
+        "ok": 24,
+        "e2e_p50_s": 2.0823903475,
+        "e2e_p90_s": 2.7937664115,
+        "slo": 1.0
+       },
+       "32": {
+        "n": 24,
+        "ok": 24,
+        "e2e_p50_s": 2.326674127,
+        "e2e_p90_s": 3.0271190106,
+        "slo": 1.0
+       }
+      }
+     },
+     "g_pix": {
+      "gpus": [
+       1,
+       3
+      ],
+      "link": "PIX",
+      "requests": 48,
+      "hop_events": 48,
+      "hop_thinker_talker_p50_ms": 4.3959615,
+      "hop_thinker_talker_p90_ms": 6.426244900000001,
+      "hop_talker_code2wav_p50_ms": 1.4682085,
+      "levels": {
+       "16": {
+        "n": 24,
+        "ok": 24,
+        "e2e_p50_s": 2.0592851415,
+        "e2e_p90_s": 2.8279368926,
+        "slo": 1.0
+       },
+       "32": {
+        "n": 24,
+        "ok": 24,
+        "e2e_p50_s": 2.3208388295,
+        "e2e_p90_s": 2.9241474528,
+        "slo": 1.0
+       }
+      }
+     }
+    },
+    "w3b_open_abs": {
+     "g_node": {
+      "gpus": [
+       0,
+       2
+      ],
+      "link": "NODE",
+      "requests": 1320,
+      "hop_events": 1320,
+      "hop_thinker_talker_p50_ms": 4.179138,
+      "hop_thinker_talker_p90_ms": 6.7747229,
+      "hop_talker_code2wav_p50_ms": 1.435263,
+      "levels": {
+       "6.0": {
+        "n": 180,
+        "ok": 180,
+        "e2e_p50_s": 2.0010604905,
+        "e2e_p90_s": 2.7373840058999996,
+        "slo": 1.0
+       },
+       "10.0": {
+        "n": 300,
+        "ok": 300,
+        "e2e_p50_s": 2.2720316680000003,
+        "e2e_p90_s": 3.1073957564000003,
+        "slo": 1.0
+       },
+       "13.0": {
+        "n": 390,
+        "ok": 390,
+        "e2e_p50_s": 2.715475123,
+        "e2e_p90_s": 3.4799055533,
+        "slo": 1.0
+       },
+       "15.0": {
+        "n": 450,
+        "ok": 450,
+        "e2e_p50_s": 2.8707812805,
+        "e2e_p90_s": 3.8032642730000004,
+        "slo": 1.0
+       }
+      }
+     },
+     "g_nv4a": {
+      "gpus": [
+       4,
+       5
+      ],
+      "link": "NV4",
+      "requests": 1320,
+      "hop_events": 1320,
+      "hop_thinker_talker_p50_ms": 3.840074,
+      "hop_thinker_talker_p90_ms": 6.206918400000001,
+      "hop_talker_code2wav_p50_ms": 1.370941,
+      "levels": {
+       "6.0": {
+        "n": 180,
+        "ok": 180,
+        "e2e_p50_s": 2.0056522875,
+        "e2e_p90_s": 2.6279706995,
+        "slo": 1.0
+       },
+       "10.0": {
+        "n": 300,
+        "ok": 300,
+        "e2e_p50_s": 2.1083064005,
+        "e2e_p90_s": 2.9682389229000004,
+        "slo": 1.0
+       },
+       "13.0": {
+        "n": 390,
+        "ok": 390,
+        "e2e_p50_s": 2.2590680365000004,
+        "e2e_p90_s": 3.2245442872,
+        "slo": 1.0
+       },
+       "15.0": {
+        "n": 450,
+        "ok": 450,
+        "e2e_p50_s": 2.4486229725,
+        "e2e_p90_s": 3.3930672170000005,
+        "slo": 1.0
+       }
+      }
+     },
+     "g_nv4b": {
+      "gpus": [
+       6,
+       7
+      ],
+      "link": "NV4",
+      "requests": 1320,
+      "hop_events": 1320,
+      "hop_thinker_talker_p50_ms": 3.735437,
+      "hop_thinker_talker_p90_ms": 6.4084777000000015,
+      "hop_talker_code2wav_p50_ms": 1.3853285,
+      "levels": {
+       "6.0": {
+        "n": 180,
+        "ok": 180,
+        "e2e_p50_s": 2.0634580645,
+        "e2e_p90_s": 2.7481068973,
+        "slo": 1.0
+       },
+       "10.0": {
+        "n": 300,
+        "ok": 300,
+        "e2e_p50_s": 2.2008229430000004,
+        "e2e_p90_s": 3.0681681540000003,
+        "slo": 1.0
+       },
+       "13.0": {
+        "n": 390,
+        "ok": 390,
+        "e2e_p50_s": 2.55427614,
+        "e2e_p90_s": 3.4734140391000006,
+        "slo": 1.0
+       },
+       "15.0": {
+        "n": 450,
+        "ok": 450,
+        "e2e_p50_s": 2.8594142225,
+        "e2e_p90_s": 3.7622075611000003,
+        "slo": 0.9955555555555555
+       }
+      }
+     },
+     "g_pix": {
+      "gpus": [
+       1,
+       3
+      ],
+      "link": "PIX",
+      "requests": 1320,
+      "hop_events": 1320,
+      "hop_thinker_talker_p50_ms": 4.0469445,
+      "hop_thinker_talker_p90_ms": 6.3684269,
+      "hop_talker_code2wav_p50_ms": 1.441975,
+      "levels": {
+       "6.0": {
+        "n": 180,
+        "ok": 180,
+        "e2e_p50_s": 2.1019330975,
+        "e2e_p90_s": 2.7195082548,
+        "slo": 1.0
+       },
+       "10.0": {
+        "n": 300,
+        "ok": 300,
+        "e2e_p50_s": 2.2026367925,
+        "e2e_p90_s": 2.9263291019000004,
+        "slo": 1.0
+       },
+       "13.0": {
+        "n": 390,
+        "ok": 390,
+        "e2e_p50_s": 2.4089069045000002,
+        "e2e_p90_s": 3.2110427378000006,
+        "slo": 1.0
+       },
+       "15.0": {
+        "n": 450,
+        "ok": 450,
+        "e2e_p50_s": 2.6538176069999997,
+        "e2e_p90_s": 3.5207329827,
+        "slo": 1.0
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "run": "20261116_v2b_g1b_links_run01",
+   "experiment_id": "v2b_g1b_links",
+   "phases": {
+    "w3b_closed": {
+     "g_nv4": {
+      "gpus": [
+       6,
+       7
+      ],
+      "link": "NV4",
+      "requests": 48,
+      "hop_events": 48,
+      "hop_thinker_talker_p50_ms": 3.9661470000000003,
+      "hop_thinker_talker_p90_ms": 6.797257800000001,
+      "hop_talker_code2wav_p50_ms": 1.4236659999999999,
+      "levels": {
+       "16": {
+        "n": 24,
+        "ok": 24,
+        "e2e_p50_s": 1.9414992915,
+        "e2e_p90_s": 2.7139224014,
+        "slo": 1.0
+       },
+       "32": {
+        "n": 24,
+        "ok": 24,
+        "e2e_p50_s": 2.362120741,
+        "e2e_p90_s": 3.0008414968999997,
+        "slo": 1.0
+       }
+      }
+     },
+     "g_pix": {
+      "gpus": [
+       2,
+       3
+      ],
+      "link": "PIX",
+      "requests": 48,
+      "hop_events": 48,
+      "hop_thinker_talker_p50_ms": 4.517681,
+      "hop_thinker_talker_p90_ms": 6.3220954,
+      "hop_talker_code2wav_p50_ms": 1.4585865,
+      "levels": {
+       "16": {
+        "n": 24,
+        "ok": 24,
+        "e2e_p50_s": 2.1910373180000002,
+        "e2e_p90_s": 2.9836800509,
+        "slo": 1.0
+       },
+       "32": {
+        "n": 24,
+        "ok": 24,
+        "e2e_p50_s": 2.6296582235,
+        "e2e_p90_s": 3.2816176063999998,
+        "slo": 1.0
+       }
+      }
+     },
+     "g_sysa": {
+      "gpus": [
+       0,
+       4
+      ],
+      "link": "SYS",
+      "requests": 48,
+      "hop_events": 48,
+      "hop_thinker_talker_p50_ms": 4.1431545,
+      "hop_thinker_talker_p90_ms": 6.9398709,
+      "hop_talker_code2wav_p50_ms": 1.398186,
+      "levels": {
+       "16": {
+        "n": 24,
+        "ok": 24,
+        "e2e_p50_s": 2.468761377,
+        "e2e_p90_s": 2.8136287883,
+        "slo": 1.0
+       },
+       "32": {
+        "n": 24,
+        "ok": 24,
+        "e2e_p50_s": 3.0666317464999997,
+        "e2e_p90_s": 3.3670892318,
+        "slo": 1.0
+       }
+      }
+     },
+     "g_sysb": {
+      "gpus": [
+       1,
+       5
+      ],
+      "link": "SYS",
+      "requests": 48,
+      "hop_events": 48,
+      "hop_thinker_talker_p50_ms": 3.3947725,
+      "hop_thinker_talker_p90_ms": 6.532371700000001,
+      "hop_talker_code2wav_p50_ms": 1.4099595,
+      "levels": {
+       "16": {
+        "n": 24,
+        "ok": 24,
+        "e2e_p50_s": 2.052654157,
+        "e2e_p90_s": 2.7947394589,
+        "slo": 1.0
+       },
+       "32": {
+        "n": 24,
+        "ok": 24,
+        "e2e_p50_s": 2.311143283,
+        "e2e_p90_s": 2.8610425695,
+        "slo": 1.0
+       }
+      }
+     }
+    },
+    "w3b_open_abs": {
+     "g_nv4": {
+      "gpus": [
+       6,
+       7
+      ],
+      "link": "NV4",
+      "requests": 1320,
+      "hop_events": 1320,
+      "hop_thinker_talker_p50_ms": 3.6712545,
+      "hop_thinker_talker_p90_ms": 6.244470300000002,
+      "hop_talker_code2wav_p50_ms": 1.4031375000000001,
+      "levels": {
+       "6.0": {
+        "n": 180,
+        "ok": 180,
+        "e2e_p50_s": 2.0588749245,
+        "e2e_p90_s": 2.7531171723999996,
+        "slo": 1.0
+       },
+       "10.0": {
+        "n": 300,
+        "ok": 300,
+        "e2e_p50_s": 2.1842150325,
+        "e2e_p90_s": 3.0431123991000004,
+        "slo": 1.0
+       },
+       "13.0": {
+        "n": 390,
+        "ok": 390,
+        "e2e_p50_s": 2.5275333225,
+        "e2e_p90_s": 3.4525380544,
+        "slo": 1.0
+       },
+       "15.0": {
+        "n": 450,
+        "ok": 450,
+        "e2e_p50_s": 2.8773603415,
+        "e2e_p90_s": 3.7885526000000005,
+        "slo": 0.9933333333333333
+       }
+      }
+     },
+     "g_pix": {
+      "gpus": [
+       2,
+       3
+      ],
+      "link": "PIX",
+      "requests": 1320,
+      "hop_events": 1320,
+      "hop_thinker_talker_p50_ms": 3.966047,
+      "hop_thinker_talker_p90_ms": 6.5089152000000015,
+      "hop_talker_code2wav_p50_ms": 1.425448,
+      "levels": {
+       "6.0": {
+        "n": 180,
+        "ok": 180,
+        "e2e_p50_s": 1.988011035,
+        "e2e_p90_s": 2.7113866735000003,
+        "slo": 1.0
+       },
+       "10.0": {
+        "n": 300,
+        "ok": 300,
+        "e2e_p50_s": 2.130569882,
+        "e2e_p90_s": 2.9921675978,
+        "slo": 1.0
+       },
+       "13.0": {
+        "n": 390,
+        "ok": 390,
+        "e2e_p50_s": 2.303028716,
+        "e2e_p90_s": 3.3533667020999998,
+        "slo": 1.0
+       },
+       "15.0": {
+        "n": 450,
+        "ok": 450,
+        "e2e_p50_s": 2.5114652585000004,
+        "e2e_p90_s": 3.5122603724,
+        "slo": 1.0
+       }
+      }
+     },
+     "g_sysa": {
+      "gpus": [
+       0,
+       4
+      ],
+      "link": "SYS",
+      "requests": 1320,
+      "hop_events": 1320,
+      "hop_thinker_talker_p50_ms": 3.967016,
+      "hop_thinker_talker_p90_ms": 6.626722700000001,
+      "hop_talker_code2wav_p50_ms": 1.3643895000000001,
+      "levels": {
+       "6.0": {
+        "n": 180,
+        "ok": 180,
+        "e2e_p50_s": 1.9993749745,
+        "e2e_p90_s": 2.7954002401999998,
+        "slo": 1.0
+       },
+       "10.0": {
+        "n": 300,
+        "ok": 300,
+        "e2e_p50_s": 2.2621009485,
+        "e2e_p90_s": 3.1085511814999998,
+        "slo": 1.0
+       },
+       "13.0": {
+        "n": 390,
+        "ok": 390,
+        "e2e_p50_s": 2.6852950079999998,
+        "e2e_p90_s": 3.4602708637000004,
+        "slo": 1.0
+       },
+       "15.0": {
+        "n": 450,
+        "ok": 450,
+        "e2e_p50_s": 2.821724443,
+        "e2e_p90_s": 3.7441747564,
+        "slo": 1.0
+       }
+      }
+     },
+     "g_sysb": {
+      "gpus": [
+       1,
+       5
+      ],
+      "link": "SYS",
+      "requests": 1320,
+      "hop_events": 1320,
+      "hop_thinker_talker_p50_ms": 3.8606775,
+      "hop_thinker_talker_p90_ms": 6.458224200000001,
+      "hop_talker_code2wav_p50_ms": 1.351904,
+      "levels": {
+       "6.0": {
+        "n": 180,
+        "ok": 180,
+        "e2e_p50_s": 2.1001062084999997,
+        "e2e_p90_s": 2.7109406404,
+        "slo": 1.0
+       },
+       "10.0": {
+        "n": 300,
+        "ok": 300,
+        "e2e_p50_s": 2.1891806995,
+        "e2e_p90_s": 2.9364540224000004,
+        "slo": 1.0
+       },
+       "13.0": {
+        "n": 390,
+        "ok": 390,
+        "e2e_p50_s": 2.3702381165000004,
+        "e2e_p90_s": 3.1879147364000002,
+        "slo": 1.0
+       },
+       "15.0": {
+        "n": 450,
+        "ok": 450,
+        "e2e_p50_s": 2.602377157,
+        "e2e_p90_s": 3.4985839878,
+        "slo": 1.0
+       }
+      }
+     }
+    }
+   }
+  }
+ ],
+ "verdicts": {
+  "w3b_closed": {
+   "verdict": "不确定",
+   "hop_spread_ms": 0.68785775,
+   "hop_spread_share_of_e2e": 0.00027559623729008566,
+   "e2e_rel_non_nvlink": 0.09807429519926836,
+   "same_link_spread": 0.326889496232069,
+   "e2e_median_s": 2.49588948225,
+   "hop_by_link_p50_ms": {
+    "NODE": 4.0735315,
+    "NV4": 3.9661470000000003,
+    "PIX": 4.45682125,
+    "SYS": 3.7689635
+   },
+   "e2e_top_level_p50_s": {
+    "g_node#g1a_links": 3.0675907870000003,
+    "g_nv4a#g1a_links": 2.6308534989999997,
+    "g_nv4b#g1a_links": 2.326674127,
+    "g_pix#g1a_links": 2.3208388295,
+    "g_nv4#g1b_links": 2.362120741,
+    "g_pix#g1b_links": 2.6296582235,
+    "g_sysa#g1b_links": 3.0666317464999997,
+    "g_sysb#g1b_links": 2.311143283
+   }
+  },
+  "w3b_open_abs": {
+   "verdict": "支持",
+   "hop_spread_ms": 0.4437009999999999,
+   "hop_spread_share_of_e2e": 0.00016206651175293228,
+   "e2e_rel_non_nvlink": -0.013352813765320937,
+   "same_link_spread": 0.17509325601167047,
+   "e2e_median_s": 2.737771025,
+   "hop_by_link_p50_ms": {
+    "NODE": 4.179138,
+    "NV4": 3.735437,
+    "PIX": 4.00649575,
+    "SYS": 3.9138467500000003
+   },
+   "e2e_top_level_p50_s": {
+    "g_node#g1a_links": 2.8707812805,
+    "g_nv4a#g1a_links": 2.4486229725,
+    "g_nv4b#g1a_links": 2.8594142225,
+    "g_pix#g1a_links": 2.6538176069999997,
+    "g_nv4#g1b_links": 2.8773603415,
+    "g_pix#g1b_links": 2.5114652585000004,
+    "g_sysa#g1b_links": 2.821724443,
+    "g_sysb#g1b_links": 2.602377157
+   }
+  }
+ },
+ "verdict_overall": "不确定"
+}

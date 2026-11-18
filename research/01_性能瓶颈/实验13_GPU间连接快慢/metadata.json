@@ -1,0 +1,105 @@
+{
+ "experiment_number": 13,
+ "name_zh": "GPU 之间的连接快慢有没有影响",
+ "question_zh": "thinker 和 talker 放在 NVLink 相连或 PCIe 相连的两张卡上，有区别吗？",
+ "status": "完成（2026-11-18，只用已有数据，没有新的 GPU 运行；每组 1 次，结论初步）",
+ "commit_note": "每个运行记的 research_repo_commit 是运行开始时集群上研究仓库检出的提交（运行器和配置的版本），不是本目录报告的版本；报告以 PR #2 分支的最新提交为准",
+ "hypotheses": "hypotheses.md（预测 G-H1 写于 2026-11-11 20:17:38，提交 0ea950d，早于任何数据；判定方法 2026-11-18 看过数据后定的，探索性）",
+ "model": {
+  "name": "MiniCPM-o 4.5",
+  "revision": "fb09628e98b1f55d8d5b863e0eccfcdd11bff499"
+ },
+ "software": {
+  "sglang_omni": "520b49ee（= 上游 1845546e + 两个 pre-Hopper 修复），没有打实验补丁；运行配置 configs/models/runtime_unicorn.json；每个服务 --talker.gpu 1 --code2wav.gpu 1 --code2wav.process code2wav",
+  "sglang": "0.5.21",
+  "torch": "2.13.0"
+ },
+ "hardware": "compute-03：8×RTX A6000，驱动 580，Slurm Job 454290；NVLink 对 0–3、1–2、4–5、6–7；GPU 0–3 在一个 CPU 插槽下，4–7 在另一个",
+ "services": {
+  "第 1 组": {
+   "g_node": [
+    0,
+    2
+   ],
+   "g_pix": [
+    1,
+    3
+   ],
+   "g_nv4a": [
+    4,
+    5
+   ],
+   "g_nv4b": [
+    6,
+    7
+   ]
+  },
+  "第 2 组": {
+   "g_sysa": [
+    0,
+    4
+   ],
+   "g_sysb": [
+    1,
+    5
+   ],
+   "g_pix": [
+    2,
+    3
+   ],
+   "g_nv4": [
+    6,
+    7
+   ]
+  }
+ },
+ "workload": "W3b（文字提问、语音回答）：闭环并发 16、32（4 个服务合计，每档 96 个计量请求）；开环 4 个服务合计 6、10、13、15 请求/秒（每个服务共 1,320 个请求）；客户端轮流分配",
+ "runs": [
+  {
+   "run_dir": "20261116_v2b_y0_env_topology_run01",
+   "role": "拓扑测量",
+   "status": "ok",
+   "start": "2026-11-16 19:02:30",
+   "end": "2026-11-16 19:08:19",
+   "server_restarts": 0,
+   "research_repo_commit": "未记录（拓扑测量没有运行清单）",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261116_v2b_g1a_links_run01",
+   "role": "第 1 组（NODE、PIX、NV4、NV4）",
+   "status": "ok",
+   "start": "2026-11-16 23:05:01",
+   "end": "2026-11-16 23:15:44",
+   "server_restarts": 0,
+   "research_repo_commit": "706afb0",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261116_v2b_g1b_links_run01",
+   "role": "第 2 组（SYS、SYS、PIX、NV4）",
+   "status": "ok",
+   "start": "2026-11-16 23:15:55",
+   "end": "2026-11-16 23:26:37",
+   "server_restarts": 0,
+   "research_repo_commit": "706afb0",
+   "slurm_job": 454290
+  }
+ ],
+ "analysis": {
+  "commands": [
+   "python scripts/analysis/exp13_report.py --data-root <results> --topology 20261116_v2b_y0_env_topology_run01 --run 20261116_v2b_g1a_links_run01 --run 20261116_v2b_g1b_links_run01 --out research/01_性能瓶颈/实验13_GPU间连接快慢",
+   "python scripts/analysis/exp13_figures.py --out research/01_性能瓶颈/实验13_GPU间连接快慢"
+  ],
+  "outputs": [
+   "results/summary.json"
+  ],
+  "where": "在 Mac 上的数据镜像上分析；镜像和集群上的原始文件逐个比过文件名和大小，一致"
+ },
+ "figures": [
+  "figures/fig1_topology.png",
+  "figures/fig2_handoff.png",
+  "figures/fig3_e2e.png"
+ ],
+ "raw_data": "PROJECT_DATA_ROOT/experiments/<运行目录>（带机器名和路径，不进公开仓库）"
+}
