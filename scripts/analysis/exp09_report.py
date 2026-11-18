@@ -72,6 +72,19 @@ def queue_growth(records: list[dict[str, Any]], rate_rps: float, step_s: float =
             "inflight_end": int(inflight[-1]) if len(inflight) else None, "window_s": t1 - t0}
 
 
+def busy_window_throughput(records: list[dict[str, Any]]) -> dict[str, Any]:
+    """Descriptive (not registered): completions per second while every closed-loop slot stays busy, i.e. between
+    the first and the last send of a measured request. The registered capacity divides by first send -> last
+    completion, which also counts the final drain, when fewer and fewer requests are in flight."""
+    meas = [r["sent_ns"] for r in records if not r.get("warmup") and r.get("sent_ns") is not None]
+    if len(meas) < 2:
+        return {"throughput_rps": None, "window_s": None}
+    s0, s1 = min(meas), max(meas)
+    done = sum(1 for r in records if r.get("status") == "ok" and r.get("done_ns") is not None and s0 < r["done_ns"] <= s1)
+    window = (s1 - s0) / 1e9
+    return {"throughput_rps": done / window if window > 0 else None, "window_s": window}
+
+
 def censored_percentiles(records: list[dict[str, Any]], ps: tuple[int, ...] = (50, 95, 99)) -> dict[str, Any]:
     vals = []
     for r in records:
@@ -255,7 +268,7 @@ def level_client(recs: list[dict[str, Any]]) -> dict[str, Any]:
     from exp06_report import client_metrics
 
     meas = [r for r in recs if not r.get("warmup")]
-    out = {"client": client_metrics(recs), "censored": censored_percentiles(meas)}
+    out = {"client": client_metrics(recs), "censored": censored_percentiles(meas), "busy_window": busy_window_throughput(recs)}
     toks = [r.get("completion_tokens") for r in meas if r.get("status") == "ok" and r.get("completion_tokens")]
     audio = [r.get("output_audio_s") for r in meas if r.get("status") == "ok" and r.get("output_audio_s")]
     late = [r.get("lateness_s") for r in meas if r.get("lateness_s") is not None]
@@ -342,7 +355,8 @@ def by_arm(runs: list[dict[str, Any]]) -> dict[str, Any]:
             if not any(rows):
                 continue
             cell = {}
-            for label, path in (("throughput_rps", "client.throughput_rps"), ("audio_s_per_s", "client.audio_s_per_s"),
+            for label, path in (("throughput_rps", "client.throughput_rps"), ("busy_window_rps", "busy_window.throughput_rps"),
+                                ("audio_s_per_s", "client.audio_s_per_s"),
                                 ("e2e_p50_s", "censored.p50"), ("e2e_p95_s", "censored.p95"), ("e2e_p99_s", "censored.p99"),
                                 ("ttft_p50_s", "client.ttft_s.p50"), ("first_audio_p50_s", "client.first_audio_s.p50"),
                                 ("growth_slope_rps", "growth.slope_rps"), ("tokens_mean", "output.tokens_mean"), ("audio_s_mean", "output.audio_s_mean")):
@@ -393,13 +407,14 @@ def main() -> int:
         if not a.pilot:
             with open(out / "levels.csv", "w", newline="") as fh:
                 wr = csv.writer(fh)
-                wr.writerow(["arm", "placement", "block", "workload", "kind", "mode", "level", "throughput_rps", "audio_s_per_s",
+                wr.writerow(["arm", "placement", "block", "workload", "kind", "mode", "level", "throughput_rps", "busy_window_rps", "audio_s_per_s",
                              "e2e_p50_s", "e2e_p95_s", "e2e_p99_s", "failed", "ttft_p50_s", "growth_slope_rps", "steady",
                              "tokens_mean", "audio_s_mean", "bottleneck"])
                 for r in runs:
                     for x in r["levels"]:
                         wr.writerow([r["arm"], r["placement"], r["block"], x["workload"], x["kind"], x["mode"], x.get("concurrency", x.get("rate_rps")),
-                                     get(x, "client.throughput_rps"), get(x, "client.audio_s_per_s"), get(x, "censored.p50"),
+                                     get(x, "client.throughput_rps"), get(x, "busy_window.throughput_rps"), get(x, "client.audio_s_per_s"),
+                                     get(x, "censored.p50"),
                                      get(x, "censored.p95"), get(x, "censored.p99"), get(x, "censored.failed"), get(x, "client.ttft_s.p50"),
                                      get(x, "growth.slope_rps"), get(x, "growth.steady"), get(x, "output.tokens_mean"),
                                      get(x, "output.audio_s_mean"), get(x, "bottleneck.stage")])

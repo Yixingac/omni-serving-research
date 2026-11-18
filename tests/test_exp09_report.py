@@ -103,3 +103,15 @@ def test_leave_one_out_capacity_model():
     assert math.isclose(p[2]["predicted_rps"], 24.0) and math.isclose(p[4]["predicted_rps"], 18.0)  # min(3 x 6, 3 x 14)
     assert math.isclose(p[3]["predicted_rps"], 30.0) and p[3]["limited_by"] == "code2wav_iso"  # misses the talker limit
     assert math.isclose(p[3]["error"], 30.0 / 14.0 - 1) and m["verdict"] == "不支持"
+
+
+def test_closed_loop_throughput_while_all_slots_are_busy():
+    # concurrency 4: 4 warmup requests then 12 measured, each takes 1 s; sends follow completions
+    recs = []
+    for i in range(16):
+        sent = (i // 4) * 1.0
+        recs.append({"sent_ns": int(sent * 1e9), "done_ns": int((sent + 1.0) * 1e9), "status": "ok", "warmup": i < 4})
+    recs.append({"sent_ns": int(4.0 * 1e9), "done_ns": int(9.0 * 1e9), "status": "ok"})  # a slow straggler in the tail
+    s = rp.busy_window_throughput(recs)
+    # measured sends span 1 s .. 4 s; 12 completions land in [1, 4] (at 1, 2, 3 and 4 s): 12 / 3 s
+    assert abs(s["throughput_rps"] - 4.0) < 1e-9 and s["window_s"] == 3.0
