@@ -143,6 +143,53 @@ def fig_token(plt, cells: dict[str, Any], path: Path) -> None:  # noqa: ANN001
     plt.close(fig)
 
 
+P3_ARMS = [("off", "原型关（语音同步执行）", "#D55E00"), ("on", "原型开（语音也提前发射，发射时快照）", "#009E73")]
+P3_PANELS = [("C", "graph_steps.idle_ms_p50", "（a）每步 GPU 空档，中位数（毫秒）", 1.0),
+             ("C", "sync_calls_per_step", "（b）每步 CPU 停下来等 GPU 的次数", 1.0),
+             ("B", "steps.decode_lookahead_share", "（c）提前发射的 decode 步（%）", 100.0),
+             ("B", "thinker_ms_per_token.p50", "（d）thinker 每个 token，中位数（毫秒）", 1.0),
+             ("A", "client.throughput_rps", "（e）吞吐（请求/秒）", 1.0),
+             ("A", "client.e2e_s.p50", "（f）端到端 P50（秒）", 1.0),
+             ("A", "client.e2e_s.p95", "（g）端到端 P95（秒）", 1.0),
+             ("A", "client.e2e_s.p99", "（h）端到端 P99（秒）", 1.0),
+             ("A", "client.ttft_s.p50", "（i）TTFT 中位数（毫秒）", 1000.0),
+             ("A", "thinker_mem_max_mib", "（j）thinker 卡显存峰值（GiB）", 1 / 1024)]
+
+
+def fig_phase3(plt, phase3: dict[str, Any], path: Path) -> None:  # noqa: ANN001
+    levels = sorted(phase3["contrasts"], key=int)
+    fig, axes = plt.subplots(2, 5, figsize=(16, 6.6))
+    width = 0.36
+    for ax, (mode, metric, title, scale) in zip(axes.flat, P3_PANELS):
+        for j, lv in enumerate(levels):
+            cell = phase3["contrasts"][lv][mode][metric]
+            xs = {arm: j + (i - 0.5) * width for i, (arm, *_) in enumerate(P3_ARMS)}
+            for arm, label, color in P3_ARMS:
+                c = cell[arm]
+                if c["mean"] is None:
+                    ax.text(xs[arm], 0, "无数据", rotation=90, ha="center", va="bottom", fontsize=6, color="#666666")
+                    continue
+                ax.bar(xs[arm], c["mean"] * scale, width * 0.9, color=color, alpha=0.5, edgecolor=color, label=label if j == 0 else None)
+                if c["ci95"]:
+                    lo, hi = c["ci95"]
+                    ax.errorbar(xs[arm], c["mean"] * scale, yerr=[[(c["mean"] - lo) * scale], [(hi - c["mean"]) * scale]],
+                                color="#333333", capsize=2, lw=0.8)
+            for a, b in zip(cell["off"]["runs"], cell["on"]["runs"]):
+                if a is not None and b is not None:
+                    ax.plot([xs["off"], xs["on"]], [a * scale, b * scale], color="#555555", lw=0.6, marker="o", ms=2.5, zorder=3)
+        ax.set_xticks(range(len(levels)))
+        ax.set_xticklabels([f"并发 {lv}" for lv in levels], fontsize=7)
+        ax.set_title(title, fontsize=8, loc="left")
+        ax.tick_params(labelsize=7)
+    handles, labels = axes.flat[0].get_legend_handles_labels()
+    fig.legend(handles, labels, fontsize=8, loc="lower center", ncol=2, frameon=False, bbox_to_anchor=(0.5, -0.02))
+    fig.suptitle("图 5　文字 + 语音请求（不带种子）：原型关对比原型开。柱 = 3 个区组的均值，误差线 = 95% 区间，灰线连起同一区组的两次运行",
+                 fontsize=9, x=0.01, ha="left")
+    fig.tight_layout(rect=(0, 0.04, 1, 1))
+    fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--out", required=True)
@@ -156,6 +203,8 @@ def main() -> int:
     fig_lookahead(plt, phase1["cells"], figs / "fig2_lookahead_share.png")
     fig_idle(plt, phase1["cells"], figs / "fig3_step_idle.png")
     fig_token(plt, phase1["cells"], figs / "fig4_token_time.png")
+    if (out / "results" / "phase3.json").exists():
+        fig_phase3(plt, json.loads((out / "results" / "phase3.json").read_text()), figs / "fig5_phase3_off_on.png")
     print(sorted(p.name for p in figs.glob("*.png")))
     return 0
 
