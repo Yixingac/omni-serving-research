@@ -39,6 +39,8 @@ sys.path.insert(0, str(ROOT / "scripts" / "slurm"))
 
 STAGES = ("thinker", "talker", "code2wav")
 WORKLOADS = {"w3b": 256, "w3l": 128}  # workload -> concurrency of the capacity level
+BLOCKS = (1, 2, 3)  # registered: three blocks
+CODEC_CAP_AUDIO_S = 2048 * 0.04  # the talker's default cap of 2048 codec tokens, 0.04 s each
 T975 = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776}
 ARMS = {1: "t2_k6_shared", 2: "t2_k2_c4", 3: "t2_k1_c5", 4: "t2_k3_c3"}
 ARM_OF = {v: k for k, v in ARMS.items()}
@@ -157,14 +159,20 @@ def usable(client: dict[str, Any]) -> bool:
     return not (client.get("measured") and bad / client["measured"] > 0.05)
 
 
-def workload_entry(levels: list[dict[str, Any]], w: str, top: int) -> dict[str, Any] | None:
-    """Capacity (unprofiled phase, or the events phase in the pilot) and bottleneck (events phase) at the top closed-loop
-    level. A level that is unusable, or in the phase where the server restarted, gives a missing value (registered)."""
+def workload_entry(levels: list[dict[str, Any]], w: str, top: int, pilot: bool = False) -> dict[str, Any] | None:
+    """Capacity (the unprofiled phase A; only the pilot, which has no phase A, uses the events phase) and bottleneck
+    (events phase) at the top closed-loop level. A level that is unusable, or in the phase where the server restarted,
+    gives a missing value (registered)."""
     cap = [x for x in levels if x["workload"] == w and x["kind"] == "closed_loop" and x.get("concurrency") == top]
-    a = [x for x in cap if x["mode"] == "A"] or [x for x in cap if x["mode"] == "B"]
+    a = [x for x in cap if x["mode"] == "A"] or ([x for x in cap if x["mode"] == "B"] if pilot else [])
     b = [x for x in cap if x["mode"] == "B"]
-    if not a:
+    if not a and not b:
         return None
+    if not a:
+        return {"capacity_rps": None, "audio_s_per_s": None, "capacity_from": None, "residence_ms": None,
+                "bottleneck": b[0]["bottleneck"]["stage"] if b[0].get("bottleneck") and b[0].get("usable") is not False
+                and not b[0].get("restart_here") else None,
+                "excluded": [f"capacity: no unprofiled (A) level at {top}"]}
     excluded = []
     for row, what in ((a[0], "capacity"), (b[0] if b else None, "bottleneck")):
         if row is None:
@@ -177,7 +185,21 @@ def workload_entry(levels: list[dict[str, Any]], w: str, top: int) -> dict[str, 
     bn_ok = b and not any(e.startswith("bottleneck") for e in excluded) and b[0].get("bottleneck")
     return {"capacity_rps": a[0]["client"].get("throughput_rps") if cap_ok else None,
             "audio_s_per_s": a[0]["client"].get("audio_s_per_s") if cap_ok else None, "capacity_from": a[0]["mode"],
-            "bottleneck": b[0]["bottleneck"]["stage"] if bn_ok else None, "excluded": excluded}
+            "bottleneck": b[0]["bottleneck"]["stage"] if bn_ok else None,
+            "residence_ms": b[0].get("residence_ms") if bn_ok else None, "excluded": excluded}
+
+
+def drop_failed(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Registered: a run that failed or timed out is reported, but its values do not enter the verdicts."""
+    out = []
+    for r in runs:
+        if r.get("status") in (None, "ok"):
+            out.append(r)
+            continue
+        out.append({**r, "workload": {w: {**e, "capacity_rps": None, "bottleneck": None, "residence_ms": None,
+                                          "excluded": e.get("excluded", []) + [f"run status {r['status']}"]}
+                                      for w, e in r["workload"].items()}})
+    return out
 
 
 def _caps(runs: list[dict[str, Any]], w: str) -> dict[tuple[int, int], float]:
@@ -196,39 +218,46 @@ def interval(values: list[Any]) -> dict[str, Any]:
 
 def paired(runs: list[dict[str, Any]], w: str, arm: int, base: int) -> dict[str, Any]:
     caps = _caps(runs, w)
-    blocks = sorted({b for (_, b) in caps})
-    rel = [caps[(arm, b)] / caps[(base, b)] - 1 if (arm, b) in caps and (base, b) in caps else None for b in blocks]
-    return {"blocks": blocks, "relative": interval(rel)}
+    rel = [caps[(arm, b)] / caps[(base, b)] - 1 if (arm, b) in caps and (base, b) in caps else None for b in BLOCKS]
+    return {"blocks": list(BLOCKS), "relative": interval(rel)}
 
+
+def missing_caps(runs: list[dict[str, Any]], w: str, arms: tuple[int, ...]) -> list[str]:
+    caps = _caps(runs, w)
+    return [f"方案 {a} 区组 {b}" for a in arms for b in BLOCKS if (a, b) not in caps]
+
+
+# The registration knows only 支持 / 反驳 (or 不支持) / 不确定: a missing value rules out 支持, a refutation is judged on
+# the arms it names, everything else is 不确定; what is missing is listed with the verdict.
 
 def verdict_h9a(runs: list[dict[str, Any]], w: str = "w3b") -> dict[str, Any]:
     caps = _caps(runs, w)
-    blocks = sorted({r["block"] for r in runs})  # every block: a value missing in any of them gives 数据不足
-    complete = blocks and all((a, b) in caps for b in blocks for a in (1, 2, 3))
+    have = lambda a: all((a, b) in caps for b in BLOCKS)  # noqa: E731
     vs2, vs1 = paired(runs, w, 3, 2), paired(runs, w, 3, 1)
-    if not complete:
-        v = "数据不足"
-    elif all(caps[(3, b)] > caps[(1, b)] and caps[(3, b)] > caps[(2, b)] for b in blocks) and vs2["relative"]["mean"] >= 0.05:
+    if have(1) and have(2) and have(3) and all(caps[(3, b)] > caps[(1, b)] and caps[(3, b)] > caps[(2, b)] for b in BLOCKS) \
+            and vs2["relative"]["mean"] >= 0.05:
         v = "支持"
-    elif all(caps[(3, b)] < caps[(2, b)] for b in blocks):
-        v = "反驳"
+    elif have(2) and have(3) and all(caps[(3, b)] < caps[(2, b)] for b in BLOCKS):
+        v = "反驳"  # registered: arm 3 below arm 2 in all three blocks
     else:
         v = "不确定"
-    return {"verdict": v, "arm3_vs_arm2": vs2, "arm3_vs_arm1": vs1}
+    return {"verdict": v, "missing": missing_caps(runs, w, (1, 2, 3)), "arm3_vs_arm2": vs2, "arm3_vs_arm1": vs1}
 
 
 def verdict_h9b(runs: list[dict[str, Any]], w: str = "w3b") -> dict[str, Any]:
-    blocks = sorted({r["block"] for r in runs})
-    b = [next(((r["workload"].get(w) or {}).get("bottleneck") for r in runs if r["arm"] == 3 and r["block"] == k), None) for k in blocks]
-    if not b or any(x is None for x in b):
-        v = "数据不足"
-    elif all(x == "talker" for x in b):
+    """Registered: in arm 3's events phase at the top level, the talker holds more requests than code2wav and the
+    thinker in all three blocks (支持); code2wav, or the thinker, holds more than the talker in all three (反驳)."""
+    res = [next(((r["workload"].get(w) or {}).get("residence_ms") for r in runs if r["arm"] == 3 and r["block"] == b), None)
+           for b in BLOCKS]
+    tops = [max(x, key=x.get) if x else None for x in res]
+    if all(res) and all(x["talker"] > x["code2wav"] and x["talker"] > x["thinker"] for x in res):
         v = "支持"
-    elif all(x != "talker" for x in b):
+    elif all(res) and any(all(x[s] > x["talker"] for x in res) for s in ("code2wav", "thinker")):
         v = "反驳"
     else:
         v = "不确定"
-    return {"verdict": v, "arm3_bottlenecks": b}
+    return {"verdict": v, "arm3_bottlenecks": tops, "arm3_residence_ms": res,
+            "missing": [f"方案 3 区组 {b}" for b, x in zip(BLOCKS, res) if not x]}
 
 
 def verdict_h9c(runs: list[dict[str, Any]]) -> dict[str, Any]:
@@ -236,12 +265,11 @@ def verdict_h9c(runs: list[dict[str, Any]]) -> dict[str, Any]:
     for w in WORKLOADS:
         caps = _caps(runs, w)
         means[w] = {a: float(np.mean([c for (aa, _), c in caps.items() if aa == a])) for a in sorted({a for a, _ in caps})}
-    if not means["w3b"] or not means["w3l"]:
-        return {"verdict": "数据不足", "means": means}
-    blocks = sorted({r["block"] for r in runs})
-    arms = sorted({r["arm"] for r in runs})
-    if any((a, b) not in _caps(runs, w) for w in WORKLOADS for a in arms for b in blocks):
-        return {"verdict": "数据不足", "means": means}  # a mean over fewer blocks is not the registered comparison
+    arms = tuple(sorted({r["arm"] for r in runs}))
+    missing = {w: missing_caps(runs, w, arms) for w in WORKLOADS}
+    if not means["w3b"] or not means["w3l"] or any(missing.values()):
+        return {"verdict": "不确定", "means": means, "missing": missing}  # means over fewer blocks are not the registered comparison
+    blocks = BLOCKS
     win = {w: max(m, key=m.get) for w, m in means.items()}
     if win["w3b"] == win["w3l"]:
         v = "不支持"
@@ -260,9 +288,11 @@ def busy_window_capacity(run: dict[str, Any], w: str) -> float | None:
 
 
 def stable_open_loop_capacity(run: dict[str, Any], w: str) -> float | None:
-    """Registered metric 2: the highest common rate at which this run's open loop stayed steady."""
+    """Registered metric 2: the highest common rate at which this run's open loop stayed steady. For this descriptive
+    use, a rate where the server restarted, or with errors + timeouts above 5 % (fast failures look steady), is skipped."""
     steady = [x["rate_rps"] for x in run.get("levels", []) if x["workload"] == w and x["kind"] == "open_loop"
-              and x.get("mode", "A") == "A" and (x.get("growth") or {}).get("steady")]
+              and x.get("mode", "A") == "A" and (x.get("growth") or {}).get("steady") and not x.get("restart_here")
+              and x.get("usable") is not False]
     return max(steady) if steady else None
 
 
@@ -310,7 +340,7 @@ def capacity_model(runs: list[dict[str, Any]], w: str) -> dict[str, Any]:
         else:
             preds[arm] = {"predicted_rps": None, "limited_by": None, "options": options, "measured_rps": measured, "error": None}
     errs = [abs(p["error"]) for p in preds.values() if p["error"] is not None]
-    v = "数据不足" if not errs else "支持" if all(e <= 0.10 for e in errs) else "不支持" if any(e > 0.20 for e in errs) else "不确定"
+    v = "不确定" if not errs else "支持" if all(e <= 0.10 for e in errs) else "不支持" if any(e > 0.20 for e in errs) else "不确定"
     return {"predictions": preds, "verdict": v}
 
 
@@ -347,9 +377,10 @@ def level_client(recs: list[dict[str, Any]]) -> dict[str, Any]:
     late = [r.get("lateness_s") for r in meas if r.get("lateness_s") is not None]
     out["output"] = {"tokens_mean": float(np.mean(toks)) if toks else None, "tokens_p95": float(np.percentile(toks, 95)) if toks else None,
                      "audio_s_mean": float(np.mean(audio)) if audio else None, "audio_s_p95": float(np.percentile(audio, 95)) if audio else None,
-                     "at_max_tokens": None}
-    if late:
-        out["lateness_p99_s"] = float(np.percentile(late, 99))
+                     # registered: a request whose audio reaches the talker's 2048 codec tokens is truncated, reported apart
+                     "at_codec_cap": sum(a >= CODEC_CAP_AUDIO_S - 1e-6 for a in audio)}
+    out["lateness_p99_s"] = float(np.percentile(late, 99)) if late else None
+    out["lateness_flag"] = (out["lateness_p99_s"] > 0.1) if late else None  # registered: client P99 lateness over 100 ms
     return out
 
 
@@ -363,8 +394,10 @@ def analyze_run(exp: Path) -> dict[str, Any]:
     res = json.load(open(exp / "result.json"))
     m = RUN_RE.match(res["experiment_id"])
     name = m.group(1)
+    pilot = "_pilot_" in res["experiment_id"]
     run: dict[str, Any] = {"run": exp.name, "placement": name, "arm": ARM_OF[name], "block": int(m.group(2)) if m.group(2) else 0,
-                           "restarts": res.get("server_restarts") or [], "workload": {}, "levels": []}
+                           "status": res.get("status"), "pilot": pilot, "restarts": res.get("server_restarts") or [], "workload": {},
+                           "levels": []}
     util, clocks, anchor, roles = load_util(exp), load_clocks(exp), clock_anchor(exp), gpu_roles(name)
     flags = restart_flags([ph["phase"] for ph in res.get("phases", [])], run["restarts"])
     for ph in res.get("phases", []):
@@ -396,7 +429,8 @@ def analyze_run(exp: Path) -> dict[str, Any]:
             if events is not None:
                 ids = {r["request_id"] for r in meas if r.get("request_id")}
                 resid = stage_residence(events, ids)
-                wall = row["client"].get("throughput_rps") and len(ids) / row["client"]["throughput_rps"]
+                times = [(r["sent_ns"], r["done_ns"]) for r in meas if r.get("sent_ns") and r.get("done_ns")]
+                wall = (max(d for _, d in times) - min(t for t, _ in times)) / 1e9 if times else None  # the level's duration
                 row["residence_ms"] = resid
                 row["in_stage_mean"] = {s: v / 1000 / wall for s, v in resid.items()} if wall else None
                 row["bottleneck"] = bottleneck(resid)
@@ -409,13 +443,74 @@ def analyze_run(exp: Path) -> dict[str, Any]:
                 row["talker_queue_ms"] = bd.stats([talker[i]["queue_ms"] for i in ids if i in talker])
             run["levels"].append(row)
     for w, top in WORKLOADS.items():
-        entry = workload_entry(run["levels"], w, top)
+        entry = workload_entry(run["levels"], w, top, pilot=pilot)
         if entry:
             run["workload"][w] = entry
     return run
 
 
 # ---------------------------------------------------------------- outputs
+
+def counted(x: dict[str, Any] | None) -> bool:
+    """A level that enters intervals and contrasts: present, not in the phase where the server restarted, and for a
+    closed-loop level not unusable (registered; open-loop failures are counted as infinite instead)."""
+    return bool(x) and not x.get("restart_here") and not (x["kind"] == "closed_loop" and x.get("usable") is False)
+
+
+def level_row(r: dict[str, Any], w: str, kind: str, mode: str, level: float) -> dict[str, Any] | None:
+    hit = [x for x in r["levels"] if x["workload"] == w and x["kind"] == kind and x["mode"] == mode
+           and x.get("concurrency", x.get("rate_rps")) == level]
+    return hit[0] if hit else None
+
+
+CONTRAST_METRICS = (("throughput_rps", "client.throughput_rps"), ("busy_window_rps", "busy_window.throughput_rps"),
+                    ("e2e_p50_s", "censored.p50"), ("e2e_p95_s", "censored.p95"), ("e2e_p99_s", "censored.p99"),
+                    ("ttft_p50_s", "client.ttft_s.p50"))
+
+
+def contrasts(runs: list[dict[str, Any]]) -> dict[str, Any]:
+    """Registered statistics: paired within a block, arm minus the control (arm 1), with the relative change; an
+    infinite percentile (failures) gives no difference and is counted apart."""
+    out: dict[str, Any] = {}
+    keys = sorted({(x["workload"], x["kind"], x["mode"], x.get("concurrency", x.get("rate_rps"))) for r in runs for x in r["levels"]}, key=str)
+    for arm in (2, 3, 4):
+        for w, kind, mode, level in keys:
+            cell: dict[str, Any] = {}
+            for label, path in CONTRAST_METRICS:
+                diffs, rels, inf = [], [], 0
+                for b in BLOCKS:
+                    xr = next((level_row(r, w, kind, mode, level) for r in runs if r["arm"] == arm and r["block"] == b), None)
+                    yr = next((level_row(r, w, kind, mode, level) for r in runs if r["arm"] == 1 and r["block"] == b), None)
+                    x = get(xr, path) if counted(xr) else None
+                    y = get(yr, path) if counted(yr) else None
+                    if (isinstance(x, float) and math.isinf(x)) or (isinstance(y, float) and math.isinf(y)):
+                        inf += 1
+                        x = y = None
+                    diffs.append(x - y if x is not None and y is not None else None)
+                    rels.append(x / y - 1 if x is not None and y else None)
+                cell[label] = {"diff": interval(diffs), "relative": interval(rels), "infinite_blocks": inf}
+            if any(c["diff"]["n"] for c in cell.values()):
+                out[f"{arm}|{w}|{kind}|{mode}|{level:g}"] = cell
+    return out
+
+
+def event_overhead(runs: list[dict[str, Any]]) -> dict[str, Any]:
+    """Registered secondary metric: the throughput difference between the events phase (B) and the unprofiled phase
+    (A) at the same closed-loop level of the same run, (B - A) / A, per arm and level over the blocks."""
+    out: dict[str, Any] = {}
+    for arm in sorted({r["arm"] for r in runs}):
+        levels = sorted({(x["workload"], x["concurrency"]) for r in runs for x in r["levels"] if x["kind"] == "closed_loop" and x["mode"] == "B"})
+        for w, c in levels:
+            rel = []
+            for b in BLOCKS:
+                r = next((r for r in runs if r["arm"] == arm and r["block"] == b), None)
+                xa, xb = (level_row(r, w, "closed_loop", m, c) if r else None for m in ("A", "B"))
+                ta, tb = (get(x, "client.throughput_rps") if counted(x) else None for x in (xa, xb))
+                rel.append(tb / ta - 1 if ta and tb is not None else None)
+            if any(v is not None for v in rel):
+                out[f"{arm}|{w}|{c}"] = interval(rel)
+    return out
+
 
 def by_arm(runs: list[dict[str, Any]]) -> dict[str, Any]:
     out: dict[str, Any] = defaultdict(dict)
@@ -437,12 +532,16 @@ def by_arm(runs: list[dict[str, Any]]) -> dict[str, Any]:
                                 ("e2e_p50_s", "censored.p50"), ("e2e_p95_s", "censored.p95"), ("e2e_p99_s", "censored.p99"),
                                 ("ttft_p50_s", "client.ttft_s.p50"), ("first_audio_p50_s", "client.first_audio_s.p50"),
                                 ("growth_slope_rps", "growth.slope_rps"), ("tokens_mean", "output.tokens_mean"), ("audio_s_mean", "output.audio_s_mean")):
-                # unusable closed-loop levels are reported in runs[], levels.csv and unusable_runs, not in the intervals
-                vals = [get(x, path) if x and not (x["kind"] == "closed_loop" and x.get("usable") is False) else None for x in rows]
+                # unusable closed-loop levels and levels in the phase where the server restarted are reported in runs[],
+                # levels.csv and the flags below, not in the intervals
+                vals = [get(x, path) if counted(x) else None for x in rows]
                 cell[label] = interval([None if (v is None or (isinstance(v, float) and math.isinf(v))) else v for v in vals])
                 cell[label]["infinite_runs"] = sum(1 for v in vals if isinstance(v, float) and math.isinf(v))
             cell["steady_runs"] = [get(x, "growth.steady") if x else None for x in rows]
             cell["unusable_runs"] = [x.get("usable") is False if x else None for x in rows]
+            cell["restart_here_runs"] = [bool(x.get("restart_here")) if x else None for x in rows]
+            cell["lateness_flag_runs"] = [x.get("lateness_flag") if x else None for x in rows]
+            cell["at_codec_cap_runs"] = [get(x, "output.at_codec_cap") if x else None for x in rows]
             cell["after_restart_runs"] = [bool(x.get("after_restart")) if x else None for x in rows]
             out[str(arm)][f"{w}|{kind}|{mode}|{level:g}"] = cell
     return dict(out)
@@ -476,10 +575,17 @@ def main() -> int:
                 print(w, "common rates", rates[w])
         summary = {"generated_by": "scripts/analysis/exp09_report.py --pilot", "runs": runs, "rates": rates}
     else:
+        if any(r["pilot"] or r["block"] not in BLOCKS for r in runs):
+            raise SystemExit("the confirmatory analysis takes the 12 block runs only, not the pilot")
+        keys = [(r["arm"], r["block"]) for r in runs]
+        if len(keys) != len(set(keys)):
+            raise SystemExit(f"more than one run for an arm and block (pass the retry, not the failed start): {sorted(keys)}")
+        judged = drop_failed(runs)  # a failed or timed-out run is reported but its values stay out of the verdicts
         summary = {"generated_by": "scripts/analysis/exp09_report.py", "runs": runs, "by_arm": by_arm(runs),
-                   "verdicts": {"H9a": verdict_h9a(runs), "H9b": verdict_h9b(runs), "H9b_w3l": verdict_h9b(runs, "w3l"),
-                                "H9c": verdict_h9c(runs), "H9d": capacity_model(runs, "w3b"), "H9d_w3l": capacity_model(runs, "w3l")},
-                   "sensitivity": sensitivity(runs)}
+                   "contrasts": contrasts(runs), "event_overhead": event_overhead(runs),
+                   "verdicts": {"H9a": verdict_h9a(judged), "H9b": verdict_h9b(judged), "H9b_w3l": verdict_h9b(judged, "w3l"),
+                                "H9c": verdict_h9c(judged), "H9d": capacity_model(judged, "w3b"), "H9d_w3l": capacity_model(judged, "w3l")},
+                   "sensitivity": sensitivity(judged)}
     if a.out:
         out = Path(a.out) / "results"
         out.mkdir(parents=True, exist_ok=True)
@@ -490,7 +596,8 @@ def main() -> int:
                 wr = csv.writer(fh)
                 wr.writerow(["arm", "placement", "block", "workload", "kind", "mode", "level", "throughput_rps", "busy_window_rps", "audio_s_per_s",
                              "e2e_p50_s", "e2e_p95_s", "e2e_p99_s", "failed", "ttft_p50_s", "growth_slope_rps", "steady",
-                             "tokens_mean", "audio_s_mean", "bottleneck", "usable", "restart_here", "after_restart"])
+                             "tokens_mean", "audio_s_mean", "bottleneck", "usable", "restart_here", "after_restart",
+                             "lateness_p99_s", "lateness_flag", "at_codec_cap", "crash_affected_dropped", "run_status"])
                 for r in runs:
                     for x in r["levels"]:
                         wr.writerow([r["arm"], r["placement"], r["block"], x["workload"], x["kind"], x["mode"], x.get("concurrency", x.get("rate_rps")),
@@ -499,7 +606,8 @@ def main() -> int:
                                      get(x, "censored.p95"), get(x, "censored.p99"), get(x, "censored.failed"), get(x, "client.ttft_s.p50"),
                                      get(x, "growth.slope_rps"), get(x, "growth.steady"), get(x, "output.tokens_mean"),
                                      get(x, "output.audio_s_mean"), get(x, "bottleneck.stage"), x.get("usable"), x.get("restart_here"),
-                                     x.get("after_restart")])
+                                     x.get("after_restart"), x.get("lateness_p99_s"), x.get("lateness_flag"), get(x, "output.at_codec_cap"),
+                                     x.get("crash_affected_dropped"), r.get("status")])
         print(out / name)
     return 0
 

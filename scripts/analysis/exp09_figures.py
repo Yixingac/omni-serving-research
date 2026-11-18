@@ -52,12 +52,20 @@ def levels(summary: dict[str, Any], arm: int, w: str, kind: str, mode: str) -> l
 
 
 def draw_series(ax, xs, cells, label, color, marker, field, scale=1.0, ls="-", hollow=None):  # noqa: ANN001
+    """hollow: {x: True} for points drawn hollow (keyed by x, so skipped points never shift it). Blocks where the value
+    is infinite (failed requests in a censored percentile) are not in the mean; they are written next to the point."""
     pts = [(x, c[field]) for x, c in zip(xs, cells) if c[field]["mean"] is not None]
+    for x, c in zip(xs, cells):
+        k = c[field].get("infinite_runs", 0)
+        if k:
+            y = c[field]["mean"] * scale if c[field]["mean"] is not None else None
+            ax.annotate(f"{k} 个区组 ∞", (x, y) if y is not None else (x, 1.0), xycoords=("data", "data" if y is not None else "axes fraction"),
+                        textcoords="offset points", xytext=(0, 6), ha="center", fontsize=6, color=color)
     if not pts:
         return
     ax.plot([x for x, _ in pts], [v["mean"] * scale for _, v in pts], ls, color=color, lw=1.3, label=label)
-    for i, (x, v) in enumerate(pts):
-        face = "white" if hollow and hollow[i] else color
+    for x, v in pts:
+        face = "white" if hollow and hollow.get(x) else color
         ax.plot([x], [v["mean"] * scale], marker, color=color, mfc=face, ms=5)
         if v["ci95"]:
             ax.errorbar(x, v["mean"] * scale, yerr=[[(v["mean"] - v["ci95"][0]) * scale], [(v["ci95"][1] - v["mean"]) * scale]],
@@ -100,13 +108,18 @@ def per_card(summary: dict[str, Any], w: str, field: str) -> dict[str, list[floa
              3: {"code2wav": 5, "talker": 1, "thinker": 2}, 4: {"code2wav": 3, "talker": 3, "thinker": 2}}
     out: dict[str, list[float]] = {}
     for r in summary["runs"]:
+        if r.get("status") not in (None, "ok"):
+            continue  # a failed run is reported, not plotted
         x = r["workload"].get(w) or {}
         stage = x.get("bottleneck")
         if not stage:
             continue
-        cap = x.get("capacity_rps") if field == "registered" else next(
-            (get(lv, "busy_window.throughput_rps") for lv in r["levels"] if lv["workload"] == w and lv["kind"] == "closed_loop"
-             and lv["mode"] == "A" and lv.get("concurrency") == (256 if w == "w3b" else 128)), None)
+        top = [lv for lv in r["levels"] if lv["workload"] == w and lv["kind"] == "closed_loop" and lv["mode"] == "A"
+               and lv.get("concurrency") == (256 if w == "w3b" else 128)]
+        if field == "registered":
+            cap = x.get("capacity_rps")
+        else:  # the same exclusions as the registered capacity: unusable level or server restarted in the phase
+            cap = get(top[0], "busy_window.throughput_rps") if top and top[0].get("usable") is not False and not top[0].get("restart_here") else None
         if cap is None:
             continue
         variant = f"{stage}（{'同卡' if r['arm'] == 1 and stage != 'thinker' else '独占'}）"
@@ -118,12 +131,18 @@ def fig_stage_capacity(plt, summary: dict[str, Any], path: Path) -> None:  # noq
     fig, axes = plt.subplots(1, 2, figsize=(12, 3.8))
     for ax, w in zip(axes, ("w3b", "w3l")):
         width = 0.38
-        for j, (field, label, color) in enumerate((("registered", "登记的容量 ÷ 卡数", "#444444"), ("busy", "满额时段吞吐 ÷ 卡数（描述性）", "#56B4E9"))):
-            data = per_card(summary, w, field)
-            names = sorted(data)
+        fields = (("registered", "登记的容量 ÷ 卡数", "#444444"), ("busy", "满额时段吞吐 ÷ 卡数（描述性）", "#56B4E9"))
+        data_by = {f: per_card(summary, w, f) for f, _, _ in fields}
+        names = sorted(set().union(*data_by.values()))  # one position per stage variant for both bars
+        for j, (field, label, color) in enumerate(fields):
+            data = data_by[field]
+            first = True
             for i, n in enumerate(names):
+                if n not in data:
+                    continue
                 v = data[n]
-                ax.bar(i + (j - 0.5) * width, np.mean(v), width * 0.9, color=color, alpha=0.6, label=label if i == 0 else None)
+                ax.bar(i + (j - 0.5) * width, np.mean(v), width * 0.9, color=color, alpha=0.6, label=label if first else None)
+                first = False
                 ax.scatter([i + (j - 0.5) * width] * len(v), v, s=10, color="black", zorder=3)
                 ax.text(i + (j - 0.5) * width, np.mean(v), f"{np.mean(v):.1f}", ha="center", va="bottom", fontsize=7)
             ax.set_xticks(range(len(names)))
@@ -173,7 +192,7 @@ def fig_open(plt, summary: dict[str, Any], path: Path) -> None:  # noqa: ANN001
             for arm, _, label, color, marker in ARMS:
                 lv = levels(summary, arm, w, "open_loop", "A")
                 xs, cells = [x for x, _ in lv], [c for _, c in lv]
-                hollow = [any(s is False for s in c["steady_runs"]) for c in cells]
+                hollow = {x: any(s is False for s in c["steady_runs"]) for x, c in zip(xs, cells)}
                 draw_series(ax, xs, cells, label, color, marker, field, hollow=hollow)
             ax.set_yscale("log")
             lo, hi = ax.get_ylim()
@@ -272,10 +291,12 @@ def fig_workloads(plt, summary: dict[str, Any], path: Path) -> None:  # noqa: AN
     fig, ax = plt.subplots(figsize=(9, 4))
     width = 0.38
     for j, (w, color) in enumerate((("w3b", "#0072B2"), ("w3l", "#D55E00"))):
-        base = [r["workload"][w]["capacity_rps"] for r in summary["runs"] if r["arm"] == 1 and w in r["workload"]]
-        b = np.mean(base) if base else None
+        def cap(arm, block):  # noqa: ANN001, ANN202
+            r = next((r for r in summary["runs"] if r["arm"] == arm and r["block"] == block and r.get("status") in (None, "ok")), None)
+            return ((r or {}).get("workload", {}).get(w) or {}).get("capacity_rps")
+
         for i, (arm, *_r) in enumerate(ARMS):
-            v = [r["workload"][w]["capacity_rps"] / b for r in summary["runs"] if r["arm"] == arm and w in r["workload"] and b]
+            v = [cap(arm, b) / cap(1, b) for b in (1, 2, 3) if cap(arm, b) is not None and cap(1, b)]  # paired within a block
             if not v:
                 continue
             ax.bar(i + (j - 0.5) * width, np.mean(v), width * 0.9, color=color, alpha=0.6, label=WL_NAME[w] if i == 0 else None)

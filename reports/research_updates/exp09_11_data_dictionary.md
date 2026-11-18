@@ -70,26 +70,28 @@
 ### `summary.json`
 
 - `runs[]`：每个运行一项。
-  - `run`、`placement`（如 `t2_k1_c5`）、`arm`（方案 1–4）、`block`、`restarts`
+  - `run`、`placement`（如 `t2_k1_c5`）、`arm`（方案 1–4）、`block`、`status`（运行状态）、`pilot`、`restarts`
   - `workload.w3b` / `workload.w3l`：
     - `capacity_rps`：登记的容量，即最高闭环并发 A 段的完成速率 = 完成数 ÷（最后完成 − 最先发出）；
     - `audio_s_per_s`；
     - `capacity_from`：取自 A 段还是 B 段；
-    - `bottleneck`：B 段驻留时间最长的阶段；
-    - `excluded`：按登记的规则没有用上的值和原因（这一档错误 + 超时 > 5%，或服务在这一段重启），这时对应的容量或瓶颈记为空。
+    - `bottleneck`、`residence_ms`：B 段驻留时间最长的阶段，以及各阶段的驻留时间之和（H9b 逐个比较）；
+    - `excluded`：按登记的规则没有用上的值和原因：这一档错误 + 超时 > 5%、服务在这一段重启、正式运行缺不打点段（只有预跑才用打点段的容量）、运行失败。这时对应的容量或瓶颈记为空。
   - `levels[]`：每段每档一行，字段见下表。
 - `by_arm["<方案>"]["<负载>|<类型>|<A或B>|<档>"]`：
   - 三个区组汇总成区间的指标：`throughput_rps`、`busy_window_rps`、`audio_s_per_s`、`e2e_p50_s`、`e2e_p95_s`、`e2e_p99_s`、`ttft_p50_s`、`first_audio_p50_s`、`growth_slope_rps`、`tokens_mean`、`audio_s_mean`；
   - `steady_runs`：每个区组是否稳态；
-  - `unusable_runs`、`after_restart_runs`：每个区组这一档是否不可用、是否在重启之后。
-  - 不可用的闭环档位不进区间（区间的 `runs` 里记为空），原始值仍在 `runs[]` 和 `levels.csv` 里。开环档位不排除（登记：超时按无穷大计入）。
+  - `unusable_runs`、`restart_here_runs`、`after_restart_runs`、`lateness_flag_runs`、`at_codec_cap_runs`：每个区组这一档的标记。
+  - 不可用的闭环档位、服务在这一段重启的档位不进区间（区间的 `runs` 里记为空），原始值仍在 `runs[]` 和 `levels.csv` 里。开环档位的失败不排除（登记：超时按无穷大计入）。
 - `verdicts`：
   - `H9a`、`H9b`、`H9b_w3l`、`H9c`：每项有 `verdict`（支持 / 反驳 / 不确定 / 数据不足），以及判定用到的每个区组的数字；
   - `H9d`、`H9d_w3l`：留一法的容量模型，`predictions` 是每个方案的预测值和实测值。
-  - 判定要求 3 个区组的值都在；任何一个区组缺失（不可用、重启、运行失败），这条判定就是“数据不足”。
+  - 判定只有登记的几种结果：支持、反驳（H9c、H9d 是“不支持”）、不确定。缺值时不可能“支持”；“反驳”只看它用到的方案（例如 H9a 只看方案 3 和 2）；其余为“不确定”，`missing` 列出缺了哪些。
+- `contrasts["<方案>|<负载>|<类型>|<A或B>|<档>"]`：方案 2、3、4 减方案 1（对照），同一区组配对；每个指标（`throughput_rps`、`busy_window_rps`、`e2e_p50_s`、`e2e_p95_s`、`e2e_p99_s`、`ttft_p50_s`）有 `diff`（差值区间）、`relative`（相对变化区间）和 `infinite_blocks`（含失败、无法相减的区组数）。
+- `event_overhead["<方案>|<负载>|<并发>"]`：同一运行里打点段相对不打点段的吞吐变化（B − A）/ A，即事件记录的开销。
 - `sensitivity`：补充登记一的敏感度分析（描述性，看过第 1 个运行后才加），把容量换成另一种算法，再算一遍 H9a、H9c、H9d、H9d_w3l：
   - `busy_window`：最高并发档的“满额时段吞吐”；
-  - `stable_open_loop`：这次运行开环里仍是稳态的最高共同速率。
+  - `stable_open_loop`：这次运行开环里仍是稳态的最高共同速率；服务在这一档重启、或错误 + 超时 > 5% 的速率不算（快速失败的请求会让在途数看起来不涨）。
 
 ### `levels[]` 每一行
 
@@ -100,8 +102,8 @@
 | `client` | 客户端统计：`measured`、`ok`、`errors`、`timeouts`、`throughput_rps`、`audio_s_per_s`、`e2e_s`、`ttft_s`、`first_audio_s`（各含 n、均值、百分位）、`completion_tokens_mean`、`audio_s_mean` |
 | `censored` | 截尾百分位：`n`、`failed`、`p50`、`p95`、`p99`（秒，失败按无穷大） |
 | `busy_window` | 描述性指标（补充登记一）：`throughput_rps` = 在（第一个测量请求发出，最后一个测量请求发出]之间完成的请求数 ÷ 这段时长；`window_s` |
-| `output` | `tokens_mean`、`tokens_p95`、`audio_s_mean`、`audio_s_p95` |
-| `lateness_p99_s` | 开环：发送比计划晚的 P99，用来确认客户端没有拖后腿 |
+| `output` | `tokens_mean`、`tokens_p95`、`audio_s_mean`、`audio_s_p95`；`at_codec_cap`：语音达到 talker 上限 2048 个编码（81.92 秒）的请求数，登记要求单独报告 |
+| `lateness_p99_s`、`lateness_flag` | 开环：发送比计划晚的 P99；超过 100 毫秒时 `lateness_flag` 为真（登记：标出这样的档位） |
 | `gpu["<角色>"]` | 这一档时间窗内按角色（thinker、talker、code2wav，或同卡的 talker+code2wav）平均：`busy`（nvidia-smi 的忙碌比例）、`mem_max_mib`、`sm_clock_mhz`、`power_w` |
 | `growth` | 开环：`slope_rps` = 发送窗口后半段“已发出未完成”请求数的最小二乘斜率；`steady` = 斜率 ≤ 0.05 × 到达速率；`inflight_end`；`window_s` |
 | `inflight_series` | 开环：每秒一个点 [距第一次发送的秒数, 已发出未完成的请求数]，到最后一个请求完成为止 |
@@ -123,7 +125,8 @@
 - `e2e_p50_s`、`e2e_p95_s`、`e2e_p99_s`、`failed`、`ttft_p50_s`；
 - `growth_slope_rps`、`steady`；
 - `tokens_mean`、`audio_s_mean`、`bottleneck`；
-- `usable`、`restart_here`、`after_restart`。
+- `usable`、`restart_here`、`after_restart`；
+- `lateness_p99_s`、`lateness_flag`、`at_codec_cap`、`crash_affected_dropped`、`run_status`。
 
 ## 四、实验 10 的结果文件
 

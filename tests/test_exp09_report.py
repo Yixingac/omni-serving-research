@@ -58,7 +58,8 @@ def test_stage_residence_and_the_bottleneck_stage():
 
 
 def run(arm, block, cap, bottleneck=None, w="w3b"):
-    return {"arm": arm, "block": block, "workload": {w: {"capacity_rps": cap, "bottleneck": bottleneck}}}
+    residence = {s: (3.0 if s == bottleneck else 1.0) for s in ("thinker", "talker", "code2wav")} if bottleneck else None
+    return {"arm": arm, "block": block, "workload": {w: {"capacity_rps": cap, "bottleneck": bottleneck, "residence_ms": residence}}}
 
 
 def test_h9a_needs_arm3_above_both_in_every_block_and_five_percent_over_arm2():
@@ -73,7 +74,7 @@ def test_h9a_needs_arm3_above_both_in_every_block_and_five_percent_over_arm2():
 def test_h9b_talker_must_hold_the_most_in_every_block():
     runs = [run(3, b, 14.0, bottleneck="talker") for b in (1, 2, 3)]
     assert rp.verdict_h9b(runs)["verdict"] == "支持"
-    runs[0]["workload"]["w3b"]["bottleneck"] = "code2wav"
+    runs[0]["workload"]["w3b"]["residence_ms"] = {"talker": 1.0, "code2wav": 3.0, "thinker": 1.0}  # code2wav holds the most in block 1
     assert rp.verdict_h9b(runs)["verdict"] == "不确定"
     assert rp.verdict_h9b([run(3, b, 14.0, bottleneck="thinker") for b in (1, 2, 3)])["verdict"] == "反驳"
 
@@ -134,7 +135,7 @@ def test_unusable_or_restarted_capacity_level_is_left_out():
     bad = rp.workload_entry([row("A", errors=4, timeouts=2), row("B", restart=True)], "w3b", 256)
     assert bad["capacity_rps"] is None and bad["bottleneck"] is None and len(bad["excluded"]) == 2
     assert rp.workload_entry([row("A", errors=5)], "w3b", 256)["capacity_rps"] == 20.0  # exactly 5 % is still usable
-    assert rp.workload_entry([row("B")], "w3b", 256)["capacity_from"] == "B"  # the pilot has the events phase only
+    assert rp.workload_entry([row("B")], "w3b", 256, pilot=True)["capacity_from"] == "B"  # the pilot has the events phase only
 
 
 def test_per_arm_intervals_leave_out_unusable_closed_loop_levels_only():
@@ -168,19 +169,25 @@ def test_sensitivity_swaps_in_busy_window_and_stable_open_loop_capacity():
     assert s["busy_window"]["H9a"]["verdict"] == "支持"  # 28.5 above 27 and 25, +5.6 % over arm 2
     assert s["stable_open_loop"]["H9a"]["verdict"] == "不确定"  # 23.5 ties arm 2
     runs[2]["levels"][0]["usable"] = False  # an unusable capacity level gives no busy-window value either
-    assert rp.sensitivity(runs)["busy_window"]["H9a"]["verdict"] == "数据不足"
+    assert rp.sensitivity(runs)["busy_window"]["H9a"]["verdict"] == "不确定"  # a missing value rules out 支持
 
 
-def test_a_missing_block_gives_insufficient_data():
+def test_a_missing_block_can_only_leave_the_registered_outcomes():
+    """The registration knows 支持 / 反驳 / 不确定 only: a missing value rules out 支持, and 反驳 is judged on the arms it
+    names (H9a: arms 3 and 2)."""
     runs = [run(1, b, 22.0) for b in (1, 2, 3)] + [run(2, b, 24.0) for b in (1, 2, 3)] + [run(3, b, 25.5, "talker") for b in (1, 2)]
-    assert rp.verdict_h9a(runs)["verdict"] == "数据不足"  # arm 3 has no run in block 3
-    assert rp.verdict_h9b(runs)["verdict"] == "数据不足"
+    a = rp.verdict_h9a(runs)
+    assert a["verdict"] == "不确定" and a["missing"] == ["方案 3 区组 3"]  # arm 3 has no run in block 3
+    assert rp.verdict_h9b(runs)["verdict"] == "不确定"
+    low = [run(1, b, 22.0) for b in (1, 3)] + [run(2, b, 24.0) for b in (1, 2, 3)] + [run(3, b, 14.0) for b in (1, 2, 3)]
+    assert rp.verdict_h9a(low)["verdict"] == "反驳"  # arm 1 is missing in block 2, but 反驳 compares arm 3 with arm 2 only
     both = []
     for b in (1, 2, 3):
         both += [run(1, b, 22.0), run(2, b, 24.0)]
         both[-2]["workload"]["w3l"] = {"capacity_rps": 6.0}
         both[-1]["workload"]["w3l"] = {"capacity_rps": 5.0 if b != 3 else None}
-    assert rp.verdict_h9c(both)["verdict"] == "数据不足"
+    assert rp.verdict_h9c(both)["verdict"] == "不确定"
+    assert rp.verdict_h9a([r for r in runs if r["block"] != 3] + [run(3, b, 30.0) for b in (1, 2)])["verdict"] == "不确定"  # 2 blocks
 
 
 def test_a_restart_in_the_capacity_phase_and_crash_affected_records(tmp_path):
@@ -208,3 +215,62 @@ def test_a_restart_in_the_capacity_phase_and_crash_affected_records(tmp_path):
     assert row["client"]["measured"] == 20 and row["client"]["errors"] == 0
     w = run["workload"]["w3b"]
     assert w["capacity_rps"] is None and "restarted" in w["excluded"][0]
+
+
+def test_h9b_compares_each_stage_with_the_talker_in_every_block():
+    res = [{"talker": 2.0, "code2wav": 5.0, "thinker": 1.0}, {"talker": 3.0, "code2wav": 2.0, "thinker": 4.0},
+           {"talker": 2.0, "code2wav": 5.0, "thinker": 1.0}]
+    runs = [run(3, b, 14.0, "code2wav") for b in (1, 2, 3)]
+    for r, x in zip(runs, res):
+        r["workload"]["w3b"]["residence_ms"] = x
+    assert rp.verdict_h9b(runs)["verdict"] == "不确定"  # neither code2wav nor thinker holds more than the talker in all blocks
+    runs[1]["workload"]["w3b"]["residence_ms"] = {"talker": 2.0, "code2wav": 4.0, "thinker": 1.0}
+    assert rp.verdict_h9b(runs)["verdict"] == "反驳"
+
+
+def test_formal_capacity_never_falls_back_to_the_events_phase():
+    def row(mode, conc, rps):
+        return {"workload": "w3b", "kind": "closed_loop", "mode": mode, "concurrency": conc, "usable": True,
+                "client": {"measured": 100, "errors": 0, "timeouts": 0, "throughput_rps": rps}, "bottleneck": {"stage": "code2wav"},
+                "residence_ms": {"thinker": 1.0, "talker": 1.0, "code2wav": 3.0}}
+    levels = [row("A", 128, 16.0), row("B", 256, 17.5)]
+    e = rp.workload_entry(levels, "w3b", 256)
+    assert e["capacity_rps"] is None and "A" in e["excluded"][0]
+    assert rp.workload_entry(levels, "w3b", 256, pilot=True)["capacity_rps"] == 17.5  # the pilot has the events phase only
+
+
+def test_a_failed_run_gives_missing_values():
+    runs = [run(1, b, 22.0) for b in (1, 2, 3)] + [run(2, b, 24.0) for b in (1, 2, 3)] + [run(3, b, 25.5) for b in (1, 2, 3)]
+    runs[-1]["status"] = "failed"
+    assert rp.verdict_h9a(rp.drop_failed(runs))["verdict"] == "不确定"
+
+
+def test_client_lateness_and_codec_cap_flags():
+    recs = [{"status": "ok", "sent_ns": 0, "done_ns": 10**9, "lateness_s": 0.01 * i, "output_audio_s": 82.0 if i == 0 else 10.0,
+             "completion_tokens": 40} for i in range(30)]
+    out = rp.level_client(recs)
+    assert out["lateness_flag"] is True  # P99 of 0 .. 0.29 s is over 100 ms
+    assert out["output"]["at_codec_cap"] == 1  # 2048 codec tokens x 0.04 s
+
+
+def test_stable_capacity_skips_restarted_or_failing_rates():
+    lv = lambda rate, steady, **kw: {"workload": "w3b", "kind": "open_loop", "mode": "A", "rate_rps": rate, "growth": {"steady": steady}, **kw}  # noqa: E731
+    r = {"levels": [lv(18.0, True), lv(21.0, True, restart_here=True), lv(23.5, True, usable=False)]}
+    assert rp.stable_open_loop_capacity(r, "w3b") == 18.0
+
+
+def test_paired_contrasts_against_arm_1_and_event_overhead():
+    def lv(mode, conc, rps, p95):
+        return {"workload": "w3b", "phase": f"w3b_closed_{mode}", "kind": "closed_loop", "mode": mode, "concurrency": conc, "usable": True,
+                "client": {"throughput_rps": rps}, "censored": {"p50": 2.0, "p95": p95, "p99": p95}}
+    runs = []
+    for b in (1, 2, 3):
+        runs.append({"arm": 1, "block": b, "levels": [lv("A", 256, 20.0, 4.0), lv("B", 256, 19.0, 4.2)], "workload": {}})
+        runs.append({"arm": 2, "block": b, "levels": [lv("A", 256, 22.0, 3.0), lv("B", 256, 22.0, 3.1)], "workload": {}})
+    c = rp.contrasts(runs)
+    k = c["2|w3b|closed_loop|A|256"]
+    assert all(math.isclose(x, 2.0) for x in k["throughput_rps"]["diff"]["runs"])
+    assert all(math.isclose(x, 0.1) for x in k["throughput_rps"]["relative"]["runs"])
+    assert all(math.isclose(x, -1.0) for x in k["e2e_p95_s"]["diff"]["runs"])
+    o = rp.event_overhead(runs)
+    assert math.isclose(o["1|w3b|256"]["mean"], -0.05) and math.isclose(o["2|w3b|256"]["mean"], 0.0)
