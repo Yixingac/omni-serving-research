@@ -26,6 +26,11 @@ WL = {"w3b": "W3b（短，长度相近）", "mix": "MIX（短长各半，长度�
 GRAPH = {"graph": ("G1：flow CUDA graph 开（默认）", "#0072B2", "o", "-"), "nograph": ("G0：关", "#D55E00", "s", "--")}
 
 
+def valid_cell(c: dict[str, Any]) -> bool:
+    """Same rule as exp10_report.valid: usable, the control file in effect, no server restart in the phase."""
+    return c.get("usable") is not False and (c.get("control") or {}).get("ok") is True and not c.get("restart_here")
+
+
 def cell(s: dict[str, Any], g: str, w: str, setting: str) -> dict[str, Any] | None:
     return s["by_setting"].get(f"{g}|{w}|{setting}")
 
@@ -71,8 +76,8 @@ def padding_vs_gpu(plt, s: dict[str, Any], path: Path) -> None:  # noqa: ANN001
         for r in s["runs"]:
             if r["graph"] != (g == "graph"):
                 continue
-            xs = [c["padding"] for c in r["cells"].values() if c.get("padding") is not None and c.get("gpu_ms_per_audio_s") is not None]
-            ys = [c["gpu_ms_per_audio_s"] for c in r["cells"].values() if c.get("padding") is not None and c.get("gpu_ms_per_audio_s") is not None]
+            ok = [c for c in r["cells"].values() if valid_cell(c) and c.get("padding") is not None and c.get("gpu_ms_per_audio_s") is not None]
+            xs, ys = [c["padding"] for c in ok], [c["gpu_ms_per_audio_s"] for c in ok]
             ax.scatter(xs, ys, s=14, color=color, marker=marker, alpha=0.7, label=label if r["block"] == 1 else None)
     ax.set_xlabel("补齐比例（按帧加权）", fontsize=8)
     ax.set_ylabel("每秒有效语音的 GPU 时间（毫秒）", fontsize=8)
@@ -119,10 +124,9 @@ def length_gain(plt, s: dict[str, Any], path: Path) -> None:  # noqa: ANN001
     width = 0.35
     for j, (w, color) in enumerate((("w3b", "#0072B2"), ("mix", "#D55E00"))):
         for i, g in enumerate(("graph", "nograph")):
-            f, l = cell(s, g, w, "fifo16"), cell(s, g, w, "length16")
-            if not f or not l:
-                continue
-            gains = [1 - b / a for a, b in zip(f["gpu_ms_per_audio_s"]["runs"], l["gpu_ms_per_audio_s"]["runs"]) if a and b]
+            # paired within a block by the report (exp10_report.contrasts); saving = minus the relative change
+            k = (s.get("contrasts") or {}).get(f"{g}|{w}|length16_vs_fifo16|gpu_ms_per_audio_s") or {}
+            gains = [-x for x in k.get("runs", []) if x is not None]
             if not gains:
                 continue
             x = i + (j - 0.5) * width
@@ -147,7 +151,8 @@ def long_short_wait(plt, s: dict[str, Any], path: Path) -> None:  # noqa: ANN001
         width = 0.35
         for i, st in enumerate(("fifo16", "length16")):
             for j, (cls, color) in enumerate((("short", "#56B4E9"), ("long", "#D55E00"))):
-                vals = [((r["cells"].get(f"mix|{st}") or {}).get("wait") or {}).get(cls) for r in s["runs"] if r["graph"]]
+                vals = [((r["cells"].get(f"mix|{st}") or {}).get("wait") or {}).get(cls) for r in s["runs"]
+                        if r["graph"] and valid_cell(r["cells"].get(f"mix|{st}") or {})]
                 vals = [v[stat] for v in vals if v]
                 if not vals:
                     continue

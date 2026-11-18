@@ -58,7 +58,8 @@ def test_queue_wait_by_length_class():
 
 
 def cell(e=None, pad=None, audio=None, long_p95=None, long_max=None):
-    return {"gpu_ms_per_audio_s": e, "padding": pad, "audio_s_per_s": audio, "wait_long_p95": long_p95, "wait_long_max": long_max}
+    return {"gpu_ms_per_audio_s": e, "padding": pad, "audio_s_per_s": audio, "wait_long_p95": long_p95, "wait_long_max": long_max,
+            "control": {"ok": True}}
 
 
 def world(e1=12.0, e16=12.5, pad_mix=0.25, pad_w3b=0.10, e_len=10.0, e_fifo=12.0, wait_ratio=1.5, graph_gain1=0.2, graph_gain16=0.0):
@@ -114,11 +115,11 @@ def test_length_aware_conclusions_stop_when_correctness_fails():
 
 def test_validation_candidates_need_five_percent_more_audio_in_every_block():
     runs = world()  # graph on, MIX: length16 110 vs fifo16 100 audio s/s in every block
-    cands = rp.validation_candidates(runs)
+    cands = rp.validation_candidates(runs)["candidates"]
     assert [(c["workload"], c["setting"]) for c in cands] == [("mix", "length16")]
     assert all(math.isclose(g, 0.1) for g in cands[0]["gain"])
     runs[2]["cells"][("mix", "length16")]["audio_s_per_s"] = 104.0  # block 2, graph on: only +4 %
-    assert rp.validation_candidates(runs) == []
+    assert rp.validation_candidates(runs) == {"candidates": [], "chosen": None}
 
 
 def test_summary_intervals_leave_out_invalid_cells():
@@ -135,7 +136,8 @@ def test_summary_intervals_leave_out_invalid_cells():
 def vrun(block, cand_p50=(2.0, 2.0), base_p50=(2.2, 2.4), cand_rps=(20.0, 22.0), base_rps=(20.0, 22.0)):
     rates = (21.0, 23.5)
     lv = lambda p50, rps: {r: {"e2e_p50": p, "throughput_rps": t, "steady": True} for r, p, t in zip(rates, p50, rps)}  # noqa: E731
-    return {"block": block, "setting": "length8", "phases": {"fifo16": lv(base_p50, base_rps), "length8": lv(cand_p50, cand_rps)}}
+    return {"block": block, "setting": "length8", "phases": {"fifo16": lv(base_p50, base_rps), "length8": lv(cand_p50, cand_rps)},
+            "control": {"fifo16": {"ok": True}, "length8": {"ok": True}}, "restarts": []}
 
 
 def test_validation_verdict_follows_supplementary_registration_1():
@@ -149,3 +151,89 @@ def test_validation_verdict_follows_supplementary_registration_1():
     failed = [vrun(1, cand_p50=(float("inf"), 2.0)), vrun(2), vrun(3)]  # a censored P50 never counts as lower
     assert rp.validation_verdict(failed)["verdict"] == "不确定"
     assert rp.validation_verdict([vrun(1), vrun(2)])["verdict"] == "数据不足"
+
+
+def test_padding_needs_every_prompt_length():
+    assert rp.padding_ratio([batch([100, 200], prompts=[50, None])]) is None  # never counted as 0
+    assert math.isclose(rp.padding_ratio([batch([100, 200], prompts=[50, 50])]), 1 - 400 / 500)
+
+
+def test_audio_is_paired_with_the_codec_tokens_of_the_vocode_order():
+    b = {"request_ids": ["a", "c"], "vocode_request_ids": ["a", "b", "c"], "request_codec_tokens": [100, 200, 300]}
+    client = {r: {"status": "ok", "output_audio_s": t * 0.04} for r, t in (("a", 100), ("b", 200), ("c", 300))}
+    assert rp.correspondence([b], client) == {"checked": 3, "mismatched": 0}
+
+
+def test_every_request_with_the_same_codec_hash_must_have_the_same_length():
+    phases = {"chk_fifo1": {"x": {"sha": "h", "stats": [960.0, 1.0, 4.0, 0.5]}, "y": {"sha": "h", "stats": [1920.0, 1.0, 4.0, 0.5]}},
+              "chk_fifo16": {"z": {"sha": "h", "stats": [960.0, 1.0, 4.0, 0.5]}}}
+    c = rp.length_consistency(phases)
+    assert c == {"hashes": 1, "requests": 3, "inconsistent_hashes": 1}
+
+
+def test_correctness_needs_evidence():
+    comps = ("chk_fifo16", "chk_length16", "chk_length8", "chk_fifo16b", "chk_fifo16b_vs_chk_fifo16")
+    good = {"run": "chk", "vs_fifo1": {k: {"pairs": 20, "sample_mismatch": 0} for k in comps},
+            "lengths": {"inconsistent_hashes": 0, "hashes": 30}, "control_ok": True, "correspondence": {"checked": 96, "mismatched": 0}}
+    runs = [{"cells": {("w3b", "fifo16"): {"correspondence": {"checked": 50, "mismatched": 0}}}}]
+    assert rp.correctness(runs, good)["ok"] is True
+    empty = {**good, "vs_fifo1": {**good["vs_fifo1"], "chk_length8": {"pairs": 0, "sample_mismatch": 0}}}
+    assert rp.correctness(runs, empty)["ok"] is False  # no pairs is no evidence
+    missing = {**good, "vs_fifo1": {k: v for k, v in good["vs_fifo1"].items() if k != "chk_length16"}}
+    assert rp.correctness(runs, missing)["ok"] is False
+    assert rp.correctness(runs, {**good, "lengths": {"inconsistent_hashes": 1, "hashes": 30}})["ok"] is False
+    assert rp.correctness(runs, None)["ok"] is None
+
+
+def test_verdicts_need_all_three_registered_blocks():
+    runs = [r for r in world() if r["block"] != 3]
+    v = rp.verdicts(runs)
+    assert all(v[h]["verdict"].startswith("数据不足") for h in ("H10a", "H10b", "H10c", "H10d", "H10e"))
+    assert rp.validation_candidates(runs)["candidates"] == []
+
+
+def test_validation_candidate_choice_and_correctness():
+    runs = world()  # graph on, MIX: length16 +10 % in every block
+    for r in runs:
+        if r["graph"]:
+            r["cells"][("mix", "fifo8")] = {**r["cells"][("mix", "fifo16")], "audio_s_per_s": 110.0}
+    c = rp.validation_candidates(runs)
+    assert {(x["workload"], x["setting"]) for x in c["candidates"]} == {("mix", "fifo8"), ("mix", "length16")}
+    assert (c["chosen"]["workload"], c["chosen"]["setting"]) == ("mix", "fifo8")  # equal gains: the smaller cap
+    c = rp.validation_candidates(runs, correctness_ok=False)  # length-aware settings cannot trigger it then
+    assert [(x["workload"], x["setting"]) for x in c["candidates"]] == [("mix", "fifo8")]
+
+
+def test_validation_with_the_control_file_not_in_effect_is_invalid():
+    runs = [vrun(b) for b in (1, 2, 3)]
+    for r in runs:
+        r["control"] = {"fifo16": {"ok": True}, "length8": {"ok": True}}
+    assert rp.validation_verdict(runs)["verdict"] == "完整服务上有改善"
+    runs[1]["control"]["length8"] = {"ok": False}
+    assert rp.validation_verdict(runs)["verdict"].startswith("无效")
+
+
+def test_h10d_or_is_between_statistics_not_within_a_block():
+    runs = world(wait_ratio=1.0)
+    p95 = {1: 1.25, 2: 1.0, 3: 1.21}
+    mx = {1: 1.0, 2: 1.3, 3: 0.9}
+    for r in runs:
+        if r["graph"]:
+            r["cells"][("mix", "length16")]["wait_long_p95"] = 50.0 * p95[r["block"]]
+            r["cells"][("mix", "length16")]["wait_long_max"] = 80.0 * mx[r["block"]]
+    assert rp.verdicts(runs)["H10d"]["verdict"] == "不确定"  # neither statistic rises >= 20 % in all blocks
+
+
+def test_contrasts_are_paired_within_blocks():
+    c = rp.contrasts(world())
+    k = c["graph|mix|length16_vs_fifo16|gpu_ms_per_audio_s"]
+    assert k["n"] == 3 and all(math.isclose(x, 10.0 / 12.0 - 1) for x in k["runs"])  # E 10 vs 12 in every block
+    g = c["nograph_vs_graph|w3b|fifo1|gpu_ms_per_audio_s"]
+    assert all(math.isclose(x, 0.2) for x in g["runs"])  # graph saves 1 - 1/1.2 of G0's time: G0 / G1 - 1 = 0.2
+
+
+def test_check_run_restart_fails_correctness():
+    comps = ("chk_fifo16", "chk_length16", "chk_length8", "chk_fifo16b", "chk_fifo16b_vs_chk_fifo16")
+    chk = {"run": "chk", "vs_fifo1": {k: {"pairs": 20, "sample_mismatch": 0} for k in comps}, "lengths": {"inconsistent_hashes": 0},
+           "control_ok": True, "correspondence": {"mismatched": 0}, "restarts": [{"where": "chk_fifo16 c=32 rep=0"}]}
+    assert rp.correctness([], chk)["ok"] is False
