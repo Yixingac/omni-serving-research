@@ -233,6 +233,48 @@ def exp10_entries() -> list[tuple[dict, dict]]:
     return out
 
 
+PLAN_EXP10_VALIDATION = "configs/experiments/plan_exp10_validation.json"
+
+
+def exp10_validation_entries(placement: str, setting: str) -> list[tuple[dict, dict]]:
+    """实验 10 full-service validation (supplementary registration 1 in its hypotheses.md), written only when a setting
+    met the registered trigger: 实验 9's best placement, flow graph on, W3b open loop at 实验 9's common rates (60 s
+    each), fifo16 and the candidate inside one run (fifo16 first in blocks 1 and 3), events on, three blocks."""
+    if placement not in EXP09_ARMS.values() or setting not in EXP10_SETTINGS or setting == "fifo16":
+        raise ValueError(f"unknown placement or setting: {placement} {setting}")
+    out = []
+    for block in range(1, BLOCKS + 1):
+        order = [setting, "fifo16"] if block == 2 else ["fifo16", setting]
+        phases = [smoke()]
+        for s in order:
+            phases += [control(f"val_{s}", s),
+                       {"kind": "open_loop", "name": f"val_{s}", "workload": W3B, "rates_rps": EXP09_RATES_W3B, "duration_per_rate_s": 60,
+                        "min_requests_per_rate": 96, "max_error_rate": 0.5, "server_events": True}]
+        srv = placement_server(placement)
+        srv[0]["env"] = {"SGLANG_OMNI_C2W_CONTROL": "{exp_dir}/c2w_control.json"}
+        cfg = base(f"exp10_validation_{placement}_{setting}_block{block}", 8, srv, phases,
+                   f"实验 10 完整服务验证第 {block} 个区组：放置 {placement}（实验 9 登记容量最高的方案），flow CUDA graph 开。"
+                   f"W3b 开环 {'/'.join(f'{r:g}' for r in EXP09_RATES_W3B)} 请求/秒各 60 秒，同一运行里 {order[0]} 和 {order[1]} 各一段"
+                   "（控制文件切换），开事件。")
+        cfg["runtime_profile"] = BATCH_RUNTIME
+        out.append((cfg, {"priority": -(250 + 10 * block), "est": 1200, "timeout": 3600}))
+    return out
+
+
+def render_exp10_validation(placement: str, setting: str) -> dict[str, str]:
+    entries = exp10_validation_entries(placement, setting)
+    plan = {"plan_id": "exp10_validation",
+            "_comment": f"实验 10 完整服务验证（{placement}，fifo16 对 {setting}），只在登记的触发条件满足时生成和放进队列。"
+                        "通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_exp09_11.py --exp10-validation 生成。",
+            "experiments": [plan_entry(c, m) for c, m in entries]}
+    for e in plan["experiments"]:
+        e["command"] = f"bash scripts/slurm/run_experiment.sh {EXP_DIR}/{e['experiment_id']}.json"
+    files = {PLAN_EXP10_VALIDATION: json.dumps(plan, ensure_ascii=False, indent=1) + "\n"}
+    for cfg, _ in entries:
+        files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
+    return files
+
+
 # ---------------------------------------------------------------- 实验 11
 
 ASYNC_RUNTIME = "unicorn_async"
@@ -360,8 +402,12 @@ def render() -> dict[str, str]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--exp10-validation", nargs=2, metavar=("PLACEMENT", "SETTING"),
+                    help="also write the conditional 实验 10 full-service validation (only when its registered trigger is met)")
     a = ap.parse_args()
     files = render()
+    if a.exp10_validation:
+        files.update(render_exp10_validation(*a.exp10_validation))
     stale = [p for p, text in files.items() if not (REPO / p).exists() or (REPO / p).read_text() != text]
     if a.check:
         for p in stale:
