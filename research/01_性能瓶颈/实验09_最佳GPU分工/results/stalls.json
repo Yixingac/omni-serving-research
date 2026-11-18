@@ -1,0 +1,3460 @@
+{
+ "generated_by": "scripts/analysis/exp09_stalls.py",
+ "rule": {
+  "front_stall_s": 1.0,
+  "audio_excess_s": 5.0,
+  "window_pad_s": 3.0
+ },
+ "levels_scanned": 144,
+ "levels_with_stalls": 8,
+ "levels_with_10_or_more": 2,
+ "runs": [
+  {
+   "run": "20261117_exp09_t2_k1_c5_block1_run01",
+   "placement": "t2_k1_c5",
+   "arm": 3,
+   "block": 1,
+   "roles": {
+    "thinker": [
+     0,
+     1
+    ],
+    "talker": [
+     2
+    ],
+    "code2wav": [
+     3,
+     4,
+     5,
+     6,
+     7
+    ]
+   },
+   "levels": [
+    {
+     "phase": "w3b_open",
+     "rate_rps": 7.5,
+     "requests": 450,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.018270862
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 12.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.508000399
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 15.5,
+     "requests": 930,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.110204073
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 18.0,
+     "requests": 1080,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.430903811
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 21.0,
+     "requests": 1260,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.02261239
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 23.5,
+     "requests": 1410,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.01791328
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 3.5,
+     "requests": 315,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.083934476
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 5.5,
+     "requests": 495,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.175080034
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 6.5,
+     "requests": 585,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 1.301083141
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 8.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.066906469
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 9.5,
+     "requests": 855,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.021799848
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 10.5,
+     "requests": 945,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.025229575
+    }
+   ],
+   "stalls": []
+  },
+  {
+   "run": "20261117_exp09_t2_k3_c3_block1_run01",
+   "placement": "t2_k3_c3",
+   "arm": 4,
+   "block": 1,
+   "roles": {
+    "thinker": [
+     0,
+     1
+    ],
+    "talker": [
+     2,
+     3,
+     4
+    ],
+    "code2wav": [
+     5,
+     6,
+     7
+    ]
+   },
+   "levels": [
+    {
+     "phase": "w3b_open",
+     "rate_rps": 7.5,
+     "requests": 450,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.017616087
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 12.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.017103634
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 15.5,
+     "requests": 930,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.505521259
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 18.0,
+     "requests": 1080,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.018165581
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 21.0,
+     "requests": 1260,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.038702503
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 23.5,
+     "requests": 1410,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.032824069
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 3.5,
+     "requests": 315,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.028214159
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 5.5,
+     "requests": 495,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.022488506
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 6.5,
+     "requests": 585,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.023594775
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 8.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.022932007
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 9.5,
+     "requests": 855,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.026366988
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 10.5,
+     "requests": 945,
+     "front_stalls": 0,
+     "audio_stalls": 1,
+     "stalled_requests": 1,
+     "lateness_max_s": 0.058335126
+    }
+   ],
+   "stalls": [
+    {
+     "phase": "w3l_open",
+     "rate_rps": 10.5,
+     "requests": 945,
+     "front_stalls": 0,
+     "audio_stalls": 1,
+     "stalled_requests": 1,
+     "front_at_s": [],
+     "audio_at_s": [
+      89.1
+     ],
+     "first_audio_gap_median_s": 5.682153044,
+     "lateness_max_s": 0.058335126,
+     "window_s": [
+      86.1,
+      103.0
+     ],
+     "send_end_s": 92.1,
+     "gpu": [
+      {
+       "t_s": 86,
+       "busy": {
+        "thinker": 80.0,
+        "talker": 97.8,
+        "code2wav": 96.2
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 87,
+       "busy": {
+        "thinker": 81.1,
+        "talker": 96.9,
+        "code2wav": 97.7
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 88,
+       "busy": {
+        "thinker": 81.5,
+        "talker": 94.9,
+        "code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 89,
+       "busy": {
+        "thinker": 78.9,
+        "talker": 95.6,
+        "code2wav": 99.5
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 90,
+       "busy": {
+        "thinker": 79.2,
+        "talker": 95.3,
+        "code2wav": 99.7
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 91,
+       "busy": {
+        "thinker": 77.7,
+        "talker": 94.3,
+        "code2wav": 99.8
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 92,
+       "busy": {
+        "thinker": 76.1,
+        "talker": 90.5,
+        "code2wav": 97.6
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 93,
+       "busy": {
+        "thinker": 85.6,
+        "talker": 96.6,
+        "code2wav": 96.4
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 94,
+       "busy": {
+        "thinker": 87.5,
+        "talker": 92.3,
+        "code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 95,
+       "busy": {
+        "thinker": 64.8,
+        "talker": 94.4,
+        "code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 96,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 92.0,
+        "code2wav": 100.0
+       },
+       "idle_roles": [
+        "thinker"
+       ]
+      },
+      {
+       "t_s": 97,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 39.4,
+        "code2wav": 100.0
+       },
+       "idle_roles": [
+        "thinker"
+       ]
+      },
+      {
+       "t_s": 98,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 0.0,
+        "code2wav": 97.0
+       },
+       "idle_roles": [
+        "thinker",
+        "talker"
+       ]
+      },
+      {
+       "t_s": 99,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 0.0,
+        "code2wav": 74.4
+       },
+       "idle_roles": [
+        "thinker",
+        "talker"
+       ]
+      },
+      {
+       "t_s": 100,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 0.0,
+        "code2wav": 42.8
+       },
+       "idle_roles": [
+        "thinker",
+        "talker"
+       ]
+      },
+      {
+       "t_s": 101,
+       "busy": {
+        "thinker": 35.5,
+        "talker": 0.0,
+        "code2wav": 0.0
+       },
+       "idle_roles": [
+        "talker",
+        "code2wav"
+       ]
+      },
+      {
+       "t_s": 102,
+       "busy": {
+        "thinker": 36.8,
+        "talker": 0.0,
+        "code2wav": 60.0
+       },
+       "idle_roles": [
+        "talker"
+       ]
+      }
+     ],
+     "idle_seconds_while_sending": {
+      "thinker": 0,
+      "talker": 0,
+      "code2wav": 0
+     }
+    }
+   ]
+  },
+  {
+   "run": "20261118_exp09_t2_k1_c5_block2_run01",
+   "placement": "t2_k1_c5",
+   "arm": 3,
+   "block": 2,
+   "roles": {
+    "thinker": [
+     0,
+     1
+    ],
+    "talker": [
+     2
+    ],
+    "code2wav": [
+     3,
+     4,
+     5,
+     6,
+     7
+    ]
+   },
+   "levels": [
+    {
+     "phase": "w3b_open",
+     "rate_rps": 7.5,
+     "requests": 450,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.050210831
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 12.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.019276687
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 15.5,
+     "requests": 930,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.133058246
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 18.0,
+     "requests": 1080,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.457221028
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 21.0,
+     "requests": 1260,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.03287402
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 23.5,
+     "requests": 1410,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.026433131
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 3.5,
+     "requests": 315,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.022776741
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 5.5,
+     "requests": 495,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.022771583
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 6.5,
+     "requests": 585,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.089930644
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 8.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.024655937
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 9.5,
+     "requests": 855,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.035244
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 10.5,
+     "requests": 945,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.030449653
+    }
+   ],
+   "stalls": []
+  },
+  {
+   "run": "20261118_exp09_t2_k1_c5_block3_run01",
+   "placement": "t2_k1_c5",
+   "arm": 3,
+   "block": 3,
+   "roles": {
+    "thinker": [
+     0,
+     1
+    ],
+    "talker": [
+     2
+    ],
+    "code2wav": [
+     3,
+     4,
+     5,
+     6,
+     7
+    ]
+   },
+   "levels": [
+    {
+     "phase": "w3b_open",
+     "rate_rps": 7.5,
+     "requests": 450,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.128465506
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 12.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.194506537
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 15.5,
+     "requests": 930,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.01823522
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 18.0,
+     "requests": 1080,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.018818917
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 21.0,
+     "requests": 1260,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.020709571
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 23.5,
+     "requests": 1410,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.023792983
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 3.5,
+     "requests": 315,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.020136887
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 5.5,
+     "requests": 495,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.01991349
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 6.5,
+     "requests": 585,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.024693411
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 8.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.238940526
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 9.5,
+     "requests": 855,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.723382732
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 10.5,
+     "requests": 945,
+     "front_stalls": 0,
+     "audio_stalls": 1,
+     "stalled_requests": 1,
+     "lateness_max_s": 0.884086534
+    }
+   ],
+   "stalls": [
+    {
+     "phase": "w3l_open",
+     "rate_rps": 10.5,
+     "requests": 945,
+     "front_stalls": 0,
+     "audio_stalls": 1,
+     "stalled_requests": 1,
+     "front_at_s": [],
+     "audio_at_s": [
+      74.7
+     ],
+     "first_audio_gap_median_s": 6.795072893,
+     "lateness_max_s": 0.884086534,
+     "window_s": [
+      71.7,
+      90.0
+     ],
+     "send_end_s": 92.1,
+     "gpu": [
+      {
+       "t_s": 71,
+       "busy": {
+        "thinker": 73.2,
+        "talker": 84.0,
+        "code2wav": 63.6
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 72,
+       "busy": {
+        "thinker": 83.9,
+        "talker": 84.6,
+        "code2wav": 50.7
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 73,
+       "busy": {
+        "thinker": 81.2,
+        "talker": 82.6,
+        "code2wav": 73.2
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 74,
+       "busy": {
+        "thinker": 83.7,
+        "talker": 60.0,
+        "code2wav": 45.2
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 75,
+       "busy": {
+        "thinker": 84.3,
+        "talker": 46.0,
+        "code2wav": 16.2
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 76,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 53.5,
+        "code2wav": 14.0
+       },
+       "idle_roles": [
+        "thinker"
+       ]
+      },
+      {
+       "t_s": 77,
+       "busy": {
+        "thinker": 69.2,
+        "talker": 69.6,
+        "code2wav": 59.6
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 78,
+       "busy": {
+        "thinker": 82.8,
+        "talker": 85.2,
+        "code2wav": 31.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 79,
+       "busy": {
+        "thinker": 78.6,
+        "talker": 86.2,
+        "code2wav": 43.1
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 80,
+       "busy": {
+        "thinker": 37.5,
+        "talker": 71.6,
+        "code2wav": 47.1
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 81,
+       "busy": {
+        "thinker": 71.6,
+        "talker": 70.2,
+        "code2wav": 58.7
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 82,
+       "busy": {
+        "thinker": 77.8,
+        "talker": 86.0,
+        "code2wav": 43.2
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 83,
+       "busy": {
+        "thinker": 78.5,
+        "talker": 89.0,
+        "code2wav": 55.9
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 84,
+       "busy": {
+        "thinker": 76.6,
+        "talker": 84.0,
+        "code2wav": 28.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 85,
+       "busy": {
+        "thinker": 78.5,
+        "talker": 84.4,
+        "code2wav": 30.5
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 86,
+       "busy": {
+        "thinker": 67.4,
+        "talker": 92.0,
+        "code2wav": 45.2
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 87,
+       "busy": {
+        "thinker": 69.1,
+        "talker": 93.6,
+        "code2wav": 62.6
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 88,
+       "busy": {
+        "thinker": 67.7,
+        "talker": 91.4,
+        "code2wav": 52.6
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 89,
+       "busy": {
+        "thinker": 73.2,
+        "talker": 91.6,
+        "code2wav": 50.2
+       },
+       "idle_roles": []
+      }
+     ],
+     "idle_seconds_while_sending": {
+      "thinker": 1,
+      "talker": 0,
+      "code2wav": 0
+     }
+    }
+   ]
+  },
+  {
+   "run": "20261118_exp09_t2_k2_c4_block1_run02",
+   "placement": "t2_k2_c4",
+   "arm": 2,
+   "block": 1,
+   "roles": {
+    "thinker": [
+     0,
+     1
+    ],
+    "talker": [
+     2,
+     3
+    ],
+    "code2wav": [
+     4,
+     5,
+     6,
+     7
+    ]
+   },
+   "levels": [
+    {
+     "phase": "w3b_open",
+     "rate_rps": 7.5,
+     "requests": 450,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.01357038
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 12.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.171643007
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 15.5,
+     "requests": 930,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.012878298
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 18.0,
+     "requests": 1080,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.377552651
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 21.0,
+     "requests": 1260,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.419522266
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 23.5,
+     "requests": 1410,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.264838215
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 3.5,
+     "requests": 315,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.017906958
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 5.5,
+     "requests": 495,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.024307221
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 6.5,
+     "requests": 585,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.030869259
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 8.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.080567947
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 9.5,
+     "requests": 855,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.027885219
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 10.5,
+     "requests": 945,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.272760771
+    }
+   ],
+   "stalls": []
+  },
+  {
+   "run": "20261118_exp09_t2_k2_c4_block2_run01",
+   "placement": "t2_k2_c4",
+   "arm": 2,
+   "block": 2,
+   "roles": {
+    "thinker": [
+     0,
+     1
+    ],
+    "talker": [
+     2,
+     3
+    ],
+    "code2wav": [
+     4,
+     5,
+     6,
+     7
+    ]
+   },
+   "levels": [
+    {
+     "phase": "w3b_open",
+     "rate_rps": 7.5,
+     "requests": 450,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.015407527
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 12.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.016935405
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 15.5,
+     "requests": 930,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.020737367
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 18.0,
+     "requests": 1080,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.021007069
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 21.0,
+     "requests": 1260,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.138243442
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 23.5,
+     "requests": 1410,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.019198731
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 3.5,
+     "requests": 315,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.022422529
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 5.5,
+     "requests": 495,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.027322382
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 6.5,
+     "requests": 585,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.024973142
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 8.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.027852675
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 9.5,
+     "requests": 855,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.025705853
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 10.5,
+     "requests": 945,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.032688067
+    }
+   ],
+   "stalls": []
+  },
+  {
+   "run": "20261118_exp09_t2_k2_c4_block3_run01",
+   "placement": "t2_k2_c4",
+   "arm": 2,
+   "block": 3,
+   "roles": {
+    "thinker": [
+     0,
+     1
+    ],
+    "talker": [
+     2,
+     3
+    ],
+    "code2wav": [
+     4,
+     5,
+     6,
+     7
+    ]
+   },
+   "levels": [
+    {
+     "phase": "w3b_open",
+     "rate_rps": 7.5,
+     "requests": 450,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.014165718
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 12.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.28742794
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 15.5,
+     "requests": 930,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.498567166
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 18.0,
+     "requests": 1080,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.017529048
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 21.0,
+     "requests": 1260,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.016654736
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 23.5,
+     "requests": 1410,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.177502967
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 3.5,
+     "requests": 315,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.196573977
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 5.5,
+     "requests": 495,
+     "front_stalls": 0,
+     "audio_stalls": 46,
+     "stalled_requests": 46,
+     "lateness_max_s": 0.296712118
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 6.5,
+     "requests": 585,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.023788409
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 8.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.026950555
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 9.5,
+     "requests": 855,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.040248297
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 10.5,
+     "requests": 945,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.065161541
+    }
+   ],
+   "stalls": [
+    {
+     "phase": "w3l_open",
+     "rate_rps": 5.5,
+     "requests": 495,
+     "front_stalls": 0,
+     "audio_stalls": 46,
+     "stalled_requests": 46,
+     "front_at_s": [],
+     "audio_at_s": [
+      19.2,
+      18.4,
+      19.4,
+      19.7,
+      18.5,
+      20.9,
+      20.6,
+      20.6,
+      20.1,
+      20.1,
+      19.8,
+      21.8,
+      21.0,
+      21.9,
+      24.0,
+      19.9,
+      19.2,
+      20.6,
+      21.2,
+      22.1,
+      23.0,
+      20.5,
+      19.1,
+      23.8,
+      20.8,
+      24.3,
+      20.5,
+      21.3,
+      26.6,
+      20.1,
+      23.2,
+      25.4,
+      26.3,
+      24.7,
+      23.8,
+      27.4,
+      22.3,
+      27.1,
+      24.8,
+      24.4,
+      26.5,
+      27.2,
+      25.5,
+      26.7,
+      28.1,
+      29.0
+     ],
+     "first_audio_gap_median_s": 4.705171273,
+     "lateness_max_s": 0.296712118,
+     "window_s": [
+      15.4,
+      41.8
+     ],
+     "send_end_s": 85.8,
+     "gpu": [
+      {
+       "t_s": 15,
+       "busy": {
+        "thinker": 86.3,
+        "talker": 84.0,
+        "code2wav": 53.4
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 16,
+       "busy": {
+        "thinker": 81.9,
+        "talker": 95.9,
+        "code2wav": 33.5
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 17,
+       "busy": {
+        "thinker": 80.3,
+        "talker": 99.1,
+        "code2wav": 60.8
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 18,
+       "busy": {
+        "thinker": 88.2,
+        "talker": 91.0,
+        "code2wav": 53.6
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 19,
+       "busy": {
+        "thinker": 89.1,
+        "talker": 82.7,
+        "code2wav": 5.2
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 20,
+       "busy": {
+        "thinker": 84.4,
+        "talker": 95.8,
+        "code2wav": 35.6
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 21,
+       "busy": {
+        "thinker": 88.4,
+        "talker": 99.5,
+        "code2wav": 47.1
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 22,
+       "busy": {
+        "thinker": 88.0,
+        "talker": 99.5,
+        "code2wav": 36.9
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 23,
+       "busy": {
+        "thinker": 89.2,
+        "talker": 98.7,
+        "code2wav": 19.1
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 24,
+       "busy": {
+        "thinker": 81.9,
+        "talker": 93.3,
+        "code2wav": 0.0
+       },
+       "idle_roles": [
+        "code2wav"
+       ]
+      },
+      {
+       "t_s": 25,
+       "busy": {
+        "thinker": 88.0,
+        "talker": 95.8,
+        "code2wav": 0.0
+       },
+       "idle_roles": [
+        "code2wav"
+       ]
+      },
+      {
+       "t_s": 26,
+       "busy": {
+        "thinker": 86.4,
+        "talker": 92.2,
+        "code2wav": 0.0
+       },
+       "idle_roles": [
+        "code2wav"
+       ]
+      },
+      {
+       "t_s": 27,
+       "busy": {
+        "thinker": 85.3,
+        "talker": 99.5,
+        "code2wav": 0.0
+       },
+       "idle_roles": [
+        "code2wav"
+       ]
+      },
+      {
+       "t_s": 28,
+       "busy": {
+        "thinker": 86.2,
+        "talker": 88.6,
+        "code2wav": 0.0
+       },
+       "idle_roles": [
+        "code2wav"
+       ]
+      },
+      {
+       "t_s": 29,
+       "busy": {
+        "thinker": 86.3,
+        "talker": 85.2,
+        "code2wav": 25.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 30,
+       "busy": {
+        "thinker": 85.7,
+        "talker": 99.2,
+        "code2wav": 55.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 31,
+       "busy": {
+        "thinker": 89.5,
+        "talker": 99.5,
+        "code2wav": 45.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 32,
+       "busy": {
+        "thinker": 88.6,
+        "talker": 94.1,
+        "code2wav": 62.5
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 33,
+       "busy": {
+        "thinker": 87.5,
+        "talker": 96.2,
+        "code2wav": 96.3
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 34,
+       "busy": {
+        "thinker": 87.6,
+        "talker": 99.4,
+        "code2wav": 96.2
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 35,
+       "busy": {
+        "thinker": 86.5,
+        "talker": 99.3,
+        "code2wav": 95.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 36,
+       "busy": {
+        "thinker": 86.0,
+        "talker": 89.4,
+        "code2wav": 47.2
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 37,
+       "busy": {
+        "thinker": 86.6,
+        "talker": 96.4,
+        "code2wav": 73.2
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 38,
+       "busy": {
+        "thinker": 87.3,
+        "talker": 98.1,
+        "code2wav": 79.7
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 39,
+       "busy": {
+        "thinker": 87.3,
+        "talker": 91.4,
+        "code2wav": 74.8
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 40,
+       "busy": {
+        "thinker": 81.2,
+        "talker": 96.7,
+        "code2wav": 14.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 41,
+       "busy": {
+        "thinker": 83.9,
+        "talker": 87.2,
+        "code2wav": 32.5
+       },
+       "idle_roles": []
+      }
+     ],
+     "idle_seconds_while_sending": {
+      "thinker": 0,
+      "talker": 0,
+      "code2wav": 5
+     }
+    }
+   ]
+  },
+  {
+   "run": "20261118_exp09_t2_k3_c3_block2_run01",
+   "placement": "t2_k3_c3",
+   "arm": 4,
+   "block": 2,
+   "roles": {
+    "thinker": [
+     0,
+     1
+    ],
+    "talker": [
+     2,
+     3,
+     4
+    ],
+    "code2wav": [
+     5,
+     6,
+     7
+    ]
+   },
+   "levels": [
+    {
+     "phase": "w3b_open",
+     "rate_rps": 7.5,
+     "requests": 450,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.012819755
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 12.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.059926598
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 15.5,
+     "requests": 930,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.013267943
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 18.0,
+     "requests": 1080,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.623737431
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 21.0,
+     "requests": 1260,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.051766142
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 23.5,
+     "requests": 1410,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.022504136
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 3.5,
+     "requests": 315,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.021213868
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 5.5,
+     "requests": 495,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.025659295
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 6.5,
+     "requests": 585,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.021812903
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 8.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.138149029
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 9.5,
+     "requests": 855,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.296239387
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 10.5,
+     "requests": 945,
+     "front_stalls": 0,
+     "audio_stalls": 1,
+     "stalled_requests": 1,
+     "lateness_max_s": 0.030722982
+    }
+   ],
+   "stalls": [
+    {
+     "phase": "w3l_open",
+     "rate_rps": 10.5,
+     "requests": 945,
+     "front_stalls": 0,
+     "audio_stalls": 1,
+     "stalled_requests": 1,
+     "front_at_s": [],
+     "audio_at_s": [
+      89.0
+     ],
+     "first_audio_gap_median_s": 5.528886804,
+     "lateness_max_s": 0.030722982,
+     "window_s": [
+      86.0,
+      102.8
+     ],
+     "send_end_s": 92.1,
+     "gpu": [
+      {
+       "t_s": 86,
+       "busy": {
+        "thinker": 83.2,
+        "talker": 93.3,
+        "code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 87,
+       "busy": {
+        "thinker": 83.8,
+        "talker": 86.8,
+        "code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 88,
+       "busy": {
+        "thinker": 84.5,
+        "talker": 99.6,
+        "code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 89,
+       "busy": {
+        "thinker": 82.5,
+        "talker": 88.3,
+        "code2wav": 99.4
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 90,
+       "busy": {
+        "thinker": 76.7,
+        "talker": 99.7,
+        "code2wav": 96.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 91,
+       "busy": {
+        "thinker": 81.8,
+        "talker": 96.3,
+        "code2wav": 98.9
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 92,
+       "busy": {
+        "thinker": 81.3,
+        "talker": 87.3,
+        "code2wav": 98.4
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 93,
+       "busy": {
+        "thinker": 83.9,
+        "talker": 90.2,
+        "code2wav": 96.6
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 94,
+       "busy": {
+        "thinker": 83.7,
+        "talker": 94.0,
+        "code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 95,
+       "busy": {
+        "thinker": 90.2,
+        "talker": 94.5,
+        "code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 96,
+       "busy": {
+        "thinker": 18.2,
+        "talker": 96.8,
+        "code2wav": 96.5
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 97,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 56.5,
+        "code2wav": 94.8
+       },
+       "idle_roles": [
+        "thinker"
+       ]
+      },
+      {
+       "t_s": 98,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 0.0,
+        "code2wav": 96.7
+       },
+       "idle_roles": [
+        "thinker",
+        "talker"
+       ]
+      },
+      {
+       "t_s": 99,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 0.0,
+        "code2wav": 58.0
+       },
+       "idle_roles": [
+        "thinker",
+        "talker"
+       ]
+      },
+      {
+       "t_s": 100,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 0.0,
+        "code2wav": 11.5
+       },
+       "idle_roles": [
+        "thinker",
+        "talker"
+       ]
+      },
+      {
+       "t_s": 101,
+       "busy": {
+        "thinker": 50.0,
+        "talker": 49.0,
+        "code2wav": 10.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 102,
+       "busy": {
+        "thinker": 62.5,
+        "talker": 0.0,
+        "code2wav": 33.3
+       },
+       "idle_roles": [
+        "talker"
+       ]
+      }
+     ],
+     "idle_seconds_while_sending": {
+      "thinker": 0,
+      "talker": 0,
+      "code2wav": 0
+     }
+    }
+   ]
+  },
+  {
+   "run": "20261118_exp09_t2_k3_c3_block3_run01",
+   "placement": "t2_k3_c3",
+   "arm": 4,
+   "block": 3,
+   "roles": {
+    "thinker": [
+     0,
+     1
+    ],
+    "talker": [
+     2,
+     3,
+     4
+    ],
+    "code2wav": [
+     5,
+     6,
+     7
+    ]
+   },
+   "levels": [
+    {
+     "phase": "w3b_open",
+     "rate_rps": 7.5,
+     "requests": 450,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.025316701
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 12.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.377710443
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 15.5,
+     "requests": 930,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.016762028
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 18.0,
+     "requests": 1080,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.528444305
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 21.0,
+     "requests": 1260,
+     "front_stalls": 60,
+     "audio_stalls": 15,
+     "stalled_requests": 75,
+     "lateness_max_s": 1.472867974
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 23.5,
+     "requests": 1410,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.423022204
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 3.5,
+     "requests": 315,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.343152284
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 5.5,
+     "requests": 495,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.092992296
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 6.5,
+     "requests": 585,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.024505904
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 8.0,
+     "requests": 720,
+     "front_stalls": 1,
+     "audio_stalls": 0,
+     "stalled_requests": 1,
+     "lateness_max_s": 0.916026407
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 9.5,
+     "requests": 855,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.699497751
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 10.5,
+     "requests": 945,
+     "front_stalls": 0,
+     "audio_stalls": 4,
+     "stalled_requests": 4,
+     "lateness_max_s": 0.437773721
+    }
+   ],
+   "stalls": [
+    {
+     "phase": "w3b_open",
+     "rate_rps": 21.0,
+     "requests": 1260,
+     "front_stalls": 60,
+     "audio_stalls": 15,
+     "stalled_requests": 75,
+     "front_at_s": [
+      53.6,
+      55.4,
+      55.9,
+      53.8,
+      56.1,
+      54.1,
+      54.9,
+      54.1,
+      56.0,
+      55.5,
+      55.2,
+      55.3,
+      55.9,
+      54.8,
+      55.0,
+      54.4,
+      53.8,
+      55.3,
+      54.7,
+      55.1,
+      56.0,
+      55.4,
+      54.8,
+      55.7,
+      56.1,
+      53.9,
+      54.1,
+      54.5,
+      55.0,
+      56.1,
+      54.2,
+      54.9,
+      55.4,
+      55.8,
+      56.0,
+      55.3,
+      54.1,
+      54.9,
+      54.1,
+      55.5,
+      55.9,
+      56.1,
+      55.2,
+      54.7,
+      54.8,
+      54.1,
+      55.5,
+      55.9,
+      53.5,
+      53.6,
+      54.8,
+      55.0,
+      53.9,
+      53.6,
+      54.8,
+      53.6,
+      55.4,
+      53.6,
+      53.9,
+      54.4
+     ],
+     "audio_at_s": [
+      51.4,
+      51.6,
+      51.5,
+      51.5,
+      51.4,
+      51.5,
+      52.4,
+      52.5,
+      52.9,
+      52.3,
+      52.5,
+      53.3,
+      53.4,
+      53.0,
+      52.9
+     ],
+     "first_audio_gap_median_s": 3.0555708385,
+     "lateness_max_s": 1.472867974,
+     "window_s": [
+      48.4,
+      67.0
+     ],
+     "send_end_s": 57.6,
+     "gpu": [
+      {
+       "t_s": 48,
+       "busy": {
+        "thinker": 67.0,
+        "talker": 91.0,
+        "code2wav": 60.3
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 49,
+       "busy": {
+        "thinker": 69.0,
+        "talker": 86.7,
+        "code2wav": 88.9
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 50,
+       "busy": {
+        "thinker": 75.0,
+        "talker": 90.1,
+        "code2wav": 58.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 51,
+       "busy": {
+        "thinker": 77.5,
+        "talker": 92.2,
+        "code2wav": 38.8
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 52,
+       "busy": {
+        "thinker": 78.7,
+        "talker": 85.4,
+        "code2wav": 77.3
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 53,
+       "busy": {
+        "thinker": 75.3,
+        "talker": 79.8,
+        "code2wav": 77.7
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 54,
+       "busy": {
+        "thinker": 31.6,
+        "talker": 26.9,
+        "code2wav": 18.1
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 55,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 0.0,
+        "code2wav": 2.9
+       },
+       "idle_roles": [
+        "thinker",
+        "talker"
+       ]
+      },
+      {
+       "t_s": 56,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 0.0,
+        "code2wav": 0.0
+       },
+       "idle_roles": [
+        "thinker",
+        "talker",
+        "code2wav"
+       ]
+      },
+      {
+       "t_s": 57,
+       "busy": {
+        "thinker": 44.6,
+        "talker": 43.6,
+        "code2wav": 0.0
+       },
+       "idle_roles": [
+        "code2wav"
+       ]
+      },
+      {
+       "t_s": 58,
+       "busy": {
+        "thinker": 75.2,
+        "talker": 75.7,
+        "code2wav": 6.7
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 59,
+       "busy": {
+        "thinker": 76.4,
+        "talker": 73.7,
+        "code2wav": 90.6
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 60,
+       "busy": {
+        "thinker": 24.0,
+        "talker": 75.6,
+        "code2wav": 86.1
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 61,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 19.4,
+        "code2wav": 86.3
+       },
+       "idle_roles": [
+        "thinker"
+       ]
+      },
+      {
+       "t_s": 62,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 0.0,
+        "code2wav": 97.8
+       },
+       "idle_roles": [
+        "thinker",
+        "talker"
+       ]
+      },
+      {
+       "t_s": 63,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 0.0,
+        "code2wav": 88.6
+       },
+       "idle_roles": [
+        "thinker",
+        "talker"
+       ]
+      },
+      {
+       "t_s": 64,
+       "busy": {
+        "thinker": 56.4,
+        "talker": 0.0,
+        "code2wav": 33.6
+       },
+       "idle_roles": [
+        "talker"
+       ]
+      },
+      {
+       "t_s": 65,
+       "busy": {
+        "thinker": 84.2,
+        "talker": 27.0,
+        "code2wav": 0.0
+       },
+       "idle_roles": [
+        "code2wav"
+       ]
+      },
+      {
+       "t_s": 66,
+       "busy": {
+        "thinker": 85.9,
+        "talker": 61.4,
+        "code2wav": 24.8
+       },
+       "idle_roles": []
+      }
+     ],
+     "idle_seconds_while_sending": {
+      "thinker": 2,
+      "talker": 2,
+      "code2wav": 2
+     }
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 8.0,
+     "requests": 720,
+     "front_stalls": 1,
+     "audio_stalls": 0,
+     "stalled_requests": 1,
+     "front_at_s": [
+      47.5
+     ],
+     "audio_at_s": [],
+     "first_audio_gap_median_s": 4.9170695134999995,
+     "lateness_max_s": 0.916026407,
+     "window_s": [
+      44.5,
+      56.2
+     ],
+     "send_end_s": 84.9,
+     "gpu": [
+      {
+       "t_s": 44,
+       "busy": {
+        "thinker": 89.0,
+        "talker": 95.9,
+        "code2wav": 72.8
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 45,
+       "busy": {
+        "thinker": 87.3,
+        "talker": 90.8,
+        "code2wav": 94.1
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 46,
+       "busy": {
+        "thinker": 86.6,
+        "talker": 69.5,
+        "code2wav": 70.1
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 47,
+       "busy": {
+        "thinker": 86.8,
+        "talker": 65.0,
+        "code2wav": 46.8
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 48,
+       "busy": {
+        "thinker": 56.1,
+        "talker": 66.4,
+        "code2wav": 4.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 49,
+       "busy": {
+        "thinker": 83.0,
+        "talker": 83.1,
+        "code2wav": 54.4
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 50,
+       "busy": {
+        "thinker": 82.0,
+        "talker": 84.7,
+        "code2wav": 64.9
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 51,
+       "busy": {
+        "thinker": 81.5,
+        "talker": 90.9,
+        "code2wav": 57.9
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 52,
+       "busy": {
+        "thinker": 83.5,
+        "talker": 92.1,
+        "code2wav": 91.1
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 53,
+       "busy": {
+        "thinker": 82.5,
+        "talker": 92.5,
+        "code2wav": 86.5
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 54,
+       "busy": {
+        "thinker": 80.5,
+        "talker": 99.6,
+        "code2wav": 78.6
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 55,
+       "busy": {
+        "thinker": 80.9,
+        "talker": 100.0,
+        "code2wav": 78.8
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 56,
+       "busy": {
+        "thinker": 81.5,
+        "talker": 100.0,
+        "code2wav": 50.7
+       },
+       "idle_roles": []
+      }
+     ],
+     "idle_seconds_while_sending": {
+      "thinker": 0,
+      "talker": 0,
+      "code2wav": 0
+     }
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 10.5,
+     "requests": 945,
+     "front_stalls": 0,
+     "audio_stalls": 4,
+     "stalled_requests": 4,
+     "front_at_s": [],
+     "audio_at_s": [
+      81.4,
+      88.8,
+      88.2,
+      89.1
+     ],
+     "first_audio_gap_median_s": 5.677810145,
+     "lateness_max_s": 0.437773721,
+     "window_s": [
+      78.4,
+      103.7
+     ],
+     "send_end_s": 92.1,
+     "gpu": [
+      {
+       "t_s": 78,
+       "busy": {
+        "thinker": 66.0,
+        "talker": 98.9,
+        "code2wav": 81.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 79,
+       "busy": {
+        "thinker": 73.5,
+        "talker": 95.3,
+        "code2wav": 74.7
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 80,
+       "busy": {
+        "thinker": 78.4,
+        "talker": 95.5,
+        "code2wav": 73.7
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 81,
+       "busy": {
+        "thinker": 77.1,
+        "talker": 92.5,
+        "code2wav": 96.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 82,
+       "busy": {
+        "thinker": 77.0,
+        "talker": 92.1,
+        "code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 83,
+       "busy": {
+        "thinker": 81.4,
+        "talker": 96.2,
+        "code2wav": 96.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 84,
+       "busy": {
+        "thinker": 75.9,
+        "talker": 86.3,
+        "code2wav": 95.3
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 85,
+       "busy": {
+        "thinker": 77.9,
+        "talker": 82.7,
+        "code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 86,
+       "busy": {
+        "thinker": 83.6,
+        "talker": 89.7,
+        "code2wav": 89.1
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 87,
+       "busy": {
+        "thinker": 82.4,
+        "talker": 88.5,
+        "code2wav": 93.9
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 88,
+       "busy": {
+        "thinker": 73.9,
+        "talker": 95.7,
+        "code2wav": 99.9
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 89,
+       "busy": {
+        "thinker": 77.8,
+        "talker": 95.7,
+        "code2wav": 99.7
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 90,
+       "busy": {
+        "thinker": 81.2,
+        "talker": 95.9,
+        "code2wav": 98.6
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 91,
+       "busy": {
+        "thinker": 79.8,
+        "talker": 89.9,
+        "code2wav": 94.4
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 92,
+       "busy": {
+        "thinker": 77.8,
+        "talker": 96.8,
+        "code2wav": 93.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 93,
+       "busy": {
+        "thinker": 76.1,
+        "talker": 87.8,
+        "code2wav": 93.1
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 94,
+       "busy": {
+        "thinker": 81.9,
+        "talker": 96.2,
+        "code2wav": 99.2
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 95,
+       "busy": {
+        "thinker": 59.9,
+        "talker": 97.4,
+        "code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 96,
+       "busy": {
+        "thinker": 8.5,
+        "talker": 98.3,
+        "code2wav": 99.6
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 97,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 39.6,
+        "code2wav": 99.7
+       },
+       "idle_roles": [
+        "thinker"
+       ]
+      },
+      {
+       "t_s": 98,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 0.0,
+        "code2wav": 95.7
+       },
+       "idle_roles": [
+        "thinker",
+        "talker"
+       ]
+      },
+      {
+       "t_s": 99,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 0.0,
+        "code2wav": 68.5
+       },
+       "idle_roles": [
+        "thinker",
+        "talker"
+       ]
+      },
+      {
+       "t_s": 100,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 0.0,
+        "code2wav": 38.1
+       },
+       "idle_roles": [
+        "thinker",
+        "talker"
+       ]
+      },
+      {
+       "t_s": 101,
+       "busy": {
+        "thinker": 0.0,
+        "talker": 0.0,
+        "code2wav": 22.2
+       },
+       "idle_roles": [
+        "thinker",
+        "talker"
+       ]
+      },
+      {
+       "t_s": 102,
+       "busy": {
+        "thinker": 2.6,
+        "talker": 0.0,
+        "code2wav": 8.3
+       },
+       "idle_roles": [
+        "talker"
+       ]
+      },
+      {
+       "t_s": 103,
+       "busy": {
+        "thinker": 1.8,
+        "talker": 0.0,
+        "code2wav": 66.0
+       },
+       "idle_roles": [
+        "talker"
+       ]
+      }
+     ],
+     "idle_seconds_while_sending": {
+      "thinker": 0,
+      "talker": 0,
+      "code2wav": 0
+     }
+    }
+   ]
+  },
+  {
+   "run": "20261118_exp09_t2_k6_shared_block1_run01",
+   "placement": "t2_k6_shared",
+   "arm": 1,
+   "block": 1,
+   "roles": {
+    "thinker": [
+     0,
+     1
+    ],
+    "talker+code2wav": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7
+    ]
+   },
+   "levels": [
+    {
+     "phase": "w3b_open",
+     "rate_rps": 7.5,
+     "requests": 450,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.260240871
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 12.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.409968995
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 15.5,
+     "requests": 930,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.376217665
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 18.0,
+     "requests": 1080,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.263652172
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 21.0,
+     "requests": 1260,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.75978043
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 23.5,
+     "requests": 1410,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.348137803
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 3.5,
+     "requests": 315,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.024341094
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 5.5,
+     "requests": 495,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.159878895
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 6.5,
+     "requests": 585,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.109493295
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 8.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.499870467
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 9.5,
+     "requests": 855,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.500061426
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 10.5,
+     "requests": 945,
+     "front_stalls": 0,
+     "audio_stalls": 6,
+     "stalled_requests": 6,
+     "lateness_max_s": 0.22288314
+    }
+   ],
+   "stalls": [
+    {
+     "phase": "w3l_open",
+     "rate_rps": 10.5,
+     "requests": 945,
+     "front_stalls": 0,
+     "audio_stalls": 6,
+     "stalled_requests": 6,
+     "front_at_s": [],
+     "audio_at_s": [
+      56.9,
+      58.7,
+      60.7,
+      61.6,
+      60.3,
+      63.2
+     ],
+     "first_audio_gap_median_s": 6.444668325,
+     "lateness_max_s": 0.22288314,
+     "window_s": [
+      53.9,
+      77.7
+     ],
+     "send_end_s": 92.1,
+     "gpu": [
+      {
+       "t_s": 54,
+       "busy": {
+        "thinker": 82.8,
+        "talker+code2wav": 98.2
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 55,
+       "busy": {
+        "thinker": 81.4,
+        "talker+code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 56,
+       "busy": {
+        "thinker": 75.2,
+        "talker+code2wav": 99.8
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 57,
+       "busy": {
+        "thinker": 78.3,
+        "talker+code2wav": 99.6
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 58,
+       "busy": {
+        "thinker": 81.8,
+        "talker+code2wav": 99.8
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 59,
+       "busy": {
+        "thinker": 79.8,
+        "talker+code2wav": 99.6
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 60,
+       "busy": {
+        "thinker": 70.3,
+        "talker+code2wav": 97.1
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 61,
+       "busy": {
+        "thinker": 41.6,
+        "talker+code2wav": 99.8
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 62,
+       "busy": {
+        "thinker": 82.6,
+        "talker+code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 63,
+       "busy": {
+        "thinker": 84.1,
+        "talker+code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 64,
+       "busy": {
+        "thinker": 82.7,
+        "talker+code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 65,
+       "busy": {
+        "thinker": 84.8,
+        "talker+code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 66,
+       "busy": {
+        "thinker": 79.0,
+        "talker+code2wav": 98.3
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 67,
+       "busy": {
+        "thinker": 79.4,
+        "talker+code2wav": 93.9
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 68,
+       "busy": {
+        "thinker": 80.2,
+        "talker+code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 69,
+       "busy": {
+        "thinker": 71.6,
+        "talker+code2wav": 99.6
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 70,
+       "busy": {
+        "thinker": 83.4,
+        "talker+code2wav": 99.4
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 71,
+       "busy": {
+        "thinker": 77.8,
+        "talker+code2wav": 99.9
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 72,
+       "busy": {
+        "thinker": 83.4,
+        "talker+code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 73,
+       "busy": {
+        "thinker": 70.1,
+        "talker+code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 74,
+       "busy": {
+        "thinker": 74.6,
+        "talker+code2wav": 99.9
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 75,
+       "busy": {
+        "thinker": 81.0,
+        "talker+code2wav": 97.8
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 76,
+       "busy": {
+        "thinker": 80.2,
+        "talker+code2wav": 100.0
+       },
+       "idle_roles": []
+      },
+      {
+       "t_s": 77,
+       "busy": {
+        "thinker": 81.8,
+        "talker+code2wav": 100.0
+       },
+       "idle_roles": []
+      }
+     ],
+     "idle_seconds_while_sending": {
+      "thinker": 0,
+      "talker+code2wav": 0
+     }
+    }
+   ]
+  },
+  {
+   "run": "20261118_exp09_t2_k6_shared_block2_run01",
+   "placement": "t2_k6_shared",
+   "arm": 1,
+   "block": 2,
+   "roles": {
+    "thinker": [
+     0,
+     1
+    ],
+    "talker+code2wav": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7
+    ]
+   },
+   "levels": [
+    {
+     "phase": "w3b_open",
+     "rate_rps": 7.5,
+     "requests": 450,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.016376541
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 12.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.016828839
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 15.5,
+     "requests": 930,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.184314448
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 18.0,
+     "requests": 1080,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.10854744
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 21.0,
+     "requests": 1260,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.022251463
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 23.5,
+     "requests": 1410,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.018935236
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 3.5,
+     "requests": 315,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.217282796
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 5.5,
+     "requests": 495,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.023311781
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 6.5,
+     "requests": 585,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.027081929
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 8.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.025229762
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 9.5,
+     "requests": 855,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.443552066
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 10.5,
+     "requests": 945,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.025162699
+    }
+   ],
+   "stalls": []
+  },
+  {
+   "run": "20261118_exp09_t2_k6_shared_block3_run01",
+   "placement": "t2_k6_shared",
+   "arm": 1,
+   "block": 3,
+   "roles": {
+    "thinker": [
+     0,
+     1
+    ],
+    "talker+code2wav": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7
+    ]
+   },
+   "levels": [
+    {
+     "phase": "w3b_open",
+     "rate_rps": 7.5,
+     "requests": 450,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.012873285
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 12.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.012978254
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 15.5,
+     "requests": 930,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.015781653
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 18.0,
+     "requests": 1080,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.014077749
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 21.0,
+     "requests": 1260,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.020919002
+    },
+    {
+     "phase": "w3b_open",
+     "rate_rps": 23.5,
+     "requests": 1410,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.450050876
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 3.5,
+     "requests": 315,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.020945993
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 5.5,
+     "requests": 495,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.021010261
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 6.5,
+     "requests": 585,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.022595216
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 8.0,
+     "requests": 720,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.09867592
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 9.5,
+     "requests": 855,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.021927743
+    },
+    {
+     "phase": "w3l_open",
+     "rate_rps": 10.5,
+     "requests": 945,
+     "front_stalls": 0,
+     "audio_stalls": 0,
+     "stalled_requests": 0,
+     "lateness_max_s": 0.026029579
+    }
+   ],
+   "stalls": []
+  }
+ ]
+}
