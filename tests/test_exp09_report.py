@@ -148,3 +148,36 @@ def test_per_arm_intervals_leave_out_unusable_closed_loop_levels_only():
     closed, opened = by["w3b|closed_loop|A|256"]["throughput_rps"], by["w3b|open_loop|A|18"]["throughput_rps"]
     assert closed["n"] == 2 and closed["runs"][1] is None and by["w3b|closed_loop|A|256"]["unusable_runs"] == [False, True, False]
     assert opened["n"] == 3  # open-loop levels are never excluded (registered)
+
+
+def test_sensitivity_swaps_in_busy_window_and_stable_open_loop_capacity():
+    def full(arm, block, cap, busy, steady_rates):
+        r = run(arm, block, cap, "code2wav")
+        r["levels"] = [{"workload": "w3b", "kind": "closed_loop", "mode": "A", "concurrency": 256, "usable": True,
+                        "busy_window": {"throughput_rps": busy}}]
+        r["levels"] += [{"workload": "w3b", "kind": "open_loop", "mode": "A", "rate_rps": rate, "growth": {"steady": rate in steady_rates}}
+                        for rate in (15.5, 18.0, 21.0, 23.5)]
+        return r
+
+    runs = []
+    for b in (1, 2, 3):
+        runs += [full(1, b, 22.0, 25.0, {15.5, 18.0, 21.0}), full(2, b, 21.0, 27.0, {15.5, 18.0, 21.0, 23.5}),
+                 full(3, b, 18.0, 28.5, {15.5, 18.0, 21.0, 23.5})]
+    assert rp.verdict_h9a(runs)["verdict"] == "反驳"  # registered capacity: arm 3 below arm 2 in every block
+    s = rp.sensitivity(runs)
+    assert s["busy_window"]["H9a"]["verdict"] == "支持"  # 28.5 above 27 and 25, +5.6 % over arm 2
+    assert s["stable_open_loop"]["H9a"]["verdict"] == "不确定"  # 23.5 ties arm 2
+    runs[2]["levels"][0]["usable"] = False  # an unusable capacity level gives no busy-window value either
+    assert rp.sensitivity(runs)["busy_window"]["H9a"]["verdict"] == "数据不足"
+
+
+def test_a_missing_block_gives_insufficient_data():
+    runs = [run(1, b, 22.0) for b in (1, 2, 3)] + [run(2, b, 24.0) for b in (1, 2, 3)] + [run(3, b, 25.5, "talker") for b in (1, 2)]
+    assert rp.verdict_h9a(runs)["verdict"] == "数据不足"  # arm 3 has no run in block 3
+    assert rp.verdict_h9b(runs)["verdict"] == "数据不足"
+    both = []
+    for b in (1, 2, 3):
+        both += [run(1, b, 22.0), run(2, b, 24.0)]
+        both[-2]["workload"]["w3l"] = {"capacity_rps": 6.0}
+        both[-1]["workload"]["w3l"] = {"capacity_rps": 5.0 if b != 3 else None}
+    assert rp.verdict_h9c(both)["verdict"] == "数据不足"

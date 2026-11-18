@@ -201,7 +201,7 @@ def paired(runs: list[dict[str, Any]], w: str, arm: int, base: int) -> dict[str,
 
 def verdict_h9a(runs: list[dict[str, Any]], w: str = "w3b") -> dict[str, Any]:
     caps = _caps(runs, w)
-    blocks = sorted({b for (a, b) in caps if a == 3})
+    blocks = sorted({r["block"] for r in runs})  # every block: a value missing in any of them gives 数据不足
     complete = blocks and all((a, b) in caps for b in blocks for a in (1, 2, 3))
     vs2, vs1 = paired(runs, w, 3, 2), paired(runs, w, 3, 1)
     if not complete:
@@ -216,7 +216,8 @@ def verdict_h9a(runs: list[dict[str, Any]], w: str = "w3b") -> dict[str, Any]:
 
 
 def verdict_h9b(runs: list[dict[str, Any]], w: str = "w3b") -> dict[str, Any]:
-    b = [r["workload"][w].get("bottleneck") for r in runs if r["arm"] == 3 and w in r["workload"]]
+    blocks = sorted({r["block"] for r in runs})
+    b = [next(((r["workload"].get(w) or {}).get("bottleneck") for r in runs if r["arm"] == 3 and r["block"] == k), None) for k in blocks]
     if not b or any(x is None for x in b):
         v = "数据不足"
     elif all(x == "talker" for x in b):
@@ -235,14 +236,43 @@ def verdict_h9c(runs: list[dict[str, Any]]) -> dict[str, Any]:
         means[w] = {a: float(np.mean([c for (aa, _), c in caps.items() if aa == a])) for a in sorted({a for a, _ in caps})}
     if not means["w3b"] or not means["w3l"]:
         return {"verdict": "数据不足", "means": means}
+    blocks = sorted({r["block"] for r in runs})
+    arms = sorted({r["arm"] for r in runs})
+    if any((a, b) not in _caps(runs, w) for w in WORKLOADS for a in arms for b in blocks):
+        return {"verdict": "数据不足", "means": means}  # a mean over fewer blocks is not the registered comparison
     win = {w: max(m, key=m.get) for w, m in means.items()}
     if win["w3b"] == win["w3l"]:
         v = "不支持"
     else:
         caps = _caps(runs, "w3l")
-        blocks = sorted({b for (_, b) in caps})
-        v = "支持" if all(caps.get((win["w3l"], b), -1) > caps.get((win["w3b"], b), math.inf) for b in blocks) else "不确定"
+        v = "支持" if all(caps[(win["w3l"], b)] > caps[(win["w3b"], b)] for b in blocks) else "不确定"
     return {"verdict": v, "means": means, "winners": win}
+
+
+def busy_window_capacity(run: dict[str, Any], w: str) -> float | None:
+    rows = [x for x in run.get("levels", []) if x["workload"] == w and x["kind"] == "closed_loop" and x["mode"] == "A"
+            and x.get("concurrency") == WORKLOADS[w]]
+    if not rows or rows[0].get("usable") is False or rows[0].get("restart_here"):
+        return None
+    return (rows[0].get("busy_window") or {}).get("throughput_rps")
+
+
+def stable_open_loop_capacity(run: dict[str, Any], w: str) -> float | None:
+    """Registered metric 2: the highest common rate at which this run's open loop stayed steady."""
+    steady = [x["rate_rps"] for x in run.get("levels", []) if x["workload"] == w and x["kind"] == "open_loop"
+              and x.get("mode", "A") == "A" and (x.get("growth") or {}).get("steady")]
+    return max(steady) if steady else None
+
+
+def sensitivity(runs: list[dict[str, Any]]) -> dict[str, Any]:
+    """Supplementary registration 1 (descriptive, added after the first run): H9a, H9c and H9d again with the
+    busy-window throughput and with the stable open-loop capacity in place of the registered capacity."""
+    out = {}
+    for name, fn in (("busy_window", busy_window_capacity), ("stable_open_loop", stable_open_loop_capacity)):
+        alt = [{**r, "workload": {w: {**e, "capacity_rps": fn(r, w)} for w, e in r["workload"].items()}} for r in runs]
+        out[name] = {"H9a": verdict_h9a(alt), "H9c": verdict_h9c(alt), "H9d": capacity_model(alt, "w3b"),
+                     "H9d_w3l": capacity_model(alt, "w3l")}
+    return out
 
 
 def stage_variant(arm: int, stage: str) -> str:
@@ -445,7 +475,8 @@ def main() -> int:
     else:
         summary = {"generated_by": "scripts/analysis/exp09_report.py", "runs": runs, "by_arm": by_arm(runs),
                    "verdicts": {"H9a": verdict_h9a(runs), "H9b": verdict_h9b(runs), "H9b_w3l": verdict_h9b(runs, "w3l"),
-                                "H9c": verdict_h9c(runs), "H9d": capacity_model(runs, "w3b"), "H9d_w3l": capacity_model(runs, "w3l")}}
+                                "H9c": verdict_h9c(runs), "H9d": capacity_model(runs, "w3b"), "H9d_w3l": capacity_model(runs, "w3l")},
+                   "sensitivity": sensitivity(runs)}
     if a.out:
         out = Path(a.out) / "results"
         out.mkdir(parents=True, exist_ok=True)
