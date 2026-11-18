@@ -20,7 +20,7 @@ the log, and the step time R / G that follows from it.
 Usage (where the raw runs are):
     python scripts/analysis/next_talker_slots.py --data-root <PROJECT_DATA_ROOT> --cap 32 \
         --run 20261117_exp09_t2_k1_c5_block1_run01 --phase w3b_closed_A --last-level [--run ...] \
-        --curve --out research/next_steps/data/p0_talker_slots_exp09.json
+        --curve --out research/next_steps/results/p0_talker_slots_exp09.json
 """
 
 from __future__ import annotations

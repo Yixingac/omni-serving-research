@@ -17,7 +17,7 @@ profiler slows the CPU side down: launch gaps and throughput inside these window
 Usage:
     python scripts/analysis/next_c2w_kernel_census.py --data-root <PROJECT_DATA_ROOT> \
         --run 20261117_exp07_t2_k2_c4_block1_run01 --phase w3b_c128_C [--run ...] \
-        --label exclusive_c128 --out research/next_steps/data/c2w_kernel_census_exclusive_c128.json
+        --label exclusive_c128 --out research/next_steps/results/c2w_kernel_census_exclusive_c128.json
 """
 
 from __future__ import annotations

@@ -35,7 +35,7 @@
 
 | 项 | 实测/源码 | 等级 | 位置 |
 |---|---|---|---|
-| 每步时间随批大小 | 批 1/8/16/24/32：1.43/2.00/2.62/3.30/4.01 ms（独占卡） | Measured（SGLang 日志） | `data/p0_k1c5_talker_slots.json` |
+| 每步时间随批大小 | 批 1/8/16/24/32：1.43/2.00/2.62/3.30/4.01 ms（独占卡） | Measured（SGLang 日志） | `results/p0_k1c5_talker_slots.json` |
 | 每步 kernel | 约 180 个，中位时长 1.9 µs；96–97% 来自 CUDA graph；卡只忙 52–60% | Measured（实验 7 profiler 窗口） | 本轮 trace 统计 |
 | kernel 构成 | bf16 wmma GEMM 22–27%、FlashInfer decode 注意力 14–17%、Triton 融合的采样（argmax/log/clamp）9–10%、cuBLAS GEMM 8–13% | Measured | 同上 |
 | 主机侧 | 异步提前发射写死为开；采样在 GPU 的“采样 graph”里；每步仍有 3 次 `copy_`、1 次 `fill_`、1 次 `clone` 围着 graph 重放 | 源码 | `mo/talker_model_runner.py:252-262` |
@@ -71,7 +71,7 @@
 
 ### 1.5 Code2Wav 的 kernel 普查（本轮新增，Measured）
 
-数据：`data/c2w_kernel_census_exclusive_c128.json`（实验 7 的 t2_k2_c4、t2_k4_c2 各 3 个区组，code2wav 独占卡，W3b 并发 128，3 秒 profiler 窗口，共 39.5 s kernel 时间、37 万个 kernel）。脚本：`scripts/analysis/next_c2w_kernel_census.py`。
+数据：`results/c2w_kernel_census_exclusive_c128.json`（实验 7 的 t2_k2_c4、t2_k4_c2 各 3 个区组，code2wav 独占卡，W3b 并发 128，3 秒 profiler 窗口，共 39.5 s kernel 时间、37 万个 kernel）。脚本：`scripts/analysis/next_c2w_kernel_census.py`。
 
 | 类别 | 占 code2wav kernel 时间 | 代表 kernel（启动配置） |
 |---|---|---|
@@ -85,7 +85,7 @@
 | 布局转换 | 3.0% | `cudnn::...::nchwToNhwcKernel<float,...>`，4.9 万次，平均 22 µs |
 | 其他（逐元素、拷贝/转型、softmax、归约） | 7% | 编码器 `cunn_SoftMaxForward` 1.3% |
 
-- **CUDA graph 只占 0.3%**（并发 128）；同一类统计在并发 8（2+6 同卡，`data/c2w_kernel_census_shared_c8.json`）是 24.6%。
+- **CUDA graph 只占 0.3%**（并发 128）；同一类统计在并发 8（2+6 同卡，`results/c2w_kernel_census_shared_c8.json`）是 24.6%。
 - 按名字推断的子模型：flow 75%、HiFT 17%、无法归类 7%；和实验 6 的 CUDA event 拆分（77%/23%）一致，说明归类大体可信（无法归类的多半属于 HiFT）。
 - 局限：profiler 窗口只有 3 秒；没有记录张量形状，算术强度只能由 grid 和模型维度推算；kernel 时长在 profiler 下可信，但 CPU 侧的空档不可信。
 

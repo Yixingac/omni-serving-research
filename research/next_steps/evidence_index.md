@@ -25,13 +25,13 @@
 |---|---|---|---|---|
 | F1 | 2+2+4 容量 23.77 对 2+6 的 22.12（+7.5%，+2.8..+12.1）；开环 W3b 23.5 请求/秒 P95 3.74 对 4.34 s；W3L 10.5 请求/秒只有 2+2+4 稳定 | Measured / Derived | `research/01_性能瓶颈/实验09_最佳GPU分工/README.md` 第一、七部分；`reports/research_updates/exp09_11_findings.md` | 实验 9 `results/summary.json`、`levels.csv` |
 | F2 | 2+1+5 容量 −25%，talker 卡忙 65% | Measured | 同上 | 同上 |
-| F3 | 2+1+5 的 talker 在 80–83% 的日志行正好 32 个在跑、排队 178–184（W3L：81–84%、53–58） | Measured（启发式区分） | `research_baseline.md` 第 4 节 | `research/next_steps/data/p0_k1c5_talker_slots.json`、`p0_k1c5_w3l_talker_slots.json`、`p0_k2c4_talker_slots.json`；`scripts/analysis/next_talker_slots.py` |
+| F3 | 2+1+5 的 talker 在 80–83% 的日志行正好 32 个在跑、排队 178–184（W3L：81–84%、53–58） | Measured（启发式区分） | `research_baseline.md` 第 4 节 | `research/next_steps/results/p0_k1c5_talker_slots.json`、`p0_k1c5_w3l_talker_slots.json`、`p0_k2c4_talker_slots.json`；`scripts/analysis/next_talker_slots.py` |
 | F4 | talker 每步时间：批 1/16/32 = 1.43/2.62/4.01 ms | Measured | 同上 | `p0_k1c5_talker_slots.json` 的 `decode_curve_all_lines` |
 | F5 | 同卡时 talker 每秒语音的时间 2.2 倍，code2wav 每秒语音的 GPU 时间 +49–59% | Measured | `research/01_性能瓶颈/实验07_Code2Wav独立GPU/README.md` | 实验 7 `results/` |
 | F6 | code2wav 每请求约 0.2 s GPU（flow ≈150、HiFT ≈45 ms）；并发 256 时阶段 5.25 s，42% 排队 | Measured | `research/01_性能瓶颈/实验06_Code2Wav时间拆解/README.md` 6.1–6.2 | 实验 6 `results/summary.json`、`requests.csv`、`batches.csv` |
 | F7 | MIX fifo16 补齐 28%；length8 语音秒/秒 +30%（+17..+43），只在 code2wav 饱和时 | Measured / Derived | `research/01_性能瓶颈/实验10_Code2Wav_Batching/README.md` | 实验 10 `results/summary.json` |
 | F8 | 完整服务（≤ 23.5 请求/秒）按长度组批没有差别，每批约 1.2 个请求 | Measured | 同上，完整服务验证 | 同上 |
-| F9 | code2wav kernel：GEMM 25%、mem-efficient 注意力 19%（占用率估计 33%）+ 准备 6%、Inductor 融合 16%、HiFT TF32 卷积 10%、布局转换 3%；graph 0.3% | Measured | `compiler_runtime_opportunities.md` 1.5 | `research/next_steps/data/c2w_kernel_census_exclusive_c128.json`（另有 `_shared_c128`、`_shared_c8`）；`scripts/analysis/next_c2w_kernel_census.py` |
+| F9 | code2wav kernel：GEMM 25%、mem-efficient 注意力 19%（占用率估计 33%）+ 准备 6%、Inductor 融合 16%、HiFT TF32 卷积 10%、布局转换 3%；graph 0.3% | Measured | `compiler_runtime_opportunities.md` 1.5 | `research/next_steps/results/c2w_kernel_census_exclusive_c128.json`（另有 `_shared_c128`、`_shared_c8`）；`scripts/analysis/next_c2w_kernel_census.py` |
 | F10 | talker 每步约 180 个 kernel、中位 1.9 µs、96–97% graph、卡忙 52–60%（profiler 窗口） | Measured | `compiler_runtime_opportunities.md` 1.2 | 实验 7 talker trace（集群）；本轮一次性统计，未入库为脚本 |
 | F11 | thinker 每步空 3–15 ms；原型去掉空档、每 token −9..−10%，语音端到端 −2..−5%（区间含 0），TTFT +17..21 ms | Measured | `research/01_性能瓶颈/实验08_Thinker_Lookahead/README.md` 6.6 | 实验 8 `results/phase3.json` |
 | F12 | 旁路复制正确性门槛未通过 | Measured | `research/01_性能瓶颈/实验11_Thinker异步优化/README.md` | 实验 11 `results/check.json`、`diagnostic.json` |
@@ -39,8 +39,8 @@
 | F14 | 混合负载 3+5 最好；文字 Agent 8 个完整副本最好、拆分时 talker 卡 0% 忙；按会话路由命中率 +0.7–1.8 个百分点 | Measured（初步） | `research/01_性能瓶颈/实验19_负载类型和最佳分工/README.md` | 实验 19 `results/summary.json` |
 | F15 | 系统里约 50–80 个请求以后只是在排队 | Measured | `research/01_性能瓶颈/实验03_同时处理多少请求最好/README.md` | 实验 3 `results/` |
 | F16 | thinker→talker 交接 3.4–4.5 ms，与链路无关 | Measured | `research/01_性能瓶颈/实验13_GPU间连接快慢/README.md` | 实验 13 `results/` |
-| F17 | 停顿 2：全进程日志 3.09 s 无输出，服务和客户端 CPU 同时掉到接近 0 | Measured | `p0_p3_experiment_plan.md` P3 | `research/next_steps/data/p3_stall2_t2_k3_c3_block3_w3b.json`；`scripts/analysis/next_stall_alignment.py` |
-| F18 | 停顿 1：code2wav 24–27 s 无批，talker 照常；之后积压 | Measured | 同上 | `research/next_steps/data/p3_stall1_t2_k2_c4_block3_w3l.json` |
+| F17 | 停顿 2：全进程日志 3.09 s 无输出，服务和客户端 CPU 同时掉到接近 0 | Measured | `p0_p3_experiment_plan.md` P3 | `research/next_steps/results/p3_stall2_t2_k3_c3_block3_w3b.json`；`scripts/analysis/next_stall_alignment.py` |
+| F18 | 停顿 1：code2wav 24–27 s 无批，talker 照常；之后积压 | Measured | 同上 | `research/next_steps/results/p3_stall1_t2_k2_c4_block3_w3l.json` |
 
 ## 3. 推算、假设和提议
 

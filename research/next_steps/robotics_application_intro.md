@@ -166,7 +166,7 @@ Five findings, ordered by how strongly they support a research question. Each fo
 
 - **Root cause.** The stages have very different per-request costs and different software limits. The Talker's admission limit is hard-coded to 32 running requests (`sglang_omni/models/minicpm_o/stages.py:144`), and its CUDA graphs are captured only up to batch 32; the Thinker's is 64 (`:361`). Capacity peaks where two stages have equal capacity; past that point, adding GPUs to the "slow" stage starves another one. GPU busy fractions do not reveal this — a Talker at 65% busy was the bottleneck.
 - **Why it matters for the application.** A robot fleet's traffic mix (how often the robot speaks, how long it speaks, how often it only thinks or calls tools) shifts the optimum. A placement chosen for one mix can strand GPUs under another (0%-busy Talker GPUs for text-only agent turns).
-- **Scope and limitations.** One model, one node, synthetic prompts; capacity depends on the calculation method (registered vs busy-window throughput differ by 20–36%), but the ranking does not. Files: `research/01_性能瓶颈/实验09_最佳GPU分工/README.md`, `实验07_Code2Wav独立GPU/README.md`, `实验19_负载类型和最佳分工/README.md`, `research/next_steps/data/p0_*_talker_slots.json`.
+- **Scope and limitations.** One model, one node, synthetic prompts; capacity depends on the calculation method (registered vs busy-window throughput differ by 20–36%), but the ranking does not. Files: `research/01_性能瓶颈/实验09_最佳GPU分工/README.md`, `实验07_Code2Wav独立GPU/README.md`, `实验19_负载类型和最佳分工/README.md`, `research/next_steps/results/p0_*_talker_slots.json`.
 
 ### Finding B — The vocoder is the throughput limiter for speech, and FIFO batching wastes compute on padding
 
@@ -183,7 +183,7 @@ Five findings, ordered by how strongly they support a research question. Each fo
 
 - **Root cause.** The flow solves 10 Euler steps over the batch padded to its longest row (prompt included), with classifier-free guidance doubling the rows; the DiT's SDPA receives a boolean padding mask, which rules out the flash backend. The CUDA-graph table covers batch ≤ 10 with narrow frame limits, so batched work runs eagerly. HiFT runs in FP32, once per distinct length.
 - **Why it matters for the application.** For a speaking robot, the vocoder queue is TTFA. Padding waste and graph misses translate directly into how many concurrent spoken replies one GPU can sustain within a deadline.
-- **Scope and limitations.** The +30% is a local, saturated-vocoder result; it did not transfer to an unsaturated full service. Files: `实验06_Code2Wav时间拆解/README.md`, `实验10_Code2Wav_Batching/README.md`, `research/next_steps/data/c2w_kernel_census_*.json`.
+- **Scope and limitations.** The +30% is a local, saturated-vocoder result; it did not transfer to an unsaturated full service. Files: `实验06_Code2Wav时间拆解/README.md`, `实验10_Code2Wav_Batching/README.md`, `research/next_steps/results/c2w_kernel_census_*.json`.
 
 ### Finding C — Thinker scheduling bubbles are real, but removing them barely moves speech latency
 
@@ -326,13 +326,13 @@ Design rules (as in experiments 6–11): one primary question per experiment, hy
 |---|---|---|---|---|
 | On the chat path, MiniCPM-o returns speech in one chunk after all three stages finish; TTFA ≈ end-to-end | Client chunk timing; source routing | Measured | Request–response path only | Exp. 6 §6.1; `metrics.md`; `sglang_omni/models/minicpm_o/config.py:80-117` |
 | 2+2+4 has the highest capacity among the tested splits (+7.5% over 2+6) and lower P95 | 12 runs, 3 blocks | Measured / Derived | W3b/W3L; one node | Exp. 9 |
-| 2+1+5 is limited by the Talker's 32-request admission cap | Scheduler logs show 32 running + ~180 queued 80–83% of the time; Talker GPU 65% busy | Derived (mechanism consistent) / Hypothesis (causal) | No run with a higher cap yet | Exp. 9; `data/p0_*` |
-| Talker step time grows ~0.088 ms per additional request between batch 16 and 32 | SGLang decode-throughput log lines | Measured | Interpolated region only; ≥ 33 unmeasured | `data/p0_k1c5_talker_slots.json` |
+| 2+1+5 is limited by the Talker's 32-request admission cap | Scheduler logs show 32 running + ~180 queued 80–83% of the time; Talker GPU 65% busy | Derived (mechanism consistent) / Hypothesis (causal) | No run with a higher cap yet | Exp. 9; `results/p0_*` |
+| Talker step time grows ~0.088 ms per additional request between batch 16 and 32 | SGLang decode-throughput log lines | Measured | Interpolated region only; ≥ 33 unmeasured | `results/p0_k1c5_talker_slots.json` |
 | Raising the cap to 64 increases Talker throughput by 10–20% but 2+1+5 stays below 2+2+4 | Extrapolation of the measured curve | Estimated (pre-registered prediction) | Step-time growth beyond 32 unknown | `p0_p3_experiment_plan.md` |
 | Co-locating Talker and Code2Wav slows both (2.2×, +49–59%) | 5 placements × 3 blocks | Measured | W3b | Exp. 7 |
 | Code2Wav costs ~0.2 s GPU per request; queueing dominates at load | CUDA events, server events | Measured | 2+6 placement | Exp. 6 |
 | FIFO batching wastes up to 28% on padding; length-aware batching +30% when the vocoder saturates | Controlled batching, 3 blocks | Measured / Derived | Local result; unsaturated full service shows no gain | Exp. 10 |
-| Masked memory-efficient attention is the largest single Code2Wav kernel (19%) | Kernel census of profiler traces | Measured | 3 s windows; shapes inferred from grids | `data/c2w_kernel_census_exclusive_c128.json` |
+| Masked memory-efficient attention is the largest single Code2Wav kernel (19%) | Kernel census of profiler traces | Measured | 3 s windows; shapes inferred from grids | `results/c2w_kernel_census_exclusive_c128.json` |
 | Packed variable-length flow attention reduces Code2Wav GPU time | — | Hypothesis | Upstream comment says the *eager* packed path is slower than the compiled dense path | `compiler_runtime_opportunities.md` |
 | HiFT half precision keeps audio quality | — | Unknown | Needs objective quality gate | same |
 | Thinker idle per step is 3–15 ms; lookahead removes it but speech end-to-end improves only 2–5% | 3 blocks, CIs include 0 | Measured | W3b; short answers | Exp. 8 |
@@ -354,7 +354,7 @@ Design rules (as in experiments 6–11): one primary question per experiment, hy
 | 3 | Omni Serving Architecture | Thinker, Talker, and Code2Wav are different kinds of work on different resources | Stage table (§2.1) | Exp. 9 `figures/fig0_request_path.png` (schematic) | Serial per request, parallel across requests; where CPU vs GPU work happens | Exp. 9; source |
 | 4 | Experimental Setup | Pre-registered, paired-block experiments on 8×A6000 | 3 blocks per comparison; open + closed loop | Exp. 9 `figures/fig1_layouts.png` | Why open-loop stable capacity is the primary metric | Exp. 9 §5 |
 | 5 | Key Bottleneck Observations | At load, the vocoder queue — not the LLM — sets speech latency | Code2Wav 155 ms → 5.25 s (42% queueing) | Exp. 6 `figures/fig2_breakdown_by_level.png` | Queueing vs batch waiting; GPU-bound at high load | Exp. 6 |
-| 6 | Stage Placement and Batching | Placement is a sharp optimum; batching helps only when the vocoder saturates | 2+2+4 +7.5%; 2+1+5 −25%; length-aware +30% (saturated) / 0 (unsaturated) | Exp. 9 `figures/fig3_closed_throughput.png`; Exp. 10 `figures/fig5_fifo_vs_length.png` | The 2+1+5 paradox: 65% busy Talker is the bottleneck (32-slot cap) | Exp. 9, 10; `data/p0_*` |
+| 6 | Stage Placement and Batching | Placement is a sharp optimum; batching helps only when the vocoder saturates | 2+2+4 +7.5%; 2+1+5 −25%; length-aware +30% (saturated) / 0 (unsaturated) | Exp. 9 `figures/fig3_closed_throughput.png`; Exp. 10 `figures/fig5_fifo_vs_length.png` | The 2+1+5 paradox: 65% busy Talker is the bottleneck (32-slot cap) | Exp. 9, 10; `results/p0_*` |
 | 7 | Why Existing Optimizations Are Insufficient | Local wins did not become end-to-end wins | Lookahead: −9% per token, −2..−5% end-to-end; length-aware: no gain unsaturated; async copy failed correctness | Exp. 8 `figures/fig5_phase3_off_on.png` | Critical-path reasoning; the correctness gate as a methodological safeguard | Exp. 8, 10, 11 |
 | 8 | Related Work and Research Gap | Prior systems optimize one stage, one engine, or text-only agents | ThunderAgent (throughput, single KV pool), FlashStates (hybrid state), OmniCast/VoxServe/Metronome (interactive speech) | Comparison table (`thunderagent_flashstates_related_work.md` §4) | What is new: multi-stage + agent sessions + spoken steps on workstation GPUs | `prior_work.md`; related-work notes |
 | 9 | Proposed Research Questions | RQ1 placement/admission, RQ2 interaction latency, RQ3 compiler/runtime on the critical path | Findings A–E | Three-box RQ diagram | What would falsify each hypothesis | This document §5 |

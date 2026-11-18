@@ -203,4 +203,4 @@
 | 回放与实时运行的差别、命中率 85% → 2%（完全替代内容时） | `research/01_性能瓶颈/实验12_回放能不能代替真实负载/README.md` |
 | 系统里请求数的有用区间 50–80 | `research/01_性能瓶颈/实验03_同时处理多少请求最好/README.md` |
 | 长度组批的收益和公平性代价 | `research/01_性能瓶颈/实验10_Code2Wav_Batching/README.md` 图 9 |
-| thinker KV 池大小、talker 名额 | `data/p0_*_talker_slots.json`；`p0_p3_experiment_plan.md` P0 |
+| thinker KV 池大小、talker 名额 | `results/p0_*_talker_slots.json`；`p0_p3_experiment_plan.md` P0 |

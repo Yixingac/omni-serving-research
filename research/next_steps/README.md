@@ -2,7 +2,7 @@
 
 > 2026-11-18。这个目录回答一个问题：**在实验 1–19 之后，哪些系统问题真正值得继续研究，怎么做。**
 > 实验编号和每个实验的状态仍以 [`research/实验总目录.md`](../实验总目录.md) 为准；本目录只放下一阶段的审计、计划和研究材料，不改已有实验的报告和数据。
-> 本轮没有运行任何新的 GPU 实验；新增的实测数字全部来自已有运行的日志和 trace（CPU 离线分析），见 [`data/`](data/)。
+> 本轮没有运行任何新的 GPU 实验；新增的实测数字全部来自已有运行的日志和 trace（CPU 离线分析），见 [`results/`](results/)。
 
 ## 怎么读
 
@@ -84,8 +84,8 @@ P0–P3、R 主线的完整版在各自文档开头；这里给 C 主线和 Agen
 | `scripts/analysis/next_talker_slots.py` | 从 SGLang 调度日志读 talker 的在跑数、排队、graph、每步时间曲线（P0 的分析工具） | `tests/test_next_talker_slots.py` |
 | `scripts/analysis/next_c2w_kernel_census.py` | code2wav 的 kernel 普查（按名字、类别、子模型） | `tests/test_next_c2w_kernel_census.py` |
 | `scripts/analysis/next_stall_alignment.py` | 把一次停顿和服务日志、每进程 CPU、code2wav 批对齐（P3） | `tests/test_next_stall_alignment.py` |
-| `data/p0_*_talker_slots.json` | 实验 9 的 talker 名额证据 | — |
-| `data/c2w_kernel_census_*.json` | 实验 6、7 的 kernel 普查 | — |
-| `data/p3_stall*.json` | 两次停顿的对齐 | — |
+| `results/p0_*_talker_slots.json` | 实验 9 的 talker 名额证据 | — |
+| `results/c2w_kernel_census_*.json` | 实验 6、7 的 kernel 普查 | — |
+| `results/p3_stall*.json` | 两次停顿的对齐 | — |
 
 数据文件只含汇总数字和运行目录名，不含主机名和用户路径。

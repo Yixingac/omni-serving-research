@@ -27,9 +27,9 @@
 | talker 名额默认 32，代码写死在 MiniCPM-o 的 talker 构造里 | 源码 | `sglang_omni/models/minicpm_o/stages.py:143-144`（`max_running_requests=32`）；thinker 是 64（同文件 `:361`） |
 | talker 的 CUDA graph 最大批大小默认等于名额 | 源码 | `sglang_omni/scheduling/generation_batch_policy.py:217-219`、`:239-240`；实验 9 的启动日志里 talker 只录了 `bs=[1, 2, 4, 8, 12, 16, 24, 32]` |
 | talker 的 KV 上限默认 `32 × 4096 = 131072` token，与名额无关（`setdefault`），注释写“不让 talker 饿死 thinker” | 源码 + Measured | `stages.py:160-161`；启动日志 `KV Cache is allocated ... #tokens: 131072, K size: 3.75 GB, V size: 3.75 GB`，可用于 KV 的显存 18.13 GiB |
-| 2+1+5、W3b 并发 256：唯一 talker 的 decode 日志行 80–83% 正好 32 个在跑、同时排队 178–184 个；W3L 并发 128：81–84%，排队 53–58 | Measured（启发式区分 talker 行，见脚本说明） | `data/p0_k1c5_talker_slots.json`、`data/p0_k1c5_w3l_talker_slots.json`（`scripts/analysis/next_talker_slots.py`） |
-| 2+2+4 的每个 talker：在跑中位数 16–18，排队中位数 0 | Measured | `data/p0_k2c4_talker_slots.json` |
-| 独占卡 talker 的每步时间：批 16 → 24 → 32 为 2.62 → 3.30 → 4.01 ms；吞吐 6111 → 7272 → 7982 token/s | Measured（SGLang 日志的 gen throughput，3 个区组合并） | `data/p0_k1c5_talker_slots.json` 的 `decode_curve_all_lines` |
+| 2+1+5、W3b 并发 256：唯一 talker 的 decode 日志行 80–83% 正好 32 个在跑、同时排队 178–184 个；W3L 并发 128：81–84%，排队 53–58 | Measured（启发式区分 talker 行，见脚本说明） | `results/p0_k1c5_talker_slots.json`、`results/p0_k1c5_w3l_talker_slots.json`（`scripts/analysis/next_talker_slots.py`） |
+| 2+2+4 的每个 talker：在跑中位数 16–18，排队中位数 0 | Measured | `results/p0_k2c4_talker_slots.json` |
+| 独占卡 talker 的每步时间：批 16 → 24 → 32 为 2.62 → 3.30 → 4.01 ms；吞吐 6111 → 7272 → 7982 token/s | Measured（SGLang 日志的 gen throughput，3 个区组合并） | `results/p0_k1c5_talker_slots.json` 的 `decode_curve_all_lines` |
 | 独占卡 talker（2+2+4，并发 128，profiler 窗口）：每步约 180 个 kernel，中位 1.9 µs，96–97% 来自 CUDA graph，卡只忙 52–60% | Measured（只在 profiler 窗口里，CPU 侧被放慢） | 实验 7 `t2_k2_c4_block1` 的 talker trace（集群，不公开） |
 
 **由此推出的事先预测（Estimated，登记于 2026-11-18）**：
@@ -201,7 +201,7 @@
 | 停顿 2：2+3+3 区组 3，W3b 21 请求/秒，第 53.7–56.8 秒 | 所有进程共用的服务日志 **3.09 秒没有任何一行**；服务进程组 CPU 从约 800% 降到 35% → 6% → 121%；客户端从约 27% 降到 7–9%；整机 CPU 13% → 1.7% → 0.5%；code2wav 第 54–57 秒没有开始任何批，第 58 秒一次开始 33 个请求 | 所有进程同时“停住”而且不占 CPU（是阻塞，不是忙等）。共同依赖包括：写在 NFS 上的服务日志、事件文件和客户端记录；协调进程。Hypothesis：共享文件系统或主机级的短暂停顿。还没有证据 |
 | 停顿 1：2+2+4 区组 3，W3L 5.5 请求/秒，第 24–27 秒 | 日志**没有**中断（每秒约 40 行）；talker 照常解码（在跑 2–9，排队 0），thinker、talker 进程约 100% CPU；code2wav 第 24–27 秒**一个批都没开始**，第 28 秒后收到积压（第 29、31 秒的批合计 15、29 个请求）；4 个 code2wav 进程同时空闲 | 停在 talker 完成 → code2wav 开始之间的交接路径（控制消息、数据搬运或 code2wav 的接收线程），不是计算。4 个 code2wav 同时空，说明是共同的上游环节。根因 Unknown |
 
-数据：`data/p3_stall2_t2_k3_c3_block3_w3b.json`、`data/p3_stall1_t2_k2_c4_block3_w3l.json`；脚本 `scripts/analysis/next_stall_alignment.py`。
+数据：`results/p3_stall2_t2_k3_c3_block3_w3b.json`、`results/p3_stall1_t2_k2_c4_block3_w3l.json`；脚本 `scripts/analysis/next_stall_alignment.py`。
 
 ### 缺的证据和下一步
 

@@ -17,7 +17,7 @@ the node's local time zone, so run this where that time zone applies (the cluste
 Usage (in the repo checkout next to the raw runs):
     python scripts/analysis/next_stall_alignment.py --data-root <PROJECT_DATA_ROOT> \
         --run 20261118_exp09_t2_k3_c3_block3_run01 --phase w3b_open --rate 21 --lo 45 --hi 62 \
-        --out research/next_steps/data/p3_stall_t2_k3_c3_b3.json
+        --out research/next_steps/results/p3_stall_t2_k3_c3_b3.json
 """
 
 from __future__ import annotations
