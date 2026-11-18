@@ -37,7 +37,9 @@ T975 = {1: 12.706, 2: 4.303, 3: 3.182}
 METRICS = {"A": ["client.throughput_rps", "client.e2e_s.p50", "client.e2e_s.p95", "client.e2e_s.p99", "client.ttft_s.p50",
                  "client.first_audio_s.p50", "client.errors", "thinker_mem_max_mib"],
            "B": ["steps.decode_lookahead_share", "steps.batch_size_decode.p50", "thinker_ms_per_token.p50", "client.throughput_rps"],
-           "C": ["graph_steps.idle_ms_p50", "graph_steps.busy_ms_p50", "graph_steps.steps", "graph_steps.waited_share", "sync_calls_per_step"]}
+           "C": ["graph_steps.idle_ms_p50", "graph_steps.busy_ms_p50", "graph_steps.steps", "graph_steps.waited_share", "sync_calls_per_step",
+                 "graph_steps.idle_share"]}
+GRAPH_KEYS = ("steps", "busy_ms_p50", "idle_ms_p50", "waited_share", "lead_ms_p50", "idle_share")
 
 
 def sync_calls_per_step(trace: dict[str, Any]) -> float | None:
@@ -129,7 +131,7 @@ def analyze_run(exp: Path) -> dict[str, Any]:
                     per_proc.append(s)
                 syncs.append(sync_calls_per_step(tr))
             row["graph_steps"] = {k: float(np.median([p[k] for p in per_proc if p.get(k) is not None]))
-                                  for k in ("steps", "busy_ms_p50", "idle_ms_p50", "waited_share", "lead_ms_p50")} if per_proc else {}
+                                  for k in GRAPH_KEYS} if per_proc else {}
             row["sync_calls_per_step"] = float(np.median([x for x in syncs if x is not None])) if any(x is not None for x in syncs) else None
         run["levels"].setdefault(c, {})[mode] = row
     return run

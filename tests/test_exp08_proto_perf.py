@@ -44,3 +44,8 @@ def test_missing_block_is_insufficient():
     r = runs([4.0, 4.5, 3.8], [0.1, 0.2, 0.1])
     r[-1]["levels"]["8"]["C"]["graph_steps"]["idle_ms_p50"] = None
     assert pp.verdicts(r)["idle"]["8"]["verdict"] == "数据不足"
+
+
+def test_time_weighted_idle_share_is_kept_besides_the_median():
+    # the median idle per step hides the steps that still wait (flushes); the time-weighted share does not
+    assert "idle_share" in pp.GRAPH_KEYS and "graph_steps.idle_share" in pp.METRICS["C"]
