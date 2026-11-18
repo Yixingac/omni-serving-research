@@ -547,6 +547,7 @@ def main() -> int:
     check = analyze_check(root / a.check_run) if a.check_run else None
     if check:
         summary["check"] = check
+        summary["correctness"] = correctness([], check)  # the check run alone; recomputed below with the performance runs
     vruns = [analyze_validation_run(root / n) for n in a.validation_run]
     if runs:
         check_unique(runs)
