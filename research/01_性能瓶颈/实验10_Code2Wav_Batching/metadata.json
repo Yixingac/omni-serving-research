@@ -1,0 +1,150 @@
+{
+ "experiment_number": 10,
+ "name_zh": "code2wav 组批和补齐",
+ "question_zh": "主动改变 code2wav 的批上限和组批方式，能不能省 GPU？长度差异造成的补齐是不是主要浪费？CUDA graph 起什么作用？",
+ "status": "ANALYZED（正确性检查和 6 个性能运行完成，2026-11-18 04:27–05:54；完整服务验证在运行）",
+ "hypotheses": "hypotheses.md（预先登记；补充登记一 00:27、二 01:55、三 02:13，都在任何实验 10 数据之前）",
+ "model": {
+  "name": "MiniCPM-o 4.5",
+  "revision": "fb09628e98b1f55d8d5b863e0eccfcdd11bff499"
+ },
+ "software": {
+  "sglang_omni": "520b49ee + configs/runtime/patches/sglang_omni_batch_exp10.patch（测量补丁 + code2wav 组批控制，研究仓库提交 5412aa6 的版本），工作副本 repos/sglang-omni-batch，运行配置 runtime_unicorn_batch",
+  "patch_note": "运行清单里记的研究仓库提交是 b9821a6，那时仓库里的补丁文件是旧版；实际运行的工作副本在 01:54（实验 10 开始之前）已更新到 5412aa6 的补丁，更新和逐文件的 git blob 哈希核对记在作业目录的 code_state.txt。06:02 再次核对：集群工作副本 8 个文件 = Mac 工作副本 = 5412aa6 的补丁（逐字节）。",
+  "sglang": "0.5.21",
+  "torch": "2.13.0",
+  "nvidia_driver": "580.126.18"
+ },
+ "hardware": {
+  "node": "compute-03",
+  "gpus": "8 × NVIDIA RTX A6000 48 GB",
+  "slurm_job": 454290
+ },
+ "placement": "t2_k4_c2：thinker GPU 0–1；talker GPU 2–5；code2wav GPU 6–7（独占，瓶颈）",
+ "conditions": {
+  "settings": [
+   "fifo1",
+   "fifo2",
+   "fifo4",
+   "fifo8",
+   "fifo16（默认）",
+   "length8",
+   "length16"
+  ],
+  "graph": {
+   "G1": "flow CUDA graph 开（默认）",
+   "G0": "关（configs/models/minicpm_o_4_5_exp10_t2_k4_c2_nograph.yaml）"
+  },
+  "workloads": {
+   "w3b": "W3b，闭环并发 128",
+   "mix": "W3b 和 W3L 各一半，闭环并发 96"
+  },
+  "per_cell": "先写控制文件，预热一波（不计），再测两波，开服务端事件",
+  "randomization_seed": 20261118,
+  "plans": [
+   "configs/experiments/plan_exp10_check.json",
+   "configs/experiments/plan_exp10.json",
+   "configs/experiments/plan_exp10_validation.json"
+  ]
+ },
+ "runs": [
+  {
+   "run_dir": "20261118_exp10_check_run01",
+   "status": "ok",
+   "start": "2026-11-18 04:27:49",
+   "end": "2026-11-18 04:35:20",
+   "phases": 11,
+   "server_restarts": 0,
+   "research_repo_commit": "b9821a6",
+   "role": "正确性检查（graph 开，贪心负载，并发 32）"
+  },
+  {
+   "run_dir": "20261118_exp10_graph_block1_run01",
+   "status": "ok",
+   "start": "2026-11-18 04:35:26",
+   "end": "2026-11-18 04:55:39",
+   "phases": 29,
+   "server_restarts": 0,
+   "research_repo_commit": "b9821a6",
+   "role": "性能运行，graph 开（G1），区组 1"
+  },
+  {
+   "run_dir": "20261118_exp10_nograph_block1_run01",
+   "status": "ok",
+   "start": "2026-11-18 04:55:49",
+   "end": "2026-11-18 05:09:12",
+   "phases": 29,
+   "server_restarts": 0,
+   "research_repo_commit": "b9821a6",
+   "role": "性能运行，graph 关（G0），区组 1"
+  },
+  {
+   "run_dir": "20261118_exp10_graph_block2_run01",
+   "status": "ok",
+   "start": "2026-11-18 05:09:24",
+   "end": "2026-11-18 05:21:25",
+   "phases": 29,
+   "server_restarts": 0,
+   "research_repo_commit": "b9821a6",
+   "role": "性能运行，graph 开（G1），区组 2"
+  },
+  {
+   "run_dir": "20261118_exp10_nograph_block2_run01",
+   "status": "ok",
+   "start": "2026-11-18 05:21:33",
+   "end": "2026-11-18 05:32:08",
+   "phases": 29,
+   "server_restarts": 0,
+   "research_repo_commit": "b9821a6",
+   "role": "性能运行，graph 关（G0），区组 2"
+  },
+  {
+   "run_dir": "20261118_exp10_nograph_block3_run01",
+   "status": "ok",
+   "start": "2026-11-18 05:32:20",
+   "end": "2026-11-18 05:43:00",
+   "phases": 29,
+   "server_restarts": 0,
+   "research_repo_commit": "b9821a6",
+   "role": "性能运行，graph 关（G0），区组 3"
+  },
+  {
+   "run_dir": "20261118_exp10_graph_block3_run01",
+   "status": "ok",
+   "start": "2026-11-18 05:43:10",
+   "end": "2026-11-18 05:53:59",
+   "phases": 29,
+   "server_restarts": 0,
+   "research_repo_commit": "b9821a6",
+   "role": "性能运行，graph 开（G1），区组 3"
+  }
+ ],
+ "validation": {
+  "trigger": "满足：graph 开时，length8 在 MIX 上 3 个区组都比 fifo16 多 25–36% 的语音秒/秒（还有 6 个设置也满足），按登记选平均增幅最大的 length8",
+  "placement": "t2_k2_c4（实验 9 登记容量最高的方案）",
+  "runs": "exp10_validation_t2_k2_c4_length8_block{1,2,3}（06:02 放进队列）"
+ },
+ "analysis": {
+  "commands": [
+   "python scripts/analysis/exp10_report.py --data-root <results> --run <6 个性能运行目录> --check-run 20261118_exp10_check_run01 --out research/01_性能瓶颈/实验10_Code2Wav_Batching",
+   "python scripts/analysis/exp10_figures.py --out research/01_性能瓶颈/实验10_Code2Wav_Batching",
+   "python scripts/analysis/exp09_11_diagrams.py"
+  ],
+  "outputs": [
+   "results/summary.json"
+  ]
+ },
+ "figures": [
+  "figures/fig0_batching.png",
+  "figures/fig1_throughput.png",
+  "figures/fig2_latency.png",
+  "figures/fig3_gpu_per_audio.png",
+  "figures/fig4_padding.png",
+  "figures/fig5_fifo_vs_length.png",
+  "figures/fig6_queue_wait.png",
+  "figures/fig7_graph_hits.png",
+  "figures/fig8_length_gain.png",
+  "figures/fig9_long_short_wait.png"
+ ],
+ "raw_data": "PROJECT_DATA_ROOT/experiments/<运行目录>（带机器名和路径，不进公开仓库）"
+}
