@@ -260,7 +260,8 @@ class Server:
             raise ExperimentFailure("port_in_use", f"port {self.port} is busy before server {self.name} started")
         env = dict(os.environ)
         env.update({k: os.path.expanduser(str(v)) for k, v in self.runtime.get("env", {}).items()})
-        env.update({k: str(v) for k, v in self.spec.get("env", {}).items()})
+        # {exp_dir}: the experiment directory, e.g. for a control file a control phase rewrites (实验 10).
+        env.update({k: str(v).replace("{exp_dir}", str(self.log_path.parent.parent)) for k, v in self.spec.get("env", {}).items()})
         env["CUDA_VISIBLE_DEVICES"] = ",".join(self.gpus)
         self.log_path.parent.mkdir(parents=True, exist_ok=True)
         fh = open(self.log_path, "ab")
@@ -632,6 +633,14 @@ class ExperimentRunner:
                 summary.update(await self._phase_assets(ph, name, seed))
             elif kind == "idle":
                 await asyncio.sleep(float(ph.get("seconds", 10)))
+            elif kind == "control":
+                # Rewrite a JSON file the server polls (atomically), then give it time to pick the change up.
+                path = Path(str(ph["path"]).replace("{exp_dir}", str(self.out)))
+                tmp = path.with_name(path.name + ".tmp")
+                tmp.write_text(json.dumps(ph.get("content", {})))
+                os.replace(tmp, path)
+                summary.update(control=ph.get("content", {}), control_path=str(path))
+                await asyncio.sleep(float(ph.get("settle_s", 2)))
             else:
                 raise ExperimentFailure("config_error", f"unknown phase kind {kind!r}")
         finally:

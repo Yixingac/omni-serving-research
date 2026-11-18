@@ -35,6 +35,7 @@ PLACEMENTS = {
     "t2_k2_c4": ([0, 1], [2, 3], [4, 5, 6, 7]),
     "t2_k1_c5": ([0, 1], [2], [3, 4, 5, 6, 7]),
     "t2_k3_c3": ([0, 1], [2, 3, 4], [5, 6, 7]),
+    "t2_k4_c2": ([0, 1], [2, 3, 4, 5], [6, 7]),  # 实验 10 (实验 7's B)
 }
 NEW_PLACEMENTS = ["t2_k1_c5"]  # the others are written by make_plan_exp06_08.py and must stay identical
 
@@ -114,19 +115,143 @@ def exp09_pilot_entries() -> list[tuple[dict, dict]]:
     return out
 
 
+# Common open-loop rates from the pilot by the registered rule (scripts/analysis/exp09_report.py --pilot, common_rates).
+# Pilot closed-loop capacities (req/s), W3b at 256: arm 1 20.69, arm 2 21.22, arm 3 15.26, arm 4 15.73;
+# W3L at 128: 8.72, 9.37, 7.31, 6.62 (20261117_exp09_pilot_*, analysed 23:09).
+EXP09_RATES_W3B: list[float] | None = [7.5, 12.0, 15.5, 18.0, 21.0, 23.5]
+EXP09_RATES_W3L: list[float] | None = [3.5, 5.5, 6.5, 8.0, 9.5, 10.5]
+PLAN_EXP09 = "configs/experiments/plan_exp09.json"
+BLOCKS = 3
+
+
+def exp09_entries() -> list[tuple[dict, dict]]:
+    """实验 9: four placements x three blocks, random order within a block (seed), blocks in order. Phases as registered:
+    W3b closed A (8/64/128/256) and B (64/128/256, events) with the A/B order alternating by block, W3b open loop at the
+    common rates (60 s each), W3L closed A (16/64/128) and B (128), W3L open loop at its common rates (90 s each).
+    max_error_rate 0.5 only stops a placement that fails most requests (a broken server), never an overloaded one."""
+    out = []
+    for block in range(1, BLOCKS + 1):
+        rng = random.Random(SEED * 100 + 9 * 10 + block)
+        arms = sorted(EXP09_ARMS)
+        rng.shuffle(arms)
+        for position, arm in enumerate(arms, start=1):
+            name = EXP09_ARMS[arm]
+            a = closed("w3b_closed_A", W3B, [8, 64, 128, 256], waves=3, events=False)
+            b = closed("w3b_closed_B", W3B, [64, 128, 256], waves=3, events=True)
+            phases = [smoke(), *([b, a] if block == 2 else [a, b]),
+                      {"kind": "open_loop", "name": "w3b_open", "workload": W3B, "rates_rps": EXP09_RATES_W3B,
+                       "duration_per_rate_s": 60, "min_requests_per_rate": 96, "max_error_rate": 0.5},
+                      closed("w3l_closed_A", W3L, [16, 64, 128], waves=2, events=False),
+                      closed("w3l_closed_B", W3L, [128], waves=2, events=True),
+                      {"kind": "open_loop", "name": "w3l_open", "workload": W3L, "rates_rps": EXP09_RATES_W3L,
+                       "duration_per_rate_s": 90, "min_requests_per_rate": 48, "max_error_rate": 0.5}]
+            cfg = base(f"exp09_{name}_block{block}", 8, placement_server(name), phases,
+                       f"实验 9 第 {block} 个区组第 {position} 个（区组内顺序随机，种子 {SEED}）：方案 {arm}，放置 {name}（{describe(name)}），"
+                       f"打点版 sglang-omni。W3b 闭环 A/B 段、开环 {'/'.join(f'{r:g}' for r in EXP09_RATES_W3B)} 请求/秒各 60 秒；"
+                       f"W3L 闭环 A/B 段、开环 {'/'.join(f'{r:g}' for r in EXP09_RATES_W3L)} 请求/秒各 90 秒（速率由预跑按登记规则定）。")
+            cfg["runtime_profile"] = INSTR_RUNTIME
+            out.append((cfg, {"priority": -(100 + 10 * block + position), "est": 1800, "timeout": 5400}))
+    return out
+
+
+# ---------------------------------------------------------------- 实验 10
+
+BATCH_RUNTIME = "unicorn_batch"
+EXP10_PLACEMENT = "t2_k4_c2"  # code2wav is clearly the bottleneck there, on two cards of its own (实验 7)
+EXP10_NOGRAPH_YAML = "configs/models/minicpm_o_4_5_exp10_t2_k4_c2_nograph.yaml"
+GREEDY = "configs/workloads/w3b_greedy_check.json"
+MIX = [{"workload": W3B, "weight": 0.5}, {"workload": W3L, "weight": 0.5}]
+EXP10_SETTINGS = {"fifo1": ("fifo", 1), "fifo2": ("fifo", 2), "fifo4": ("fifo", 4), "fifo8": ("fifo", 8),
+                  "fifo16": ("fifo", 16), "length8": ("length", 8), "length16": ("length", 16)}
+EXP10_CONCURRENCY = {"w3b": 128, "mix": 96}
+PLAN_EXP10_CHECK = "configs/experiments/plan_exp10_check.json"
+PLAN_EXP10 = "configs/experiments/plan_exp10.json"
+
+
+def nograph_yaml() -> str:
+    text = Path(REPO / "configs/models/minicpm_o_4_5_exp_t2_k4_c2.yaml").read_text()
+    text = text.replace("# 由 scripts/slurm/make_plan_exp06_08.py 生成。",
+                        "# 实验 10：同一放置，只关掉 code2wav 的 flow CUDA graph（enable_flow_cuda_graph: false）。由 scripts/slurm/make_plan_exp09_11.py 生成。")
+    return text.replace("    process: code2wav\n", "    process: code2wav\n    factory:\n      enable_flow_cuda_graph: false\n", 1)
+
+
+def control(name: str, setting: str) -> dict:
+    policy, cap = EXP10_SETTINGS[setting.rstrip("b")]
+    return {"kind": "control", "name": f"ctl_{name}", "path": "{exp_dir}/c2w_control.json",
+            "content": {"max_batch_size": cap, "policy": policy, "window": 64}, "settle_s": 3}
+
+
+def batch_server(graph: bool, digest: bool = False) -> list[dict]:
+    srv = placement_server(EXP10_PLACEMENT)
+    if not graph:
+        srv[0]["args"] = ["--config", f"{{research_repo}}/{EXP10_NOGRAPH_YAML}"]
+    env = {"SGLANG_OMNI_C2W_CONTROL": "{exp_dir}/c2w_control.json"}
+    if digest:
+        env["SGLANG_OMNI_EXP_TRACE"] = "c2w,thinker,digest"
+    srv[0]["env"] = env
+    return srv
+
+
+def exp10_check_entry() -> tuple[dict, dict]:
+    phases = [smoke()]
+    for setting in ["fifo1", "fifo16", "length16", "length8", "fifo16b"]:
+        phases += [control(f"chk_{setting}", setting),
+                   {**closed(f"chk_{setting}", GREEDY, [32], waves=3, events=True)}]
+    cfg = base("exp10_check", 8, batch_server(graph=True, digest=True), phases,
+               "实验 10 正确性检查：放置 t2_k4_c2，flow CUDA graph 开，打开 digest。贪心负载（thinker、talker 温度 0，不带种子），并发 32，"
+               "依次 fifo1、fifo16、length16、length8、fifo16（控制文件切换），每段 96 个请求。比较语音编码相同的请求在各组批方式下的波形。")
+    cfg["runtime_profile"] = BATCH_RUNTIME
+    return cfg, {"priority": -200, "est": 900, "timeout": 2400}
+
+
+def exp10_entries() -> list[tuple[dict, dict]]:
+    """实验 10: 3 blocks x graph on/off (separate runs, random order in a block); inside a run both workloads (order by
+    block) and the seven batching settings in a random order per block and workload, switched by control phases."""
+    out = []
+    for block in range(1, BLOCKS + 1):
+        rng = random.Random(SEED * 100 + 10 * 10 + block)
+        graphs = [True, False]
+        rng.shuffle(graphs)
+        for position, graph in enumerate(graphs, start=1):
+            phases = [smoke()]
+            for w in (["w3b", "mix"] if block != 2 else ["mix", "w3b"]):
+                settings = list(EXP10_SETTINGS)
+                rng.shuffle(settings)
+                for setting in settings:
+                    ph = closed(f"{w}_{setting}", W3B, [EXP10_CONCURRENCY[w]], waves=2, events=True)
+                    if w == "mix":
+                        del ph["workload"]
+                        ph["workload_mix"] = MIX
+                    phases += [control(f"{w}_{setting}", setting), ph]
+            tag = "graph" if graph else "nograph"
+            cfg = base(f"exp10_{tag}_block{block}", 8, batch_server(graph), phases,
+                       f"实验 10 第 {block} 个区组第 {position} 个：放置 t2_k4_c2，flow CUDA graph {'开' if graph else '关'}。"
+                       "W3b（并发 128）和 MIX（W3b、W3L 各半，并发 96）各 7 种组批设置（fifo 批上限 1/2/4/8/16、按长度 8/16），"
+                       "控制文件切换，顺序随机（种子 20261118），每段预热一波、测两波，开事件。")
+            cfg["runtime_profile"] = BATCH_RUNTIME
+            out.append((cfg, {"priority": -(210 + 10 * block + position), "est": 1500, "timeout": 3600}))
+    return out
+
+
 def render() -> dict[str, str]:
     files = {f"configs/models/minicpm_o_4_5_exp_{name}.yaml": placement_yaml(name) for name in NEW_PLACEMENTS}
+    files[EXP10_NOGRAPH_YAML] = nograph_yaml()
+    check10, main10 = [exp10_check_entry()], exp10_entries()
     pilot = exp09_pilot_entries()
-    for path, plan_id, comment, entries in (
-        (PLAN_EXP09_PILOT, "exp09_pilot", "实验 9 预跑：4 种放置各一次，用来定开环速率（规则见 hypotheses.md）。", pilot),
-    ):
+    main9 = exp09_entries() if EXP09_RATES_W3B and EXP09_RATES_W3L else []
+    plans = [(PLAN_EXP09_PILOT, "exp09_pilot", "实验 9 预跑：4 种放置各一次，用来定开环速率（规则见 hypotheses.md）。", pilot)]
+    if main9:
+        plans.append((PLAN_EXP09, "exp09", "实验 9 正式运行：4 种放置 × 3 个区组，区组内顺序随机，区组依次运行。", main9))
+    plans.append((PLAN_EXP10_CHECK, "exp10_check", "实验 10 正确性检查（排在实验 9 正式运行之后）。", check10))
+    plans.append((PLAN_EXP10, "exp10", "实验 10 性能运行：3 个区组 × flow CUDA graph 开/关，排在正确性检查之后。", main10))
+    for path, plan_id, comment, entries in plans:
         plan = {"plan_id": plan_id,
                 "_comment": comment + "通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_exp09_11.py 生成。",
                 "experiments": [plan_entry(c, m) for c, m in entries]}
         for e in plan["experiments"]:
             e["command"] = f"bash scripts/slurm/run_experiment.sh {EXP_DIR}/{e['experiment_id']}.json"
         files[path] = json.dumps(plan, ensure_ascii=False, indent=1) + "\n"
-    for cfg, _ in pilot:
+    for cfg, _ in pilot + main9 + check10 + main10:
         files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
     return files
 
