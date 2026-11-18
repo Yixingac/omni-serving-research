@@ -1,0 +1,346 @@
+{
+ "experiment_number": 19,
+ "name_zh": "负载类型会不会改变最佳分工",
+ "question_zh": "混合负载、Agent 负载下，8 张卡最好的分法和纯语音负载（W3b）一样吗？按会话固定路由有没有用？",
+ "status": "完成（2026-11-18，只用已有数据，没有新的 GPU 运行；每种配置 1 次，结论初步）",
+ "commit_note": "每个运行记的 research_repo_commit 是运行开始时集群上研究仓库检出的提交（运行器和配置的版本），不是本目录报告的版本；报告以 PR #2 分支的最新提交为准",
+ "hypotheses": "hypotheses.md（预测 B-H1、B-H2、B-H3 写于 2026-11-11 20:17:38，提交 0ea950d，早于任何数据；判定方法 2026-11-18 看过两批数据后定的，探索性）",
+ "model": {
+  "name": "MiniCPM-o 4.5",
+  "revision": "fb09628e98b1f55d8d5b863e0eccfcdd11bff499"
+ },
+ "software": {
+  "sglang_omni": "520b49ee（= 上游 1845546e + 两个 pre-Hopper 修复），没有打实验补丁；运行配置 configs/models/runtime_unicorn.json",
+  "sglang": "0.5.21",
+  "torch": "2.13.0"
+ },
+ "hardware": {
+  "第一批": "第一批节点：8×RTX A6000，驱动 570 + cuda-compat，Slurm Job 625796",
+  "第二批": "compute-03：8×RTX A6000，驱动 580，Slurm Job 454290"
+ },
+ "layouts": {
+  "2+6": "s2x6",
+  "3+5": "s3x5",
+  "4+4": "s4x4",
+  "5+3": "s5x3",
+  "6+2": "s6x2",
+  "1+7（只在纯语音参照里）": "s1x7",
+  "4 组 1+1": "p4",
+  "8 个完整副本": "r8"
+ },
+ "workloads": {
+  "混合负载": "40% W1 文本对话、40% W3b 文本提问语音回答、20% W2 语音提问文本回答，每个请求按权重抽取；闭环并发 16–256，开环为本运行闭环最高吞吐的 0.5–1.2 倍",
+  "Agent（加长）": "合成任务，每会话最多 5 步；文本 Agent、语音 Agent（最后一步语音回答、用户思考时间中位数 1 s）；同时进行的会话 64、128、256、512，每档会话总数为并发的 8 倍（512 时 4 倍）；8 个完整副本两种路由；2+6 另有工具延迟中位数 0.5 s、2 s 两档",
+  "Agent（第一批）": "同上，但每档会话总数只有并发的 2 倍，每档 4–40 秒，只作对照",
+  "纯语音参照": "W3b 闭环并发 16–256（实验 2 的数据）"
+ },
+ "slo": {
+  "ttft_s": 1.0,
+  "speech_e2e_per_output_audio_s": 0.5
+ },
+ "runs": [
+  {
+   "run_dir": "20261115_v2_b1_r8_run01",
+   "role": "混合负载",
+   "status": "ok",
+   "start": "2026-11-15 07:17:11",
+   "end": "2026-11-15 07:32:20",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261115_v2_b1_p4_run01",
+   "role": "混合负载",
+   "status": "ok",
+   "start": "2026-11-15 07:46:05",
+   "end": "2026-11-15 07:59:39",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261115_v2_b1_s2x6_run01",
+   "role": "混合负载",
+   "status": "ok",
+   "start": "2026-11-15 07:32:35",
+   "end": "2026-11-15 07:45:51",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261116_v2b_b1_s3x5_run01",
+   "role": "混合负载",
+   "status": "ok",
+   "start": "2026-11-16 21:45:31",
+   "end": "2026-11-16 21:58:41",
+   "server_restarts": 0,
+   "research_repo_commit": "706afb0",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261116_v2b_b1_s4x4_run01",
+   "role": "混合负载",
+   "status": "ok",
+   "start": "2026-11-16 21:32:13",
+   "end": "2026-11-16 21:45:21",
+   "server_restarts": 0,
+   "research_repo_commit": "706afb0",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261116_v2b_b1_s5x3_run01",
+   "role": "混合负载",
+   "status": "ok",
+   "start": "2026-11-16 21:58:47",
+   "end": "2026-11-16 22:12:14",
+   "server_restarts": 0,
+   "research_repo_commit": "706afb0",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261116_v2b_b1_s6x2_run01",
+   "role": "混合负载",
+   "status": "ok",
+   "start": "2026-11-16 22:12:25",
+   "end": "2026-11-16 22:25:46",
+   "server_restarts": 0,
+   "research_repo_commit": "706afb0",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261116_v2b_b2l_r8_run01",
+   "role": "Agent（第二批加长）",
+   "status": "ok",
+   "start": "2026-11-16 22:25:54",
+   "end": "2026-11-16 22:38:13",
+   "server_restarts": 0,
+   "research_repo_commit": "706afb0",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261116_v2b_b2l_s2x6_run01",
+   "role": "Agent（第二批加长）",
+   "status": "ok",
+   "start": "2026-11-16 22:38:27",
+   "end": "2026-11-16 22:49:53",
+   "server_restarts": 0,
+   "research_repo_commit": "706afb0",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261116_v2b_b2l_p4_run01",
+   "role": "Agent（第二批加长）",
+   "status": "ok",
+   "start": "2026-11-16 22:50:07",
+   "end": "2026-11-16 22:57:07",
+   "server_restarts": 0,
+   "research_repo_commit": "706afb0",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261116_v2b_b2l_s4x4_run01",
+   "role": "Agent（第二批加长）",
+   "status": "ok",
+   "start": "2026-11-16 22:57:15",
+   "end": "2026-11-16 23:04:55",
+   "server_restarts": 0,
+   "research_repo_commit": "706afb0",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261115_v2_b2_r8_run01",
+   "role": "Agent（第一批，每档太短）",
+   "status": "ok",
+   "start": "2026-11-15 05:59:15",
+   "end": "2026-11-15 06:06:51",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261115_v2_b2_p4_run01",
+   "role": "Agent（第一批，每档太短）",
+   "status": "ok",
+   "start": "2026-11-15 06:12:46",
+   "end": "2026-11-15 06:17:42",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261115_v2_b2_s2x6_run01",
+   "role": "Agent（第一批，每档太短）",
+   "status": "ok",
+   "start": "2026-11-15 06:07:03",
+   "end": "2026-11-15 06:12:33",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261115_v2_a_r8_run1_run01",
+   "role": "纯语音参照（W3b）",
+   "status": "ok",
+   "start": "2026-11-15 02:55:15",
+   "end": "2026-11-15 03:11:48",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261115_v2_a_r8_run2_run01",
+   "role": "纯语音参照（W3b）",
+   "status": "ok",
+   "start": "2026-11-15 05:43:02",
+   "end": "2026-11-15 05:58:57",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261115_v2_a_p4_run1_run01",
+   "role": "纯语音参照（W3b）",
+   "status": "ok",
+   "start": "2026-11-15 03:12:08",
+   "end": "2026-11-15 03:27:00",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261115_v2_a_p4_run2_run01",
+   "role": "纯语音参照（W3b）",
+   "status": "ok",
+   "start": "2026-11-15 05:27:22",
+   "end": "2026-11-15 05:42:51",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261115_v2_a_s1x7_run1_run01",
+   "role": "纯语音参照（W3b）",
+   "status": "ok",
+   "start": "2026-11-15 03:27:14",
+   "end": "2026-11-15 03:42:46",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261115_v2_a_s1x7_run2_run01",
+   "role": "纯语音参照（W3b）",
+   "status": "ok",
+   "start": "2026-11-15 05:12:26",
+   "end": "2026-11-15 05:27:10",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261115_v2_a_s2x6_run1_run01",
+   "role": "纯语音参照（W3b）",
+   "status": "ok",
+   "start": "2026-11-15 03:42:59",
+   "end": "2026-11-15 03:57:29",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261115_v2_a_s2x6_run2_run01",
+   "role": "纯语音参照（W3b）",
+   "status": "ok",
+   "start": "2026-11-15 04:57:35",
+   "end": "2026-11-15 05:12:15",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261115_v2_a_s3x5_run1_run01",
+   "role": "纯语音参照（W3b）",
+   "status": "ok",
+   "start": "2026-11-15 03:57:41",
+   "end": "2026-11-15 04:12:21",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261115_v2_a_s3x5_run2_run01",
+   "role": "纯语音参照（W3b）",
+   "status": "ok",
+   "start": "2026-11-15 04:42:38",
+   "end": "2026-11-15 04:57:24",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261115_v2_a_s4x4_run1_run01",
+   "role": "纯语音参照（W3b）",
+   "status": "ok",
+   "start": "2026-11-15 04:12:34",
+   "end": "2026-11-15 04:27:34",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261115_v2_a_s4x4_run2_run01",
+   "role": "纯语音参照（W3b）",
+   "status": "ok",
+   "start": "2026-11-15 04:27:45",
+   "end": "2026-11-15 04:42:29",
+   "server_restarts": 0,
+   "research_repo_commit": "22911f7",
+   "slurm_job": 625796
+  },
+  {
+   "run_dir": "20261116_v2b_a_s2x6_c03_run01",
+   "role": "纯语音参照（W3b）",
+   "status": "ok",
+   "start": "2026-11-16 19:08:23",
+   "end": "2026-11-16 19:25:26",
+   "server_restarts": 0,
+   "research_repo_commit": "78b44d5",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261116_v2b_a_r8_c03_run01",
+   "role": "纯语音参照（W3b）",
+   "status": "ok",
+   "start": "2026-11-16 19:25:36",
+   "end": "2026-11-16 19:39:54",
+   "server_restarts": 0,
+   "research_repo_commit": "62ffd33",
+   "slurm_job": 454290
+  }
+ ],
+ "analysis": {
+  "commands": [
+   "python scripts/analysis/analyze_experiment.py --slo ttft_s=1.0,e2e_per_audio_s=0.5 --no-figures <缺 analysis/analysis.json 的运行目录>",
+   "python scripts/analysis/exp19_report.py --data-root <results> --mix ... --agent ... --agent-short ... --w3b ... --out research/01_性能瓶颈/实验19_负载类型和最佳分工（完整参数见 reproduce.md）",
+   "python scripts/analysis/exp19_figures.py --out research/01_性能瓶颈/实验19_负载类型和最佳分工"
+  ],
+  "outputs": [
+   "results/summary.json",
+   "results/mix_closed.csv",
+   "results/agent_phases.csv"
+  ],
+  "where": "在 Mac 上的数据镜像上分析；镜像和集群上的原始文件逐个比过文件名和大小（2,789 个文件，analysis/、figures/ 以外），一致"
+ },
+ "figures": [
+  "figures/fig1_mix_throughput.png",
+  "figures/fig2_mix_c256.png",
+  "figures/fig3_thinker_slots.png",
+  "figures/fig4_agent_sessions.png",
+  "figures/fig5_agent_gpu_busy.png",
+  "figures/fig6_routing.png",
+  "figures/fig7_tool_latency.png"
+ ],
+ "raw_data": "PROJECT_DATA_ROOT/experiments/<运行目录>（带机器名和路径，不进公开仓库）"
+}
