@@ -84,7 +84,8 @@
   - `unusable_runs`、`restart_here_runs`、`after_restart_runs`、`lateness_flag_runs`、`at_codec_cap_runs`：每个区组这一档的标记。
   - 不可用的闭环档位、服务在这一段重启的档位不进区间（区间的 `runs` 里记为空），原始值仍在 `runs[]` 和 `levels.csv` 里。开环档位的失败不排除（登记：超时按无穷大计入）。
 - `verdicts`：
-  - `H9a`、`H9b`、`H9b_w3l`、`H9c`：每项有 `verdict`（支持 / 反驳 / 不确定 / 数据不足），以及判定用到的每个区组的数字；
+  - `H9a`、`H9b`、`H9b_w3l`、`H9c`：每项有 `verdict`（支持 / 反驳 / 不支持 / 不确定），以及判定用到的每个区组的数字；
+  - `H9c` 的 `winners` 是两种负载上容量均值最高的方案；最高值有并列时没有 `winners`，改为 `ties`（并列的方案），判定为“不确定”（补充登记二）；
   - `H9d`、`H9d_w3l`：留一法的容量模型，`predictions` 是每个方案的预测值和实测值。
   - 判定只有登记的几种结果：支持、反驳（H9c、H9d 是“不支持”）、不确定。缺值时不可能“支持”；“反驳”只看它用到的方案（例如 H9a 只看方案 3 和 2）；其余为“不确定”，`missing` 列出缺了哪些。
 - `contrasts["<方案>|<负载>|<类型>|<A或B>|<档>"]`：方案 2、3、4 减方案 1（对照），同一区组配对；每个指标（`throughput_rps`、`busy_window_rps`、`e2e_p50_s`、`e2e_p95_s`、`e2e_p99_s`、`ttft_p50_s`）有 `diff`（差值区间）、`relative`（相对变化区间）和 `infinite_blocks`（含失败、无法相减的区组数）。
@@ -92,6 +93,7 @@
 - `sensitivity`：补充登记一的敏感度分析（描述性，看过第 1 个运行后才加），把容量换成另一种算法，再算一遍 H9a、H9c、H9d、H9d_w3l：
   - `busy_window`：最高并发档的“满额时段吞吐”；
   - `stable_open_loop`：这次运行开环里仍是稳态的最高共同速率；服务在这一档重启、或错误 + 超时 > 5% 的速率不算（快速失败的请求会让在途数看起来不涨）。
+  - `stable_open_loop.lower_bound_runs["<负载>"]`：在测到的最高速率仍是稳态的运行（“方案 a 区组 b”）。它们的真实稳定容量至少是这个速率，用它算的 H9d 误差没有意义（补充登记二）。
 
 ### `levels[]` 每一行
 
@@ -127,6 +129,15 @@
 - `tokens_mean`、`audio_s_mean`、`bottleneck`；
 - `usable`、`restart_here`、`after_restart`；
 - `lateness_p99_s`、`lateness_flag`、`at_codec_cap`、`crash_affected_dropped`、`run_status`。
+
+### `stalls.json`（`exp09_stalls.py`，看完全部数据后才查的，描述性）
+
+- `rule`：`front_stall_s`（响应头在发出后超过这么多秒才到，记为前端停顿，1 秒）、`audio_excess_s`（首个音频比同一档中位数晚这么多秒以上，记为语音停顿，5 秒）、`window_pad_s`（GPU 窗口前后各多取几秒，3 秒）。
+- `levels_scanned`、`levels_with_stalls`、`levels_with_10_or_more`：扫了多少个开环档位、有停顿的档位数、停顿请求 ≥ 10 个的档位数。
+- `runs[]`：每个运行的 `run`、`placement`、`arm`、`block`、`roles`（每个角色用哪几张卡），以及：
+  - `levels[]`：每个开环档位的 `phase`、`rate_rps`、`requests`、`front_stalls`、`audio_stalls`、`stalled_requests`、`lateness_max_s`；
+  - `stalls[]`：有停顿的档位，另有 `front_at_s`、`audio_at_s`（停顿请求在这一档开始后第几秒发出）、`first_audio_gap_median_s`（首个文字到首个音频的中位数）、`window_s`（GPU 窗口）、`send_end_s`（最后一个请求的计划发送时间）、`gpu[]`（每秒一个点：`t_s`、每个角色的平均忙碌 `busy`、这一秒所有卡都是 0% 的角色 `idle_roles`）、`idle_seconds_while_sending`（还在发送请求时，每个角色全空的秒数）。
+- 所有时间都是“这一档第一个计划发送之后的秒数”；客户端的单调时钟用它的时钟锚点换到 nvidia-smi 的时钟上。
 
 ## 四、实验 10 的结果文件
 
