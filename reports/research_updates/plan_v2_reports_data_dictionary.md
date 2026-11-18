@@ -140,3 +140,27 @@
 | `doubling_gain.<c>` | 并发从 c/2 加到 c 时吞吐涨了多少（比例） |
 | `open.<分法>` | 开环：`run`、`levels[]`（`rate_rps`、`n`、`ok`、`errors`、`rps`、`slo`、`ttft_p90_s`、`e2e_p50_s`、`e2e_p90_s`、`e2e_mean_s`、`e2e_per_audio_p90`）、`capacity`（SLO 容量）、`censored`（最高一档也合格时为 true，容量只是下限）、`in_flight_at_capacity`（容量那一档的吞吐 × 平均端到端时间） |
 | `verdicts.A-H1_second_half` | `verdict`、`r8_near_best`（每个并发下 8 个完整副本是否在最好的 3% 以内）、`tolerance` |
+
+## 七、实验 4（`exp04_report.py`）
+
+### `summary.json`
+
+| 字段 | 含义 |
+|---|---|
+| `config_limits` | sglang-omni 520b49ee 的默认上限：`thinker_max_running_per_replica`（64）、`talker_max_running_per_replica`（32）、`code2wav_max_batch_size`（16）、`code2wav_max_batch_wait_ms`（0） |
+| `rule` | `back_to_back_max_gap_s`（10：下一批在这么多秒内开始才算“紧接着”）、`backlogged_mean_batch`（2：每批平均至少这么多个请求才算 code2wav 一直有活干） |
+| `curves.<分法>.levels[]` | 每个并发一行，见下 |
+
+`levels[]` 每一行：
+
+| 字段 | 含义 |
+|---|---|
+| `concurrency`、`run` | 闭环并发、运行目录 |
+| `eff_batch` | 每个角色的有效 batch（每个副本平均同时在模型里的请求数；code2wav 按服务时间算，含排队） |
+| `replicas` | 每个角色的副本数 |
+| `unit` | 单位耗时的中位数：`thinker_ms_per_token`、`talker_ms_per_audio_s`、`code2wav_ms_per_audio_s` |
+| `thinker_tokens_per_s_per_replica`、`talker_audio_s_per_s_per_replica` | 推算的每个副本的产出：有效 batch × 1000 ÷ 单位耗时 |
+| `output_tokens_p50`、`output_audio_s_p50`、`code2wav_service_ms_p50` | 输出 token 数、输出语音秒数、code2wav 服务时间（毫秒）的中位数 |
+| `gpu_util` | 各角色 GPU 的 nvidia-smi 采样平均（%）；8 个完整副本是 `full replica` |
+| `code2wav_batches` | 服务日志里这一档的批：`batches`、`requests`、`mean_size`、`max_size`、`share_at_cap`（满 16 个的批的比例） |
+| `code2wav_ms_per_request_from_gaps` | 只在每个日志一个 code2wav、且一直有活干的档位：`replicas`、`pairs`（用到的相邻批对数）、`median_of_replica_medians_ms`（各副本“间隔 ÷ 批大小”中位数的中位数） |
