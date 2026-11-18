@@ -85,3 +85,50 @@ def test_queue_increase_is_reported_in_decode_steps():
 def test_contrast_pairs_blocks():
     t = rp.contrast(world(), "w3b_ns", 32, "A", "e2e_p50", "C", "A")
     assert t["diff"]["n"] == 3 and abs(t["diff"]["mean"] - (-0.06)) < 1e-9
+
+
+def test_h11b_with_a_missing_value_is_insufficient_data():
+    runs = world()
+    for r in runs:
+        if r["arm"] == "B" and r["block"] == 2:
+            r["levels"]["w3b_ns"][64]["C"]["usable"] = False  # the c64 trace phase of B in block 2 is unusable
+    assert rp.verdicts(runs)["H11b"]["verdict"] == "数据不足"
+
+
+def test_h11c_undefined_copy_part_does_not_hide_a_refutation():
+    runs = world(b_large=0, b_inside=0, idle_drop=-0.01)  # B has no large copies; C's idle share rises in every block
+    assert rp.verdicts(runs)["H11c"]["verdict"] == "不支持"
+    runs = world(b_large=0, b_inside=0, idle_drop=0.03)
+    v = rp.verdicts(runs)["H11c"]
+    assert v["verdict"] == "不确定" and v["copy_part"] == "数据不足"
+
+
+def test_h11a_without_a_ttft_increase_is_not_missing_data():
+    v = rp.verdicts(world(extra_ttft=0.0))["H11a"]
+    assert v["verdict"] == "不适用（TTFT 没有变长）"
+    assert v["parts"]["B_vs_A_c8"]["verdict"] == "不适用（TTFT 没有变长）"
+
+
+def test_duplicate_runs_are_an_error():
+    runs = world()
+    runs.append(dict(runs[0]))
+    try:
+        rp.verdicts(runs)
+    except ValueError:
+        return
+    raise AssertionError("a second run of the same arm and block was accepted")
+
+
+def test_idle_shares_and_gap_percentiles_are_pooled_over_processes():
+    procs = [{"gaps_us": [1000.0, 3000.0], "window_us": 100000.0, "idle_us": 10000.0},
+             {"gaps_us": [5000.0], "window_us": 300000.0, "idle_us": 15000.0}]
+    p = rp.pool_procs(procs)
+    assert p["between_idle_share"] == 9000.0 / 400000.0 and p["total_idle_share"] == 25000.0 / 400000.0
+    assert p["gap_p50_ms"] == 3.0 and p["steps_with_gap"] == 3
+
+
+def test_ttft_segments_use_requests_with_every_segment():
+    names = ["a", "b", "ttft"]
+    segs = [{"a": 1.0, "b": 2.0, "ttft": 3.0}, {"a": 10.0, "b": None, "ttft": 50.0}]
+    m = rp.segment_means(segs, names)
+    assert m["means"] == {"a": 1.0, "b": 2.0, "ttft": 3.0} and m["complete"] == 1 and m["requests"] == 2

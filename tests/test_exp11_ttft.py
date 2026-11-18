@@ -56,3 +56,20 @@ def test_missing_points_give_none_not_zero():
     off = tt.clock_offset(events)["offset_ns"]
     seg = tt.segments(tt.points(events, off)["a"], {"request_id": "a", "status": "ok", "sent_ns": 0, "first_text_ns": int(80e6)})
     assert seg["prefill_to_first_emit"] is None and seg["first_emit_to_thinker_chunk"] is None
+
+
+def test_contrasts_by_mean_and_by_median_are_both_available():
+    def run(arm, block, med, mean):
+        return {"arm": arm, "block": block, "levels": {"8": {"median_ms": {"ttft": med, "queue_wait": med / 2},
+                                                             "mean_ms": {"ttft": mean, "queue_wait": mean / 2}}}}
+    runs = [run("off", b, 50.0, 55.0) for b in (1, 2)] + [run("on", b, 70.0, 75.0 + b) for b in (1, 2)]
+    by_median = tt.contrasts(runs, "off", "on")
+    by_mean = tt.contrasts(runs, "off", "on", stat="mean_ms")
+    assert by_median["8"]["ttft"]["diff"]["mean"] == 20.0
+    assert by_mean["8"]["ttft"]["diff"]["runs"] == [21.0, 22.0]
+
+
+def test_run_means_use_requests_with_every_segment():
+    rows = [{"ttft": 10.0, "queue_wait": 1.0}, {"ttft": 30.0, "queue_wait": None}]
+    m = tt.complete_means(rows, ["ttft", "queue_wait"])
+    assert m == {"ttft": 10.0, "queue_wait": 1.0}

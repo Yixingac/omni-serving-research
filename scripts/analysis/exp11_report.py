@@ -27,6 +27,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from run_records import clean, restart_flags  # noqa: E402
+
 RUN_RE = re.compile(r"exp11_perf_block(\d+)_([ABC])")
 PHASE_RE = re.compile(r"^(w3b_ns|w3l_ns|w3xl_ns)_c(\d+)_([ABC])$")
 T975 = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776}
@@ -51,8 +53,35 @@ def val(runs: list[dict[str, Any]], arm: str, block: int, w: str, c: int, mode: 
     return None
 
 
+BLOCKS = (1, 2, 3)  # registered: three blocks; a missing block gives 数据不足, never a verdict on fewer
+
+
 def blocks_of(runs: list[dict[str, Any]]) -> list[int]:
-    return sorted({r["block"] for r in runs})
+    return list(BLOCKS)
+
+
+def check_unique(runs: list[dict[str, Any]]) -> None:
+    keys = [(r["arm"], r["block"]) for r in runs]
+    if len(keys) != len(set(keys)):
+        raise ValueError(f"more than one run for the same arm and block: {sorted(keys)}")
+
+
+def pool_procs(procs: list[dict[str, Any]]) -> dict[str, Any]:
+    """Registered: the time-weighted idle share is the sum of the gaps over the sum of the windows; the processes'
+    gaps are pooled before taking percentiles (trace times in microseconds)."""
+    gaps = [g for p in procs for g in p["gaps_us"]]
+    window = sum(p["window_us"] for p in procs)
+    pct = lambda q: float(np.percentile(gaps, q)) / 1000 if gaps else None  # noqa: E731
+    return {"between_idle_share": sum(gaps) / window if window else None,
+            "total_idle_share": sum(p["idle_us"] for p in procs) / window if window else None,
+            "gap_p50_ms": pct(50), "gap_p95_ms": pct(95), "gap_p99_ms": pct(99), "steps_with_gap": len(gaps)}
+
+
+def segment_means(segs: list[dict[str, Any]], names: list[str]) -> dict[str, Any]:
+    """Means over the requests that have every segment and the TTFT, so that the segment means add up to the TTFT mean."""
+    complete = [x for x in segs if all(x.get(n) is not None for n in names)]
+    return {"means": {n: (float(np.mean([x[n] for x in complete])) if complete else None) for n in names},
+            "complete": len(complete), "requests": len(segs)}
 
 
 def finite(x: Any) -> bool:
@@ -77,31 +106,58 @@ def rule(values: list[Any], support, refute) -> str:  # noqa: ANN001
     return "不确定"
 
 
+NO_INCREASE = "不适用（TTFT 没有变长）"
+
+
 def verdicts(runs: list[dict[str, Any]]) -> dict[str, Any]:
+    check_unique(runs)
     bl = blocks_of(runs)
     out: dict[str, Any] = {}
 
     parts, shares_all = {}, []
     for arm in "BC":
         for c in (8, 32):
-            shares, in_steps = [], []
+            shares, increases, in_steps = [], [], []
             for b in bl:
                 ta, tx = val(runs, "A", b, "w3b_ns", c, "B", "ttft_mean_ms"), val(runs, arm, b, "w3b_ns", c, "B", "ttft_mean_ms")
                 qa, qx = val(runs, "A", b, "w3b_ns", c, "B", "queue_wait_mean_ms"), val(runs, arm, b, "w3b_ns", c, "B", "queue_wait_mean_ms")
-                shares.append((qx - qa) / (tx - ta) if None not in (ta, tx, qa, qx) and tx - ta > 0 else None)
+                known = None not in (ta, tx, qa, qx)
+                increases.append(tx - ta if known else None)
+                # a TTFT that did not increase in a block has no increase to split: not missing data (registration 4)
+                shares.append(None if not known else NO_INCREASE if tx - ta <= 0 else (qx - qa) / (tx - ta))
                 step = val(runs, arm, b, "w3b_ns", c, "C", "decode_busy_ms_p50")  # reported only (supplementary registration 1)
-                in_steps.append((qx - qa) / step if None not in (qa, qx) and step else None)
-            parts[f"{arm}_vs_A_c{c}"] = {"verdict": rule(shares, lambda s: s >= 0.8, lambda s: s < 0.5), "queue_share_of_ttft_increase": shares,
+                in_steps.append((qx - qa) / step if known and step else None)
+            if any(s is None for s in shares):
+                verdict = "数据不足"
+            elif all(s == NO_INCREASE for s in shares):
+                verdict = NO_INCREASE
+            elif any(s == NO_INCREASE for s in shares):
+                verdict = "不确定"
+            else:
+                verdict = rule(shares, lambda s: s >= 0.8, lambda s: s < 0.5)
+            parts[f"{arm}_vs_A_c{c}"] = {"verdict": verdict, "queue_share_of_ttft_increase": shares, "ttft_increase_ms": increases,
                                          "queue_increase_in_decode_steps": in_steps}
-            shares_all.append(parts[f"{arm}_vs_A_c{c}"]["verdict"])
-    out["H11a"] = {"verdict": "支持" if all(v == "支持" for v in shares_all) else "反驳" if all(v == "反驳" for v in shares_all)
-                   else "数据不足" if "数据不足" in shares_all else "不确定", "parts": parts}
+            shares_all.append(verdict)
+    if "数据不足" in shares_all:
+        h11a = "数据不足"
+    elif all(v == NO_INCREASE for v in shares_all):
+        h11a = NO_INCREASE
+    elif all(v == "支持" for v in shares_all):
+        h11a = "支持"
+    elif all(v == "反驳" for v in shares_all):
+        h11a = "反驳"
+    else:
+        h11a = "不确定"
+    out["H11a"] = {"verdict": h11a, "parts": parts}
 
     inside = []
     for b in bl:
-        n = sum(val(runs, "B", b, "w3b_ns", c, "C", "large_copies") or 0 for c in (8, 32, 64))
-        k = sum(val(runs, "B", b, "w3b_ns", c, "C", "large_inside") or 0 for c in (8, 32, 64))
-        inside.append(k / n if n else None)
+        ns = [val(runs, "B", b, "w3b_ns", c, "C", "large_copies") for c in (8, 32, 64)]
+        ks = [val(runs, "B", b, "w3b_ns", c, "C", "large_inside") for c in (8, 32, 64)]
+        if None in ns or None in ks:
+            inside.append(None)  # a missing level is missing data, never counted as 0 (supplementary registration 1)
+        else:
+            inside.append(sum(ks) / sum(ns) if sum(ns) else None)
     out["H11b"] = {"verdict": rule(inside, lambda s: s >= 0.9, lambda s: s < 0.5), "share_inside_annotation": inside}
 
     copies, idle = {}, []
@@ -116,15 +172,16 @@ def verdicts(runs: list[dict[str, Any]]) -> dict[str, Any]:
         ib, ic = val(runs, "B", b, "w3b_ns", 64, "C", "between_idle_share"), val(runs, "C", b, "w3b_ns", 64, "C", "between_idle_share")
         idle.append(ib - ic if None not in (ib, ic) else None)
     all_red = copies[32] + copies[64]
-    if any(v is None for v in all_red + idle) or not idle:
+    copy_part = "数据不足" if any(v is None for v in all_red) else "满足" if all(r >= 0.9 for r in all_red) else "不满足"
+    if any(d is None for d in idle):
         v = "数据不足"
-    elif all(r >= 0.9 for r in all_red) and all(d >= 0.02 for d in idle):
-        v = "支持"
     elif all(d <= 0 for d in idle):
-        v = "不支持"
+        v = "不支持"  # decided by the idle share alone, whatever the copy part
+    elif copy_part == "满足" and all(d >= 0.02 for d in idle):
+        v = "支持"
     else:
         v = "不确定"
-    out["H11c"] = {"verdict": v, "large_copy_reduction_per_step": copies, "idle_share_drop_c64": idle}
+    out["H11c"] = {"verdict": v, "copy_part": copy_part, "large_copy_reduction_per_step": copies, "idle_share_drop_c64": idle}
 
     h11d = {}
     for arm, base in (("C", "B"), ("C", "A")):
@@ -213,19 +270,19 @@ def analyze_run(exp: Path) -> dict[str, Any]:
     m = RUN_RE.search(res["experiment_id"])
     run: dict[str, Any] = {"run": exp.name, "block": int(m.group(1)), "arm": m.group(2), "restarts": res.get("server_restarts") or [], "levels": {}}
     util, anchor = load_util(exp), clock_anchor(exp)
-    restart_phases = {x.get("where", "").split()[-1] for x in run["restarts"] if x.get("where")}
-    after_restart = False
+    flags = restart_flags([ph["phase"] for ph in res.get("phases", [])], run["restarts"])
     for ph in res.get("phases", []):
-        after_restart = after_restart or ph["phase"] in restart_phases
+        restart_here, after_restart = flags[ph["phase"]]
         pm = PHASE_RE.match(ph["phase"])
         if not pm:
             continue
         w, c, mode = pm.group(1), int(pm.group(2)), pm.group(3)
-        recs = read_jsonl(exp / "raw" / f"requests_{ph['phase']}.jsonl")
+        recs, dropped = clean(read_jsonl(exp / "raw" / f"requests_{ph['phase']}.jsonl"))  # the runner reruns a crashed level
         meas = [r for r in recs if not r.get("warmup")]
         cm = client_metrics(recs)
         bad = (cm.get("errors") or 0) + (cm.get("timeouts") or 0)
-        row: dict[str, Any] = {"client": cm, "usable": not (cm.get("measured") and bad / cm["measured"] > 0.05), "after_restart": after_restart}
+        row: dict[str, Any] = {"client": cm, "usable": not (cm.get("measured") and bad / cm["measured"] > 0.05),
+                               "restart_here": restart_here, "after_restart": after_restart, "crash_affected_dropped": dropped}
         if mode == "A":
             cen = censored_percentiles(meas)
             win = phase_window(meas, anchor)
@@ -251,11 +308,12 @@ def analyze_run(exp: Path) -> dict[str, Any]:
             if off["offset_ns"] is not None:
                 pts = tt.points(tev, off["offset_ns"])
                 segs = [tt.segments(pts.get(r["request_id"], {}), r) for r in meas if r.get("status") == "ok" and r.get("request_id")]
-                means = {k: (float(np.mean([s[k] for s in segs if s.get(k) is not None])) if any(s.get(k) is not None for s in segs) else None)
-                         for k in [n for n, _, _ in tt.SEGMENTS] + ["ttft"]}
-                row.update(ttft_mean_ms=means["ttft"], queue_wait_mean_ms=means["queue_wait"], ttft_segments_mean_ms=means, clock=off)
+                sm = segment_means(segs, [n for n, _, _ in tt.SEGMENTS] + ["ttft"])
+                means = sm["means"]
+                row.update(ttft_mean_ms=means["ttft"], queue_wait_mean_ms=means["queue_wait"], ttft_segments_mean_ms=means, clock=off,
+                           ttft_split_requests={"complete": sm["complete"], "ok": sm["requests"]})
         else:
-            procs, decode_busy = [], []
+            procs, decode_busy, by_kind = [], [], {}
             for f in sorted((exp / "profiling" / "torch" / ph["phase"]).rglob("*.trace.json*")):
                 tr = st.load_trace(f)
                 s = st.steps(tr)
@@ -264,8 +322,14 @@ def analyze_run(exp: Path) -> dict[str, Any]:
                 decode_busy += [x["busy"] for x in s if x["mode"] == "DECODE"]
                 gpu = [(e["ts"], e["ts"] + e.get("dur", 0)) for e in st.events_of(tr) if e.get("cat") in st.GPU_CATS]
                 g = st.gaps(s, gpu)
-                g.pop("steps")
-                procs.append({**g, "n_steps": len(s), "blocking": st.blocking_attribution(tr)})
+                step_rows = g.pop("steps")
+                gaps_us = [x["gap_before"] for x in step_rows if x["gap_before"] is not None]
+                for x in step_rows:  # pooled per kind of step, graph and non-graph steps apart (registered)
+                    if x["gap_before"] is not None:
+                        by_kind.setdefault(f"{x['mode']}.{x['launch']}.{'graph' if x['graph'] else 'eager'}", []).append(x["gap_before"])
+                idle_us = (g["total_idle_share"] or 0.0) * (g["window"] or 0.0)
+                procs.append({**g, "n_steps": len(s), "blocking": st.blocking_attribution(tr), "gaps_us": gaps_us,
+                              "window_us": g["window"] or 0.0, "idle_us": idle_us})
             if procs:
                 row["procs"] = procs  # trace times are microseconds
                 row["steps"] = sum(p["n_steps"] for p in procs)
@@ -273,12 +337,12 @@ def analyze_run(exp: Path) -> dict[str, Any]:
                 row["large_inside"] = sum(p["blocking"]["large"]["inside"] for p in procs)
                 row["large_copies_per_1k_steps"] = 1000 * row["large_copies"] / row["steps"] if row["steps"] else None
                 row["decode_busy_ms_p50"] = float(np.median(decode_busy)) / 1000 if decode_busy else None
-                for key, src in (("between_idle_share", "between_step_idle_share"), ("total_idle_share", "total_idle_share")):
-                    v = [p[src] for p in procs if p[src] is not None]
-                    row[key] = float(np.mean(v)) if v else None
-                for q in ("p50", "p95", "p99"):
-                    v = [p[f"gap_{q}"] for p in procs if p[f"gap_{q}"] is not None]
-                    row[f"gap_{q}_ms"] = float(np.median(v)) / 1000 if v else None
+                row.update(pool_procs(procs))
+                row["gaps_by_kind"] = {k: {"steps": len(v), "gap_sum_ms": sum(v) / 1000, "gap_p50_ms": float(np.percentile(v, 50)) / 1000,
+                                           "gap_p95_ms": float(np.percentile(v, 95)) / 1000, "gap_p99_ms": float(np.percentile(v, 99)) / 1000}
+                                       for k, v in sorted(by_kind.items())}
+                for p_ in procs:
+                    p_.pop("gaps_us")  # pooled above; the per-process summaries stay
         run["levels"].setdefault(w, {}).setdefault(c, {})[mode] = row
     return run
 
@@ -300,7 +364,7 @@ def main() -> int:
                                            for c, ms in lv.items() for m, row in ms.items() if row.get("after_restart")]}}
     out = Path(a.out) / "results"
     out.mkdir(parents=True, exist_ok=True)
-    (out / "performance.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1, default=lambda x: None) + "\n")
+    (out / "performance.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1, default=str) + "\n")
     print(out / "performance.json")
     return 0
 

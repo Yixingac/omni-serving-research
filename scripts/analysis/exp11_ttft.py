@@ -108,7 +108,8 @@ def analyze_run(exp: Path, phase_re: re.Pattern, arm_re: re.Pattern) -> dict[str
         if off["offset_ns"] is None:
             continue
         pts = points(events, off["offset_ns"])
-        recs = [json.loads(x) for x in open(exp / "raw" / f"requests_{ph['phase']}.jsonl") if x.strip()]
+        recs = [r for r in (json.loads(x) for x in open(exp / "raw" / f"requests_{ph['phase']}.jsonl") if x.strip())
+                if not r.get("crash_affected")]  # the runner reruns a crashed level into the same file
         rows = [segments(pts.get(r["request_id"], {}), r) for r in recs
                 if not r.get("warmup") and r.get("status") == "ok" and r.get("request_id")]
         names = [n for n, _, _ in SEGMENTS] + ["ttft"]
@@ -116,13 +117,19 @@ def analyze_run(exp: Path, phase_re: re.Pattern, arm_re: re.Pattern) -> dict[str
                                       "complete": sum(all(x.get(n) is not None for n in names) for x in rows),
                                       "median_ms": {n: (float(np.median([x[n] for x in rows if x.get(n) is not None]))
                                                         if any(x.get(n) is not None for x in rows) else None) for n in names},
-                                      "mean_ms": {n: (float(np.mean([x[n] for x in rows if x.get(n) is not None]))
-                                                      if any(x.get(n) is not None for x in rows) else None) for n in names}}
+                                      "mean_ms": complete_means(rows, names)}
     return run
 
 
-def contrasts(runs: list[dict[str, Any]], base: str, arm: str) -> dict[str, Any]:
-    """Per level and segment: per-block medians of both arms and their paired difference (arm - base), ms."""
+def complete_means(rows: list[dict[str, Any]], names: list[str]) -> dict[str, float | None]:
+    """Means over the requests that have every segment and the TTFT, so the segment means add up to the TTFT mean."""
+    complete = [x for x in rows if all(x.get(n) is not None for n in names)]
+    return {n: (float(np.mean([x[n] for x in complete])) if complete else None) for n in names}
+
+
+def contrasts(runs: list[dict[str, Any]], base: str, arm: str, stat: str = "median_ms") -> dict[str, Any]:
+    """Per level and segment: per-block statistic (median_ms or mean_ms) of both arms and their paired difference
+    (arm - base), ms. H11a is registered on means; medians are descriptive."""
     by = {(r["arm"], r["block"]): r for r in runs}
     blocks = sorted({r["block"] for r in runs})
     levels = sorted({lv for r in runs for lv in r["levels"]}, key=float)
@@ -130,8 +137,8 @@ def contrasts(runs: list[dict[str, Any]], base: str, arm: str) -> dict[str, Any]
     for lv in levels:
         out[lv] = {}
         for n in [s for s, _, _ in SEGMENTS] + ["ttft"]:
-            a = [((by.get((arm, b)) or {}).get("levels", {}).get(lv) or {}).get("median_ms", {}).get(n) for b in blocks]
-            o = [((by.get((base, b)) or {}).get("levels", {}).get(lv) or {}).get("median_ms", {}).get(n) for b in blocks]
+            a = [((by.get((arm, b)) or {}).get("levels", {}).get(lv) or {}).get(stat, {}).get(n) for b in blocks]
+            o = [((by.get((base, b)) or {}).get("levels", {}).get(lv) or {}).get(stat, {}).get(n) for b in blocks]
             out[lv][n] = {base: interval(o), arm: interval(a), "diff": interval([y - x if x is not None and y is not None else None for x, y in zip(o, a)])}
     return out
 
@@ -151,7 +158,8 @@ def main() -> int:
     runs = [analyze_run(root / n, re.compile(a.phase_re), re.compile(a.arm_re)) for n in a.run]
     arms = a.arm or sorted({r["arm"] for r in runs} - {a.base})
     summary = {"generated_by": "scripts/analysis/exp11_ttft.py", "runs": runs, "segments": [s for s, _, _ in SEGMENTS],
-               "contrasts": {arm: contrasts(runs, a.base, arm) for arm in arms}}
+               "contrasts": {arm: contrasts(runs, a.base, arm) for arm in arms},
+               "contrasts_mean": {arm: contrasts(runs, a.base, arm, stat="mean_ms") for arm in arms}}
     out = Path(a.out) / "results"
     out.mkdir(parents=True, exist_ok=True)
     (out / f"{a.name}.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1) + "\n")
