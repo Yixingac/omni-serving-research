@@ -92,6 +92,17 @@ def test_h9c_winner_changes_with_the_workload():
     assert rp.verdict_h9c(runs)["verdict"] == "不支持"
 
 
+def test_h9c_a_tie_for_the_highest_mean_names_no_winner():
+    """On the discrete rate grid several arms can reach the same top rate; a tie for the best is not a winner."""
+    runs = []
+    for b in (1, 2, 3):
+        runs += [run(1, b, 23.5), run(2, b, 23.5)]
+        runs[-2]["workload"]["w3l"] = {"capacity_rps": 9.5}
+        runs[-1]["workload"]["w3l"] = {"capacity_rps": 10.5}
+    h = rp.verdict_h9c(runs)
+    assert h["verdict"] == "不确定" and h["ties"] == {"w3b": [1, 2]}  # arm 2 wins W3L but only shares the W3b top
+
+
 def test_leave_one_out_capacity_model():
     # isolated code2wav is the bottleneck in arms 2 and 4 (6 req/s per card), the single talker in arm 3 (14 req/s),
     # shared code2wav in arm 1 (3.7 per card): arm 1 has no other run with shared cards, arm 3 none with a full talker
@@ -168,6 +179,8 @@ def test_sensitivity_swaps_in_busy_window_and_stable_open_loop_capacity():
     s = rp.sensitivity(runs)
     assert s["busy_window"]["H9a"]["verdict"] == "支持"  # 28.5 above 27 and 25, +5.6 % over arm 2
     assert s["stable_open_loop"]["H9a"]["verdict"] == "不确定"  # 23.5 ties arm 2
+    # steady at the highest rate tested: the true stable capacity is at least that rate, not equal to it
+    assert s["stable_open_loop"]["lower_bound_runs"]["w3b"] == [f"方案 {a} 区组 {b}" for a in (2, 3) for b in (1, 2, 3)]
     runs[2]["levels"][0]["usable"] = False  # an unusable capacity level gives no busy-window value either
     assert rp.sensitivity(runs)["busy_window"]["H9a"]["verdict"] == "不确定"  # a missing value rules out 支持
 

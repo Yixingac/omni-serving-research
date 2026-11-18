@@ -270,7 +270,11 @@ def verdict_h9c(runs: list[dict[str, Any]]) -> dict[str, Any]:
     if not means["w3b"] or not means["w3l"] or any(missing.values()):
         return {"verdict": "不确定", "means": means, "missing": missing}  # means over fewer blocks are not the registered comparison
     blocks = BLOCKS
-    win = {w: max(m, key=m.get) for w, m in means.items()}
+    best = {w: [a for a, v in m.items() if math.isclose(v, max(m.values()), rel_tol=1e-9)] for w, m in means.items()}
+    ties = {w: arms for w, arms in best.items() if len(arms) > 1}
+    if ties:  # e.g. several arms steady at the top rate tested: no single best arm
+        return {"verdict": "不确定", "means": means, "ties": ties}
+    win = {w: arms[0] for w, arms in best.items()}
     if win["w3b"] == win["w3l"]:
         v = "不支持"
     else:
@@ -296,6 +300,14 @@ def stable_open_loop_capacity(run: dict[str, Any], w: str) -> float | None:
     return max(steady) if steady else None
 
 
+def at_top_rate(run: dict[str, Any], w: str) -> bool:
+    """Steady at the highest rate tested: the stable capacity is then a lower bound."""
+    rates = [x["rate_rps"] for x in run.get("levels", []) if x["workload"] == w and x["kind"] == "open_loop"
+             and x.get("mode", "A") == "A"]
+    cap = stable_open_loop_capacity(run, w)
+    return bool(rates) and cap is not None and cap == max(rates)
+
+
 def sensitivity(runs: list[dict[str, Any]]) -> dict[str, Any]:
     """Supplementary registration 1 (descriptive, added after the first run): H9a, H9c and H9d again with the
     busy-window throughput and with the stable open-loop capacity in place of the registered capacity."""
@@ -304,6 +316,9 @@ def sensitivity(runs: list[dict[str, Any]]) -> dict[str, Any]:
         alt = [{**r, "workload": {w: {**e, "capacity_rps": fn(r, w)} for w, e in r["workload"].items()}} for r in runs]
         out[name] = {"H9a": verdict_h9a(alt), "H9c": verdict_h9c(alt), "H9d": capacity_model(alt, "w3b"),
                      "H9d_w3l": capacity_model(alt, "w3l")}
+    ordered = sorted(runs, key=lambda r: (r["arm"], r["block"]))
+    out["stable_open_loop"]["lower_bound_runs"] = {w: [f"方案 {r['arm']} 区组 {r['block']}" for r in ordered
+                                                       if at_top_rate(r, w)] for w in WORKLOADS}
     return out
 
 
