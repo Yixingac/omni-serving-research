@@ -23,11 +23,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "slurm"))
 from exp01_gpu_timeline import setup_matplotlib  # noqa: E402
 from make_plan_exp06_08 import PLACEMENTS  # noqa: E402
 
-ARMS = [("t2_k6_shared", "2+6：talker、code2wav 同在 6 张卡（基线）", "#000000", "o", "-"),
-        ("t2_k4_c2", "talker 4 卡 + code2wav 单独 2 卡", "#0072B2", "s", "-"),
-        ("t2_k3_c3", "talker 3 卡 + code2wav 单独 3 卡", "#009E73", "^", "-"),
-        ("t2_k2_c4", "talker 2 卡 + code2wav 单独 4 卡", "#E69F00", "D", "-"),
-        ("t2_k3_shared", "talker、code2wav 同在 3 张卡（只用 5 卡，机制对照）", "#999999", "v", "--")]
+ARMS = [("t2_k6_shared", "方案 A：talker、code2wav 同在 6 张卡（2+6，基线）", "#000000", "o", "-"),
+        ("t2_k4_c2", "方案 B：talker 4 卡 + code2wav 独占 2 卡", "#0072B2", "s", "-"),
+        ("t2_k3_c3", "方案 C：talker 3 卡 + code2wav 独占 3 卡", "#009E73", "^", "-"),
+        ("t2_k2_c4", "方案 D：talker 2 卡 + code2wav 独占 4 卡", "#E69F00", "D", "-"),
+        ("t2_k3_shared", "方案 E：talker、code2wav 同在 3 张卡（只用 5 卡，机制对照）", "#999999", "v", "--")]
+LETTER = {arm: label.split("：")[0] for arm, label, *_ in ARMS}
+
+
+def plain_log(ax, axis: str = "y") -> None:  # noqa: ANN001
+    """Log axis with ordinary numbers (2, 3, 5, 10) instead of 2×10⁰."""
+    from matplotlib.ticker import FuncFormatter, LogLocator
+
+    a = ax.yaxis if axis == "y" else ax.xaxis
+    a.set_major_locator(LogLocator(base=10, subs=(1.0, 2.0, 3.0, 5.0)))
+    a.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}"))
+    a.set_minor_formatter(FuncFormatter(lambda v, _: ""))
 ROLE_COLORS = {"thinker": "#CC79A7", "talker": "#56B4E9", "code2wav": "#D55E00", "unused": "#FFFFFF"}
 
 
@@ -84,7 +95,8 @@ def fig_layouts(plt, path: Path) -> None:  # noqa: ANN001
 
 
 def fig_closed_throughput(plt, by_arm: dict[str, Any], path: Path) -> None:  # noqa: ANN001
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(12, 4))
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(12, 4.3))
+    fig.suptitle("图 2　闭环：同时在系统里的请求越多，每种放置每秒能完成多少", fontsize=10, x=0.01, ha="left")
     plot_series(a1, by_arm, "closed", "client.throughput_rps")
     a1.set_xscale("log", base=2)
     a1.set_xticks([8, 64, 128, 256])
@@ -108,12 +120,14 @@ def fig_closed_throughput(plt, by_arm: dict[str, Any], path: Path) -> None:  # n
 
 
 def fig_open_latency(plt, by_arm: dict[str, Any], path: Path) -> None:  # noqa: ANN001
-    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.3))
+    fig.suptitle("图 3　开环：请求按固定速率随机到达时，用户要等多久", fontsize=10, x=0.01, ha="left")
     for ax, p, title in ((axes[0], "client.e2e_s.p50", "（a）端到端 P50"), (axes[1], "client.e2e_s.p95", "（b）端到端 P95")):
         plot_series(ax, by_arm, "open", p)
         ax.axvspan(12.5, 19, color="#eeeeee", zorder=0)
         ax.text(12.7, ax.get_ylim()[1] * 0.95, "探索性速率（预跑之后才加）", fontsize=7, va="top", color="#666666")
         ax.set_yscale("log")
+        plain_log(ax)
         ax.set_xlabel("开环到达速率（请求/秒，泊松到达）", fontsize=8)
         ax.set_ylabel("秒（对数刻度）", fontsize=8)
         ax.set_title(title, fontsize=9, loc="left")
@@ -125,7 +139,8 @@ def fig_open_latency(plt, by_arm: dict[str, Any], path: Path) -> None:  # noqa: 
 
 
 def fig_gpu(plt, summary: dict[str, Any], path: Path) -> None:  # noqa: ANN001
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(12, 4), gridspec_kw={"width_ratios": [3, 2]})
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(12, 4.3), gridspec_kw={"width_ratios": [3, 2]})
+    fig.suptitle("图 4　闭环并发 256 时每种卡有多忙，以及同卡时 talker 和 code2wav 抢卡的时间", fontsize=10, x=0.01, ha="left")
     roles = ["thinker", "talker", "code2wav", "talker+code2wav"]
     colors = {"thinker": ROLE_COLORS["thinker"], "talker": ROLE_COLORS["talker"], "code2wav": ROLE_COLORS["code2wav"], "talker+code2wav": "#8c6bb1"}
     width = 0.2
@@ -142,7 +157,7 @@ def fig_gpu(plt, summary: dict[str, Any], path: Path) -> None:  # noqa: ANN001
             labeled.add(role)
             a1.scatter([x] * len(vals), vals, s=8, color="black", zorder=3)
     a1.set_xticks(range(len(ARMS)))
-    a1.set_xticklabels([a[0] for a in ARMS], fontsize=7)
+    a1.set_xticklabels([LETTER[a[0]] for a in ARMS], fontsize=8)
     a1.set_ylim(0, 1.05)
     a1.yaxis.set_major_formatter(lambda v, _: f"{v:.0%}")
     a1.set_ylabel("nvidia-smi 忙碌比例（闭环并发 256）", fontsize=8)
@@ -159,7 +174,7 @@ def fig_gpu(plt, summary: dict[str, Any], path: Path) -> None:  # noqa: ANN001
         else:
             a2.text(i, 0.01, "不同卡\n不会重叠" if not arm.endswith("shared") else "无数据", ha="center", fontsize=6.5, color="#666666")
     a2.set_xticks(range(len(ARMS)))
-    a2.set_xticklabels([a[0] for a in ARMS], fontsize=7)
+    a2.set_xticklabels([LETTER[a[0]] for a in ARMS], fontsize=8)
     a2.yaxis.set_major_formatter(lambda v, _: f"{v:.0%}")
     a2.set_ylabel("同一张卡上 talker、code2wav 的 kernel 同时在跑的时间占比", fontsize=7)
     a2.set_title("（b）同卡时两者有多少时间在抢（并发 128，3 秒 trace）", fontsize=9, loc="left")
@@ -179,7 +194,10 @@ def get(d: Any, path: str) -> Any:
 
 
 def fig_stages(plt, by_arm: dict[str, Any], path: Path) -> None:  # noqa: ANN001
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+    from matplotlib.ticker import FuncFormatter
+
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.3))
+    fig.suptitle("图 5　各段的处理时间和排队时间（闭环，中位数）", fontsize=10, x=0.01, ha="left")
     for ax, p, title, ylabel in ((axes[0], "talker_gen_ms_per_audio_s.p50", "（a）talker 生成 1 秒语音要多久", "毫秒 / 每秒语音（中位数）"),
                                  (axes[1], "c2w_flow_us_per_frame_b1.p50", "（b）code2wav：单个请求的批，flow 每帧 GPU 时间", "微秒 / 帧（中位数）"),
                                  (axes[2], "breakdown.queue_ms.p50", "（c）code2wav 收件队列里的排队", "毫秒（中位数）")):
@@ -192,8 +210,10 @@ def fig_stages(plt, by_arm: dict[str, Any], path: Path) -> None:  # noqa: ANN001
         ax.set_title(title, fontsize=9, loc="left")
         ax.tick_params(labelsize=7)
     axes[2].set_yscale("log")
-    axes[0].legend(fontsize=6.5, loc="upper left", frameon=False)
-    fig.tight_layout()
+    axes[2].yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}"))
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, fontsize=7, loc="lower center", ncol=3, frameon=False, bbox_to_anchor=(0.5, -0.02))
+    fig.tight_layout(rect=(0, 0.1, 1, 1))
     fig.savefig(path, bbox_inches="tight")
     plt.close(fig)
 
@@ -210,6 +230,7 @@ def fig_tradeoff(plt, by_arm: dict[str, Any], path: Path) -> None:  # noqa: ANN0
         for x, y, lv in pts:
             ax.annotate(f"{lv:g}", (x, y), textcoords="offset points", xytext=(4, 4), fontsize=6, color=color)
     ax.set_yscale("log")
+    plain_log(ax)
     ax.set_xlabel("吞吐（请求/秒）", fontsize=8)
     ax.set_ylabel("端到端 P50（秒，对数刻度）", fontsize=8)
     ax.set_title("图 6　吞吐和延迟的取舍（闭环，点旁边的数字是并发）", fontsize=10, loc="left")

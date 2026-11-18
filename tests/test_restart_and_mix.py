@@ -209,6 +209,20 @@ def test_stop_kills_stage_processes_left_by_a_crashed_server(tmp_path):
         pytest.fail("orphaned group member still alive after stop()")
 
 
+def test_stop_tolerates_eperm_from_a_group_left_with_zombies(tmp_path, monkeypatch):
+    # macOS answers killpg with EPERM while the only members left are zombies nobody has reaped yet
+    # (1 in 40 runs of the test above); stop() must treat that like an empty group, not raise.
+    srv = Server({"name": "x", "command": "exit 3"}, {}, [], free_port(), tmp_path / "logs", 10)
+    srv.start()
+    srv.proc.wait(timeout=10)
+
+    def eperm(pgid, sig):  # noqa: ANN001, ARG001
+        raise PermissionError(1, "Operation not permitted")
+
+    monkeypatch.setattr(os, "killpg", eperm)
+    assert srv.stop(grace_s=1) == 3
+
+
 def test_mark_crash_affected_rewrites_only_given_ids(tmp_path):
     p = tmp_path / "r.jsonl"
     p.write_text("".join(json.dumps({"request_id": f"q{i}", "status": "ok"}) + "\n" for i in range(4)))

@@ -309,8 +309,9 @@ class Server:
         try:
             # Also after the main process has exited: the stage processes of a crashed server keep its
             # process group and can still hold GPU memory, which a restart on the same GPUs needs.
+            # macOS answers EPERM while the only members left are zombies nobody has reaped yet.
             os.killpg(self.proc.pid, signal.SIGTERM)
-        except ProcessLookupError:
+        except (ProcessLookupError, PermissionError):
             pass
         for p in desc:
             try:
@@ -323,7 +324,7 @@ class Server:
         except subprocess.TimeoutExpired:
             try:
                 os.killpg(self.proc.pid, signal.SIGKILL)
-            except ProcessLookupError:
+            except (ProcessLookupError, PermissionError):
                 pass
             rc = self.proc.wait(timeout=30)
         for p in desc:
@@ -337,7 +338,7 @@ class Server:
         if not _wait_group_gone(self.proc.pid, max(1.0, deadline - time.monotonic())):
             try:
                 os.killpg(self.proc.pid, signal.SIGKILL)
-            except ProcessLookupError:
+            except (ProcessLookupError, PermissionError):
                 pass
             _wait_group_gone(self.proc.pid, 30.0)
         return rc

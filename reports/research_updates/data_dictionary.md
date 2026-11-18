@@ -99,14 +99,18 @@
     - `c2w_flow_us_per_frame_b1`：批大小为 1 的批，flow GPU 跨度 ÷ 帧数的中位数，单位微秒/帧，带样本数 `n`；
     - `talker_gen_ms_per_audio_s`：talker 从开始 prefill 到模型路径结束的时间 ÷ 语音秒数；
     - `talker_queue_ms`：talker 排队，scheduler_queue_enter → scheduler_prefill_start；
-    - `gpu[角色]`：这一档时间窗内各角色卡的 nvidia-smi 忙碌比例 `busy` 和最大显存 `mem_max_mib`。角色是 thinker、talker、code2wav，同卡时是 talker+code2wav，还有 unused。
+    - `gpu[角色]`：这一档时间窗内各角色卡的 nvidia-smi 忙碌比例 `busy`、最大显存 `mem_max_mib`、平均 SM 时钟 `sm_clock_mhz` 和平均功耗 `power_w`。角色是 thinker、talker、code2wav，同卡时是 talker+code2wav，还有 unused；
+    - 描述性指标（不参与判定）：
+      - `hop_ms`：talker → code2wav 的传递时间，talker 的 stage_hop_sent → code2wav 的 stage_input_received；
+      - `c2w_gpu_ms_per_audio_s`：这一档各批 flow + HiFT 的 GPU 时间之和 ÷ 这些批的语音秒数之和（`batches` 是计入的批数）；
+      - `thinker_ms_per_token`：同实验 8，thinker 的 prefill 结束到最后一个 token，每个 token 平均多少毫秒。
   - `kernel_c128`：并发 128 的 3 秒 trace 里，每张 talker 卡上 talker 和 code2wav 的 kernel 忙碌时间、两者同时在跑的时间（`overlap_ms`），以及 `overlap_share_mean`。
 - `by_arm[放置]`：各指标跨区组的 `interval`。错误率 > 5% 的档位不计入，`usable_blocks` 列出计入的区组。
 - `verdicts`：H7a、H7b、H7c，判定规则见实验 7 的 hypotheses.md。
 
 ### `levels.csv`
 
-每个运行的每一档（`section` = closed 或 open，`level` = 并发或速率），列出吞吐、端到端 P50/P95/P99、TTFT P50、错误数、code2wav 排队和总时间、talker 每秒语音的时间和排队、flow 每帧时间。
+每个运行的每一档（`section` = closed 或 open，`level` = 并发或速率），列出吞吐、端到端 P50/P95/P99、TTFT P50、错误数、code2wav 排队和总时间、talker 每秒语音的时间和排队、flow 每帧时间，以及首个音频的 P50（`first_audio_p50_s`）、传递时间的 P50（`hop_p50_ms`）、code2wav 每秒语音的 GPU 时间（`c2w_gpu_ms_per_audio_s`）、thinker 每个 token 的 P50（`thinker_ms_per_token_p50`）。`arm` 是配置名，对应 README 里的方案 A–E。
 
 ## 实验 8：`research/01_性能瓶颈/实验08_Thinker_Lookahead/results/`
 
@@ -116,4 +120,4 @@
 | `phase1.json` | 合并后的表 `cells[条件][并发][指标]`（`interval`），以及判定 `verdicts`：H8a–H8d、第三阶段进入条件。`flush_share` 是 flush 的轮次占全部轮次的比例 |
 | `zoom.json` | 图 1 用的几步时间线：`gpu` 是（开始毫秒、时长、是否在 graph 里），`cpu` 是（开始、时长、类型：sync / launch / copy_wait / api） |
 | `proto_check.json` | 第三阶段正确性检查。`check_c1`：按问题分组的比较（`per_arm` 每组自己重复之间一致的问题数；`vs_off` 和“关”相同、不同、不可比的问题数）。`check_c1_by_index`：第 k 个请求对第 k 个请求，`same` 是三样东西（文字、隐藏状态哈希、语音编码哈希）各有多少个相同。`check_c8`：混合批的错误数、缺哈希数、隐藏状态行数减文字 token 数的分布。`c1_requests`：每个请求的明细 |
-| `phase3.json` | 第三阶段性能对比（`exp08_proto_perf.py`，运行后生成）：`contrasts[并发][段][指标]` 的“关”“开”、配对差、相对差，以及 `verdicts`。`sync_calls_per_step` 是每步里 CPU 等 GPU 的调用次数（同步调用，加上阻塞超过 1 毫秒的拷贝） |
+| `phase3.json` | 第三阶段性能对比（`exp08_proto_perf.py`）：`contrasts[并发][段][指标]` 的“关”“开”、配对差、相对差，以及 `verdicts`。`sync_calls_per_step` 是每步里 CPU 等 GPU 的调用次数（同步调用，加上阻塞超过 1 毫秒的拷贝） |
