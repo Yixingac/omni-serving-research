@@ -293,7 +293,7 @@ index 12512fe02..2c19d4a11 100644
  
  
 diff --git a/sglang_omni/models/minicpm_o/thinker_model_runner.py b/sglang_omni/models/minicpm_o/thinker_model_runner.py
-index bfd3f6d42..94d0417a1 100644
+index bfd3f6d42..7da209be0 100644
 --- a/sglang_omni/models/minicpm_o/thinker_model_runner.py
 +++ b/sglang_omni/models/minicpm_o/thinker_model_runner.py
 @@ -3,6 +3,7 @@
@@ -475,7 +475,7 @@ index bfd3f6d42..94d0417a1 100644
  
      def finalize_skip_rids(self, scheduler_output: SchedulerOutput) -> set[str]:
          """Do not advance generation state for non-final prefill chunks."""
-@@ -186,9 +317,51 @@ class MiniCPMOThinkerModelRunner(ThinkerModelRunner):
+@@ -186,9 +317,54 @@ class MiniCPMOThinkerModelRunner(ThinkerModelRunner):
              seq = seq[-len(known_tts_output_ids) - 1 : -1]
          else:
              pass
@@ -506,6 +506,9 @@ index bfd3f6d42..94d0417a1 100644
 +                    "snapshot_hidden": self.snapshot_hidden,
 +                    "side_copy": self.side_copy,
 +                    "hidden_fingerprint": self.fingerprint(stacked),
++                    # the request's output tokens, so runs can be paired on identical text (实验 11)
++                    "output_ids_sha256": exp_trace.digest(list(getattr(req_data, "output_ids", None) or [])),
++                    "output_len": len(getattr(req_data, "output_ids", None) or []),
 +                },
 +                exp_trace.now_ns(),
 +            )
