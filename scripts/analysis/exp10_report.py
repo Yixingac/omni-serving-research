@@ -121,12 +121,33 @@ def compare_waves(a: dict[str, dict[str, Any]], b: dict[str, dict[str, Any]]) ->
 
 # ---------------------------------------------------------------- verdicts
 
+def valid(cell: dict[str, Any] | None) -> bool:
+    """Registered: a phase with errors + timeouts > 5 % is unusable; a phase whose batches did not follow the control
+    file is invalid. Both are reported but left out of the verdicts."""
+    return bool(cell) and cell.get("usable") is not False and (cell.get("control") or {}).get("ok") is not False
+
+
 def _per_block(runs: list[dict[str, Any]], graph: bool, w: str, setting: str, key: str) -> dict[int, float]:
-    return {r["block"]: r["cells"][(w, setting)][key] for r in runs if r["graph"] == graph and (w, setting) in r["cells"]
+    return {r["block"]: r["cells"][(w, setting)][key] for r in runs if r["graph"] == graph and valid(r["cells"].get((w, setting)))
             and r["cells"][(w, setting)].get(key) is not None}
 
 
-def verdicts(runs: list[dict[str, Any]]) -> dict[str, Any]:
+def validation_candidates(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Registered trigger for the full-service validation: a setting whose completed audio seconds per second, graph on,
+    W3b or MIX, is at least 5 % above fifo16 in every block."""
+    blocks = sorted({r["block"] for r in runs})
+    out = []
+    for w in ("w3b", "mix"):
+        base = _per_block(runs, True, w, "fifo16", "audio_s_per_s")
+        for s in sorted({s for r in runs for ww, s in r["cells"] if ww == w and s != "fifo16"}):
+            x = _per_block(runs, True, w, s, "audio_s_per_s")
+            gain = [x[b] / base[b] - 1 for b in blocks if b in x and b in base and base[b]]
+            if len(gain) == len(blocks) and all(g >= 0.05 for g in gain):
+                out.append({"workload": w, "setting": s, "gain": gain})
+    return out
+
+
+def verdicts(runs: list[dict[str, Any]], correctness_ok: bool | None = True) -> dict[str, Any]:
     out: dict[str, Any] = {}
     blocks = sorted({r["block"] for r in runs})
 
@@ -163,7 +184,8 @@ def verdicts(runs: list[dict[str, Any]]) -> dict[str, Any]:
     ratios = []
     for b in blocks:
         cl, cf = (next((r["cells"].get(("mix", s)) for r in runs if r["graph"] and r["block"] == b), None) for s in ("length16", "fifo16"))
-        if cl and cf and cf.get("wait_long_p95") and cf.get("wait_long_max"):
+        if valid(cl) and valid(cf) and cl.get("wait_long_p95") is not None and cl.get("wait_long_max") is not None \
+                and cf.get("wait_long_p95") and cf.get("wait_long_max"):
             ratios.append((cl["wait_long_p95"] / cf["wait_long_p95"], cl["wait_long_max"] / cf["wait_long_max"]))
     if len(ratios) < len(blocks):
         v = "数据不足"
@@ -188,7 +210,22 @@ def verdicts(runs: list[dict[str, Any]]) -> dict[str, Any]:
     else:
         v = "不确定"
     out["H10e"] = {"verdict": v, "graph_gain": gain}
+    # Registered: if any request's audio does not match its codec tokens, or waveforms differ in length, stop the
+    # length-aware performance conclusions and report only the failure evidence.
+    if correctness_ok is False:
+        for h in ("H10c", "H10d"):
+            out[h] = {"verdict": "停止（正确性规则未通过）"}
+    elif correctness_ok is None:
+        for h in ("H10c", "H10d"):
+            out[h]["verdict"] = "数据不足（缺正确性检查）"
     return out
+
+
+def correctness(runs: list[dict[str, Any]], check: dict[str, Any] | None) -> dict[str, Any]:
+    audio = sum((c.get("correspondence") or {}).get("mismatched", 0) for r in runs for c in r["cells"].values())
+    samples = sum((x or {}).get("sample_mismatch", 0) for x in ((check or {}).get("vs_fifo1") or {}).values())
+    ok = None if check is None else (audio == 0 and samples == 0)
+    return {"ok": ok, "audio_codec_mismatch": audio, "waveform_length_mismatch": samples, "check_run": (check or {}).get("run")}
 
 
 def interval(values: list[Any]) -> dict[str, Any]:
@@ -256,6 +293,8 @@ def analyze_phase(exp: Path, phase: str, setting: tuple[str, int] | None) -> dic
             "correspondence": correspondence(mine, client),
             "wait": wait_by_length({k: v for k, v in reqs.items() if k in ids}, audio),
             "queue_ms": bd.stats([reqs[i]["queue_ms"] for i in ids if i in reqs and reqs[i].get("queue_ms") is not None])}
+    bad = (cell["client"].get("errors") or 0) + (cell["client"].get("timeouts") or 0)
+    cell["usable"] = not (cell["client"].get("measured") and bad / cell["client"]["measured"] > 0.05)
     cell["audio_s_per_s"] = cell["client"].get("audio_s_per_s")
     cell["wait_long_p95"] = (cell["wait"].get("long") or {}).get("p95")
     cell["wait_long_max"] = (cell["wait"].get("long") or {}).get("max")
@@ -267,10 +306,15 @@ def analyze_run(exp: Path) -> dict[str, Any]:
     m = RUN_RE.search(res["experiment_id"])
     settings = phase_settings(res)
     run = {"run": exp.name, "graph": m.group(1) == "graph", "block": int(m.group(2)), "restarts": res.get("server_restarts") or [], "cells": {}}
+    restart_phases = {x.get("where", "").split()[-1] for x in run["restarts"] if x.get("where")}
+    after_restart = False
     for ph in res.get("phases", []):
+        after_restart = after_restart or ph["phase"] in restart_phases
         pm = PHASE_RE.match(ph["phase"])
         if pm:
-            run["cells"][(pm.group(1), pm.group(2))] = analyze_phase(exp, ph["phase"], settings.get(ph["phase"]))
+            cell = analyze_phase(exp, ph["phase"], settings.get(ph["phase"]))
+            cell["after_restart"] = after_restart  # registered: flagged, not removed
+            run["cells"][(pm.group(1), pm.group(2))] = cell
     return run
 
 
@@ -303,16 +347,19 @@ def summarize(runs: list[dict[str, Any]]) -> dict[str, Any]:
     for graph in (True, False):
         for w, s in keys:
             rows = sorted((r for r in runs if r["graph"] == graph and (w, s) in r["cells"]), key=lambda r: r["block"])
-            cells = [r["cells"][(w, s)] for r in rows]
+            # invalid cells (unusable or control not applied) stay in runs[] and flags, but not in the intervals
+            cells = [r["cells"][(w, s)] if valid(r["cells"][(w, s)]) else {"client": {}, "batch_size": {}} for r in rows]
             out[f"{'graph' if graph else 'nograph'}|{w}|{s}"] = {
                 k: interval([c.get(k) for c in cells]) for k in ("audio_s_per_s", "gpu_ms_per_audio_s", "padding", "graph_share",
                                                                     "wait_long_p95", "wait_long_max")} | {
-                "batch_size_mean": interval([c["batch_size"]["mean"] for c in cells]),
+                "batch_size_mean": interval([c["batch_size"].get("mean") for c in cells]),
                 "throughput_rps": interval([c["client"].get("throughput_rps") for c in cells]),
                 "e2e_p50_s": interval([(c["client"].get("e2e_s") or {}).get("p50") for c in cells]),
                 "e2e_p95_s": interval([(c["client"].get("e2e_s") or {}).get("p95") for c in cells]),
-                "control_ok": [c["control"]["ok"] if c.get("control") else None for c in cells],
-                "audio_mismatch": [c["correspondence"]["mismatched"] for c in cells], "blocks": [r["block"] for r in rows]}
+                "control_ok": [(r["cells"][(w, s)].get("control") or {}).get("ok") for r in rows],
+                "usable": [r["cells"][(w, s)].get("usable") for r in rows],
+                "audio_mismatch": [(r["cells"][(w, s)].get("correspondence") or {}).get("mismatched") for r in rows],
+                "blocks": [r["block"] for r in rows]}
     return out
 
 
@@ -327,11 +374,22 @@ def main() -> int:
     runs = [analyze_run(root / n) for n in a.run]
     summary: dict[str, Any] = {"generated_by": "scripts/analysis/exp10_report.py",
                                "runs": [{**r, "cells": {f"{w}|{s}": c for (w, s), c in r["cells"].items()}} for r in runs]}
+    check = analyze_check(root / a.check_run) if a.check_run else None
+    if check:
+        summary["check"] = check
     if runs:
+        corr = correctness(runs, check)
+        cands = validation_candidates(runs)
         summary["by_setting"] = summarize(runs)
-        summary["verdicts"] = verdicts(runs)
-    if a.check_run:
-        summary["check"] = analyze_check(root / a.check_run)
+        summary["correctness"] = corr
+        summary["verdicts"] = verdicts(runs, corr["ok"])
+        summary["validation"] = {"candidates": cands, "decision": "在实验 9 最好的放置上做完整服务验证" if cands else "没有找到值得验证的设置"}
+        summary["flags"] = {"unusable": [f"{'graph' if r['graph'] else 'nograph'} block {r['block']} {w}|{st}" for r in runs
+                                         for (w, st), c in r["cells"].items() if c.get("usable") is False],
+                            "control_invalid": [f"{'graph' if r['graph'] else 'nograph'} block {r['block']} {w}|{st}" for r in runs
+                                                for (w, st), c in r["cells"].items() if (c.get("control") or {}).get("ok") is False],
+                            "after_restart": [f"{'graph' if r['graph'] else 'nograph'} block {r['block']} {w}|{st}" for r in runs
+                                              for (w, st), c in r["cells"].items() if c.get("after_restart")]}
     out = Path(a.out) / "results"
     out.mkdir(parents=True, exist_ok=True)
     (out / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1, default=str) + "\n")

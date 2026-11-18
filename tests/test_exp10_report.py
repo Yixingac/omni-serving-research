@@ -94,3 +94,39 @@ def test_correctness_pairs_requests_by_codec_hash_across_phases():
     assert math.isclose(c["rel_diff_max"], math.sqrt(0.0004 / 4.0004))  # the reference (b) is the denominator
     phase_b["x2"]["stats"][0] = 961.0
     assert rp.compare_waves(phase_a, phase_b)["sample_mismatch"] == 1
+
+
+def test_unusable_and_invalid_cells_are_left_out():
+    runs = world()
+    runs[1]["cells"][("w3b", "fifo1")]["usable"] = False  # block 1, graph off: errors + timeouts > 5 %
+    assert rp.verdicts(runs)["H10a"]["verdict"] == "数据不足"
+    runs = world()
+    runs[0]["cells"][("mix", "length16")]["control"] = {"ok": False}  # block 1, graph on: the control file did not take effect
+    v = rp.verdicts(runs)
+    assert v["H10c"]["verdict"] == "数据不足" and v["H10d"]["verdict"] == "数据不足"
+
+
+def test_length_aware_conclusions_stop_when_correctness_fails():
+    v = rp.verdicts(world(), correctness_ok=False)
+    assert v["H10c"]["verdict"] == v["H10d"]["verdict"] == "停止（正确性规则未通过）"
+    assert v["H10a"]["verdict"] == "支持"
+
+
+def test_validation_candidates_need_five_percent_more_audio_in_every_block():
+    runs = world()  # graph on, MIX: length16 110 vs fifo16 100 audio s/s in every block
+    cands = rp.validation_candidates(runs)
+    assert [(c["workload"], c["setting"]) for c in cands] == [("mix", "length16")]
+    assert all(math.isclose(g, 0.1) for g in cands[0]["gain"])
+    runs[2]["cells"][("mix", "length16")]["audio_s_per_s"] = 104.0  # block 2, graph on: only +4 %
+    assert rp.validation_candidates(runs) == []
+
+
+def test_summary_intervals_leave_out_invalid_cells():
+    runs = world()
+    for r in runs:
+        for c in r["cells"].values():
+            c.update(batch_size={"mean": 4.0}, client={"throughput_rps": 1.0, "e2e_s": {"p50": 1.0, "p95": 2.0}},
+                     control={"ok": True}, correspondence={"mismatched": 0})
+    runs[0]["cells"][("mix", "fifo16")]["usable"] = False  # block 1, graph on
+    s = rp.summarize(runs)["graph|mix|fifo16"]["audio_s_per_s"]
+    assert s["n"] == 2 and s["runs"][0] is None and s["runs"][1:] == [100.0, 100.0]

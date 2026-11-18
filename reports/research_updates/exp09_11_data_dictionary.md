@@ -75,11 +75,14 @@
     - `capacity_rps`：登记的容量，即最高闭环并发 A 段的完成速率 = 完成数 ÷（最后完成 − 最先发出）；
     - `audio_s_per_s`；
     - `capacity_from`：取自 A 段还是 B 段；
-    - `bottleneck`：B 段驻留时间最长的阶段。
+    - `bottleneck`：B 段驻留时间最长的阶段；
+    - `excluded`：按登记的规则没有用上的值和原因（这一档错误 + 超时 > 5%，或服务在这一段重启），这时对应的容量或瓶颈记为空。
   - `levels[]`：每段每档一行，字段见下表。
 - `by_arm["<方案>"]["<负载>|<类型>|<A或B>|<档>"]`：
   - 三个区组汇总成区间的指标：`throughput_rps`、`busy_window_rps`、`audio_s_per_s`、`e2e_p50_s`、`e2e_p95_s`、`e2e_p99_s`、`ttft_p50_s`、`first_audio_p50_s`、`growth_slope_rps`、`tokens_mean`、`audio_s_mean`；
-  - `steady_runs`：每个区组是否稳态。
+  - `steady_runs`：每个区组是否稳态；
+  - `unusable_runs`、`after_restart_runs`：每个区组这一档是否不可用、是否在重启之后。
+  - 不可用的闭环档位不进区间（区间的 `runs` 里记为空），原始值仍在 `runs[]` 和 `levels.csv` 里。开环档位不排除（登记：超时按无穷大计入）。
 - `verdicts`：
   - `H9a`、`H9b`、`H9b_w3l`、`H9c`：每项有 `verdict`（支持 / 反驳 / 不确定 / 数据不足），以及判定用到的每个区组的数字；
   - `H9d`、`H9d_w3l`：留一法的容量模型，`predictions` 是每个方案的预测值和实测值。
@@ -103,6 +106,8 @@
 | `bottleneck` | B 段：驻留时间之和最大的阶段 |
 | `code2wav` | B 段：`batch_size`（每批大小的统计）、`queue_ms`（在 code2wav 收件队列里等待的毫秒数） |
 | `talker_gen_ms_per_audio_s`、`talker_queue_ms` | B 段：talker 每生成 1 秒语音用的毫秒数；在 talker 前排队的毫秒数 |
+| `usable` | 错误 + 超时 ≤ 测量请求的 5%。只对闭环档位起作用 |
+| `restart_here`、`after_restart` | 服务是否在这一段重启；这一段是否在某次重启之后 |
 
 ### `levels.csv`
 
@@ -112,7 +117,8 @@
 - `throughput_rps`、`busy_window_rps`、`audio_s_per_s`；
 - `e2e_p50_s`、`e2e_p95_s`、`e2e_p99_s`、`failed`、`ttft_p50_s`；
 - `growth_slope_rps`、`steady`；
-- `tokens_mean`、`audio_s_mean`、`bottleneck`。
+- `tokens_mean`、`audio_s_mean`、`bottleneck`；
+- `usable`、`restart_here`、`after_restart`。
 
 ## 四、实验 10 的结果文件
 
@@ -123,8 +129,19 @@
   - `cells["<负载>|<设置>"]`：负载是 `w3b` 或 `mix`，设置是 `fifo1`…`fifo16`、`length8`、`length16`。每个格子的字段见下表。
 - `by_setting["graph|<负载>|<设置>"]` 或 `by_setting["nograph|<负载>|<设置>"]`：
   - 三个区组的区间：`audio_s_per_s`、`gpu_ms_per_audio_s`、`padding`、`graph_share`、`wait_long_p95`、`wait_long_max`、`batch_size_mean`、`throughput_rps`、`e2e_p50_s`、`e2e_p95_s`；
-  - 以及 `control_ok`、`audio_mismatch`、`blocks`。
+  - 以及 `control_ok`、`usable`、`audio_mismatch`、`blocks`（每个区组一个值）。
+  - 无效的格子（不可用，或控制文件没有生效）不进区间，原始值仍在 `runs[]` 里。
 - `verdicts`：H10a–H10e，每项有 `verdict` 和每个区组的数字。
+  - 正确性规则没通过时，H10c、H10d 写“停止（正确性规则未通过）”；
+  - 没有正确性检查运行时，写“数据不足（缺正确性检查）”。
+- `correctness`：
+  - `audio_codec_mismatch`：所有性能运行里，语音秒数和编码数对不上（差超过 1 个编码）的请求数；
+  - `waveform_length_mismatch`：正确性检查里，同一编码却得到不同样本数的请求数；
+  - `ok`：两者都为 0；没有检查运行时为空。
+- `validation`：
+  - `candidates`：G1 上 W3b 或 MIX 每个区组都比 fifo16 多 ≥ 5% 语音秒/秒的设置，以及每个区组的增幅；
+  - `decision`：是否在实验 9 最好的放置上做完整服务验证。
+- `flags`：`unusable`、`control_invalid`、`after_restart`。
 - `check`：正确性检查运行。
   - `requests_with_digest`：每段带摘要的请求数；
   - `vs_fifo1["<段>"]`：和批上限 1 的同一请求比较，字段 `pairs`、`sample_mismatch`（样本数不同的请求数）、`rel_diff_max`、`rel_diff_p95`、`rms_rel_change_max`。
@@ -144,6 +161,7 @@
 | `wait` | 按语音长度的中位数分成短、长两类（`split_s`），每类在收件队列里等待的 `n`、`p50`、`p95`、`max`（毫秒） |
 | `queue_ms` | 所有请求在收件队列里的等待（毫秒） |
 | `audio_s_per_s`、`wait_long_p95`、`wait_long_max` | 从上面提出来的常用值 |
+| `usable`、`after_restart` | 错误 + 超时 ≤ 5%；是否在某次服务重启之后 |
 
 ## 五、实验 11 的结果文件
 

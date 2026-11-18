@@ -135,3 +135,16 @@ def test_unusable_or_restarted_capacity_level_is_left_out():
     assert bad["capacity_rps"] is None and bad["bottleneck"] is None and len(bad["excluded"]) == 2
     assert rp.workload_entry([row("A", errors=5)], "w3b", 256)["capacity_rps"] == 20.0  # exactly 5 % is still usable
     assert rp.workload_entry([row("B")], "w3b", 256)["capacity_from"] == "B"  # the pilot has the events phase only
+
+
+def test_per_arm_intervals_leave_out_unusable_closed_loop_levels_only():
+    def lv(kind, level, rps, ok=True):
+        key = "concurrency" if kind == "closed_loop" else "rate_rps"
+        return {"workload": "w3b", "phase": "w3b_closed_A" if kind == "closed_loop" else "w3b_open", "mode": "A", "kind": kind, key: level,
+                "client": {"throughput_rps": rps}, "usable": ok}
+
+    runs = [{"arm": 1, "block": b, "levels": [lv("closed_loop", 256, 20.0, ok=b != 2), lv("open_loop", 18.0, 17.0, ok=b != 2)]} for b in (1, 2, 3)]
+    by = rp.by_arm(runs)["1"]
+    closed, opened = by["w3b|closed_loop|A|256"]["throughput_rps"], by["w3b|open_loop|A|18"]["throughput_rps"]
+    assert closed["n"] == 2 and closed["runs"][1] is None and by["w3b|closed_loop|A|256"]["unusable_runs"] == [False, True, False]
+    assert opened["n"] == 3  # open-loop levels are never excluded (registered)

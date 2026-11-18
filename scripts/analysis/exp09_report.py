@@ -404,7 +404,8 @@ def by_arm(runs: list[dict[str, Any]]) -> dict[str, Any]:
                                 ("e2e_p50_s", "censored.p50"), ("e2e_p95_s", "censored.p95"), ("e2e_p99_s", "censored.p99"),
                                 ("ttft_p50_s", "client.ttft_s.p50"), ("first_audio_p50_s", "client.first_audio_s.p50"),
                                 ("growth_slope_rps", "growth.slope_rps"), ("tokens_mean", "output.tokens_mean"), ("audio_s_mean", "output.audio_s_mean")):
-                vals = [get(x, path) if x else None for x in rows]
+                # unusable closed-loop levels are reported in runs[], levels.csv and unusable_runs, not in the intervals
+                vals = [get(x, path) if x and not (x["kind"] == "closed_loop" and x.get("usable") is False) else None for x in rows]
                 cell[label] = interval([None if (v is None or (isinstance(v, float) and math.isinf(v))) else v for v in vals])
                 cell[label]["infinite_runs"] = sum(1 for v in vals if isinstance(v, float) and math.isinf(v))
             cell["steady_runs"] = [get(x, "growth.steady") if x else None for x in rows]
