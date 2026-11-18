@@ -24,7 +24,7 @@ import json
 import math
 import re
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -33,6 +33,8 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from run_records import clean, restart_flags  # noqa: E402
 sys.path.insert(0, str(ROOT / "scripts" / "slurm"))
 
 STAGES = ("thinker", "talker", "code2wav")
@@ -364,18 +366,18 @@ def analyze_run(exp: Path) -> dict[str, Any]:
     run: dict[str, Any] = {"run": exp.name, "placement": name, "arm": ARM_OF[name], "block": int(m.group(2)) if m.group(2) else 0,
                            "restarts": res.get("server_restarts") or [], "workload": {}, "levels": []}
     util, clocks, anchor, roles = load_util(exp), load_clocks(exp), clock_anchor(exp), gpu_roles(name)
-    restart_phases = {x.get("where", "").split()[-1] for x in run["restarts"] if x.get("where")}
-    after_restart = False
+    flags = restart_flags([ph["phase"] for ph in res.get("phases", [])], run["restarts"])
     for ph in res.get("phases", []):
         phase = ph["phase"]
-        restart_here = phase in restart_phases
-        after_restart = after_restart or restart_here
+        restart_here, after_restart = flags[phase]
         path = exp / "raw" / f"requests_{phase}.jsonl"
         if phase.startswith("smoke") or not path.exists():
             continue
         w = phase.split("_")[0]
         mode = "B" if ph.get("profiled") == "request_events" or phase.endswith("_B") or phase.endswith("_pilot") else "A"
         recs = read_jsonl(path)
+        recs, _ = clean(recs)  # the runner flags a crashed level's requests for the analysis to drop, then reruns the level
+        dropped_by_level = Counter(r.get("concurrency", r.get("rate_rps")) for r in read_jsonl(path) if r.get("crash_affected"))
         events = read_events(exp / "raw" / "server_events" / phase) if mode == "B" and (exp / "raw" / "server_events" / phase).exists() else None
         if events is not None:
             reqs, batches, _ = bd.breakdown(events)
@@ -386,7 +388,8 @@ def analyze_run(exp: Path) -> dict[str, Any]:
             meas = [r for r in lv if not r.get("warmup")]
             row = {"workload": w, "phase": phase, "mode": mode, "kind": ph.get("kind"), key: level, **level_client(lv),
                    "gpu": gpu_window(util, clocks, roles, phase_window(meas, anchor))}
-            row.update(usable=usable(row["client"]), restart_here=restart_here, after_restart=after_restart)
+            row.update(usable=usable(row["client"]), restart_here=restart_here, after_restart=after_restart,
+                       crash_affected_dropped=dropped_by_level.get(level, 0))
             if key == "rate_rps":
                 row["growth"] = queue_growth(meas, float(level))
                 row["inflight_series"] = inflight_series(meas)

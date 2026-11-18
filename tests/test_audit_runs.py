@@ -70,3 +70,12 @@ def test_pipeline_stage_names_are_one_process_role(tmp_path):
     a = au.audit_run(exp)
     assert a["phases"]["a_C"]["traces"]["missing"] == []
     assert a["phases"]["b_C"]["traces"]["missing"] == ["code2wav@r1"]
+
+
+def test_a_restart_after_a_closed_loop_level_is_attributed_to_its_phase(tmp_path):
+    exp = make_run(tmp_path)
+    res = json.loads((exp / "result.json").read_text())
+    res["server_restarts"] = [{"server": "s0", "exit_code": -11, "where": "w_c64_C c=64 rep=0"}]  # the runner's format
+    (exp / "result.json").write_text(json.dumps(res))
+    a = au.audit_run(exp)
+    assert a["phases"]["w_c64_C"]["restart_here"] is True and a["phases"]["w_c64_B"]["restart_here"] is False

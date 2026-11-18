@@ -181,3 +181,30 @@ def test_a_missing_block_gives_insufficient_data():
         both[-2]["workload"]["w3l"] = {"capacity_rps": 6.0}
         both[-1]["workload"]["w3l"] = {"capacity_rps": 5.0 if b != 3 else None}
     assert rp.verdict_h9c(both)["verdict"] == "数据不足"
+
+
+def test_a_restart_in_the_capacity_phase_and_crash_affected_records(tmp_path):
+    """The runner writes "<phase> c=<c> rep=<r>" for a restart after a closed-loop level and flags the crashed level's
+    records crash_affected before running the level again into the same file."""
+    import json
+
+    exp = tmp_path / "20261118_exp09_t2_k1_c5_block1_run01"
+    (exp / "raw").mkdir(parents=True)
+    (exp / "raw" / "gpu_samples.csv").write_text("timestamp, index, utilization.gpu, memory.used\n")
+    (exp / "result.json").write_text(json.dumps({
+        "experiment_id": "exp09_t2_k1_c5_block1", "phases": [{"phase": "w3b_closed_A", "kind": "closed_loop"}],
+        "server_restarts": [{"server": "s0", "exit_code": -11, "where": "w3b_closed_A c=256 rep=0"}]}))
+    recs = []
+    for i in range(10):  # the crashed attempt: half errors, all flagged
+        recs.append({"request_id": f"x{i}", "concurrency": 256, "status": "error" if i % 2 else "ok", "crash_affected": True,
+                     "sent_ns": 10**9 + i, "done_ns": 2 * 10**9 + i})
+    for i in range(20):  # the rerun after the restart
+        recs.append({"request_id": f"y{i}", "concurrency": 256, "status": "ok", "sent_ns": 5 * 10**9 + i * 10**8,
+                     "done_ns": 7 * 10**9 + i * 10**8, "completion_tokens": 40, "output_audio_s": 12.0})
+    (exp / "raw" / "requests_w3b_closed_A.jsonl").write_text("".join(json.dumps(r) + "\n" for r in recs))
+    run = rp.analyze_run(exp)
+    row = run["levels"][0]
+    assert row["restart_here"] and row["after_restart"] and row["crash_affected_dropped"] == 10
+    assert row["client"]["measured"] == 20 and row["client"]["errors"] == 0
+    w = run["workload"]["w3b"]
+    assert w["capacity_rps"] is None and "restarted" in w["excluded"][0]

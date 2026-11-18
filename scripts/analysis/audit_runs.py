@@ -14,8 +14,13 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from run_records import restart_phase  # noqa: E402
 
 TRACE_RE = re.compile(r"^(.+?)@r(\d+)_trace_pid\d+")
 # One pipeline process runs these stages and names its trace after whichever stage it saw first.
@@ -66,7 +71,7 @@ def audit_run(exp: Path) -> dict[str, Any]:
             roles, files = traced[name]
             traces = {"files": files, "missing": sorted(reference - roles)}
         phases[name] = {"kind": ph.get("kind"), "requests": requests, "traces": traces,
-                        "restart_here": any(x.get("where", "").split()[-1] == name for x in restarts)}
+                        "restart_here": any(restart_phase(x.get("where")) == name for x in restarts)}
     return {"run": exp.name, "experiment_id": res.get("experiment_id"), "run_status": res.get("status"), "wall_s": res.get("wall_s"),
             "restarts": [f"{x.get('server')} exit {x.get('exit_code')} in {x.get('where')}" for x in restarts], "phases": phases}
 
