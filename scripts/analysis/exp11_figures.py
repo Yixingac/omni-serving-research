@@ -113,14 +113,14 @@ def fig_gaps(plt, s, path):  # noqa: ANN001
         bars(ax, s, "w3b_ns", "C", f"gap_{q}_ms")
         ax.set_ylabel(f"每步之前空档的 {q.upper()}（毫秒）", fontsize=8)
     axes[0].legend(fontsize=7, frameon=False)
-    fig.suptitle("图 2　thinker 每一步之前 GPU 空了多久（trace 段，按调度步对齐；两个 thinker 进程取中位数）", fontsize=10, x=0.01, ha="left")
+    fig.suptitle("图 2　thinker 每一步之前 GPU 空了多久（trace 段，按调度步对齐；两个 thinker 进程的空档合在一起算分位数）", fontsize=10, x=0.01, ha="left")
     save(fig, path)
 
 
 def fig_idle(plt, s, path):  # noqa: ANN001
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     for ax, key, label in ((axes[0], "between_idle_share", "步与步之间的空档之和 ÷ 时间窗（H11c 用这个）"),
-                           (axes[1], "total_idle_share", "GPU 完全没有工作的时间 ÷ 时间窗")):
+                           (axes[1], "total_idle_share", "GPU 完全没有工作的时间 ÷ 时间窗（两个都要看）")):
         bars(ax, s, "w3b_ns", "C", key, scale=100)
         ax.set_ylabel(label + "（%）", fontsize=8)
     axes[0].legend(fontsize=7, frameon=False)
