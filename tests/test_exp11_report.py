@@ -50,3 +50,38 @@ def test_mixed_evidence_is_uncertain_and_missing_data_is_reported():
     runs[-1]["levels"]["w3b_ns"][64]["C"]["between_idle_share"] = 0.30  # block 3 of C does not drop at 64
     assert rp.verdicts(runs)["H11c"]["verdict"] == "不确定"
     assert rp.verdicts([r for r in world() if r["arm"] != "C"])["H11d"]["C_vs_B"]["verdict"] == "数据不足"
+
+
+def test_unusable_phase_counts_as_missing():
+    runs = world()
+    runs[0]["levels"]["w3b_ns"][32]["A"]["usable"] = False  # block 1, arm A: errors + timeouts > 5 %
+    v = rp.verdicts(runs)
+    assert v["H11d"]["C_vs_A"]["verdict"] == "数据不足"
+    assert v["H11d"]["C_vs_B"]["verdict"] == "支持"
+
+
+def test_default_on_rule_needs_h11d_and_a_small_ttft_increase():
+    runs = world()
+    for r in runs:
+        for c in (8, 32, 64):
+            r["levels"]["w3b_ns"][c]["A"]["ttft_p50_ms"] = 60.0 + (5.0 if r["arm"] == "C" else 0.0)
+    assert rp.recommend(runs, rp.verdicts(runs))["default_on"] is True
+    for r in runs:
+        if r["arm"] == "C":
+            r["levels"]["w3b_ns"][8]["A"]["ttft_p50_ms"] = 75.0
+    rec = rp.recommend(runs, rp.verdicts(runs))
+    assert rec["default_on"] is False and rec["ttft_increase_ms"][8]["mean"] == 15.0
+
+
+def test_queue_increase_is_reported_in_decode_steps():
+    runs = world()
+    for r in runs:
+        for c in (8, 32):
+            r["levels"]["w3b_ns"][c]["C"]["decode_busy_ms_p50"] = 20.0
+    part = rp.verdicts(runs)["H11a"]["parts"]["B_vs_A_c8"]
+    assert part["queue_increase_in_decode_steps"] == [1.0, 1.0, 1.0]
+
+
+def test_contrast_pairs_blocks():
+    t = rp.contrast(world(), "w3b_ns", 32, "A", "e2e_p50", "C", "A")
+    assert t["diff"]["n"] == 3 and abs(t["diff"]["mean"] - (-0.06)) < 1e-9
