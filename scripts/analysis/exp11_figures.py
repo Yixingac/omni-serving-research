@@ -34,9 +34,12 @@ SEGMENTS = [("send_to_admission", "发出→接纳"), ("admission_to_thinker", "
 
 
 def per_block(s: dict[str, Any], arm: str, w: str, c: int, mode: str, key: str, sub: str | None = None) -> list[float | None]:
+    """One value per registered block (1, 2, 3), None where the run or value is missing, so lists of two arms pair up."""
     out = []
-    for r in sorted(s["runs"], key=lambda r: r["block"]):
-        if r["arm"] != arm:
+    for b in (1, 2, 3):
+        r = next((x for x in s["runs"] if x["arm"] == arm and x["block"] == b), None)
+        if r is None:
+            out.append(None)
             continue
         row = ((r["levels"].get(w) or {}).get(str(c)) or {}).get(mode) or {}
         v = None if row.get("usable") is False else row.get(key)
@@ -184,7 +187,7 @@ def fig_long(plt, s, path):  # noqa: ANN001
         for i, (w, _) in enumerate(wl):
             a = per_block(s, "A", w, 32, "A", "e2e_p50")
             x_ = per_block(s, arm, w, 32, "A", "e2e_p50")
-            gain = [1 - b / a_ for a_, b in zip(a, x_) if a_ and b is not None]
+            gain = [1 - b / a_ for a_, b in zip(a, x_) if a_ and b is not None]  # paired by block
             ma, mx = per_block(s, "A", w, 32, "B", "ms_per_token"), per_block(s, arm, w, 32, "B", "ms_per_token")
             tok = per_block(s, arm, w, 32, "B", "tokens_mean")
             saving = [(p - q) * t for p, q, t in zip(ma, mx, tok) if None not in (p, q, t)]
