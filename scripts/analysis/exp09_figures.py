@@ -131,7 +131,8 @@ def fig_stage_capacity(plt, summary: dict[str, Any], path: Path) -> None:  # noq
         ax.set_ylabel("每张卡每秒完成的请求", fontsize=8)
         ax.set_title(f"（{'a' if w == 'w3b' else 'b'}）{WL_NAME[w]}：瓶颈阶段每张卡的处理能力", fontsize=9, loc="left")
         ax.tick_params(labelsize=7)
-        ax.legend(fontsize=7, frameon=False, loc="upper right")
+        ax.set_ylim(0, ax.get_ylim()[1] * 1.25)
+        ax.legend(fontsize=7, frameon=False, loc="upper left")
     fig.suptitle("图 2　按“瓶颈阶段”算出的每张卡的处理能力（只用该阶段是瓶颈的运行；点是每个运行）", fontsize=10, x=0.01, ha="left")
     fig.tight_layout()
     fig.savefig(path, bbox_inches="tight")
@@ -175,8 +176,10 @@ def fig_open(plt, summary: dict[str, Any], path: Path) -> None:  # noqa: ANN001
                 hollow = [any(s is False for s in c["steady_runs"]) for c in cells]
                 draw_series(ax, xs, cells, label, color, marker, field, hollow=hollow)
             ax.set_yscale("log")
+            lo, hi = ax.get_ylim()
+            narrow = hi / lo < 10  # less than a decade: label every minor tick, or only one or two numbers show
             ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:g}"))
-            ax.yaxis.set_minor_formatter(FuncFormatter(lambda v, _: f"{v:g}" if f"{v:g}"[0] in "12357" else ""))
+            ax.yaxis.set_minor_formatter(FuncFormatter(lambda v, _, n=narrow: f"{v:g}" if n or f"{v:g}"[0] in "12357" else ""))
             ax.set_xlabel("开环到达速率（请求/秒）", fontsize=8)
             ax.set_ylabel("端到端延迟（秒，对数）", fontsize=8)
             ax.set_title(f"{WL_NAME[w]} {title}", fontsize=9, loc="left")
@@ -251,9 +254,12 @@ def fig_gpu(plt, summary: dict[str, Any], path: Path) -> None:  # noqa: ANN001
         ax.set_xticklabels([f"方案 {a[0]}" for a in ARMS], fontsize=8)
         ax.set_ylabel(ylabel, fontsize=8)
         ax.tick_params(labelsize=7)
-    handles, labels = axes[0].get_legend_handles_labels()
-    seen = dict(zip(labels, handles))
-    axes[0].legend(seen.values(), seen.keys(), fontsize=7, frameon=False, loc="lower right")
+    from matplotlib.patches import Patch
+
+    names = {"thinker": "thinker 的卡", "talker": "talker 的卡（独占）", "code2wav": "code2wav 的卡（独占）",
+             "talker+code2wav": "talker 和 code2wav 同在的卡"}
+    axes[0].legend(handles=[Patch(facecolor=ROLE_COLORS[r], edgecolor="#444444", label=names[r]) for r in roles],
+                   fontsize=7, frameon=True, framealpha=0.9, loc="lower left")
     axes[0].yaxis.set_major_formatter(lambda v, _: f"{v:.0%}")
     fig.suptitle("图 7　W3b 闭环并发 256 时各类卡的忙碌比例和显存（忙碌比例只表示采样时有 kernel 在跑，不是算力利用率）",
                  fontsize=10, x=0.01, ha="left")
@@ -297,9 +303,10 @@ def fig_model(plt, summary: dict[str, Any], path: Path) -> None:  # noqa: ANN001
                 continue
             hi = max(hi, p["measured_rps"], p.get("predicted_rps") or 0)
             if p.get("predicted_rps") is None:
-                ax.scatter([p["measured_rps"]], [p["measured_rps"]], marker="x", color=color, s=40, label=f"{label}（无法预测）")
+                ax.scatter([p["measured_rps"]], [0], marker="|", color=color, s=200, lw=2, clip_on=False,
+                           label=f"{label}：无法预测（只在横轴上标出实测值）")
             else:
-                ax.scatter([p["measured_rps"]], [p["predicted_rps"]], marker=marker, color=color, s=40,
+                ax.scatter([p["measured_rps"]], [p["predicted_rps"]], marker=marker, color=color, s=40, zorder=3,
                            label=f"{label}：误差 {p['error'] * 100:+.0f}%")
         lim = [0, hi * 1.15 if hi else 1]
         ax.plot(lim, lim, color="#999999", lw=0.8)
