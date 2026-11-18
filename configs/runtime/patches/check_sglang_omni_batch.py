@@ -9,7 +9,9 @@ payload. Checks:
 2. length-aware batches: the oldest request first, then the closest costs; nothing lost or duplicated;
    requests not chosen keep their arrival order at the front of the queue, so the oldest anchors the next batch;
 3. max_batch_cost still applies; the window bounds how many waiting requests are looked at;
-4. FIFO is unchanged when the policy is fifo (and without a control file).
+4. FIFO is unchanged when the policy is fifo (and without a control file);
+5. the code2wav record takes each speaker prompt's length from its tensor shape (the length tensors live on the GPU,
+   so reading them would need a device sync, and an earlier version recorded None for them).
 Exit code 0 when everything holds.
 """
 
@@ -125,6 +127,14 @@ def main() -> int:
         got = take(s3)
         kept = [m.type for m in s3.pending_messages]
         check(got == [100, 101] and kept == ["abort"], f"other message types are kept for the main loop (got {got}, {kept})", failures)
+
+    import inspect
+
+    import sglang_omni.models.minicpm_o.components.code2wav as code2wav
+
+    source = inspect.getsource(code2wav)
+    check('"prompt_token_lengths": [int(prompt.prompt_tokens.shape[-1]) for prompt in speaker_prompts]' in source,
+          "the code2wav record takes prompt lengths from the prompt token shape", failures)
 
     print("PASS" if not failures else f"FAIL: {len(failures)} check(s)")
     return 0 if not failures else 1

@@ -70,7 +70,7 @@ index ea97a6bee..71311b666 100644
          # note (jiaxin deng): two pinned buffers ping-ponged so resolve(N) reads
          # one while launch(N+1) writes the other.
 diff --git a/sglang_omni/models/minicpm_o/components/code2wav.py b/sglang_omni/models/minicpm_o/components/code2wav.py
-index 648cd690a..6942d3d58 100644
+index 648cd690a..cc049f125 100644
 --- a/sglang_omni/models/minicpm_o/components/code2wav.py
 +++ b/sglang_omni/models/minicpm_o/components/code2wav.py
 @@ -21,6 +21,7 @@ from sglang_omni.models.minicpm_o.components.token2wav.vocoder import (
@@ -125,7 +125,7 @@ index 648cd690a..6942d3d58 100644
  
          mel_upsample_rate = self.token2wav.flow.up_rate
          rows_by_token_length: defaultdict[int, list[int]] = defaultdict(list)
-@@ -454,19 +475,55 @@ class MiniCPMOCode2Wav(nn.Module):
+@@ -454,19 +475,49 @@ class MiniCPMOCode2Wav(nn.Module):
              rows_by_token_length[token_length].append(row)
          waveforms_by_row: dict[int, torch.Tensor] = {}
          # note (MayDomine): padding changes HiFT's noncausal convolution boundaries.
@@ -177,14 +177,8 @@ index 648cd690a..6942d3d58 100644
 +                    "split_end_ns": exp_trace.now_ns(),
 +                    "rows": len(token_lengths),
 +                    "token_lengths": token_lengths,
-+                    # note (research, 实验 10): the flow pads prompt + speech tokens to the longest row; prompt lengths
-+                    # are read only from CPU tensors, so recording them adds no device synchronization.
-+                    "prompt_token_lengths": [
-+                        int(prompt.prompt_token_lengths.reshape(-1)[0])
-+                        if prompt.prompt_token_lengths.device.type == "cpu"
-+                        else None
-+                        for prompt in speaker_prompts
-+                    ],
++                    # note (research): prompt tokens are stored unpadded, so the shape gives the length without a device sync
++                    "prompt_token_lengths": [int(prompt.prompt_tokens.shape[-1]) for prompt in speaker_prompts],
 +                    "mel_upsample_rate": int(self.token2wav.flow.up_rate),
 +                    "hift_groups": len(rows_by_token_length),
 +                    "flow_solve_path": flow_decoder.last_solve_path,
