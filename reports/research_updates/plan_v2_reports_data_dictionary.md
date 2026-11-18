@@ -92,3 +92,18 @@
 ### `runs.csv`
 
 每个运行（含实时运行）一行，列是上表的主要数字。
+
+## 四、实验 14（`exp14_report.py`）
+
+### `summary.json`
+
+| 字段 | 含义 |
+|---|---|
+| `rule` | `linear_efficiency`（0.8）、`gpu_flat_pts`（5） |
+| `runs[]` | 1、2、4、8 个副本的运行：`run`、`experiment_id`、`replicas`、`gpus`、`phases`、`phase_gpu_busy` |
+| `runs[].phases.<段>.<并发>` | 每档：`n`、`ok`、`span_s`（第一个请求发出到最后一个完成）、`rps`（成功数 ÷ `span_s`）、`e2e_mean_s`、`e2e_p50_s`、`e2e_p90_s`、`little_rps`（并发 ÷ 平均耗时）、`cpu_cores_per_replica`（服务进程平均用的核数 ÷ 副本数）、`gpu_busy_mean`（这一档里用到的卡的 nvidia-smi 采样平均，%）、`per_replica_concurrency`、`rps_per_replica` |
+| `runs[].phase_gpu_busy.<段>` | 整段（4 档合起来）用到的卡的忙碌比例平均（%，取自 `analysis.json` 的 `gpu_by_phase`） |
+| `events` | 事件补测：`phases.<段>.<并发>` 里是各阶段时间的中位数（毫秒）：`preprocessing.service`、`image_encoder.service`、`thinker.queue`、`thinker.prefill`、`thinker.service`、`decode.service`、阶段之间的传递 `hop.*`、服务端从接收到完成 `request.admission_to_last_terminal`，以及各阶段占总时间的比例 `share.*`（阶段中位数 ÷ 总时间中位数）、`requests` |
+| `events_run_levels` | 事件补测运行本身的每档数字，字段同 `runs[]` |
+| `scaling.<段>` | `best_rps`、`best_little_rps`（各副本数下各档的最大值）、`efficiency`、`efficiency_little`（扩展效率）、`gpu_busy_at_best`（吞吐最高那一档的 GPU 忙碌比例）、`gpu_busy_phase`（整段平均） |
+| `verdicts` | `linear`（首尾时间算的效率）、`linear_little`（对照）、`gpu_flat`（整段平均，主要）、`gpu_flat_best_level`（最初的指标）、`linear_overall`、`gpu_flat_overall` |

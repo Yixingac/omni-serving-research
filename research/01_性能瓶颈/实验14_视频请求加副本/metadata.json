@@ -1,0 +1,89 @@
+{
+ "experiment_number": 14,
+ "name_zh": "视频请求能不能靠加副本提速",
+ "question_zh": "视频理解请求的吞吐随副本数怎么变？瓶颈在哪？",
+ "status": "完成（2026-11-18，只用已有数据，没有新的 GPU 运行；每种配置 1 次，结论初步）",
+ "commit_note": "每个运行记的 research_repo_commit 是运行开始时集群上研究仓库检出的提交（运行器和配置的版本），不是本目录报告的版本；报告以 PR #2 分支的最新提交为准",
+ "hypotheses": "hypotheses.md（预测 F-H1 写于 2026-11-11 20:17:38，提交 0ea950d，早于任何数据；判定方法 2026-11-18 看过数据后定的，探索性）",
+ "model": {
+  "name": "MiniCPM-o 4.5",
+  "revision": "fb09628e98b1f55d8d5b863e0eccfcdd11bff499"
+ },
+ "software": {
+  "sglang_omni": "520b49ee（= 上游 1845546e + 两个 pre-Hopper 修复），没有打实验补丁；运行配置 configs/models/runtime_unicorn.json；服务参数 --text-only",
+  "sglang": "0.5.21",
+  "torch": "2.13.0"
+ },
+ "hardware": "compute-03：8×RTX A6000，驱动 580，Slurm Job 454290；每个副本 1 张卡、7 个 CPU 核",
+ "workload": "W4（configs/workloads/w4_video_text.json）：程序生成的视频（移动的彩色圆，8 fps，640×360，10 s 或 20 s；1、3、5 个圆）加问题“有几个圆”，最多 16 个输出 token，温度 0；闭环，每档 24–192 个请求",
+ "runs": [
+  {
+   "run_dir": "20261116_v2b_f1_r1_run01",
+   "role": "1 个副本",
+   "status": "ok",
+   "start": "2026-11-16 23:26:45",
+   "end": "2026-11-16 23:31:03",
+   "server_restarts": 0,
+   "research_repo_commit": "706afb0",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261116_v2b_f1_r2_run01",
+   "role": "2 个副本",
+   "status": "ok",
+   "start": "2026-11-16 23:31:06",
+   "end": "2026-11-16 23:34:22",
+   "server_restarts": 0,
+   "research_repo_commit": "706afb0",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261116_v2b_f1_r4_run01",
+   "role": "4 个副本",
+   "status": "ok",
+   "start": "2026-11-16 23:34:30",
+   "end": "2026-11-16 23:37:27",
+   "server_restarts": 0,
+   "research_repo_commit": "706afb0",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261116_v2b_f1_r8_run01",
+   "role": "8 个副本",
+   "status": "ok",
+   "start": "2026-11-16 23:37:38",
+   "end": "2026-11-16 23:40:42",
+   "server_restarts": 0,
+   "research_repo_commit": "706afb0",
+   "slurm_job": 454290
+  },
+  {
+   "run_dir": "20261117_v2b_f1_r1_events_run01",
+   "role": "事件补测（1 个副本，10 秒视频）",
+   "status": "ok",
+   "start": "2026-11-17 00:48:07",
+   "end": "2026-11-17 00:50:06",
+   "server_restarts": 0,
+   "research_repo_commit": "22ae544",
+   "slurm_job": 454290
+  }
+ ],
+ "analysis": {
+  "commands": [
+   "python scripts/analysis/analyze_experiment.py --slo ttft_s=1.0,e2e_per_audio_s=0.5 --no-figures <缺 analysis/analysis.json 的运行目录>",
+   "python scripts/analysis/exp14_report.py --data-root <results> --run 20261116_v2b_f1_r1_run01 --run 20261116_v2b_f1_r2_run01 --run 20261116_v2b_f1_r4_run01 --run 20261116_v2b_f1_r8_run01 --events 20261117_v2b_f1_r1_events_run01 --out research/01_性能瓶颈/实验14_视频请求加副本",
+   "python scripts/analysis/exp14_figures.py --out research/01_性能瓶颈/实验14_视频请求加副本"
+  ],
+  "outputs": [
+   "results/summary.json"
+  ],
+  "where": "在 Mac 上的数据镜像上分析；镜像和集群上的原始文件逐个比过文件名和大小，一致"
+ },
+ "figures": [
+  "figures/fig1_scaling.png",
+  "figures/fig2_stages.png",
+  "figures/fig3_latency.png",
+  "figures/fig4_cpu_gpu.png"
+ ],
+ "raw_data": "PROJECT_DATA_ROOT/experiments/<运行目录>（带机器名和路径，不进公开仓库）"
+}
