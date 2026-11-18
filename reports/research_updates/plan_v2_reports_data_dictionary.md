@@ -56,3 +56,39 @@
 ### `mix_closed.csv`、`agent_phases.csv`
 
 和 `summary.json` 里 `mix[].closed[]`、`agent[].phases` 的字段相同，摊平成表，方便用表格软件看。`agent_phases.csv` 的 `batch` 列区分第二批（加长）和第一批（每档太短）。
+
+## 三、实验 12（`exp12_report.py`）
+
+### `summary.json`
+
+| 字段 | 含义 |
+|---|---|
+| `rule.tolerance` | 判定用的 10%（取自预测 D-H1） |
+| `live` | 被回放的实时运行（实验 19 的 8 个完整副本、文本 Agent、256 个会话那一档），字段同下面的 `replays[]`，另有 `phase` |
+| `replays[]` | 每个回放运行一项，见下 |
+| `verdicts.part1_copies_overestimate` 等 | D-H1 三句话的判定：`verdict`、用到的相对差（`e2e_p50_rel` 或 `rel`）、`compared`（比的是哪两个运行） |
+
+`replays[]` 每一项（只算模型请求，不算工具调用）：
+
+| 字段 | 含义 |
+|---|---|
+| `run`、`experiment_id`、`label` | 运行目录、配置名、短名（如 `dep_prefix_1x`） |
+| `mode`、`payload`、`speed`、`copies`、`max_sessions` | 回放方式（`dependency` 依赖感知 / `request` 请求级）、内容（`auto` 原文 / `prefix_surrogate` 保留前缀的替代 / `surrogate` 完全替代）、倍速、每个会话复制几份、只取前多少个会话 |
+| `source` | 被回放的 trace：“实验名 段名”（不保存路径） |
+| `engine_status` | 回放引擎自己记的各状态数量，包括工具调用和等待 |
+| `model_requests`、`ok`、`skipped`、`errors` | 模型请求数、成功数、因同一会话前面的步骤失败而跳过的数、失败按原因计数 |
+| `valid` | 没有客户端句柄错误时为 true；false 的运行不参加比较 |
+| `span_s`、`requests_per_s` | 第一个请求发出到最后一个完成的时间；成功请求数 ÷ 这段时间 |
+| `mean_in_flight`、`peak_in_flight` | 同时在服务里的请求数：平均（耗时之和 ÷ 时长）、最多 |
+| `e2e_p50_s`、`e2e_p90_s`、`ttft_p50_s`、`ttft_p90_s` | 单次请求耗时、首个文字时间的百分位 |
+| `sessions`、`session_p50_s`、`session_p90_s` | 会话数（按成功的请求算）、会话时长百分位 |
+| `output_tokens_mean`、`prompt_tokens_p50` | 平均输出 token、输入 token 中位数 |
+| `finish` | 成功请求按结束原因计数：`stop`（遇到结束符）、`length`（到了长度上限） |
+| `prefix_hit` | 服务端统计的前缀缓存命中（输入 token 中从缓存拿到的比例） |
+| `gpu_util_mean` | 8 张卡 nvidia-smi 采样利用率的平均（%） |
+| `series` | 从第一个请求发出起，每秒同时在服务里的成功请求数的平均（图 2） |
+| `vs_live`、`vs_dep_orig_same_speed` | 相对实时运行、相对同样倍速的“依赖感知、原文、不复制”的变化（回放 ÷ 参照 − 1），指标有 `requests_per_s`、`e2e_p50_s`、`e2e_p90_s`、`ttft_p50_s`、`ttft_p90_s`、`session_p50_s`、`session_p90_s`、`output_tokens_mean`、`prompt_tokens_p50`、`prefix_hit`、`mean_in_flight`；无效的运行为 null |
+
+### `runs.csv`
+
+每个运行（含实时运行）一行，列是上表的主要数字。
