@@ -115,3 +115,9 @@ def test_closed_loop_throughput_while_all_slots_are_busy():
     s = rp.busy_window_throughput(recs)
     # measured sends span 1 s .. 4 s; 12 completions land in [1, 4] (at 1, 2, 3 and 4 s): 12 / 3 s
     assert abs(s["throughput_rps"] - 4.0) < 1e-9 and s["window_s"] == 3.0
+
+
+def test_inflight_series_counts_sent_minus_done_each_second():
+    recs = [rec(i * 0.5, i * 0.5 + 2.0) for i in range(10)]  # 2 per second, each takes 2 s
+    s = rp.inflight_series(recs, step_s=1.0)
+    assert s[0] == [0.0, 1] and s[2] == [2.0, 4] and s[-1][1] >= 0

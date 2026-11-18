@@ -85,6 +85,18 @@ def busy_window_throughput(records: list[dict[str, Any]]) -> dict[str, Any]:
     return {"throughput_rps": done / window if window > 0 else None, "window_s": window}
 
 
+def inflight_series(records: list[dict[str, Any]], step_s: float = 1.0) -> list[list[float]]:
+    """[seconds since the first send, requests sent and not yet finished] every step_s, until the last completion."""
+    sent = sorted(r["sent_ns"] / 1e9 for r in records if r.get("sent_ns") is not None)
+    done = sorted(r["done_ns"] / 1e9 for r in records if r.get("sent_ns") is not None and r.get("done_ns") is not None)
+    if not sent:
+        return []
+    t0, t1 = sent[0], max(done[-1] if done else sent[-1], sent[-1])
+    grid = np.arange(t0, t1 + step_s, step_s)
+    n = np.searchsorted(sent, grid, side="right") - np.searchsorted(done, grid, side="right")
+    return [[round(float(t - t0), 3), int(k)] for t, k in zip(grid, n)]
+
+
 def censored_percentiles(records: list[dict[str, Any]], ps: tuple[int, ...] = (50, 95, 99)) -> dict[str, Any]:
     vals = []
     for r in records:
@@ -313,6 +325,7 @@ def analyze_run(exp: Path) -> dict[str, Any]:
                    "gpu": gpu_window(util, clocks, roles, phase_window(meas, anchor))}
             if key == "rate_rps":
                 row["growth"] = queue_growth(meas, float(level))
+                row["inflight_series"] = inflight_series(meas)
             if events is not None:
                 ids = {r["request_id"] for r in meas if r.get("request_id")}
                 resid = stage_residence(events, ids)
