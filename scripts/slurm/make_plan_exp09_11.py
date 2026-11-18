@@ -294,6 +294,7 @@ EXP11_LEVELS = [8, 32, 64]
 EXP11_WINDOW_S = {8: 10, 32: 8, 64: 7}
 PLAN_EXP11_CHECK = "configs/experiments/plan_exp11_check.json"
 PLAN_EXP11 = "configs/experiments/plan_exp11.json"
+PLAN_EXP11_DIAG = "configs/experiments/plan_exp11_diag.json"
 
 
 def async_server(arm: str, digest: bool) -> list[dict]:
@@ -315,21 +316,25 @@ def mixed(name: str, mix: list[dict], c: int, requests: int) -> dict:
             "requests_per_concurrency": 1, "server_events": True}
 
 
+def exp11_check_phases() -> list[dict]:
+    return [smoke(),
+            {"kind": "smoke", "name": "chk_c1", "workload": GREEDY, "requests": 18, "server_events": True},
+            {**closed("chk_c8", GREEDY, [8], waves=6, events=True), "requests_per_level": 48},
+            {**closed("chk_c32", GREEDY, [32], waves=3, events=True)},
+            {**closed("chk_c64", GREEDY, [64], waves=2, events=True)},
+            mixed("chk_mix_text", [{"workload": W3T_NS, "weight": 0.5}, {"workload": GREEDY, "weight": 0.5}], 32, 96),
+            mixed("chk_mix_long", [{"workload": GREEDY, "weight": 0.5}, {"workload": W3L_GREEDY, "weight": 0.5}], 32, 96),
+            mixed("chk_mix_seed", [{"workload": W3B, "weight": 0.5}, {"workload": GREEDY, "weight": 0.5}], 32, 96),
+            {**closed("chk_timeout", W3L_TIMEOUT, [32], waves=2, events=True), "requests_per_level": 64},
+            {**closed("chk_after", GREEDY, [32], waves=3, events=True)},
+            {**closed("chk_w3xl", W3XL_NS, [8], waves=4, events=True), "requests_per_level": 32}]
+
+
 def exp11_check_entries() -> list[tuple[dict, dict]]:
     """Correctness gate: A, C and a repeat of A, digest on, greedy workloads (see hypotheses.md)."""
     out = []
     for position, arm in enumerate(["A", "C", "A2"]):
-        phases = [smoke(),
-                  {"kind": "smoke", "name": "chk_c1", "workload": GREEDY, "requests": 18, "server_events": True},
-                  {**closed("chk_c8", GREEDY, [8], waves=6, events=True), "requests_per_level": 48},
-                  {**closed("chk_c32", GREEDY, [32], waves=3, events=True)},
-                  {**closed("chk_c64", GREEDY, [64], waves=2, events=True)},
-                  mixed("chk_mix_text", [{"workload": W3T_NS, "weight": 0.5}, {"workload": GREEDY, "weight": 0.5}], 32, 96),
-                  mixed("chk_mix_long", [{"workload": GREEDY, "weight": 0.5}, {"workload": W3L_GREEDY, "weight": 0.5}], 32, 96),
-                  mixed("chk_mix_seed", [{"workload": W3B, "weight": 0.5}, {"workload": GREEDY, "weight": 0.5}], 32, 96),
-                  {**closed("chk_timeout", W3L_TIMEOUT, [32], waves=2, events=True), "requests_per_level": 64},
-                  {**closed("chk_after", GREEDY, [32], waves=3, events=True)},
-                  {**closed("chk_w3xl", W3XL_NS, [8], waves=4, events=True), "requests_per_level": 32}]
+        phases = exp11_check_phases()
         cfg = base(f"exp11_check_{arm}", 8, async_server(arm, digest=True), phases,
                    f"实验 11 正确性检查：组 {arm}（SGLANG_OMNI_SPEECH_LOOKAHEAD={EXP11_ARMS[arm.rstrip('2')]}），2+6，打开 digest。"
                    "贪心负载：并发 1（18 个）、8、32、64，混合（文字/语音、短/长、带 seed 0/不带），客户端 1.5 秒超时的中止段及之后的检查段，"
@@ -337,6 +342,33 @@ def exp11_check_entries() -> list[tuple[dict, dict]]:
         cfg["runtime_profile"] = ASYNC_RUNTIME
         out.append((cfg, {"priority": -(300 + position), "est": 900, "timeout": 3600}))
     return out
+
+
+def exp11_diag_entries() -> list[tuple[dict, dict]]:
+    """Diagnostic after the failed gate (supplementary registration 五 in hypotheses.md): B (lookahead + snapshot, no
+    side copy) and a repeat B2 run the check phases, so B vs A and C vs B can be set against A2 vs A and B2 vs B."""
+    out = []
+    for position, arm in enumerate(["B", "B2"]):
+        cfg = base(f"exp11_diag_{arm}", 8, async_server(arm, digest=True), exp11_check_phases(),
+                   f"实验 11 诊断（补充登记五）：组 {arm}（SGLANG_OMNI_SPEECH_LOOKAHEAD=1，快照、没有旁路复制），2+6，打开 digest，"
+                   "段落和正确性检查完全相同。用来区分多出来的指纹偏差来自提前发射本身还是旁路复制。")
+        cfg["runtime_profile"] = ASYNC_RUNTIME
+        out.append((cfg, {"priority": -(290 + position), "est": 600, "timeout": 3600}))
+    return out
+
+
+def render_exp11_diag() -> dict[str, str]:
+    entries = exp11_diag_entries()
+    plan = {"plan_id": "exp11_diag",
+            "_comment": "实验 11 诊断（补充登记五）：正确性检查没有通过后，用同样的检查段跑 B 和 B 的重复。只在看到检查失败后生成，"
+                        "通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_exp09_11.py --exp11-diagnostic 生成。",
+            "experiments": [plan_entry(c, m) for c, m in entries]}
+    for e in plan["experiments"]:
+        e["command"] = f"bash scripts/slurm/run_experiment.sh {EXP_DIR}/{e['experiment_id']}.json"
+    files = {PLAN_EXP11_DIAG: json.dumps(plan, ensure_ascii=False, indent=1) + "\n"}
+    for cfg, _ in entries:
+        files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
+    return files
 
 
 def exp11_measured(name: str, workload: str, c: int, mode: str) -> dict:
@@ -408,10 +440,14 @@ def main() -> int:
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--exp10-validation", nargs=2, metavar=("PLACEMENT", "SETTING"),
                     help="also write the conditional 实验 10 full-service validation (only when its registered trigger is met)")
+    ap.add_argument("--exp11-diagnostic", action="store_true",
+                    help="also write the 实验 11 diagnostic runs (B, B2) registered after the failed correctness gate")
     a = ap.parse_args()
     files = render()
     if a.exp10_validation:
         files.update(render_exp10_validation(*a.exp10_validation))
+    if a.exp11_diagnostic:
+        files.update(render_exp11_diag())
     stale = [p for p, text in files.items() if not (REPO / p).exists() or (REPO / p).read_text() != text]
     if a.check:
         for p in stale:

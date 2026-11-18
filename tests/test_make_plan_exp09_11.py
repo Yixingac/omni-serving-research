@@ -53,3 +53,21 @@ def test_exp10_and_exp11_servers_claim_ports_in_a_fresh_directory_per_run():
             assert srv["env"]["SGLANG_OMNI_PORT_CLAIM_DIR"] == "{exp_dir}/port_claims", cfg["experiment_id"]
     for cfg, _ in mp.exp09_entries():
         assert all("SGLANG_OMNI_PORT_CLAIM_DIR" not in (srv.get("env") or {}) for srv in cfg["servers"])
+
+
+def test_exp11_diagnostic_runs_b_twice_with_the_check_phases():
+    """Supplementary registration 五 of 实验 11: after the gate failed, B (lookahead + snapshot, no side copy) and a
+    repeat B2 run the same check phases, to tell lookahead scheduling from the side copy as the source of the extra
+    fingerprint deviations. Written only on demand (--exp11-diagnostic)."""
+    check_a = next(cfg for cfg, _ in mp.exp11_check_entries() if cfg["experiment_id"] == "exp11_check_A")
+    diag = mp.exp11_diag_entries()
+    assert [cfg["experiment_id"] for cfg, _ in diag] == ["exp11_diag_B", "exp11_diag_B2"]
+    for cfg, meta in diag:
+        env = cfg["servers"][0]["env"]
+        assert env["SGLANG_OMNI_SPEECH_LOOKAHEAD"] == "1" and env["SGLANG_OMNI_EXP_TRACE"] == "thinker,c2w,digest"
+        assert env["SGLANG_OMNI_PORT_CLAIM_DIR"] == "{exp_dir}/port_claims"
+        assert cfg["phases"] == check_a["phases"] and cfg["runtime_profile"] == "unicorn_async"
+        assert cfg["servers"][0]["args"] == check_a["servers"][0]["args"]
+    assert [meta["priority"] for _, meta in diag] == [-290, -291]
+    files = mp.render_exp11_diag()
+    assert mp.PLAN_EXP11_DIAG in files and len(files) == 3
