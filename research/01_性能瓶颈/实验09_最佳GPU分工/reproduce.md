@@ -28,11 +28,13 @@
    ```
 
    把打印出的速率填进 `make_plan_exp09_11.py` 的 `EXP09_RATES_W3B`、`EXP09_RATES_W3L`，重新生成配置。
-5. 正式运行：放 `configs/experiments/plan_exp09.json`（12 个运行；前两个运行各用了约 27 分钟，含约 3 分钟启动）。
+5. 正式运行：放 `configs/experiments/plan_exp09.json`（12 个运行，每个 23–29 分钟，含约 3 分钟启动；12 个共约 5 小时 15 分钟）。
+   这次用的 12 个目录见 `metadata.json` 的 `runs`；方案 2 区组 1 用 `run02`（`run01` 启动失败）。
 6. 分析和作图：
 
    ```bash
    python scripts/analysis/exp09_report.py --data-root <results> --run <12 个正式运行目录> --out research/01_性能瓶颈/实验09_最佳GPU分工
+   python scripts/analysis/exp09_stalls.py --data-root <results> --run <同上> --out research/01_性能瓶颈/实验09_最佳GPU分工/results/stalls.json
    python scripts/analysis/exp09_figures.py --out research/01_性能瓶颈/实验09_最佳GPU分工
    python scripts/analysis/exp09_11_diagrams.py   # 示意图
    ```
