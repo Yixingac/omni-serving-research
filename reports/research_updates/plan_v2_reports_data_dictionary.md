@@ -124,3 +124,19 @@
 | `verdict_overall` | 两段一致时取该结论，否则“不确定” |
 
 服务属于哪个请求，按服务端事件里的请求编号认领（请求记录里只有服务的地址）。
+
+## 六、实验 3（`exp03_report.py`）
+
+### `summary.json`
+
+| 字段 | 含义 |
+|---|---|
+| `rule.slo_fraction` | 0.95：一档里至少这么多请求满足 SLO 才算合格 |
+| `curves.<分法>` | 闭环曲线：`label`、`runs[]`（`run`、`phase`、`node`）、`levels[]`、`doubling_gain`、`highest_concurrency_within_slo` |
+| `curves.<分法>.levels[]` | 每个并发：`concurrency`、`n`、`errors`、`rps`、`slo`、`ttft_p50_s`、`ttft_p90_s`、`e2e_p50_s`、`e2e_p90_s`、`e2e_mean_s`、`e2e_per_audio_p90`、`in_flight_little`（吞吐 × 平均端到端时间）、`stages_ms`、`split`、`eff_batch`、`gpu_util`、`run`、`node` |
+| `levels[].stages_ms` | 各阶段时间的中位数（毫秒，服务端事件）：`thinker.queue`、`thinker.model_path`（prefill 加全部解码步）、`talker.queue`、`talker.model_path`、`code2wav.service`（含它内部的排队） |
+| `levels[].split` | 端到端中位数里各阶段的占比：`thinker_share`、`talker_share`、`code2wav_share`，以及剩下的 `other_ms`（HTTP、预处理、阶段之间的传递；各阶段中位数相加不等于端到端中位数，所以可能是负数） |
+| `levels[].eff_batch`、`gpu_util` | 见 `scripts/analysis/stage_by_level.py`：每个副本平均同时在算的请求数；各角色 GPU 的 nvidia-smi 采样平均 |
+| `doubling_gain.<c>` | 并发从 c/2 加到 c 时吞吐涨了多少（比例） |
+| `open.<分法>` | 开环：`run`、`levels[]`（`rate_rps`、`n`、`ok`、`errors`、`rps`、`slo`、`ttft_p90_s`、`e2e_p50_s`、`e2e_p90_s`、`e2e_mean_s`、`e2e_per_audio_p90`）、`capacity`（SLO 容量）、`censored`（最高一档也合格时为 true，容量只是下限）、`in_flight_at_capacity`（容量那一档的吞吐 × 平均端到端时间） |
+| `verdicts.A-H1_second_half` | `verdict`、`r8_near_best`（每个并发下 8 个完整副本是否在最好的 3% 以内）、`tolerance` |

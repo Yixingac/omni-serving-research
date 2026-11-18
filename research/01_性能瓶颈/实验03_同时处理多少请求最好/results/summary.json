@@ -1,0 +1,2130 @@
+{
+ "generated_by": "scripts/analysis/exp03_report.py",
+ "rule": {
+  "slo_fraction": 0.95
+ },
+ "curves": {
+  "s2x6": {
+   "label": "2+6",
+   "levels": [
+    {
+     "concurrency": 1.0,
+     "n": 64,
+     "errors": 0,
+     "rps": 0.5651447425823249,
+     "slo": 1.0,
+     "ttft_p50_s": 0.0490959815,
+     "ttft_p90_s": 0.056519399500000005,
+     "e2e_p50_s": 1.54671857,
+     "e2e_p90_s": 2.4953801781,
+     "e2e_mean_s": 1.768753470765625,
+     "e2e_per_audio_p90": 0.16778475053140096,
+     "in_flight_little": 0.9996017249274329,
+     "stages_ms": {
+      "thinker.queue": 2.7744470000000003,
+      "thinker.model_path": 920.938185,
+      "talker.queue": 2.355826,
+      "talker.model_path": 454.9011875,
+      "code2wav.service": 158.6308315
+     },
+     "split": {
+      "other_ms": 7.118093000000044,
+      "code2wav_share": 0.10255959589338867,
+      "thinker_share": 0.5972079536098154,
+      "talker_share": 0.2956303896319031
+     },
+     "eff_batch": {
+      "thinker": 0.29236966203039133,
+      "talker": 0.04532320103596724,
+      "code2wav": 0.018019047869509374
+     },
+     "gpu_util": {
+      "thinker": 26.9573268921095,
+      "talker": 4.63768115942029
+     },
+     "run": "20261116_v2b_sb_s2x6_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 2.0,
+     "n": 64,
+     "errors": 0,
+     "rps": 1.0009464336396807,
+     "slo": 1.0,
+     "ttft_p50_s": 0.0466706405,
+     "ttft_p90_s": 0.0520101,
+     "e2e_p50_s": 2.016866554,
+     "e2e_p90_s": 2.4967269,
+     "e2e_mean_s": 1.95585973521875,
+     "e2e_per_audio_p90": 0.15905678241709184,
+     "in_flight_little": 1.9577108266666579,
+     "stages_ms": {
+      "thinker.queue": 2.4566749999999997,
+      "thinker.model_path": 1193.721605,
+      "talker.queue": 2.2622150000000003,
+      "talker.model_path": 583.5552640000001,
+      "code2wav.service": 141.048551
+     },
+     "split": {
+      "other_ms": 93.82224399999996,
+      "code2wav_share": 0.06993449850227423,
+      "thinker_share": 0.5930874690879523,
+      "talker_share": 0.290459216470303
+     },
+     "eff_batch": {
+      "thinker": 0.6280460874879816,
+      "talker": 0.08811365998082298,
+      "code2wav": 0.022849230899794667
+     },
+     "gpu_util": {
+      "thinker": 53.91441441441441,
+      "talker": 11.169169169169168
+     },
+     "run": "20261116_v2b_sb_s2x6_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 4.0,
+     "n": 64,
+     "errors": 0,
+     "rps": 1.9252496255922533,
+     "slo": 1.0,
+     "ttft_p50_s": 0.04839519,
+     "ttft_p90_s": 0.06474229260000001,
+     "e2e_p50_s": 2.0950191345,
+     "e2e_p90_s": 2.6100581258,
+     "e2e_mean_s": 2.0374106441875,
+     "e2e_per_audio_p90": 0.16002492536548474,
+     "in_flight_little": 3.9225240798996563,
+     "stages_ms": {
+      "thinker.queue": 1.976245,
+      "thinker.model_path": 1271.779457,
+      "talker.queue": 2.4391665,
+      "talker.model_path": 559.8563385,
+      "code2wav.service": 181.104116
+     },
+     "split": {
+      "other_ms": 77.86381150000011,
+      "code2wav_share": 0.0864450892202579,
+      "thinker_share": 0.6079923954031075,
+      "talker_share": 0.26839635769445996
+     },
+     "eff_batch": {
+      "thinker": 1.2099836107953352,
+      "talker": 0.17489578895329388,
+      "code2wav": 0.05986846604893968
+     },
+     "gpu_util": {
+      "thinker": 73.18313953488372,
+      "talker": 20.163759689922482
+     },
+     "run": "20261116_v2b_sb_s2x6_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 8.0,
+     "n": 64,
+     "errors": 0,
+     "rps": 3.6587567715514284,
+     "slo": 1.0,
+     "ttft_p50_s": 0.0504149275,
+     "ttft_p90_s": 0.06878748380000002,
+     "e2e_p50_s": 2.017432359,
+     "e2e_p90_s": 2.5820987472,
+     "e2e_mean_s": 2.002553270484375,
+     "e2e_per_audio_p90": 0.16712881292168674,
+     "in_flight_little": 7.326855338777166,
+     "stages_ms": {
+      "thinker.queue": 1.7845564999999999,
+      "thinker.model_path": 1281.5813269999999,
+      "talker.queue": 2.15013,
+      "talker.model_path": 528.233441,
+      "code2wav.service": 156.2444565
+     },
+     "split": {
+      "other_ms": 47.43844800000011,
+      "code2wav_share": 0.0774471846865028,
+      "thinker_share": 0.6361382466057688,
+      "talker_share": 0.2629002993006914
+     },
+     "eff_batch": {
+      "thinker": 2.4341711948583593,
+      "talker": 0.33852914078250035,
+      "code2wav": 0.10387325077498284
+     },
+     "gpu_util": {
+      "thinker": 82.32183908045977,
+      "talker": 35.82183908045977
+     },
+     "run": "20261116_v2b_sb_s2x6_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 16.0,
+     "n": 96,
+     "errors": 0,
+     "rps": 5.569631705749128,
+     "slo": 1.0,
+     "ttft_p50_s": 0.0617604535,
+     "ttft_p90_s": 0.077607172,
+     "e2e_p50_s": 2.244302829,
+     "e2e_p90_s": 3.0314371380000003,
+     "e2e_mean_s": 2.3149518728645835,
+     "e2e_per_audio_p90": 0.19715373723178525,
+     "in_flight_little": 12.893429348389908,
+     "stages_ms": {
+      "thinker.queue": 3.2060705,
+      "thinker.model_path": 1318.748343,
+      "talker.queue": 1.756904,
+      "talker.model_path": 627.1114175,
+      "code2wav.service": 217.0251045
+     },
+     "split": {
+      "other_ms": 76.45498950000001,
+      "code2wav_share": 0.09670045490104401,
+      "thinker_share": 0.5890267553995939,
+      "talker_share": 0.2802065360226839
+     },
+     "eff_batch": {
+      "thinker": 4.074166751598315,
+      "talker": 0.630268458266324,
+      "code2wav": 0.37228399832702225
+     },
+     "gpu_util": {
+      "thinker": 75.58988764044943,
+      "talker": 45.11048689138577
+     },
+     "run": "20261116_v2b_a_s2x6_c03_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 32.0,
+     "n": 96,
+     "errors": 0,
+     "rps": 10.239073698579729,
+     "slo": 1.0,
+     "ttft_p50_s": 0.062461302999999996,
+     "ttft_p90_s": 0.08023441,
+     "e2e_p50_s": 2.2913980095,
+     "e2e_p90_s": 3.1382983644999998,
+     "e2e_mean_s": 2.3521898810312503,
+     "e2e_per_audio_p90": 0.20955142435637586,
+     "in_flight_little": 24.084245544932454,
+     "stages_ms": {
+      "thinker.queue": 3.886392,
+      "thinker.model_path": 1293.5123775,
+      "talker.queue": 1.0278815,
+      "talker.model_path": 716.1048470000001,
+      "code2wav.service": 219.2826245
+     },
+     "split": {
+      "other_ms": 57.58388699999978,
+      "code2wav_share": 0.09569818232837216,
+      "thinker_share": 0.5662040222261964,
+      "talker_share": 0.31296733501853913
+     },
+     "eff_batch": {
+      "thinker": 7.924004554380065,
+      "talker": 1.3740092384626945,
+      "code2wav": 0.4586862242048845
+     },
+     "gpu_util": {
+      "thinker": 70.69090909090909,
+      "talker": 75.7909090909091
+     },
+     "run": "20261116_v2b_a_s2x6_c03_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 64.0,
+     "n": 128,
+     "errors": 0,
+     "rps": 14.12923863841241,
+     "slo": 1.0,
+     "ttft_p50_s": 0.0711665435,
+     "ttft_p90_s": 0.08725981349999999,
+     "e2e_p50_s": 2.8928453225000004,
+     "e2e_p90_s": 3.8190499393,
+     "e2e_mean_s": 2.9753852723671876,
+     "e2e_per_audio_p90": 0.29554695120899177,
+     "in_flight_little": 42.0399285544937,
+     "stages_ms": {
+      "thinker.queue": 5.3279185,
+      "thinker.model_path": 1431.3297865,
+      "talker.queue": 1.039069,
+      "talker.model_path": 1013.644787,
+      "code2wav.service": 333.379592
+     },
+     "split": {
+      "other_ms": 108.12416950000033,
+      "code2wav_share": 0.11524279898653308,
+      "thinker_share": 0.49662444577521986,
+      "talker_share": 0.3507563463929378
+     },
+     "eff_batch": {
+      "thinker": 13.235387752256372,
+      "talker": 3.018294921448415,
+      "code2wav": 1.4232913090664514
+     },
+     "gpu_util": {
+      "thinker": 65.04807692307692,
+      "talker": 80.44551282051282
+     },
+     "run": "20261116_v2b_a_s2x6_c03_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 128.0,
+     "n": 256,
+     "errors": 0,
+     "rps": 18.669423095359104,
+     "slo": 0.93359375,
+     "ttft_p50_s": 0.084716005,
+     "ttft_p90_s": 0.1182531755,
+     "e2e_p50_s": 4.6786081085,
+     "e2e_p90_s": 5.8785057814999995,
+     "e2e_mean_s": 4.721164167644531,
+     "e2e_per_audio_p90": 0.45329931501762466,
+     "in_flight_little": 88.14141134840465,
+     "stages_ms": {
+      "thinker.queue": 5.8730975,
+      "thinker.model_path": 1612.8213074999999,
+      "talker.queue": 1.0261045,
+      "talker.model_path": 1488.6794585,
+      "code2wav.service": 1534.8493315
+     },
+     "split": {
+      "other_ms": 35.35880899999938,
+      "code2wav_share": 0.3280568271387204,
+      "thinker_share": 0.34597777105100747,
+      "talker_share": 0.3184078530308049
+     },
+     "eff_batch": {
+      "thinker": 19.93144918512982,
+      "talker": 5.710117898262774,
+      "code2wav": 5.791868986061326
+     },
+     "gpu_util": {
+      "thinker": 59.190789473684205,
+      "talker": 85.23026315789474
+     },
+     "run": "20261116_v2b_a_s2x6_c03_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 256.0,
+     "n": 512,
+     "errors": 0,
+     "rps": 19.862139178436074,
+     "slo": 0.142578125,
+     "ttft_p50_s": 0.133908454,
+     "ttft_p90_s": 0.6453776473000005,
+     "e2e_p50_s": 8.9120546635,
+     "e2e_p90_s": 11.3806648947,
+     "e2e_mean_s": 8.880096453675781,
+     "e2e_per_audio_p90": 0.9291347501010295,
+     "in_flight_little": 176.37771168084498,
+     "stages_ms": {
+      "thinker.queue": 6.384543,
+      "thinker.model_path": 1584.1338555,
+      "talker.queue": 1.0042995000000001,
+      "talker.model_path": 1629.8943405,
+      "code2wav.service": 5320.5341165
+     },
+     "split": {
+      "other_ms": 370.1035084999985,
+      "code2wav_share": 0.5970042058079664,
+      "thinker_share": 0.1784682049824144,
+      "talker_share": 0.18299917376847674
+     },
+     "eff_batch": {
+      "thinker": 24.872853165301564,
+      "talker": 7.98417773088788,
+      "code2wav": 18.574874492653155
+     },
+     "gpu_util": {
+      "thinker": 57.425925925925924,
+      "talker": 86.67654320987656
+     },
+     "run": "20261116_v2b_a_s2x6_c03_run01",
+     "node": "compute-03"
+    }
+   ],
+   "runs": [
+    {
+     "run": "20261116_v2b_sb_s2x6_run01",
+     "phase": "w3b_small",
+     "node": "compute-03"
+    },
+    {
+     "run": "20261116_v2b_a_s2x6_c03_run01",
+     "phase": "w3b_closed",
+     "node": "compute-03"
+    }
+   ],
+   "doubling_gain": {
+    "2": 0.7711328766256236,
+    "4": 0.9234292274678326,
+    "8": 0.9004064319326417,
+    "16": 0.5222743826689054,
+    "32": 0.8383753611591003,
+    "64": 0.37993328833762474,
+    "128": 0.3213325624357095,
+    "256": 0.06388607066136176
+   },
+   "highest_concurrency_within_slo": 64.0
+  },
+  "r8": {
+   "label": "8 个完整副本",
+   "levels": [
+    {
+     "concurrency": 1.0,
+     "n": 64,
+     "errors": 0,
+     "rps": 0.5616295736269018,
+     "slo": 1.0,
+     "ttft_p50_s": 0.049727105,
+     "ttft_p90_s": 0.0589852095,
+     "e2e_p50_s": 1.4823652735000001,
+     "e2e_p90_s": 2.5052869499000003,
+     "e2e_mean_s": 1.779802357765625,
+     "e2e_per_audio_p90": 0.1667675139009662,
+     "in_flight_little": 0.9995896393320625,
+     "stages_ms": {
+      "thinker.queue": 2.702,
+      "thinker.model_path": 918.51889,
+      "talker.queue": 2.2557395,
+      "talker.model_path": 419.48762250000004,
+      "code2wav.service": 114.03503549999999
+     },
+     "split": {
+      "other_ms": 25.36598600000002,
+      "code2wav_share": 0.07692775696961171,
+      "thinker_share": 0.6214533667703327,
+      "talker_share": 0.28450704393811477
+     },
+     "eff_batch": {
+      "thinker": 0.07833327266519176,
+      "talker": 0.03339403572165451,
+      "code2wav": 0.009118705304274355
+     },
+     "gpu_util": {
+      "full replica": 10.931592039800995
+     },
+     "run": "20261116_v2b_sb_r8_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 2.0,
+     "n": 64,
+     "errors": 0,
+     "rps": 0.9774578602146171,
+     "slo": 1.0,
+     "ttft_p50_s": 0.0476514675,
+     "ttft_p90_s": 0.05380577600000001,
+     "e2e_p50_s": 2.0649075855000003,
+     "e2e_p90_s": 2.4952467945,
+     "e2e_mean_s": 1.99873691528125,
+     "e2e_per_audio_p90": 0.16268098382850243,
+     "in_flight_little": 1.953681108342775,
+     "stages_ms": {
+      "thinker.queue": 2.530236,
+      "thinker.model_path": 1258.274515,
+      "talker.queue": 2.2242455000000003,
+      "talker.model_path": 586.5479355,
+      "code2wav.service": 148.9090755
+     },
+     "split": {
+      "other_ms": 66.42157799999995,
+      "code2wav_share": 0.07211415975497175,
+      "thinker_share": 0.6105865269000437,
+      "talker_share": 0.2851324607137001
+     },
+     "eff_batch": {
+      "thinker": 0.1561615114255541,
+      "talker": 0.0663018741295003,
+      "code2wav": 0.01770164853851556
+     },
+     "gpu_util": {
+      "full replica": 21.559210526315788
+     },
+     "run": "20261116_v2b_sb_r8_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 4.0,
+     "n": 64,
+     "errors": 0,
+     "rps": 1.86411913095289,
+     "slo": 1.0,
+     "ttft_p50_s": 0.0511422205,
+     "ttft_p90_s": 0.057226434,
+     "e2e_p50_s": 2.132379276,
+     "e2e_p90_s": 2.5577438324,
+     "e2e_mean_s": 2.051577612234375,
+     "e2e_per_audio_p90": 0.15814305395833334,
+     "in_flight_little": 3.8243850756007487,
+     "stages_ms": {
+      "thinker.queue": 2.882859,
+      "thinker.model_path": 1291.0535525,
+      "talker.queue": 2.4458029999999997,
+      "talker.model_path": 606.470819,
+      "code2wav.service": 159.8429185
+     },
+     "split": {
+      "other_ms": 69.68332400000008,
+      "code2wav_share": 0.0749598911877626,
+      "thinker_share": 0.6068040643910291,
+      "talker_share": 0.2855573719241116
+     },
+     "eff_batch": {
+      "thinker": 0.30036078622568946,
+      "talker": 0.13620592406030263,
+      "code2wav": 0.03818118980914737
+     },
+     "gpu_util": {
+      "full replica": 42.12428571428572
+     },
+     "run": "20261116_v2b_sb_r8_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 8.0,
+     "n": 64,
+     "errors": 0,
+     "rps": 3.4908212388073023,
+     "slo": 1.0,
+     "ttft_p50_s": 0.054019567500000004,
+     "ttft_p90_s": 0.0658435907,
+     "e2e_p50_s": 2.1200095924999998,
+     "e2e_p90_s": 2.5921517685,
+     "e2e_mean_s": 2.10200829321875,
+     "e2e_per_audio_p90": 0.17002921690821257,
+     "in_flight_little": 7.3377351941171,
+     "stages_ms": {
+      "thinker.queue": 2.935576,
+      "thinker.model_path": 1286.4764650000002,
+      "talker.queue": 2.492113,
+      "talker.model_path": 586.0805165,
+      "code2wav.service": 159.866575
+     },
+     "split": {
+      "other_ms": 82.15834699999937,
+      "code2wav_share": 0.07540842058713469,
+      "thinker_share": 0.6082104748778397,
+      "talker_share": 0.2776273426225076
+     },
+     "eff_batch": {
+      "thinker": 0.5888245284975272,
+      "talker": 0.2660109412467263,
+      "code2wav": 0.0852844557277166
+     },
+     "gpu_util": {
+      "full replica": 80.09444444444445
+     },
+     "run": "20261116_v2b_sb_r8_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 16.0,
+     "n": 96,
+     "errors": 0,
+     "rps": 4.758842752990925,
+     "slo": 1.0,
+     "ttft_p50_s": 0.061698422,
+     "ttft_p90_s": 0.07655104500000001,
+     "e2e_p50_s": 2.824055755,
+     "e2e_p90_s": 3.7856235170000003,
+     "e2e_mean_s": 2.868796875916667,
+     "e2e_per_audio_p90": 0.25321538256857934,
+     "in_flight_little": 13.652153222759036,
+     "stages_ms": {
+      "thinker.queue": 2.1879204999999997,
+      "thinker.model_path": 1622.7888025000002,
+      "talker.queue": 1.90415,
+      "talker.model_path": 939.1772880000001,
+      "code2wav.service": 261.154555
+     },
+     "split": {
+      "other_ms": -3.1569610000005923,
+      "code2wav_share": 0.09247499966586177,
+      "thinker_share": 0.575405326230891,
+      "talker_share": 0.33323755606942684
+     },
+     "eff_batch": {
+      "thinker": 0.9973257040889685,
+      "talker": 0.5905505951123663,
+      "code2wav": 0.19335522702667518
+     },
+     "gpu_util": {
+      "full replica": 86.86915887850468
+     },
+     "run": "20261116_v2b_a_r8_c03_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 32.0,
+     "n": 96,
+     "errors": 0,
+     "rps": 6.803163410721296,
+     "slo": 1.0,
+     "ttft_p50_s": 0.081014533,
+     "ttft_p90_s": 0.107739269,
+     "e2e_p50_s": 3.510697575,
+     "e2e_p90_s": 4.869032535500001,
+     "e2e_mean_s": 3.4906093853437503,
+     "e2e_per_audio_p90": 0.30879196274610804,
+     "in_flight_little": 23.747186051490953,
+     "stages_ms": {
+      "thinker.queue": 1.4064109999999999,
+      "thinker.model_path": 1876.408001,
+      "talker.queue": 1.0720945,
+      "talker.model_path": 1105.069878,
+      "code2wav.service": 294.949563
+     },
+     "split": {
+      "other_ms": 231.79162750000023,
+      "code2wav_share": 0.08401451754214403,
+      "thinker_share": 0.5348835585759619,
+      "talker_share": 0.31507754480959527
+     },
+     "eff_batch": {
+      "thinker": 1.8890340330461595,
+      "talker": 1.1731813070840251,
+      "code2wav": 0.3400215718537392
+     },
+     "gpu_util": {
+      "full replica": 89.3458904109589
+     },
+     "run": "20261116_v2b_a_r8_c03_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 64.0,
+     "n": 128,
+     "errors": 0,
+     "rps": 9.764110219039795,
+     "slo": 1.0,
+     "ttft_p50_s": 0.09935235,
+     "ttft_p90_s": 0.1478743082,
+     "e2e_p50_s": 4.416344598,
+     "e2e_p90_s": 5.821112249,
+     "e2e_mean_s": 4.36739030928125,
+     "e2e_per_audio_p90": 0.4073558749793484,
+     "in_flight_little": 42.64368034938842,
+     "stages_ms": {
+      "thinker.queue": 1.4794735,
+      "thinker.model_path": 2545.7625775,
+      "talker.queue": 1.0660305,
+      "talker.model_path": 1355.334402,
+      "code2wav.service": 356.5215515
+     },
+     "split": {
+      "other_ms": 156.1805630000008,
+      "code2wav_share": 0.08072774748181005,
+      "thinker_share": 0.5767761084933345,
+      "talker_share": 0.3071319283178816
+     },
+     "eff_batch": {
+      "thinker": 3.5614971580257255,
+      "talker": 2.2540875617908798,
+      "code2wav": 0.7693401821218705
+     },
+     "gpu_util": {
+      "full replica": 91.26909722222223
+     },
+     "run": "20261116_v2b_a_r8_c03_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 128.0,
+     "n": 256,
+     "errors": 0,
+     "rps": 14.102073786707482,
+     "slo": 0.8515625,
+     "ttft_p50_s": 0.13173568800000002,
+     "ttft_p90_s": 0.1706613225,
+     "e2e_p50_s": 5.8515442385,
+     "e2e_p90_s": 7.649073347,
+     "e2e_mean_s": 5.902849275355469,
+     "e2e_per_audio_p90": 0.5167879793413102,
+     "in_flight_little": 83.24241603287561,
+     "stages_ms": {
+      "thinker.queue": 1.8840255,
+      "thinker.model_path": 3077.838088,
+      "talker.queue": 1.060199,
+      "talker.model_path": 1739.618093,
+      "code2wav.service": 700.7395670000001
+     },
+     "split": {
+      "other_ms": 330.40426599999955,
+      "code2wav_share": 0.11975292990002746,
+      "thinker_share": 0.5263092934061905,
+      "talker_share": 0.29747332004213134
+     },
+     "eff_batch": {
+      "thinker": 6.338567723949962,
+      "talker": 4.237787198385387,
+      "code2wav": 2.5713933884380618
+     },
+     "gpu_util": {
+      "full replica": 92.75127551020408
+     },
+     "run": "20261116_v2b_a_r8_c03_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 256.0,
+     "n": 512,
+     "errors": 0,
+     "rps": 18.714268049823353,
+     "slo": 0.05078125,
+     "ttft_p50_s": 0.155294549,
+     "ttft_p90_s": 0.3227700213000001,
+     "e2e_p50_s": 9.0759702675,
+     "e2e_p90_s": 11.181396795600001,
+     "e2e_mean_s": 9.07437652883789,
+     "e2e_per_audio_p90": 0.9123922584664493,
+     "in_flight_little": 169.82031474569786,
+     "stages_ms": {
+      "thinker.queue": 3.0149559999999997,
+      "thinker.model_path": 3613.351684,
+      "talker.queue": 1.0962825,
+      "talker.model_path": 2234.1780045,
+      "code2wav.service": 3085.3951465
+     },
+     "split": {
+      "other_ms": 138.9341940000013,
+      "code2wav_share": 0.3399520993968483,
+      "thinker_share": 0.39845509994119205,
+      "talker_share": 0.24628488427339376
+     },
+     "eff_batch": {
+      "thinker": 9.874964198159798,
+      "talker": 7.5665682755409245,
+      "code2wav": 10.207975453468348
+     },
+     "gpu_util": {
+      "full replica": 95.19237588652483
+     },
+     "run": "20261116_v2b_a_r8_c03_run01",
+     "node": "compute-03"
+    }
+   ],
+   "runs": [
+    {
+     "run": "20261116_v2b_sb_r8_run01",
+     "phase": "w3b_small",
+     "node": "compute-03"
+    },
+    {
+     "run": "20261116_v2b_a_r8_c03_run01",
+     "phase": "w3b_closed",
+     "node": "compute-03"
+    }
+   ],
+   "doubling_gain": {
+    "2": 0.7403959942892104,
+    "4": 0.9071094589628566,
+    "8": 0.8726384922743022,
+    "16": 0.3632444709820959,
+    "32": 0.4295835697545414,
+    "64": 0.4352308815120125,
+    "128": 0.4442763826250913,
+    "256": 0.3270578733932943
+   },
+   "highest_concurrency_within_slo": 64.0
+  },
+  "p4": {
+   "label": "4 组 1+1",
+   "levels": [
+    {
+     "concurrency": 1.0,
+     "n": 64,
+     "errors": 0,
+     "rps": 0.5618387949504806,
+     "slo": 1.0,
+     "ttft_p50_s": 0.0484820265,
+     "ttft_p90_s": 0.0524810205,
+     "e2e_p50_s": 1.4569594295,
+     "e2e_p90_s": 2.5004717343,
+     "e2e_mean_s": 1.779134031609375,
+     "e2e_per_audio_p90": 0.16702372945652175,
+     "in_flight_little": 0.9995865203748016,
+     "stages_ms": {
+      "thinker.queue": 2.5936595000000002,
+      "thinker.model_path": 916.7700239999999,
+      "talker.queue": 2.2921945,
+      "talker.model_path": 414.53799100000003,
+      "code2wav.service": 112.2658725
+     },
+     "split": {
+      "other_ms": 8.499687999999878,
+      "code2wav_share": 0.07705490642146944,
+      "thinker_share": 0.6310152945133878,
+      "talker_share": 0.2860959454739574
+     },
+     "eff_batch": {
+      "thinker": 0.1564953844286283,
+      "talker": 0.06727436208978504,
+      "code2wav": 0.018019393435371147
+     },
+     "gpu_util": {
+      "thinker": 14.01694214876033,
+      "talker": 8.219834710743802
+     },
+     "run": "20261116_v2b_sb_p4_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 2.0,
+     "n": 64,
+     "errors": 0,
+     "rps": 0.9743049048570388,
+     "slo": 1.0,
+     "ttft_p50_s": 0.0492920565,
+     "ttft_p90_s": 0.0552393158,
+     "e2e_p50_s": 2.0809540125000003,
+     "e2e_p90_s": 2.5222721212,
+     "e2e_mean_s": 2.012741381625,
+     "e2e_per_audio_p90": 0.1656208778140097,
+     "in_flight_little": 1.9610238003259706,
+     "stages_ms": {
+      "thinker.queue": 2.5979965,
+      "thinker.model_path": 1264.2193015,
+      "talker.queue": 2.3520390000000004,
+      "talker.model_path": 582.6343595000001,
+      "code2wav.service": 148.944558
+     },
+     "split": {
+      "other_ms": 80.20575800000029,
+      "code2wav_share": 0.07157513193723207,
+      "thinker_share": 0.6087675606430537,
+      "talker_share": 0.2811145248698762
+     },
+     "eff_batch": {
+      "thinker": 0.3113954722896181,
+      "talker": 0.13306502631066058,
+      "code2wav": 0.03600230573541802
+     },
+     "gpu_util": {
+      "thinker": 28.195652173913043,
+      "talker": 15.439855072463768
+     },
+     "run": "20261116_v2b_sb_p4_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 4.0,
+     "n": 64,
+     "errors": 0,
+     "rps": 1.8706923090843344,
+     "slo": 1.0,
+     "ttft_p50_s": 0.050414645,
+     "ttft_p90_s": 0.0556000231,
+     "e2e_p50_s": 2.0957575669999997,
+     "e2e_p90_s": 2.5312717017,
+     "e2e_mean_s": 2.024707188921875,
+     "e2e_per_audio_p90": 0.15593451696691177,
+     "in_flight_little": 3.7876041664639137,
+     "stages_ms": {
+      "thinker.queue": 2.7794635000000003,
+      "thinker.model_path": 1278.8035224999999,
+      "talker.queue": 2.402502,
+      "talker.model_path": 590.4095095,
+      "code2wav.service": 156.4827635
+     },
+     "split": {
+      "other_ms": 64.87980599999969,
+      "code2wav_share": 0.07466644327759692,
+      "thinker_share": 0.6115129947184392,
+      "talker_share": 0.2828628753795167
+     },
+     "eff_batch": {
+      "thinker": 0.5973115910138039,
+      "talker": 0.26865073847216253,
+      "code2wav": 0.07924180011047549
+     },
+     "gpu_util": {
+      "thinker": 52.40395480225989,
+      "talker": 30.77683615819209
+     },
+     "run": "20261116_v2b_sb_p4_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 8.0,
+     "n": 64,
+     "errors": 0,
+     "rps": 3.4863316976978838,
+     "slo": 1.0,
+     "ttft_p50_s": 0.047237981,
+     "ttft_p90_s": 0.0632729754,
+     "e2e_p50_s": 2.144632438,
+     "e2e_p90_s": 2.6472932163,
+     "e2e_mean_s": 2.09697503684375,
+     "e2e_per_audio_p90": 0.17195367589317417,
+     "in_flight_little": 7.310750540229553,
+     "stages_ms": {
+      "thinker.queue": 1.679093,
+      "thinker.model_path": 1275.5891455,
+      "talker.queue": 1.973196,
+      "talker.model_path": 598.419267,
+      "code2wav.service": 189.4795295
+     },
+     "split": {
+      "other_ms": 77.49220699999978,
+      "code2wav_share": 0.08835058453032688,
+      "thinker_share": 0.5955651028439775,
+      "talker_share": 0.27995121791587857
+     },
+     "eff_batch": {
+      "thinker": 1.1609097240884196,
+      "talker": 0.5406625784577272,
+      "code2wav": 0.18485857881913467
+     },
+     "gpu_util": {
+      "thinker": 72.33791208791209,
+      "talker": 51.18956043956044
+     },
+     "run": "20261116_v2b_sb_p4_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 16.0,
+     "n": 96,
+     "errors": 0,
+     "rps": 5.877434864303097,
+     "slo": 1.0,
+     "ttft_p50_s": 0.055079871,
+     "ttft_p90_s": 0.06716869750000001,
+     "e2e_p50_s": 2.265036499,
+     "e2e_p90_s": 2.9561738995,
+     "e2e_mean_s": 2.2578260314479164,
+     "e2e_per_audio_p90": 0.19194378968228198,
+     "in_flight_little": 13.270225434763084,
+     "stages_ms": {
+      "thinker.queue": 2.0079745,
+      "thinker.model_path": 1242.1640295,
+      "talker.queue": 1.0896370000000002,
+      "talker.model_path": 694.8376235,
+      "code2wav.service": 234.17675450000002
+     },
+     "split": {
+      "other_ms": 90.76047999999992,
+      "code2wav_share": 0.10338762956066609,
+      "thinker_share": 0.5492944615017438,
+      "talker_share": 0.30724770254574163
+     },
+     "eff_batch": {
+      "thinker": 1.9332022257808323,
+      "talker": 1.0856797549021058,
+      "code2wav": 0.49126269597604255
+     },
+     "gpu_util": {
+      "thinker": 73.59831460674157,
+      "talker": 67.11235955056179
+     },
+     "run": "20261115_v2_a_p4_run1_run01",
+     "node": "第一批节点"
+    },
+    {
+     "concurrency": 32.0,
+     "n": 96,
+     "errors": 0,
+     "rps": 9.366434552014322,
+     "slo": 1.0,
+     "ttft_p50_s": 0.0556998715,
+     "ttft_p90_s": 0.0707189285,
+     "e2e_p50_s": 2.567298236,
+     "e2e_p90_s": 3.5079000085,
+     "e2e_mean_s": 2.5671757647708335,
+     "e2e_per_audio_p90": 0.24550162371692597,
+     "in_flight_little": 24.045283784243328,
+     "stages_ms": {
+      "thinker.queue": 2.4257584999999997,
+      "thinker.model_path": 1238.388378,
+      "talker.queue": 1.0532035,
+      "talker.model_path": 896.3724775,
+      "code2wav.service": 260.065015
+     },
+     "split": {
+      "other_ms": 168.9934035000001,
+      "code2wav_share": 0.10129910555510545,
+      "thinker_share": 0.48331515174226924,
+      "talker_share": 0.3495603543117146
+     },
+     "eff_batch": {
+      "thinker": 3.47649039111439,
+      "talker": 2.3997400454137265,
+      "code2wav": 0.9189736898007745
+     },
+     "gpu_util": {
+      "thinker": 70.54464285714286,
+      "talker": 83.39732142857143
+     },
+     "run": "20261115_v2_a_p4_run1_run01",
+     "node": "第一批节点"
+    },
+    {
+     "concurrency": 64.0,
+     "n": 128,
+     "errors": 0,
+     "rps": 11.642166741053577,
+     "slo": 0.9609375,
+     "ttft_p50_s": 0.062186218,
+     "ttft_p90_s": 0.0935151469,
+     "e2e_p50_s": 3.5732329175,
+     "e2e_p90_s": 4.7500228387,
+     "e2e_mean_s": 3.5682946784140626,
+     "e2e_per_audio_p90": 0.3941800646289752,
+     "in_flight_little": 41.54268162731067,
+     "stages_ms": {
+      "thinker.queue": 3.061992,
+      "thinker.model_path": 1276.04002,
+      "talker.queue": 1.053287,
+      "talker.model_path": 1278.843501,
+      "code2wav.service": 919.4875695000001
+     },
+     "split": {
+      "other_ms": 94.74654800000008,
+      "code2wav_share": 0.2573265137564322,
+      "thinker_share": 0.357967712022232,
+      "talker_share": 0.35819013692940993
+     },
+     "eff_batch": {
+      "thinker": 5.022006045962714,
+      "talker": 4.704001407667302,
+      "code2wav": 3.920583572283425
+     },
+     "gpu_util": {
+      "thinker": 67.36065573770492,
+      "talker": 90.62704918032787
+     },
+     "run": "20261115_v2_a_p4_run1_run01",
+     "node": "第一批节点"
+    },
+    {
+     "concurrency": 128.0,
+     "n": 256,
+     "errors": 0,
+     "rps": 13.324482857194026,
+     "slo": 0.6015625,
+     "ttft_p50_s": 0.094086163,
+     "ttft_p90_s": 0.139896862,
+     "e2e_p50_s": 6.701818654,
+     "e2e_p90_s": 7.940005223,
+     "e2e_mean_s": 6.459923201457031,
+     "e2e_per_audio_p90": 0.6669066714225589,
+     "in_flight_little": 86.07513595660416,
+     "stages_ms": {
+      "thinker.queue": 3.4045325,
+      "thinker.model_path": 1314.007548,
+      "talker.queue": 1.145429,
+      "talker.model_path": 1483.813183,
+      "code2wav.service": 3552.401958
+     },
+     "split": {
+      "other_ms": 347.04600350000055,
+      "code2wav_share": 0.5300653660450418,
+      "thinker_share": 0.19657531015311772,
+      "talker_share": 0.22157546908758832
+     },
+     "eff_batch": {
+      "thinker": 6.196927494744491,
+      "talker": 7.322238005096329,
+      "code2wav": 14.038381746835656
+     },
+     "gpu_util": {
+      "thinker": 53.29207920792079,
+      "talker": 90.03960396039604
+     },
+     "run": "20261115_v2_a_p4_run1_run01",
+     "node": "第一批节点"
+    },
+    {
+     "concurrency": 256.0,
+     "n": 512,
+     "errors": 0,
+     "rps": 15.321934260833766,
+     "slo": 0.00390625,
+     "ttft_p50_s": 0.119250297,
+     "ttft_p90_s": 0.1658335213,
+     "e2e_p50_s": 11.8129271655,
+     "e2e_p90_s": 14.0179403511,
+     "e2e_mean_s": 11.559377642382813,
+     "e2e_per_audio_p90": 1.5162016642382155,
+     "in_flight_little": 177.11202433274107,
+     "stages_ms": {
+      "thinker.queue": 4.309561,
+      "thinker.model_path": 1315.0870875,
+      "talker.queue": 1.336477,
+      "talker.model_path": 1555.5029049999998,
+      "code2wav.service": 8520.2760875
+     },
+     "split": {
+      "other_ms": 416.41504749999876,
+      "code2wav_share": 0.7212671311801292,
+      "thinker_share": 0.11169091538575948,
+      "talker_share": 0.1317911606656473
+     },
+     "eff_batch": {
+      "thinker": 7.608154675393483,
+      "talker": 10.328369372315398,
+      "code2wav": 36.47814417833591
+     },
+     "gpu_util": {
+      "thinker": 44.75574712643678,
+      "talker": 90.88074712643679
+     },
+     "run": "20261115_v2_a_p4_run1_run01",
+     "node": "第一批节点"
+    }
+   ],
+   "runs": [
+    {
+     "run": "20261116_v2b_sb_p4_run01",
+     "phase": "w3b_small",
+     "node": "compute-03"
+    },
+    {
+     "run": "20261115_v2_a_p4_run1_run01",
+     "phase": "w3b_closed",
+     "node": "第一批节点"
+    }
+   ],
+   "doubling_gain": {
+    "2": 0.7341360433163255,
+    "4": 0.920027600968327,
+    "8": 0.8636585400858208,
+    "16": 0.68585073766335,
+    "32": 0.5936262618411723,
+    "64": 0.24296675286647273,
+    "128": 0.14450197747195337,
+    "256": 0.1499083623017532
+   },
+   "highest_concurrency_within_slo": 64.0
+  },
+  "s1x7": {
+   "label": "1+7",
+   "levels": [
+    {
+     "concurrency": 1.0,
+     "n": 64,
+     "errors": 0,
+     "rps": 0.5537167931318723,
+     "slo": 1.0,
+     "ttft_p50_s": 0.045659522499999994,
+     "ttft_p90_s": 0.051325471000000004,
+     "e2e_p50_s": 1.5792837675,
+     "e2e_p90_s": 2.5208596956,
+     "e2e_mean_s": 1.80523775690625,
+     "e2e_per_audio_p90": 0.1634472509541063,
+     "in_flight_little": 0.9995904615947032,
+     "stages_ms": {
+      "thinker.queue": 2.442434,
+      "thinker.model_path": 907.447701,
+      "talker.queue": 2.3051805,
+      "talker.model_path": 443.709002,
+      "code2wav.service": 158.3452315
+     },
+     "split": {
+      "other_ms": 65.03421849999995,
+      "code2wav_share": 0.1002639517726823,
+      "thinker_share": 0.5761410037414318,
+      "talker_share": 0.2824154795221119
+     },
+     "eff_batch": {
+      "thinker": 0.5818756219954939,
+      "talker": 0.0383477966180569,
+      "code2wav": 0.016570012810644245
+     },
+     "gpu_util": {
+      "thinker": 52.327044025157235,
+      "talker": 3.968104222821204
+     },
+     "run": "20261116_v2b_sb_s1x7_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 2.0,
+     "n": 64,
+     "errors": 0,
+     "rps": 0.9901244575700315,
+     "slo": 1.0,
+     "ttft_p50_s": 0.043426779,
+     "ttft_p90_s": 0.0605023261,
+     "e2e_p50_s": 1.9730759820000001,
+     "e2e_p90_s": 2.5347246447,
+     "e2e_mean_s": 1.997866643390625,
+     "e2e_per_audio_p90": 0.16295090677133717,
+     "in_flight_little": 1.978136626584402,
+     "stages_ms": {
+      "thinker.queue": 1.4207505,
+      "thinker.model_path": 1229.961934,
+      "talker.queue": 2.2330295,
+      "talker.model_path": 536.147389,
+      "code2wav.service": 172.4854445
+     },
+     "split": {
+      "other_ms": 30.82743450000021,
+      "code2wav_share": 0.08741956522381913,
+      "thinker_share": 0.6240928863022366,
+      "talker_share": 0.2728635001447197
+     },
+     "eff_batch": {
+      "thinker": 1.2428998401247748,
+      "talker": 0.0738403022591172,
+      "code2wav": 0.024739444780023115
+     },
+     "gpu_util": {
+      "thinker": 75.41246290801188,
+      "talker": 8.267910131411615
+     },
+     "run": "20261116_v2b_sb_s1x7_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 4.0,
+     "n": 64,
+     "errors": 0,
+     "rps": 1.9391011352400394,
+     "slo": 1.0,
+     "ttft_p50_s": 0.0493911255,
+     "ttft_p90_s": 0.0592120407,
+     "e2e_p50_s": 2.0693478914999996,
+     "e2e_p90_s": 2.5548799165,
+     "e2e_mean_s": 2.016138448328125,
+     "e2e_per_audio_p90": 0.15874811405339392,
+     "in_flight_little": 3.9094963539541587,
+     "stages_ms": {
+      "thinker.queue": 1.6791185,
+      "thinker.model_path": 1299.0533755000001,
+      "talker.queue": 2.2160345,
+      "talker.model_path": 539.1058654999999,
+      "code2wav.service": 155.3229005
+     },
+     "split": {
+      "other_ms": 71.97059699999954,
+      "code2wav_share": 0.07505886329601724,
+      "thinker_share": 0.6285712032002234,
+      "talker_share": 0.26159057267437724
+     },
+     "eff_batch": {
+      "thinker": 2.459609340802286,
+      "talker": 0.14885368916396563,
+      "code2wav": 0.044543366446270154
+     },
+     "gpu_util": {
+      "thinker": 84.72514619883042,
+      "talker": 16.312447786131997
+     },
+     "run": "20261116_v2b_sb_s1x7_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 8.0,
+     "n": 64,
+     "errors": 0,
+     "rps": 3.556390797050783,
+     "slo": 1.0,
+     "ttft_p50_s": 0.054493266,
+     "ttft_p90_s": 0.07456450410000001,
+     "e2e_p50_s": 2.1138807159999997,
+     "e2e_p90_s": 2.6376917516,
+     "e2e_mean_s": 2.07766104546875,
+     "e2e_per_audio_p90": 0.16527626747716895,
+     "in_flight_little": 7.388974621495971,
+     "stages_ms": {
+      "thinker.queue": 2.445858,
+      "thinker.model_path": 1373.1543805000001,
+      "talker.queue": 2.1556465,
+      "talker.model_path": 524.7324590000001,
+      "code2wav.service": 129.3560665
+     },
+     "split": {
+      "other_ms": 82.03630549999957,
+      "code2wav_share": 0.06119364518579582,
+      "thinker_share": 0.6507463870066358,
+      "talker_share": 0.2492515786307027
+     },
+     "eff_batch": {
+      "thinker": 5.057020708690641,
+      "talker": 0.28554676794098116,
+      "code2wav": 0.07694058007716734
+     },
+     "gpu_util": {
+      "thinker": 81.93258426966293,
+      "talker": 28.823434991974317
+     },
+     "run": "20261116_v2b_sb_s1x7_run01",
+     "node": "compute-03"
+    },
+    {
+     "concurrency": 16.0,
+     "n": 96,
+     "errors": 0,
+     "rps": 5.645735679616678,
+     "slo": 1.0,
+     "ttft_p50_s": 0.058722144500000004,
+     "ttft_p90_s": 0.0720401625,
+     "e2e_p50_s": 2.2725449170000003,
+     "e2e_p90_s": 2.934775072,
+     "e2e_mean_s": 2.2798507637395833,
+     "e2e_per_audio_p90": 0.19457361086917985,
+     "in_flight_little": 12.871434801045899,
+     "stages_ms": {
+      "thinker.queue": 4.0974065,
+      "thinker.model_path": 1440.5504845,
+      "talker.queue": 1.9698145,
+      "talker.model_path": 580.7979665,
+      "code2wav.service": 191.48881599999999
+     },
+     "split": {
+      "other_ms": 53.64042900000004,
+      "code2wav_share": 0.08426183991680371,
+      "thinker_share": 0.6356960780810829,
+      "talker_share": 0.2564383993647594
+     },
+     "eff_batch": {
+      "thinker": 8.25172701765239,
+      "talker": 0.519266776472067,
+      "code2wav": 0.3025013990618345
+     },
+     "gpu_util": {
+      "thinker": 77.04395604395604,
+      "talker": 42.41444270015699
+     },
+     "run": "20261115_v2_a_s1x7_run1_run01",
+     "node": "第一批节点"
+    },
+    {
+     "concurrency": 32.0,
+     "n": 96,
+     "errors": 0,
+     "rps": 9.903590995888667,
+     "slo": 1.0,
+     "ttft_p50_s": 0.07277908899999999,
+     "ttft_p90_s": 0.0902951985,
+     "e2e_p50_s": 2.5538514799999996,
+     "e2e_p90_s": 3.4260538335,
+     "e2e_mean_s": 2.4978271620833334,
+     "e2e_per_audio_p90": 0.24798625239458044,
+     "in_flight_little": 24.737458591694644,
+     "stages_ms": {
+      "thinker.queue": 4.876162,
+      "thinker.model_path": 1551.0411135,
+      "talker.queue": 1.1197759999999999,
+      "talker.model_path": 649.1681145,
+      "code2wav.service": 214.3118805
+     },
+     "split": {
+      "other_ms": 133.3344334999997,
+      "code2wav_share": 0.08391712759271343,
+      "thinker_share": 0.609243445707344,
+      "talker_share": 0.2546302694548236
+     },
+     "eff_batch": {
+      "thinker": 17.108033494561464,
+      "talker": 1.0510194482277373,
+      "code2wav": 0.37877066085424327
+     },
+     "gpu_util": {
+      "thinker": 69.32142857142857,
+      "talker": 68.90816326530611
+     },
+     "run": "20261115_v2_a_s1x7_run1_run01",
+     "node": "第一批节点"
+    },
+    {
+     "concurrency": 64.0,
+     "n": 128,
+     "errors": 0,
+     "rps": 12.831163054692746,
+     "slo": 1.0,
+     "ttft_p50_s": 0.0909692065,
+     "ttft_p90_s": 0.1229219599,
+     "e2e_p50_s": 3.0695608585,
+     "e2e_p90_s": 4.4353903913999995,
+     "e2e_mean_s": 3.2178287810078126,
+     "e2e_per_audio_p90": 0.28052201661857634,
+     "in_flight_little": 41.28848577119444,
+     "stages_ms": {
+      "thinker.queue": 6.1622945,
+      "thinker.model_path": 1790.468379,
+      "talker.queue": 0.8966324999999999,
+      "talker.model_path": 896.4513010000001,
+      "code2wav.service": 264.8421885
+     },
+     "split": {
+      "other_ms": 110.74006300000019,
+      "code2wav_share": 0.08628015560161276,
+      "thinker_share": 0.5853054415014785,
+      "talker_share": 0.29233756060419225
+     },
+     "eff_batch": {
+      "thinker": 31.03756092125312,
+      "talker": 2.055957912617052,
+      "code2wav": 0.8485363337190057
+     },
+     "gpu_util": {
+      "thinker": 56.37931034482759,
+      "talker": 76.84482758620689
+     },
+     "run": "20261115_v2_a_s1x7_run1_run01",
+     "node": "第一批节点"
+    },
+    {
+     "concurrency": 128.0,
+     "n": 256,
+     "errors": 0,
+     "rps": 16.712436665522624,
+     "slo": 0.4375,
+     "ttft_p50_s": 1.031677337,
+     "ttft_p90_s": 1.2586406935,
+     "e2e_p50_s": 5.08372099,
+     "e2e_p90_s": 6.228942953,
+     "e2e_mean_s": 4.989611416265625,
+     "e2e_per_audio_p90": 0.49249727176558533,
+     "in_flight_little": 83.3885647799079,
+     "stages_ms": {
+      "thinker.queue": 901.296939,
+      "thinker.model_path": 2396.4736785,
+      "talker.queue": 1.0529519999999999,
+      "talker.model_path": 1143.1815554999998,
+      "code2wav.service": 301.8501295
+     },
+     "split": {
+      "other_ms": 339.8657355000005,
+      "code2wav_share": 0.05937582532435558,
+      "thinker_share": 0.6486922913328491,
+      "talker_share": 0.2250781484174252
+     },
+     "eff_batch": {
+      "thinker": 51.149056521588804,
+      "talker": 3.4641298729670416,
+      "code2wav": 1.4466642509014063
+     },
+     "gpu_util": {
+      "thinker": 49.32142857142857,
+      "talker": 83.79001721170395
+     },
+     "run": "20261115_v2_a_s1x7_run1_run01",
+     "node": "第一批节点"
+    },
+    {
+     "concurrency": 256.0,
+     "n": 512,
+     "errors": 0,
+     "rps": 16.520707378055995,
+     "slo": 0.0,
+     "ttft_p50_s": 6.335369854,
+     "ttft_p90_s": 6.5701322593,
+     "e2e_p50_s": 10.249386873999999,
+     "e2e_p90_s": 11.6814433897,
+     "e2e_mean_s": 10.247204417958985,
+     "e2e_per_audio_p90": 1.3885200277294818,
+     "in_flight_little": 169.291065632223,
+     "stages_ms": {
+      "thinker.queue": 6232.2993085,
+      "thinker.model_path": 2385.8385415000002,
+      "talker.queue": 0.8537565,
+      "talker.model_path": 1055.7920715,
+      "code2wav.service": 304.54791650000004
+     },
+     "split": {
+      "other_ms": 270.0552795000003,
+      "code2wav_share": 0.029713769247266687,
+      "thinker_share": 0.8408442335084403,
+      "talker_share": 0.10309356461901469
+     },
+     "eff_batch": {
+      "thinker": 56.426656254581744,
+      "talker": 3.3841248732520377,
+      "code2wav": 1.3663241800807087
+     },
+     "gpu_util": {
+      "thinker": 52.46296296296296,
+      "talker": 90.87037037037037
+     },
+     "run": "20261115_v2_a_s1x7_run1_run01",
+     "node": "第一批节点"
+    }
+   ],
+   "runs": [
+    {
+     "run": "20261116_v2b_sb_s1x7_run01",
+     "phase": "w3b_small",
+     "node": "compute-03"
+    },
+    {
+     "run": "20261115_v2_a_s1x7_run1_run01",
+     "phase": "w3b_closed",
+     "node": "第一批节点"
+    }
+   ],
+   "doubling_gain": {
+    "2": 0.7881423678155002,
+    "4": 0.9584418104356205,
+    "8": 0.834040902982887,
+    "16": 0.5874902399079793,
+    "32": 0.754171919816317,
+    "64": 0.29560712473075856,
+    "128": 0.3024880592886221,
+    "256": -0.011472252149931084
+   },
+   "highest_concurrency_within_slo": 64.0
+  }
+ },
+ "open": {
+  "s2x6": {
+   "label": "2+6",
+   "run": "20261116_v2b_aoh_s2x6_run01",
+   "levels": [
+    {
+     "rate_rps": 16.0,
+     "n": 1440,
+     "ok": 1440,
+     "errors": {},
+     "rps": 16.3225732175078,
+     "slo": 0.9979166666666667,
+     "ttft_p90_s": 0.078491778,
+     "e2e_p50_s": 2.5023051055,
+     "e2e_p90_s": 3.430496673200001,
+     "e2e_mean_s": 2.5642529988243057,
+     "e2e_per_audio_p90": 0.23595277197749828
+    },
+    {
+     "rate_rps": 20.0,
+     "n": 1800,
+     "ok": 1800,
+     "errors": {},
+     "rps": 18.312146451908628,
+     "slo": 1.0,
+     "ttft_p90_s": 0.0819048262,
+     "e2e_p50_s": 2.6784691240000003,
+     "e2e_p90_s": 3.5693541822,
+     "e2e_mean_s": 2.6802427763755556,
+     "e2e_per_audio_p90": 0.24170584367319586
+    },
+    {
+     "rate_rps": 24.0,
+     "n": 2160,
+     "ok": 2160,
+     "errors": {},
+     "rps": 23.298037207309388,
+     "slo": 0.9990740740740741,
+     "ttft_p90_s": 0.08812575760000002,
+     "e2e_p50_s": 3.188789516,
+     "e2e_p90_s": 4.181302779,
+     "e2e_mean_s": 3.1683900139458334,
+     "e2e_per_audio_p90": 0.2984192417799647
+    },
+    {
+     "rate_rps": 28.0,
+     "n": 2520,
+     "ok": 2520,
+     "errors": {},
+     "rps": 27.312463221897314,
+     "slo": 0.8269841269841269,
+     "ttft_p90_s": 0.1022047242,
+     "e2e_p50_s": 4.6694981129999995,
+     "e2e_p90_s": 7.189688232799999,
+     "e2e_mean_s": 4.8943985364166664,
+     "e2e_per_audio_p90": 0.5650167454788056
+    },
+    {
+     "rate_rps": 32.0,
+     "n": 2880,
+     "ok": 2880,
+     "errors": {},
+     "rps": 29.016027465465363,
+     "slo": 0.23854166666666668,
+     "ttft_p90_s": 0.13871954439999998,
+     "e2e_p50_s": 9.6321461545,
+     "e2e_p90_s": 13.322758985,
+     "e2e_mean_s": 9.22441788500625,
+     "e2e_per_audio_p90": 1.1571190785142542
+    },
+    {
+     "rate_rps": 36.0,
+     "n": 3240,
+     "ok": 3240,
+     "errors": {},
+     "rps": 30.172265590152474,
+     "slo": 0.11018518518518519,
+     "ttft_p90_s": 0.15207111359999997,
+     "e2e_p50_s": 15.0627631395,
+     "e2e_p90_s": 21.0246187812,
+     "e2e_mean_s": 14.309151515976234,
+     "e2e_per_audio_p90": 1.8739234358631098
+    },
+    {
+     "rate_rps": 40.0,
+     "n": 3600,
+     "ok": 3559,
+     "errors": {
+      "client fd limit": 41
+     },
+     "rps": 32.07346898367438,
+     "slo": 0.08333333333333333,
+     "ttft_p90_s": 0.15915553880000002,
+     "e2e_p50_s": 19.847810126,
+     "e2e_p90_s": 26.832231020200002,
+     "e2e_mean_s": 18.332868523964876,
+     "e2e_per_audio_p90": 2.3365341700597475
+    }
+   ],
+   "capacity": 24.0,
+   "censored": false,
+   "in_flight_at_capacity": 73.81726843217754
+  },
+  "s1x7": {
+   "label": "1+7",
+   "run": "20261116_v2b_aoh_s1x7_run01",
+   "levels": [
+    {
+     "rate_rps": 16.0,
+     "n": 1440,
+     "ok": 1440,
+     "errors": {},
+     "rps": 16.291899343331348,
+     "slo": 0.9965277777777778,
+     "ttft_p90_s": 0.09439783130000001,
+     "e2e_p50_s": 2.7280284095,
+     "e2e_p90_s": 3.7048616049000005,
+     "e2e_mean_s": 2.7551622328104166,
+     "e2e_per_audio_p90": 0.26066209940688784
+    },
+    {
+     "rate_rps": 20.0,
+     "n": 1800,
+     "ok": 1800,
+     "errors": {},
+     "rps": 18.29495998410982,
+     "slo": 1.0,
+     "ttft_p90_s": 0.09879546730000001,
+     "e2e_p50_s": 2.836872911,
+     "e2e_p90_s": 3.8777518052,
+     "e2e_mean_s": 2.848201753202778,
+     "e2e_per_audio_p90": 0.26736336121848636
+    },
+    {
+     "rate_rps": 24.0,
+     "n": 2160,
+     "ok": 2160,
+     "errors": {},
+     "rps": 23.264535169713874,
+     "slo": 0.9944444444444445,
+     "ttft_p90_s": 0.30650104090000024,
+     "e2e_p50_s": 3.561456001,
+     "e2e_p90_s": 4.928554811900001,
+     "e2e_mean_s": 3.6007588676662037,
+     "e2e_per_audio_p90": 0.3348166191902191
+    },
+    {
+     "rate_rps": 28.0,
+     "n": 2520,
+     "ok": 2520,
+     "errors": {},
+     "rps": 25.829093106549944,
+     "slo": 0.18293650793650792,
+     "ttft_p90_s": 5.725927503199999,
+     "e2e_p50_s": 6.353413736,
+     "e2e_p90_s": 9.9864802306,
+     "e2e_mean_s": 6.719732272107936,
+     "e2e_per_audio_p90": 0.7300635229827905
+    },
+    {
+     "rate_rps": 32.0,
+     "n": 2880,
+     "ok": 2880,
+     "errors": {},
+     "rps": 25.611324093845276,
+     "slo": 0.07048611111111111,
+     "ttft_p90_s": 17.844542695399998,
+     "e2e_p50_s": 13.308543064,
+     "e2e_p90_s": 21.5656513837,
+     "e2e_mean_s": 13.630429587287848,
+     "e2e_per_audio_p90": 1.6669180659677834
+    },
+    {
+     "rate_rps": 36.0,
+     "n": 3240,
+     "ok": 3240,
+     "errors": {},
+     "rps": 25.902210069739958,
+     "slo": 0.043827160493827164,
+     "ttft_p90_s": 29.117344231300002,
+     "e2e_p50_s": 20.772862643,
+     "e2e_p90_s": 33.2791072916,
+     "e2e_mean_s": 20.287463614476234,
+     "e2e_per_audio_p90": 2.591626175777377
+    },
+    {
+     "rate_rps": 40.0,
+     "n": 3600,
+     "ok": 3227,
+     "errors": {
+      "client fd limit": 373
+     },
+     "rps": 25.718456951573252,
+     "slo": 0.03888888888888889,
+     "ttft_p90_s": 33.9263562534,
+     "e2e_p50_s": 27.258722658,
+     "e2e_p90_s": 38.04331294,
+     "e2e_mean_s": 25.233059655478463,
+     "e2e_per_audio_p90": 3.090562452029955
+    }
+   ],
+   "capacity": 24.0,
+   "censored": false,
+   "in_flight_at_capacity": 83.7699813144795
+  },
+  "s3x5": {
+   "label": "3+5",
+   "run": "20261116_v2b_aoh_s3x5_run01",
+   "levels": [
+    {
+     "rate_rps": 16.0,
+     "n": 1440,
+     "ok": 1440,
+     "errors": {},
+     "rps": 16.34039523473612,
+     "slo": 0.9958333333333333,
+     "ttft_p90_s": 0.07360845620000003,
+     "e2e_p50_s": 2.5640399455000003,
+     "e2e_p90_s": 3.5277633759000016,
+     "e2e_mean_s": 2.666673812792361,
+     "e2e_per_audio_p90": 0.25182379798363097
+    },
+    {
+     "rate_rps": 20.0,
+     "n": 1800,
+     "ok": 1800,
+     "errors": {},
+     "rps": 18.331980571335986,
+     "slo": 1.0,
+     "ttft_p90_s": 0.07652626400000001,
+     "e2e_p50_s": 2.7367927425,
+     "e2e_p90_s": 3.6541316341,
+     "e2e_mean_s": 2.779039790208889,
+     "e2e_per_audio_p90": 0.2575718328697613
+    },
+    {
+     "rate_rps": 24.0,
+     "n": 2160,
+     "ok": 2160,
+     "errors": {},
+     "rps": 22.58939978411376,
+     "slo": 0.6990740740740741,
+     "ttft_p90_s": 0.0956771378,
+     "e2e_p50_s": 5.6254047375,
+     "e2e_p90_s": 8.0458808499,
+     "e2e_mean_s": 5.664177927972222,
+     "e2e_per_audio_p90": 0.6644224992241063
+    },
+    {
+     "rate_rps": 28.0,
+     "n": 2520,
+     "ok": 2520,
+     "errors": {},
+     "rps": 24.215934318888415,
+     "slo": 0.14047619047619048,
+     "ttft_p90_s": 0.1234474635,
+     "e2e_p50_s": 13.785967411,
+     "e2e_p90_s": 19.981675254,
+     "e2e_mean_s": 13.333706376134126,
+     "e2e_per_audio_p90": 1.7217896062807334
+    },
+    {
+     "rate_rps": 32.0,
+     "n": 2880,
+     "ok": 2880,
+     "errors": {},
+     "rps": 25.779923620810756,
+     "slo": 0.08645833333333333,
+     "ttft_p90_s": 0.13442327859999997,
+     "e2e_p50_s": 19.590184680500002,
+     "e2e_p90_s": 26.0868513348,
+     "e2e_mean_s": 17.98171607878993,
+     "e2e_per_audio_p90": 2.342325687259625
+    },
+    {
+     "rate_rps": 36.0,
+     "n": 3240,
+     "ok": 3108,
+     "errors": {
+      "client fd limit": 132
+     },
+     "rps": 26.59946124248233,
+     "slo": 0.06111111111111111,
+     "ttft_p90_s": 0.13639923000000004,
+     "e2e_p50_s": 24.090259875999998,
+     "e2e_p90_s": 31.4858641343,
+     "e2e_mean_s": 21.525581841190796,
+     "e2e_per_audio_p90": 2.8013348739847754
+    },
+    {
+     "rate_rps": 40.0,
+     "n": 3600,
+     "ok": 3262,
+     "errors": {
+      "client fd limit": 338
+     },
+     "rps": 28.32166195584981,
+     "slo": 0.058888888888888886,
+     "ttft_p90_s": 0.14436157120000004,
+     "e2e_p50_s": 24.446972109500003,
+     "e2e_p90_s": 35.069459047900004,
+     "e2e_mean_s": 22.950797463186696,
+     "e2e_per_audio_p90": 3.0483364973813107
+    }
+   ],
+   "capacity": 20.0,
+   "censored": false,
+   "in_flight_at_capacity": 50.94530344107899
+  },
+  "s4x4": {
+   "label": "4+4",
+   "run": "20261116_v2b_aoh_s4x4_run01",
+   "levels": [
+    {
+     "rate_rps": 16.0,
+     "n": 1440,
+     "ok": 1440,
+     "errors": {},
+     "rps": 16.277076877724852,
+     "slo": 0.9944444444444445,
+     "ttft_p90_s": 0.0748064668,
+     "e2e_p50_s": 3.321008746,
+     "e2e_p90_s": 4.571768839000001,
+     "e2e_mean_s": 3.3671531342222227,
+     "e2e_per_audio_p90": 0.3381769571520739
+    },
+    {
+     "rate_rps": 20.0,
+     "n": 1800,
+     "ok": 1800,
+     "errors": {},
+     "rps": 18.221172581407806,
+     "slo": 0.9583333333333334,
+     "ttft_p90_s": 0.0782259119,
+     "e2e_p50_s": 4.0450243505,
+     "e2e_p90_s": 5.6490403036000005,
+     "e2e_mean_s": 4.124132999342778,
+     "e2e_per_audio_p90": 0.4336693410147328
+    },
+    {
+     "rate_rps": 24.0,
+     "n": 2160,
+     "ok": 2160,
+     "errors": {},
+     "rps": 19.955218750064496,
+     "slo": 0.13796296296296295,
+     "ttft_p90_s": 0.10632965280000006,
+     "e2e_p50_s": 15.2973123365,
+     "e2e_p90_s": 21.679154509600004,
+     "e2e_mean_s": 14.463053998473148,
+     "e2e_per_audio_p90": 1.8238112938916085
+    },
+    {
+     "rate_rps": 28.0,
+     "n": 2520,
+     "ok": 2520,
+     "errors": {},
+     "rps": 21.990886913073616,
+     "slo": 0.08134920634920635,
+     "ttft_p90_s": 0.11319430109999999,
+     "e2e_p50_s": 22.025135226499998,
+     "e2e_p90_s": 30.087467198299997,
+     "e2e_mean_s": 20.458118731575794,
+     "e2e_per_audio_p90": 2.6113304896112957
+    },
+    {
+     "rate_rps": 32.0,
+     "n": 2880,
+     "ok": 2868,
+     "errors": {
+      "client fd limit": 12
+     },
+     "rps": 23.240504771872093,
+     "slo": 0.06527777777777778,
+     "ttft_p90_s": 0.13280501640000006,
+     "e2e_p50_s": 24.9602247495,
+     "e2e_p90_s": 33.437500050400004,
+     "e2e_mean_s": 22.838576429218968,
+     "e2e_per_audio_p90": 2.9625551214644665
+    },
+    {
+     "rate_rps": 36.0,
+     "n": 3240,
+     "ok": 2886,
+     "errors": {
+      "client fd limit": 354
+     },
+     "rps": 23.17583511687538,
+     "slo": 0.05185185185185185,
+     "ttft_p90_s": 0.127911734,
+     "e2e_p50_s": 28.031298794,
+     "e2e_p90_s": 39.937126394,
+     "e2e_mean_s": 26.184033048306308,
+     "e2e_per_audio_p90": 3.4803110849036525
+    },
+    {
+     "rate_rps": 40.0,
+     "n": 3600,
+     "ok": 2825,
+     "errors": {
+      "client fd limit": 775
+     },
+     "rps": 22.7438104581409,
+     "slo": 0.04111111111111111,
+     "ttft_p90_s": 0.12823407859999997,
+     "e2e_p50_s": 32.702825927,
+     "e2e_p90_s": 46.2886504668,
+     "e2e_mean_s": 30.170104290132038,
+     "e2e_per_audio_p90": 3.9584390614314575
+    }
+   ],
+   "capacity": 20.0,
+   "censored": false,
+   "in_flight_at_capacity": 75.14653912970377
+  },
+  "p4": {
+   "label": "4 组 1+1",
+   "run": "20261116_v2b_aoh_p4_run01",
+   "levels": [
+    {
+     "rate_rps": 16.0,
+     "n": 1440,
+     "ok": 1440,
+     "errors": {},
+     "rps": 16.2606929699431,
+     "slo": 0.9854166666666667,
+     "ttft_p90_s": 0.06828861010000001,
+     "e2e_p50_s": 3.2743963669999996,
+     "e2e_p90_s": 4.542097974900002,
+     "e2e_mean_s": 3.3226830560208334,
+     "e2e_per_audio_p90": 0.35897493327372204
+    },
+    {
+     "rate_rps": 20.0,
+     "n": 1800,
+     "ok": 1800,
+     "errors": {},
+     "rps": 18.162822935242662,
+     "slo": 0.9416666666666667,
+     "ttft_p90_s": 0.0667543445,
+     "e2e_p50_s": 4.084669479,
+     "e2e_p90_s": 5.5399516916,
+     "e2e_mean_s": 4.097269555551667,
+     "e2e_per_audio_p90": 0.445118786881379
+    },
+    {
+     "rate_rps": 24.0,
+     "n": 2160,
+     "ok": 2160,
+     "errors": {},
+     "rps": 20.297065583685747,
+     "slo": 0.13194444444444445,
+     "ttft_p90_s": 0.0717702597,
+     "e2e_p50_s": 15.989863853500001,
+     "e2e_p90_s": 20.439119882500002,
+     "e2e_mean_s": 14.345966268811111,
+     "e2e_per_audio_p90": 1.7839126387577793
+    },
+    {
+     "rate_rps": 28.0,
+     "n": 2520,
+     "ok": 2520,
+     "errors": {},
+     "rps": 21.892159045564462,
+     "slo": 0.08373015873015872,
+     "ttft_p90_s": 0.07616506179999999,
+     "e2e_p50_s": 21.6561544005,
+     "e2e_p90_s": 30.1494252607,
+     "e2e_mean_s": 20.662733097505555,
+     "e2e_per_audio_p90": 2.7053881062274723
+    },
+    {
+     "rate_rps": 32.0,
+     "n": 2880,
+     "ok": 2793,
+     "errors": {
+      "client fd limit": 87
+     },
+     "rps": 23.045144597866162,
+     "slo": 0.05590277777777778,
+     "ttft_p90_s": 0.0789318454,
+     "e2e_p50_s": 27.300409895,
+     "e2e_p90_s": 35.7896199494,
+     "e2e_mean_s": 24.7004031905614,
+     "e2e_per_audio_p90": 3.165463968941877
+    },
+    {
+     "rate_rps": 36.0,
+     "n": 3240,
+     "ok": 2823,
+     "errors": {
+      "client fd limit": 417
+     },
+     "rps": 23.140737397659578,
+     "slo": 0.05154320987654321,
+     "ttft_p90_s": 0.0785943098,
+     "e2e_p50_s": 31.126828345,
+     "e2e_p90_s": 41.2894989952,
+     "e2e_mean_s": 27.473784633057033,
+     "e2e_per_audio_p90": 3.685041347529481
+    },
+    {
+     "rate_rps": 40.0,
+     "n": 3600,
+     "ok": 2797,
+     "errors": {
+      "client fd limit": 803
+     },
+     "rps": 22.875663920755876,
+     "slo": 0.0375,
+     "ttft_p90_s": 0.08368931240000001,
+     "e2e_p50_s": 34.285773021,
+     "e2e_p90_s": 46.250292388,
+     "e2e_mean_s": 30.6237932807626,
+     "e2e_per_audio_p90": 4.010742803026222
+    }
+   ],
+   "capacity": 16.0,
+   "censored": false,
+   "in_flight_at_capacity": 54.029129010387024
+  },
+  "r8": {
+   "label": "8 个完整副本",
+   "run": "20261116_v2b_aoh_r8_run01",
+   "levels": [
+    {
+     "rate_rps": 16.0,
+     "n": 1440,
+     "ok": 1440,
+     "errors": {},
+     "rps": 16.06639634639362,
+     "slo": 0.9708333333333333,
+     "ttft_p90_s": 0.15264339980000005,
+     "e2e_p50_s": 4.824795823500001,
+     "e2e_p90_s": 6.638076953300001,
+     "e2e_mean_s": 4.881742721904167,
+     "e2e_per_audio_p90": 0.4461505587428318
+    },
+    {
+     "rate_rps": 20.0,
+     "n": 1800,
+     "ok": 1800,
+     "errors": {},
+     "rps": 17.861038306716885,
+     "slo": 0.9322222222222222,
+     "ttft_p90_s": 0.1549500172,
+     "e2e_p50_s": 5.189157954500001,
+     "e2e_p90_s": 7.0167092884999995,
+     "e2e_mean_s": 5.2447013518166665,
+     "e2e_per_audio_p90": 0.4762993364154412
+    },
+    {
+     "rate_rps": 24.0,
+     "n": 2160,
+     "ok": 2129,
+     "errors": {
+      "CUDA out of memory": 31
+     },
+     "rps": 22.16792649628662,
+     "slo": 0.5453703703703704,
+     "ttft_p90_s": 0.1653555808,
+     "e2e_p50_s": 6.474199359,
+     "e2e_p90_s": 8.8182510802,
+     "e2e_mean_s": 6.493148870271019,
+     "e2e_per_audio_p90": 0.6257304393518518
+    },
+    {
+     "rate_rps": 28.0,
+     "n": 2520,
+     "ok": 2366,
+     "errors": {
+      "CUDA out of memory": 154
+     },
+     "rps": 24.601333171080867,
+     "slo": 0.12658730158730158,
+     "ttft_p90_s": 0.171829121,
+     "e2e_p50_s": 10.048906901999999,
+     "e2e_p90_s": 14.616883218,
+     "e2e_mean_s": 10.118037732087911,
+     "e2e_per_audio_p90": 1.190834078218141
+    },
+    {
+     "rate_rps": 32.0,
+     "n": 2880,
+     "ok": 2641,
+     "errors": {
+      "CUDA out of memory": 235,
+      "cuFFT error: CUFFT_INTERNAL_ERROR": 4
+     },
+     "rps": 25.99148592945018,
+     "slo": 0.07465277777777778,
+     "ttft_p90_s": 0.17448221,
+     "e2e_p50_s": 14.324931127,
+     "e2e_p90_s": 20.110188495,
+     "e2e_mean_s": 13.95570445870125,
+     "e2e_per_audio_p90": 1.715160352117264
+    },
+    {
+     "rate_rps": 36.0,
+     "n": 3240,
+     "ok": 2929,
+     "errors": {
+      "CUDA out of memory": 311
+     },
+     "rps": 27.465179965251526,
+     "slo": 0.05895061728395062,
+     "ttft_p90_s": 0.180861811,
+     "e2e_p50_s": 18.514725183,
+     "e2e_p90_s": 25.3932794852,
+     "e2e_mean_s": 17.292967633928644,
+     "e2e_per_audio_p90": 2.166963346024931
+    },
+    {
+     "rate_rps": 40.0,
+     "n": 3600,
+     "ok": 3133,
+     "errors": {
+      "CUDA out of memory": 314,
+      "client fd limit": 153
+     },
+     "rps": 28.896720395183817,
+     "slo": 0.043333333333333335,
+     "ttft_p90_s": 0.177928459,
+     "e2e_p50_s": 22.42224935,
+     "e2e_p90_s": 32.18190139480001,
+     "e2e_mean_s": 21.259738731581873,
+     "e2e_per_audio_p90": 2.686641997675463
+    }
+   ],
+   "capacity": 16.0,
+   "censored": false,
+   "in_flight_at_capacity": 78.43201343123475
+  }
+ },
+ "verdicts": {
+  "A-H1_second_half": {
+   "verdict": "不支持",
+   "r8_near_best": {
+    "1": true,
+    "2": false,
+    "4": false,
+    "8": false,
+    "16": false,
+    "32": false,
+    "64": false,
+    "128": false,
+    "256": true
+   },
+   "tolerance": 0.03
+  }
+ }
+}
