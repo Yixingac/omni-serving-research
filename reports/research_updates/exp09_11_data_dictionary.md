@@ -140,7 +140,11 @@
   - `ok`：两者都为 0；没有检查运行时为空。
 - `validation`：
   - `candidates`：G1 上 W3b 或 MIX 每个区组都比 fifo16 多 ≥ 5% 语音秒/秒的设置，以及每个区组的增幅；
-  - `decision`：是否在实验 9 最好的放置上做完整服务验证。
+  - `decision`：是否在实验 9 最好的放置上做完整服务验证；
+  - `verdict`（只有做了验证才有）：按补充登记一的判定，`rows` 是每个区组在 21 和 23.5 请求/秒两档的 P50 降幅（`p50_reduction`，失败按无穷大处理）和完成请求/秒之比（`throughput_ratio`）。
+- `validation_runs[]`（只有做了验证才有）：每次验证运行的 `placement`、`setting`、`block`、`restarts`；
+  - `phases["fifo16" | "<候选设置>"]["<速率>"]`：`e2e_p50`、`e2e_p95`、`e2e_p99`（截尾，秒）、`failed`、`throughput_rps`、`audio_s_per_s`、`steady`、`growth_slope_rps`；
+  - `control`：每段逐批核对控制文件是否生效。
 - `flags`：`unusable`、`control_invalid`、`after_restart`。
 - `check`：正确性检查运行。
   - `requests_with_digest`：每段带摘要的请求数；

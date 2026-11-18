@@ -221,6 +221,75 @@ def verdicts(runs: list[dict[str, Any]], correctness_ok: bool | None = True) -> 
     return out
 
 
+VALIDATION_RATES = (21.0, 23.5)  # the two highest W3b rates of 实验 9 (supplementary registration 1)
+VAL_RE = re.compile(r"exp10_validation_(t2_[a-z0-9_]+?)_((?:fifo|length)\d+)_block(\d+)")
+
+
+def p50_reduction(cand: float, base: float) -> float:
+    """1 - cand / base for censored P50s: an infinite candidate never counts as lower, an infinite base with a finite
+    candidate counts as fully lower, two infinite values as no change."""
+    if math.isinf(cand):
+        return 0.0 if math.isinf(base) else -math.inf
+    if math.isinf(base):
+        return 1.0
+    return 1 - cand / base
+
+
+def validation_verdict(runs: list[dict[str, Any]], blocks: tuple[int, ...] = (1, 2, 3)) -> dict[str, Any]:
+    """Supplementary registration 1: at 21 and 23.5 requests/s, the candidate's P50 at least 5 % below fifo16 in every
+    block and its completed requests/s at least 98 % of fifo16 -> improved; P50 never lower -> not improved."""
+    rows = []
+    for b in blocks:
+        r = next((x for x in runs if x["block"] == b), None)
+        if r is None:
+            return {"verdict": "数据不足", "rows": rows, "missing_block": b}
+        base, cand = r["phases"].get("fifo16") or {}, r["phases"].get(r["setting"]) or {}
+        for rate in VALIDATION_RATES:
+            x, y = cand.get(rate) or {}, base.get(rate) or {}
+            if None in (x.get("e2e_p50"), y.get("e2e_p50"), x.get("throughput_rps")) or not y.get("throughput_rps"):
+                return {"verdict": "数据不足", "rows": rows, "missing": f"block {b} rate {rate:g}"}
+            rows.append({"block": b, "rate": rate, "p50_reduction": p50_reduction(x["e2e_p50"], y["e2e_p50"]),
+                         "throughput_ratio": x["throughput_rps"] / y["throughput_rps"],
+                         "steady": {"candidate": x.get("steady"), "fifo16": y.get("steady")}})
+    if all(r["p50_reduction"] >= 0.05 and r["throughput_ratio"] >= 0.98 for r in rows):
+        v = "完整服务上有改善"
+    elif all(r["p50_reduction"] <= 0 for r in rows):
+        v = "完整服务上没有改善"
+    else:
+        v = "不确定"
+    return {"verdict": v, "rows": rows}
+
+
+def analyze_validation_run(exp: Path) -> dict[str, Any]:
+    from exp06_report import client_metrics
+    from exp09_report import censored_percentiles, queue_growth
+    from omni_research.analysis.experiment_analysis import read_jsonl
+
+    res = json.loads((exp / "result.json").read_text())
+    m = VAL_RE.search(res["experiment_id"])
+    run: dict[str, Any] = {"run": exp.name, "placement": m.group(1), "setting": m.group(2), "block": int(m.group(3)),
+                           "restarts": res.get("server_restarts") or [], "phases": {}, "control": {}}
+    settings = phase_settings(res)
+    for ph in res.get("phases", []):
+        if not ph["phase"].startswith("val_"):
+            continue
+        name = ph["phase"].removeprefix("val_")
+        recs = read_jsonl(exp / "raw" / f"requests_{ph['phase']}.jsonl")
+        levels = {}
+        for rate in sorted({r.get("rate_rps") for r in recs if r.get("rate_rps") is not None}):
+            meas = [r for r in recs if r.get("rate_rps") == rate and not r.get("warmup")]
+            cen, cm, growth = censored_percentiles(meas), client_metrics(meas), queue_growth(meas, float(rate))
+            levels[float(rate)] = {"e2e_p50": cen["p50"], "e2e_p95": cen["p95"], "e2e_p99": cen["p99"], "failed": cen["failed"],
+                                   "throughput_rps": cm.get("throughput_rps"), "audio_s_per_s": cm.get("audio_s_per_s"),
+                                   "steady": growth["steady"], "growth_slope_rps": growth["slope_rps"]}
+        run["phases"][name] = levels
+        setting = settings.get(ph["phase"])
+        if setting and (exp / "raw" / "server_events" / ph["phase"]).exists():
+            cell = analyze_phase(exp, ph["phase"], setting)
+            run["control"][name] = cell["control"]
+    return run
+
+
 def correctness(runs: list[dict[str, Any]], check: dict[str, Any] | None) -> dict[str, Any]:
     audio = sum((c.get("correspondence") or {}).get("mismatched", 0) for r in runs for c in r["cells"].values())
     samples = sum((x or {}).get("sample_mismatch", 0) for x in ((check or {}).get("vs_fifo1") or {}).values())
@@ -368,6 +437,7 @@ def main() -> int:
     ap.add_argument("--data-root", required=True)
     ap.add_argument("--run", action="append", default=[])
     ap.add_argument("--check-run")
+    ap.add_argument("--validation-run", action="append", default=[], help="the conditional full-service validation runs")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
     root = Path(a.data_root).expanduser() / "experiments"
@@ -390,6 +460,10 @@ def main() -> int:
                                                 for (w, st), c in r["cells"].items() if (c.get("control") or {}).get("ok") is False],
                             "after_restart": [f"{'graph' if r['graph'] else 'nograph'} block {r['block']} {w}|{st}" for r in runs
                                               for (w, st), c in r["cells"].items() if c.get("after_restart")]}
+    if a.validation_run:
+        vruns = [analyze_validation_run(root / n) for n in a.validation_run]
+        summary["validation_runs"] = vruns
+        summary.setdefault("validation", {})["verdict"] = validation_verdict(vruns)
     out = Path(a.out) / "results"
     out.mkdir(parents=True, exist_ok=True)
     (out / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1, default=str) + "\n")

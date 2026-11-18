@@ -130,3 +130,22 @@ def test_summary_intervals_leave_out_invalid_cells():
     runs[0]["cells"][("mix", "fifo16")]["usable"] = False  # block 1, graph on
     s = rp.summarize(runs)["graph|mix|fifo16"]["audio_s_per_s"]
     assert s["n"] == 2 and s["runs"][0] is None and s["runs"][1:] == [100.0, 100.0]
+
+
+def vrun(block, cand_p50=(2.0, 2.0), base_p50=(2.2, 2.4), cand_rps=(20.0, 22.0), base_rps=(20.0, 22.0)):
+    rates = (21.0, 23.5)
+    lv = lambda p50, rps: {r: {"e2e_p50": p, "throughput_rps": t, "steady": True} for r, p, t in zip(rates, p50, rps)}  # noqa: E731
+    return {"block": block, "setting": "length8", "phases": {"fifo16": lv(base_p50, base_rps), "length8": lv(cand_p50, cand_rps)}}
+
+
+def test_validation_verdict_follows_supplementary_registration_1():
+    assert rp.validation_verdict([vrun(b) for b in (1, 2, 3)])["verdict"] == "完整服务上有改善"  # -9 % and -17 %
+    small = [vrun(1), vrun(2, cand_p50=(2.15, 2.0)), vrun(3)]  # block 2 at 21 rps: only -2 %
+    assert rp.validation_verdict(small)["verdict"] == "不确定"
+    slower = [vrun(b, cand_rps=(19.0, 21.0)) for b in (1, 2, 3)]  # throughput below 98 % of fifo16
+    assert rp.validation_verdict(slower)["verdict"] == "不确定"
+    none = [vrun(b, cand_p50=(2.3, 2.5)) for b in (1, 2, 3)]
+    assert rp.validation_verdict(none)["verdict"] == "完整服务上没有改善"
+    failed = [vrun(1, cand_p50=(float("inf"), 2.0)), vrun(2), vrun(3)]  # a censored P50 never counts as lower
+    assert rp.validation_verdict(failed)["verdict"] == "不确定"
+    assert rp.validation_verdict([vrun(1), vrun(2)])["verdict"] == "数据不足"
