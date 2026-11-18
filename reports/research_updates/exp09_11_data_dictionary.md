@@ -247,6 +247,17 @@
 | `thinker_chunk_to_decode_chunk` | thinker 发出 | decode 阶段发出第一段文字 |
 | `decode_chunk_to_client` | decode 发出 | 客户端收到第一段文字 |
 
+### `timeline_windows.json`（`exp11_timeline.py`，图 10 的数据）
+
+- `phase`、`rule`：用哪个 trace 段，按什么规则截窗口。规则是事先定好的：trace 开始 1 秒后的第一次“请求结束拷贝”，从它之前 60 毫秒到之后 90 毫秒。
+- `arms["A" | "B" | "C"]`：
+  - `run`、`process`（第几个 thinker 进程，不存文件名）；
+  - `steps[]`：窗口里有 GPU 工作的调度步，字段有 `index`、`mode`、`launch`（la 提前发射 / sync 同步）、`graph`、`gpu_start_ms`、`gpu_end_ms`、`busy_ms`；
+  - `copies[]`：“请求结束拷贝”标注的 `start_ms`、`dur_ms`；
+  - `blocking[]`：超过 1 毫秒的阻塞调用，字段有 `name`、`kind`（sync / small / large / unknown）、`start_ms`、`dur_ms`；
+  - `gpu_busy_ms`：GPU 有活的时间段（合并后）；`gpu_idle_share`：窗口里 GPU 空着的比例。
+- 时间都是从窗口开始算的毫秒。
+
 ### `ttft.json`、`ttft_exp08data.json`（`exp11_ttft.py`）
 
 - `runs[].levels["<并发>"]`：

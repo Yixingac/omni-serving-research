@@ -31,7 +31,15 @@
        --arm-re 'block(\d+)_([ABC])' --base A --out research/01_性能瓶颈/实验11_Thinker异步优化 --name ttft
    ```
 
-5. 实验 8 旧数据上的 TTFT 拆分（登记前做的，结果已在 hypotheses.md 里说明）：
+5. 实测时间线（图 10）：在集群上截窗口，再画图：
+
+   ```bash
+   python scripts/analysis/exp11_timeline.py extract --data-root <results> --run A=<区组 1 的 A> --run B=<区组 1 的 B> \
+       --run C=<区组 1 的 C> --phase w3b_ns_c64_C --out research/01_性能瓶颈/实验11_Thinker异步优化
+   python scripts/analysis/exp11_timeline.py draw --out research/01_性能瓶颈/实验11_Thinker异步优化
+   ```
+
+6. 实验 8 旧数据上的 TTFT 拆分（登记前做的，结果已在 hypotheses.md 里说明）：
 
    ```bash
    python scripts/analysis/exp11_ttft.py --data-root <results> --run <实验 8 第三阶段 6 个运行> --phase-re '^w3b_ns_c(\d+)_B$' \
