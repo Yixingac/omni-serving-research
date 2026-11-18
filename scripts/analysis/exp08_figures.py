@@ -145,8 +145,8 @@ def fig_token(plt, cells: dict[str, Any], path: Path) -> None:  # noqa: ANN001
 
 P3_ARMS = [("off", "原型关（语音同步执行）", "#D55E00"), ("on", "原型开（语音也提前发射，发射时快照）", "#009E73")]
 P3_PANELS = [("C", "graph_steps.idle_ms_p50", "（a）每步 GPU 空档，中位数（毫秒）", 1.0),
-             ("C", "sync_calls_per_step", "（b）每步 CPU 停下来等 GPU 的次数", 1.0),
-             ("B", "steps.decode_lookahead_share", "（c）提前发射的 decode 步（%）", 100.0),
+             ("C", "sync_calls_per_step", "（b）每步的同步调用和阻塞拷贝（次）", 1.0),
+             ("C", "graph_steps.idle_share", "（c）按时间加权的 GPU 空档比例（%）", 100.0),
              ("B", "thinker_ms_per_token.p50", "（d）thinker 每个 token，中位数（毫秒）", 1.0),
              ("A", "client.throughput_rps", "（e）吞吐（请求/秒）", 1.0),
              ("A", "client.e2e_s.p50", "（f）端到端 P50（秒）", 1.0),

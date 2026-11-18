@@ -2,7 +2,7 @@
  "experiment_number": 8,
  "name_zh": "Thinker 提前一步发射（lookahead）",
  "question_zh": "thinker 同步执行浪费了多少 GPU 时间？纯文字是否真的用上了提前一步发射？语音请求为什么不能用、能否安全地用、改了能快多少？",
- "status": "第一、二阶段完成；第三阶段正确性检查通过，性能对比排在实验 7 之后",
+ "status": "完成（第一、二阶段；第三阶段正确性和性能对比，2026-11-17）",
  "hypotheses": "hypotheses.md（14:33 前登记，提交 fe9288a；14:58、15:32 补充登记，都在实验 8 任何数据之前；16:35 补充登记二；16:58 第三阶段性能预测）",
  "model": {
   "name": "MiniCPM-o 4.5",
@@ -99,7 +99,29 @@
     "off→on"
    ],
    "plan": "configs/experiments/plan_exp08_proto_perf.json（排在实验 7 之后）",
-   "result": "results/phase3.json（待运行）"
+   "result": "results/phase3.json",
+   "wait_causes": "results/wait_causes.json（scripts/analysis/exp08_wait_causes.py，描述性，不参与判定）",
+   "phase_rotation": [
+    "ABC",
+    "BCA",
+    "CAB"
+   ],
+   "runs": {
+    "block1_off": "20261117_exp08_proto_perf_block1_off_run01（20:40:51–20:52:11）",
+    "block1_on": "20261117_exp08_proto_perf_block1_on_run01（20:52:20–20:58:56）",
+    "block2_on": "20261117_exp08_proto_perf_block2_on_run01（20:59:04–21:06:21）",
+    "block2_off": "20261117_exp08_proto_perf_block2_off_run01（21:06:25–21:13:19）",
+    "block3_off": "20261117_exp08_proto_perf_block3_off_run01（21:13:31–21:22:48）",
+    "block3_on": "20261117_exp08_proto_perf_block3_on_run01（21:23:01–21:29:25）"
+   },
+   "server_restarts": 0,
+   "client_errors": 0,
+   "research_repo_commit_at_start": "1611639（运行期间 21:06 拉到 8da5c16，只改了分析脚本和文档；编排和客户端代码没有变，见 Job 的 code_state.txt）",
+   "verdict": "支持（每步空档中位数平均下降 3.6、4.7、9.6 毫秒，3 个区组全部下降）",
+   "analysis_passes": [
+    "21:30 第一遍：登记的指标和判定",
+    "21:36 第二遍：加了按时间加权的空档比例（描述性），判定和第一遍逐字段相同；仓库里的 phase3.json 是第二遍的输出"
+   ]
   }
  },
  "analysis": {
@@ -110,13 +132,15 @@
    "scripts/analysis/exp08_figures.py",
    "scripts/analysis/exp08_proto_check.py",
    "scripts/analysis/exp08_proto_perf.py",
-   "scripts/analysis/exp05_step_sync.py"
+   "scripts/analysis/exp05_step_sync.py",
+   "scripts/analysis/exp08_wait_causes.py"
   ],
   "tests": [
    "tests/test_exp08_lookahead.py",
    "tests/test_exp08_report.py",
    "tests/test_exp08_proto_check.py",
-   "tests/test_exp08_proto_perf.py"
+   "tests/test_exp08_proto_perf.py",
+   "tests/test_exp08_wait_causes.py"
   ],
   "patch_checks": [
    "configs/runtime/patches/check_sglang_omni_instr.py",
@@ -128,13 +152,16 @@
   "results/summary_supp.json",
   "results/phase1.json",
   "results/zoom.json",
-  "results/proto_check.json"
+  "results/proto_check.json",
+  "results/phase3.json",
+  "results/wait_causes.json"
  ],
  "figures": [
   "figures/fig1_step_timeline.png",
   "figures/fig2_lookahead_share.png",
   "figures/fig3_step_idle.png",
-  "figures/fig4_token_time.png"
+  "figures/fig4_token_time.png",
+  "figures/fig5_phase3_off_on.png"
  ],
  "raw_data": "集群 results/experiments/20261117_exp08_*（不进公开仓库）"
 }
