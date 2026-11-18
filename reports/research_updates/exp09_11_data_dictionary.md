@@ -149,6 +149,12 @@
 
 放在 `research/01_性能瓶颈/实验11_Thinker异步优化/results/`。
 
+> **注意，两套 A、B、C 是两回事。**
+> - **组** A、B、C 是服务的设置：同步执行、提前发射 + 快照、提前发射 + 快照 + 旁路复制。它们由 `SGLANG_OMNI_SPEECH_LOOKAHEAD` 设为 `0`、`1`、`sidecopy`，每组是单独启动的服务。
+> - **段** A、B、C 是同一个服务里的三种测量方式：不打点、打事件、录 thinker 的 trace。
+> - 在 `performance.json` 里，`runs[].arm` 是组，`levels[...]["A" | "B" | "C"]` 是段。
+> - 图和 README 里把段叫作“不打点段、事件段、trace 段”。
+
 ### `check.json`（`exp11_check.py`，正确性检查）
 
 - `runs`：A、C、A2 各是哪个运行。
