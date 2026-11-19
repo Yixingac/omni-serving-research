@@ -324,8 +324,12 @@ def summarize(runs: list[dict[str, Any]]) -> dict[str, Any]:
     rel_br = rel_by_block(caps[w], "B", "R")
     out["H0c"] = {"rule": "B/R - 1 >= 0 in all blocks", "relative": t_interval(rel_br), "verdict": verdict_h0c(rel_br)}
     rel_ga, rel_bg = rel_by_block(caps[w], "G", "A"), rel_by_block(caps[w], "B", "G")
-    out["G_decomposition"] = {"admission_G_vs_A": {**t_interval(rel_ga), "label": effect_label(rel_ga)},
-                              "graph_B_vs_G": {**t_interval(rel_bg), "label": effect_label(rel_bg)}}
+    if any(arm == "G" for arm, _ in caps[w]):
+        out["G_decomposition"] = {"admission_G_vs_A": {**t_interval(rel_ga), "label": effect_label(rel_ga)},
+                                  "graph_B_vs_G": {**t_interval(rel_bg), "label": effect_label(rel_bg)}}
+    else:  # Erratum E-P0-G: the pin refuses cuda_graph_max_bs < max_running_requests, so B is a joint change
+        out["G_decomposition"] = {"status": "BLOCKED", "reason": "arm G cannot start at 520b49ee "
+                                  "(generation_batch_policy.py:376-382); B vs A is the joint effect of the cap and graph coverage"}
     high = [x for r in runs if r["arm"] == "B" for x in r["levels"]
             if x["workload"] == "w3b" and (x["phase"] in (CAPACITY_PHASE["w3b"], EVENTS_PHASE)
                                            or (x["kind"] == "open_loop" and x.get("rate_rps", 0) >= 26))]

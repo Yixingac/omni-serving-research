@@ -1,0 +1,376 @@
+{
+ "generated_by": "omni_research.duplex.report + scripts/analysis/ppv_r0_verdict.py",
+ "run": "20261118_ppv_r0_duplex_functional_run01",
+ "verdict": "通过",
+ "conditions": {
+  "1_server_started": true,
+  "2_sessions_completed": true,
+  "3_no_fatal_error": true,
+  "4_valid_audio": true,
+  "5_unit_latency_extractable": true
+ },
+ "phases": {
+  "duplex_smoke": {
+   "duration_s": 30.9,
+   "pooled": {
+    "sessions": 1,
+    "sessions_failed": 0,
+    "errors": 0,
+    "fatal_errors": 0,
+    "units_planned": 30,
+    "units_missed": 0,
+    "unit_miss_rate": 0.0,
+    "unit_lag_ms": {
+     "n": 30,
+     "p50": 78.7106819152832,
+     "p90": 404.34371290206917,
+     "p95": 471.19036159515383,
+     "p99": null,
+     "mean": 207.1120316505432,
+     "max": 524.850775718689
+    },
+    "ttfa_ms": {
+     "n": 1,
+     "p50": 2842.781500816345,
+     "p90": null,
+     "p95": null,
+     "p99": null,
+     "mean": 2842.781500816345,
+     "max": 2842.781500816345
+    },
+    "turns": 1,
+    "answered": 1,
+    "no_response": 0,
+    "deadline_miss_all_turns": {
+     "0.5s": 1.0,
+     "1s": 1.0,
+     "2s": 1.0
+    },
+    "first_audio_latency_ms": {
+     "n": 1,
+     "p50": 522.8903846740723,
+     "p90": null,
+     "p95": null,
+     "p99": null,
+     "mean": 522.8903846740723,
+     "max": 522.8903846740723
+    },
+    "replies_with_audio": 1,
+    "replies_with_stall": {
+     "0ms": 0,
+     "80ms": 0,
+     "250ms": 0
+    },
+    "audio_s_total": 10.44,
+    "decisions": {
+     "speak": 10,
+     "text_only": 1,
+     "listen": 19
+    },
+    "pacing_violations": 0,
+    "delta_gap_ms": {
+     "n": 9,
+     "p50": 989.4073400497437,
+     "p90": null,
+     "p95": null,
+     "p99": null,
+     "mean": 998.2812665303549,
+     "max": 1141.96217918396
+    }
+   },
+   "gpu": [
+    {
+     "phase": "duplex_smoke",
+     "gpu": "0",
+     "samples": 154,
+     "sampled_util_mean": 0.0,
+     "sampled_util_zero_fraction": 1.0,
+     "mem_max_mib": 32541.0
+    }
+   ],
+   "cpu": {
+    "server_cpu_percent_mean": 24.05,
+    "client_cpu_percent_mean": 7.66,
+    "system_cpu_percent_mean": 0.8533333333333334
+   },
+   "sessions": [
+    {
+     "status": "ok",
+     "units": {
+      "planned": 30,
+      "done": 30,
+      "missed": 0,
+      "miss_rate": 0.0
+     },
+     "turns": {
+      "n": 1,
+      "answered": 1,
+      "no_response": 0
+     },
+     "pacing": {
+      "lateness_ms": {
+       "n": 375,
+       "p50": 0.58,
+       "p90": 1.0356,
+       "p95": 1.1086,
+       "p99": 1.1789399999999999,
+       "mean": 0.617008,
+       "max": 2.039
+      },
+      "violations": 0
+     }
+    }
+   ]
+  },
+  "duplex_s1": {
+   "duration_s": 300.7,
+   "pooled": {
+    "sessions": 1,
+    "sessions_failed": 0,
+    "errors": 0,
+    "fatal_errors": 0,
+    "units_planned": 300,
+    "units_missed": 0,
+    "unit_miss_rate": 0.0,
+    "unit_lag_ms": {
+     "n": 300,
+     "p50": 74.7968339920044,
+     "p90": 397.48762159347535,
+     "p95": 408.81470174789433,
+     "p99": 478.97524542808503,
+     "mean": 187.11638230641682,
+     "max": 878.7726497650146
+    },
+    "ttfa_ms": {
+     "n": 12,
+     "p50": 1458.6621041297913,
+     "p90": 2101.300445652008,
+     "p95": null,
+     "p99": null,
+     "mean": 1469.3624109427135,
+     "max": 2513.249014854431
+    },
+    "turns": 14,
+    "answered": 12,
+    "no_response": 2,
+    "deadline_miss_all_turns": {
+     "0.5s": 1.0,
+     "1s": 0.7142857142857143,
+     "2s": 0.2857142857142857
+    },
+    "first_audio_latency_ms": {
+     "n": 14,
+     "p50": 391.37527418136597,
+     "p90": 417.0462963104248,
+     "p95": null,
+     "p99": null,
+     "mean": 384.78148630687167,
+     "max": 443.76048946380615
+    },
+    "replies_with_audio": 14,
+    "replies_with_stall": {
+     "0ms": 13,
+     "80ms": 4,
+     "250ms": 0
+    },
+    "audio_s_total": 113.8,
+    "decisions": {
+     "speak": 111,
+     "text_only": 2,
+     "listen": 187
+    },
+    "pacing_violations": 28,
+    "delta_gap_ms": {
+     "n": 97,
+     "p50": 993.681510925293,
+     "p90": 1078.313885307312,
+     "p95": 1099.8165687561036,
+     "p99": null,
+     "mean": 989.8593941521399,
+     "max": 1359.2138605117798
+    }
+   },
+   "gpu": [
+    {
+     "phase": "duplex_s1",
+     "gpu": "0",
+     "samples": 1492,
+     "sampled_util_mean": 4.39544235924933,
+     "sampled_util_zero_fraction": 0.8739946380697051,
+     "mem_max_mib": 32683.0
+    }
+   ],
+   "cpu": {
+    "server_cpu_percent_mean": 23.47438596491228,
+    "client_cpu_percent_mean": 5.529824561403509,
+    "system_cpu_percent_mean": 1.0140350877192983
+   },
+   "sessions": [
+    {
+     "status": "ok",
+     "units": {
+      "planned": 300,
+      "done": 300,
+      "missed": 0,
+      "miss_rate": 0.0
+     },
+     "turns": {
+      "n": 14,
+      "answered": 12,
+      "no_response": 2
+     },
+     "pacing": {
+      "lateness_ms": {
+       "n": 3750,
+       "p50": 0.671,
+       "p90": 1.074,
+       "p95": 1.131,
+       "p99": 1.963590000000002,
+       "mean": 4.1443544,
+       "max": 1189.397
+      },
+      "violations": 28
+     }
+    }
+   ]
+  },
+  "duplex_s2": {
+   "duration_s": 301.4,
+   "pooled": {
+    "sessions": 2,
+    "sessions_failed": 0,
+    "errors": 0,
+    "fatal_errors": 0,
+    "units_planned": 600,
+    "units_missed": 0,
+    "unit_miss_rate": 0.0,
+    "unit_lag_ms": {
+     "n": 600,
+     "p50": 74.94339847564697,
+     "p90": 412.5371645927429,
+     "p95": 428.0343419075012,
+     "p99": 517.1229330253601,
+     "mean": 198.33701147238415,
+     "max": 695.376072883606
+    },
+    "ttfa_ms": {
+     "n": 19,
+     "p50": 1662.968614578247,
+     "p90": 2435.8211879730225,
+     "p95": null,
+     "p99": null,
+     "mean": 1597.231034981577,
+     "max": 2572.622272491455
+    },
+    "turns": 28,
+    "answered": 19,
+    "no_response": 9,
+    "deadline_miss_all_turns": {
+     "0.5s": 1.0,
+     "1s": 0.8571428571428571,
+     "2s": 0.42857142857142855
+    },
+    "first_audio_latency_ms": {
+     "n": 23,
+     "p50": 387.5653591156006,
+     "p90": 418.88358612060546,
+     "p95": 425.30398206710817,
+     "p99": null,
+     "mean": 379.81766990993333,
+     "max": 441.9101228713989
+    },
+    "replies_with_audio": 23,
+    "replies_with_stall": {
+     "0ms": 20,
+     "80ms": 10,
+     "250ms": 1
+    },
+    "audio_s_total": 238.64000000000001,
+    "decisions": {
+     "speak": 235,
+     "text_only": 5,
+     "listen": 360
+    },
+    "pacing_violations": 43,
+    "delta_gap_ms": {
+     "n": 212,
+     "p50": 991.6400113105774,
+     "p90": 1083.9875546455385,
+     "p95": 1126.9172801971436,
+     "p99": 1216.1198816585538,
+     "mean": 998.8387950051506,
+     "max": 1338.034441947937
+    }
+   },
+   "gpu": [
+    {
+     "phase": "duplex_s2",
+     "gpu": "0",
+     "samples": 1495,
+     "sampled_util_mean": 11.270234113712375,
+     "sampled_util_zero_fraction": 0.7096989966555184,
+     "mem_max_mib": 33921.0
+    }
+   ],
+   "cpu": {
+    "server_cpu_percent_mean": 43.54111498257839,
+    "client_cpu_percent_mean": 6.379094076655052,
+    "system_cpu_percent_mean": 1.2790940766550523
+   },
+   "sessions": [
+    {
+     "status": "ok",
+     "units": {
+      "planned": 300,
+      "done": 300,
+      "missed": 0,
+      "miss_rate": 0.0
+     },
+     "turns": {
+      "n": 14,
+      "answered": 12,
+      "no_response": 2
+     },
+     "pacing": {
+      "lateness_ms": {
+       "n": 3750,
+       "p50": 0.645,
+       "p90": 1.056,
+       "p95": 1.116,
+       "p99": 1.9305700000000015,
+       "mean": 2.3152330666666665,
+       "max": 681.051
+      },
+      "violations": 19
+     }
+    },
+    {
+     "status": "ok",
+     "units": {
+      "planned": 300,
+      "done": 300,
+      "missed": 0,
+      "miss_rate": 0.0
+     },
+     "turns": {
+      "n": 14,
+      "answered": 7,
+      "no_response": 7
+     },
+     "pacing": {
+      "lateness_ms": {
+       "n": 3750,
+       "p50": 0.662,
+       "p90": 1.046,
+       "p95": 1.095,
+       "p99": 1.9820800000000018,
+       "mean": 2.7406784,
+       "max": 745.384
+      },
+      "violations": 24
+     }
+    }
+   ]
+  }
+ }
+}

@@ -1,6 +1,38 @@
 {
- "ppv_p0_cap32_block1": {"included": false, "reason": "attempt 1 failed at start (OMNI_REPO pointed at the orchestrator's checkout, configs not found); no measurement"},
- "ppv_p0_cap64_block1": {"included": false, "reason": "attempt 1 failed at start (same cause); no measurement"},
- "ppv_p0_ref_t2_k2_c4_block1": {"included": false, "reason": "attempt 1 failed at start (same cause); no measurement"},
- "ppv_p0_cap64_graph32_block1": {"included": false, "reason": "attempt 1 failed at start (same cause); no measurement"}
+ "ppv_p0_cap32_block1": {
+  "included": false,
+  "reason": "attempt 1 failed at start (OMNI_REPO pointed at the orchestrator's checkout, configs not found); no measurement"
+ },
+ "ppv_p0_cap64_block1": {
+  "included": false,
+  "reason": "attempt 1 failed at start (same cause); no measurement"
+ },
+ "ppv_p0_ref_t2_k2_c4_block1": {
+  "included": false,
+  "reason": "attempt 1 failed at start (same cause); no measurement"
+ },
+ "ppv_p0_cap64_graph32_block1": {
+  "included": false,
+  "reason": "attempt 1 failed at start (same cause); no measurement"
+ },
+ "ppv_p0_cap64_graph32_block1_a2": {
+  "included": false,
+  "reason": "BLOCKED: the pinned sglang-omni refuses cuda_graph_max_bs < max_running_requests at talker start (generation_batch_policy.py:376-382); server never became ready, no measurement (Erratum E-P0-G)"
+ },
+ "ppv_p0_cap32_block1_a2": {
+  "included": true,
+  "reason": "registered P0 arm, block 1"
+ },
+ "ppv_p0_cap64_block1_a2": {
+  "included": true,
+  "reason": "registered P0 arm, block 1"
+ },
+ "ppv_p0_ref_t2_k2_c4_block1_a2": {
+  "included": true,
+  "reason": "registered P0 arm, block 1"
+ },
+ "ppv_r0_duplex_functional": {
+  "included": true,
+  "reason": "R0 functional validation, all five registered conditions evaluated"
+ }
 }

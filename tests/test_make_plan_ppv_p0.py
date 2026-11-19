@@ -71,3 +71,11 @@ def test_rendered_plans_run_from_the_worktree_and_need_all_eight_gpus():
             assert e["required_gpus"] == 8 and e["timeout_s"] == 5400
             assert f"configs/experiments/ppv/{e['experiment_id']}.json" in files
     assert len(json.loads(files["configs/experiments/plan_ppv_p0_armC_a2.json"])["experiments"]) == 3
+
+
+def test_blocks_2_and_3_without_arm_g_keep_the_seeded_order_of_the_others():
+    files = mp.render()
+    for b in (2, 3):
+        full = [e["experiment_id"] for e in json.loads(files[f"configs/experiments/plan_ppv_p0_block{b}_a2.json"])["experiments"]]
+        without = [e["experiment_id"] for e in json.loads(files[f"configs/experiments/plan_ppv_p0_block{b}_a2_without_g.json"])["experiments"]]
+        assert without == [i for i in full if "_cap64_graph32_" not in i] and len(without) == 3

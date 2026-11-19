@@ -172,6 +172,19 @@ def render() -> dict[str, str]:
         for e in plan["experiments"]:
             e["command"] = command(e["experiment_id"])
         files[f"configs/experiments/plan_ppv_p0_block{b}{ATTEMPT_SUFFIX}.json"] = json.dumps(plan, ensure_ascii=False, indent=1) + "\n"
+    # Arm G cannot start at the pin: sglang-omni's generation-batch-policy check refuses cuda_graph_max_bs below
+    # max_running_requests for the MiniCPM-o talker (generation_batch_policy.py:376-382; block 1's G run exited before
+    # ready, 11-18 23:40). Blocks 2 and 3 are placed without it, keeping the seeded order of the other arms.
+    for b in (2, 3):
+        chosen = [(c, m) for c, m in main if c["experiment_id"].endswith(f"_block{b}{ATTEMPT_SUFFIX}")
+                  and f"_{ARM_NAMES['G']}_" not in c["experiment_id"]]
+        plan = {"plan_id": f"ppv_p0_block{b}{ATTEMPT_SUFFIX}_without_g",
+                "_comment": f"P0 第 {b} 个区组，不含方案 G（固定版本在启动时拒绝 cuda_graph_max_bs < max_running_requests）。"
+                            f"其余方案的顺序同原随机顺序。通过 plan.d 放进 Job 454290。由 scripts/slurm/make_plan_ppv_p0.py 生成。",
+                "experiments": [plan_entry(c, m) for c, m in chosen]}
+        for e in plan["experiments"]:
+            e["command"] = command(e["experiment_id"])
+        files[f"configs/experiments/plan_ppv_p0_block{b}{ATTEMPT_SUFFIX}_without_g.json"] = json.dumps(plan, ensure_ascii=False, indent=1) + "\n"
     plan_c = {"plan_id": f"ppv_p0_armC{ATTEMPT_SUFFIX}",
               "_comment": "P0 方案 C（名额 64 + KV 262144），只在方案 B 触发登记的 KV 条件时放进队列。由 scripts/slurm/make_plan_ppv_p0.py 生成。",
               "experiments": [plan_entry(c, m) for c, m in cond]}

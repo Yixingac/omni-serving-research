@@ -92,3 +92,11 @@ def test_rel_by_block_and_interval():
     ti = rp.t_interval(rel)
     assert ti["n"] == 2 and abs(ti["mean"] - 0.1) < 1e-12
     assert all(abs(x - 0.1) < 1e-9 for x in ti["ci95"])
+
+
+def test_summary_marks_the_graph_decomposition_blocked_without_arm_g():
+    run = lambda arm, block, cap: {"arm": arm, "block": block, "capacity": {"w3b": cap, "w3l": None}, "levels": []}  # noqa: E731
+    runs = [run(a, b, c) for b in (1, 2, 3) for a, c in (("A", 17.0), ("B", 22.0), ("R", 23.0))]
+    s = rp.summarize(runs)
+    assert s["G_decomposition"]["status"] == "BLOCKED"
+    assert s["H0c"]["verdict"] == "反驳" and s["H0a"]["relative"]["n"] == 3
