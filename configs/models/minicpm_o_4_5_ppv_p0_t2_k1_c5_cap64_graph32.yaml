@@ -1,0 +1,26 @@
+# P0 方案 G（cap64_graph32）：与实验 9 的放置 t2_k1_c5 相同（thinker 所在的 pipeline 进程 2 份，
+# talker 1 份（GPU 2），code2wav 单独进程 5 份），只改 talker 引擎的：max_running_requests=64、cuda_graph_max_bs=32。
+# 由 scripts/slurm/make_plan_ppv_p0.py 生成。
+config_cls: MiniCPMOSpeechPipelineConfig
+model_path: openbmb/MiniCPM-o-4_5
+
+stages:
+  talker:
+    gpu_memory_fraction: 0.4
+    engine:
+      max_running_requests: 64
+      cuda_graph_max_bs: 32
+  code2wav:
+    process: code2wav
+    gpu_memory_fraction: 0.4
+
+processes:
+  pipeline:
+    num_replicas: 2
+    replica_devices: [0, 1]
+  talker:
+    num_replicas: 1
+    replica_devices: [2]
+  code2wav:
+    num_replicas: 5
+    replica_devices: [3, 4, 5, 6, 7]

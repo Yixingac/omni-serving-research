@@ -155,10 +155,45 @@ def claim_processes(trees: dict[str, list[Any]]) -> dict[str, list[Any]]:
     return out
 
 
+def read_pressure(root: str = "/proc/pressure") -> dict[str, dict[str, float]]:
+    """Linux pressure stall information (PSI): per resource the share of time some (or all) tasks were stalled,
+    averaged over 10 s, plus the cumulative stall time in microseconds. Empty where PSI does not exist (macOS,
+    kernels without CONFIG_PSI). Lines look like ``some avg10=0.00 avg60=0.00 avg300=0.00 total=12345``."""
+    out: dict[str, dict[str, float]] = {}
+    for res in ("cpu", "io", "memory"):
+        try:
+            text = Path(root, res).read_text()
+        except OSError:
+            continue
+        vals: dict[str, float] = {}
+        for line in text.splitlines():
+            kind, *fields = line.split()
+            for f in fields:
+                key, _, v = f.partition("=")
+                if key in ("avg10", "total"):
+                    vals[f"{kind}_{key}"] = float(v)
+        out[res] = vals
+    return out
+
+
+def process_states(tree: list[Any]) -> dict[str, int]:
+    """How many processes of a group are running, sleeping, in uninterruptible (disk) sleep, ... right now.
+    A pause in which every process sleeps differs from one in which they wait on I/O (state D)."""
+    states: dict[str, int] = {}
+    for p in tree:
+        try:
+            s = p.status()
+        except Exception:  # noqa: BLE001 - psutil errors and processes that exited
+            continue
+        states[s] = states.get(s, 0) + 1
+    return states
+
+
 class CpuSampler(threading.Thread):
     """Process-tree CPU usage of the servers (and the client itself) once per second, per group and
     per process (``by_pid``, processes at >= 1%). The client group counts only processes outside the
-    server trees (``pids_fn`` lists the client last)."""
+    server trees (``pids_fn`` lists the client last). Each record also carries the node's pressure stall
+    information (``psi``) and per group the process states (``states``), for locating pauses (实验 P3)."""
 
     def __init__(self, path: Path, pids_fn, interval_s: float = 1.0) -> None:  # noqa: ANN001
         super().__init__(daemon=True)
@@ -176,6 +211,9 @@ class CpuSampler(threading.Thread):
             while not self._stop.wait(self.interval_s):
                 rec: dict[str, Any] = {"t_wall_ns": time.time_ns(), "system_cpu_percent": psutil.cpu_percent(None),
                                        "groups": {}}
+                psi = read_pressure()
+                if psi:
+                    rec["psi"] = psi
                 trees: dict[str, list[Any]] = {}
                 for name, root in self.pids_fn().items():
                     try:
@@ -205,7 +243,8 @@ class CpuSampler(threading.Thread):
                                 by_pid[str(p.pid)] = round(c, 1)
                         except psutil.Error:
                             pass
-                    rec["groups"][name] = {"cpu_percent": total, "processes": n, "by_pid": by_pid}
+                    rec["groups"][name] = {"cpu_percent": total, "processes": n, "by_pid": by_pid,
+                                           "states": process_states(tree)}
                 fh.write(json.dumps(rec) + "\n")
                 fh.flush()
 
