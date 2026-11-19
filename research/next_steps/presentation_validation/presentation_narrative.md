@@ -50,10 +50,6 @@
 - **Likely questions.** "Why not raise it to 128?" — not registered this round; the talker still binds at 64, so it is the obvious next point, together with KV checks. "Is this just a tuning knob?" — the point is methodological: a GPU-utilization or KV view would have blamed hardware; per-stage admission belongs in the placement model.
 - **Sources.** `final_experiment_results.md` P0; `results/p0_summary.json`; `preregistration.md` (P0 addendum, Erratum E-P0-G).
 
-## Slide 5 — The Talker Admission Bottleneck
-
-[filled after P0 blocks 2–3]
-
 ## Slide 6 — Code2Wav: Batching, Padding and Compiler Hotspots
 
 - **Research claim.** Under load the vocoder dominates speech latency, and its GPU time is dominated by the flow DiT, whose largest kernels are masked attention and its mask preparation; batching mixes lengths and adds padding, and CUDA graphs stop covering requests once they are batched.
