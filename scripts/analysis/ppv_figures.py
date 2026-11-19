@@ -167,8 +167,8 @@ def fig_p0_admission(out: Path) -> list[Path]:
                  "captures CUDA graphs up to 64 — the pinned version refuses a graph limit below the cap, so arm G could not run); "
                  "reference 2+2+4. Runs per arm: " + ", ".join(f"{k} {v}" for k, v in n.items())
             + ". Left: medians over SGLang decode-log lines in the closed-loop W3b 256 level (talker lines separated by tokens per "
-              "running request > 200); points = blocks, bars = t 95 % CI. Right: median log throughput per batch size, "
-              f"pooled over all talker lines of each arm's runs (≥ 20 lines per size). {COMMON}.")
+              "running request > 200); points = blocks, bars = t 95 % CI. Right: step time from the median log throughput per batch size "
+              f"of each run (≥ 20 lines per size and run), averaged over the arm's runs. {COMMON}.")
     return save(fig, out, "fig02_talker_admission")
 
 
@@ -382,8 +382,8 @@ def fig_c1(out: Path) -> list[Path]:
     a2.set_ylabel("MCD vs FP32 reference, minus D's (dB)")
     a2.set_title("Quality gate (26 segments)")
     a2.set_ylim(-0.1, 1.5)
-    caption(fig, "C1 microbenchmark (this round), one RTX A6000: flow + HiFT of code2wav loaded alone, replaying 47,484 real batches exported "
-                 "from Experiments 9–10 (groups as labelled). Bars = mean of 3 timed passes (error bars = half range, ≤ 0.3 %). "
+    caption(fig, "C1 microbenchmark (this round), one RTX A6000: flow + HiFT of code2wav loaded alone, replaying 112 real batches per arm sampled "
+                 "from the 47,484 exported from Experiments 9–10 (32 in each of the two fifo16 groups, 12 in each other group). Bars = mean of 3 timed passes (error bars = half range, ≤ 0.3 %). "
                  f"MCD of D vs the FP32 reference is {d_mcd:.2f} dB because the sampled excitation differs between runs, so only the "
                  "difference to D is shown; D_ng (same math as D) fails the ASR rule, which marks the noise floor. Microbenchmark, "
                  "not an end-to-end result.")
@@ -423,7 +423,7 @@ def fig_c2(out: Path) -> list[Path]:
     a2.legend(fontsize=8, loc="upper left")
     caption(fig, "C2 microbenchmark (this round), one RTX A6000, fixed real-length mels and fixed excitation noise, decode_body compiled "
                  "as in the stock component. Quality gates: B bit-identical (pass); C rel. RMS 9.1e-4, MCD 0.18 dB (fail); D MCD 0.83 dB "
-                 "(fail). Right: kernel sums come from a separate profiler pass. Microbenchmark, not an end-to-end result.")
+                 "(fail); quality compared on 26 re-synthesized segments. Right: kernel sums come from a separate profiler pass. Microbenchmark, not an end-to-end result.")
     return save(fig, out, "fig08_c2_hift")
 
 
@@ -449,7 +449,10 @@ def fig_duplex_sessions(out: Path) -> list[Path]:
     for x, lv in zip(xs, levels):
         miss = lv["unit_miss_rate"] * 100
         oom = sum((b.get("oom_events") or 0) for b in lv["per_block"].values())
-        note = f"miss {miss:.1f}%" + (f"\n{oom} OOM" if oom else "")
+        per = [b["unit_miss_rate"] * 100 for b in lv["per_block"].values() if b.get("ran") and b.get("unit_miss_rate") is not None]
+        split = len(per) > 1 and max(per) - min(per) > 5  # pooled rate hides blocks that differ (R2 at 8 sessions)
+        note = (f"miss {miss:.1f}% pooled\n(blocks {', '.join(f'{x:.1f}%' for x in per)})" if split else f"miss {miss:.1f}%") \
+            + (f"\n{oom} OOM log lines" if oom else "")
         a1.text(x, (lv["descriptive"]["unit_lag_speaking_ms"].get("p99") or 0) + 60, note, ha="center", fontsize=8)
     r2b_note = ""
     if R2B_SUMMARY.exists():  # R2b: the registered 2-GPU split (thinker on its own GPU), drawn only when it ran
@@ -492,7 +495,8 @@ def fig_duplex_sessions(out: Path) -> list[Path]:
                  "spoken questions; 180 s per level, levels 1 → 8 within a run. Blocks per level: " + ", ".join(f"{k}: {v}" for k, v in blocks.items())
             + " (block 2 stopped after level 1 under the registered stop rule: a first-reply warm-up missed 1.67 % of units). "
               "Unit lag is bimodal, so speaking and listening units are shown separately. Registered capacity verdicts: "
-              "below the lowest level (see the results). Deadline misses at 1 session are mostly the model's turn-taking." + r2b_note)
+              "below the lowest level (see the results). Deadline misses at 1 session are mostly the model's turn-taking. At 8 sessions "
+              "the two blocks differ: sessions failed with CUDA OOM in one block only." + r2b_note)
     return save(fig, out, "fig09_duplex_sessions")
 
 
@@ -558,7 +562,8 @@ def fig_r3_camera(out: Path) -> list[Path]:
                  "8 fps as H.264), one request in flight per session (late ticks dropped), 60 s per cell, one run per concurrency "
                  "(no blocks yet). Sessions 1/4/16 × 0.5/1/2 fps. Right: stage medians from request events (not additive); "
                  "requests per bar group: " + ", ".join(f"{s} {k}×{f:g}: {v}" for (s, k, f), v in n.items())
-            + ". All 5 saturated cells are GPU-bound by the registered rule; concurrency 4 improved no cell.")
+            + ". At concurrency 1 all 5 saturated cells are GPU-bound by the registered rule (at concurrency 4 two of them are 'cause unclear', "
+              "74–75 % GPU busy); concurrency 4 improved no cell.")
     return save(fig, out, "fig10_r3_camera")
 
 

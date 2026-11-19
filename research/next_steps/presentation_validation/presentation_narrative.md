@@ -9,7 +9,7 @@
 
 - **Research claim.** A robot assistant that watches, listens, calls tools and speaks is judged by when it starts speaking and whether it can be interrupted, and an omni model is a pipeline of heterogeneous stages whose serving behaviour is not captured by LLM throughput metrics.
 - **Main figure.** Architecture schematic (Mermaid, `../robotics_application_intro.md` §2.4) redrawn as a slide.
-- **Supporting evidence.** On the request–response path the first audio arrives only after the whole pipeline finishes (TTFA ≈ end-to-end, ~2 s at low load; experiment 6). On the full-duplex path, the first spoken response arrives 1.36 s after the user stops talking even though processing takes ~0.35 s (R1).
+- **Supporting evidence.** On the request–response path the first audio arrives only after the whole pipeline finishes (TTFA ≈ end-to-end, ~2 s at low load for W3 answers; experiment 6). On the full-duplex path, the first spoken response arrives 1.36 s after the user stops talking even though processing takes ~0.35 s (R1). The two numbers start at different points (whole request sent vs end of user speech) and cover different answer lengths, so they are not a speed comparison.
 - **What I should explain.** TTFT vs TTFA; why turn-taking needs sub-second audio; that MiniCPM-o is three different models (Thinker LLM, Talker codec LM, Code2Wav flow-matching vocoder).
 - **Likely questions.** "Why not measure a real robot?" — the serving loop is the same; we claim nothing about motion control or real microphones. "Why MiniCPM-o?" — open, omni, both request–response and native full-duplex modes in SGLang-Omni, fits one 48 GB GPU.
 - **Sources.** `../robotics_application_intro.md` §1–2; `final_experiment_results.md` R1.
@@ -25,9 +25,9 @@
 
 ## Slide 3 — Experimental Method: Pre-registered, Paired, and Honest About Failures
 
-- **Research claim.** Every comparison in this talk was registered before its data existed, run in paired blocks, and reported even when it failed its gate.
+- **Research claim.** Every comparison in this talk was registered before its experiment's first run (one exception: R1's detailed analysis rules were committed after two of its three blocks had run, before any analysis), run in paired blocks, and reported even when it failed its gate.
 - **Main figure.** A small table: experiment → registered question → arms → blocks → status (from `README.md` §1).
-- **Supporting evidence.** `preregistration.md` (commit times precede runs), three errata registered before the affected runs (E-C1, E-P0-G) and one execution deviation (D1); every attempt, including failed starts, in `experiment_manifest.md`.
+- **Supporting evidence.** `preregistration.md` with git commit times (the R1 exception above is stated there); three errata (E-C1 before C1; E-P0-G after the failed G start, before blocks 2–3; E-P1-X before the P1 main runs) and three execution deviations (D1 overlapping runs, D2 a withdrawn plan, D3 an instrumentation crash); every attempt, including failed starts, in `experiment_manifest.md`.
 - **What I should explain.** Closed-loop capacity vs open-loop stable throughput; goodput (TTFT ≤ 1 s and end-to-end ≤ 0.5 × audio length); why microbenchmark gains are not reported as end-to-end gains; why nvidia-smi utilization was dropped for duplex runs.
 - **Likely questions.** "Three blocks is little." — yes; we report t intervals with df = 2 and call results with intervals spanning zero inconclusive.
 - **Sources.** `preregistration.md`; `audit.md`; `experiment_manifest.md`.
@@ -75,9 +75,9 @@
 
 - **Research claim.** On one A6000 the native full-duplex path keeps its 1-s units real-time for up to four sessions, but the first spoken response (1.36 s median) is dominated by the unit structure and the model's turn-taking rather than compute, interruptions are not honoured promptly, and at eight sessions GPU memory — not a compute stage — fails first.
 - **Main figure.** `figures/fig06_duplex_ttfa.png` (TTFA decomposition by extra listening units, and stage time inside a speaking unit) with the R2 table (sessions vs unit miss, speaking-unit lag, failures).
-- **Supporting evidence.** R0: 900/900 units on time, 0 errors. R1: TTFA P50 1.36 s (0.86 s when the model does not wait an extra unit); parts 0.32 s wait + 1 extra unit in 54 % of turns + 0.35 s processing (thinker 41 %, talker 24 %, vocoder 24 %); interrupted replies continue 5.1 s. R2: unit miss 0.6 / 0 / 0.1 / 46 % at 1 / 2 / 4 / 8 sessions; speaking-unit processing 353 → 707 ms; 74 CUDA OOM events and 7 failed sessions at 8; registered capacity verdicts "below the lowest level" (first-reply warm-up and a client I/O stall).
+- **Supporting evidence.** R0: 900/900 units on time, 0 errors. R1: TTFA P50 1.36 s (0.86 s when the model does not wait an extra unit); parts 0.32 s wait + 1 extra unit in 54 % of turns + 0.35 s processing (thinker 41 %, talker 24 %, vocoder 24 %); interrupted replies continue 5.1 s. R2: unit miss 0.6 / 0 / 0.1 / 46 % at 1 / 2 / 4 / 8 sessions; speaking-unit processing 353 → 707 ms; at 8 sessions one of two blocks failed (7 of 8 sessions on CUDA OOM, 87.7 % of units missed) and the other did not (3.5 %, OOM allocator warnings only); registered capacity verdicts "below the lowest level" (first-reply warm-up and a client I/O stall).
 - **What I should explain.** The TTFA decomposition (a + b + c = TTFA exactly); why the registered capacity verdict is stricter than the descriptive "4 sessions"; why we dropped nvidia-smi utilization (0 % readings at 120–220 W under a 1 Hz load).
-- **Likely questions.** "Is 1.36 s the model or the system?" — mostly the model's turn-taking (k = 1 turns cost ~0.6 s more than k = 0 turns, more than all compute in a unit). "Why does memory fail?" — the speech stage's per-session state outgrows its nominal 15 % share; a two-GPU placement passed its smoke but was not run this round.
+- **Likely questions.** "Is 1.36 s the model or the system?" — mostly the model's turn-taking (k = 1 turns cost ~0.6 s more than k = 0 turns, more than all compute in a unit). "Why does memory fail?" — the speech stage's per-session state outgrows its nominal 15 % share; a two-GPU placement met its smoke rule but every smoke unit was late; it is registered as R2b.
 - **Sources.** `final_experiment_results.md` R0–R2; `results/r{0,1,2}_summary.json`.
 
 ## Slide 9 — Research Gaps and Proposed Directions
