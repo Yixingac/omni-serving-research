@@ -323,9 +323,108 @@ def fig_duplex_ttfa(out: Path) -> list[Path]:
     return save(fig, out, "fig06_duplex_ttfa")
 
 
+C1_BENCH = PV / "results/c1_microbench.json"
+C1_QUALITY = PV / "results/c1_quality.json"
+C2_BENCH = PV / "results/c2_microbench.json"
+C1_GROUPS = [("exp10_t2_k4_c2_graph|w3b|fifo16", "W3b\nfifo16"), ("exp10_t2_k4_c2_graph|mix|fifo16", "MIX\nfifo16"),
+             ("exp10_t2_k4_c2_graph|w3b|length8", "W3b\nlength8"), ("exp10_t2_k4_c2_graph|mix|length8", "MIX\nlength8"),
+             ("exp09_t2_k2_c4|w3l|fifo16", "W3L\n2+2+4"), ("exp10val_t2_k2_c4|w3b|fifo16", "W3b open loop\n~1.2 req/batch")]
+C1_ARMS = [("D", "D dense FP16 (default)", "#555555"), ("P0", "P0 packed, no compile (BF16)", "#E69F00"),
+           ("P1", "P1 packed + compile (BF16, registered)", "#0072B2"), ("P1h", "P1h packed + compile FP16 (exploratory)", "#56B4E9")]
+
+
+def fig_c1(out: Path) -> list[Path]:
+    """C1: code2wav GPU time per audio second on real batch shapes, and the quality gate (MCD vs FP32 reference)."""
+    import statistics
+
+    b = json.loads(C1_BENCH.read_text())["per_group"]
+    q = json.loads(C1_QUALITY.read_text())
+    plt = plt_setup()
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(13.5, 4.8), gridspec_kw={"width_ratios": [2.1, 1]})
+    w = 0.2
+    for j, (arm, label, color) in enumerate(C1_ARMS):
+        xs, ys, errs = [], [], []
+        for i, (g, _) in enumerate(C1_GROUPS):
+            e = b.get(g, {}).get(arm, {}).get("E_c2w")
+            if not e:
+                continue  # arm not run on this group: nothing drawn
+            xs.append(i + (j - 1.5) * w)
+            ys.append(statistics.mean(e))
+            errs.append((max(e) - min(e)) / 2)
+        a1.bar(xs, ys, width=w, color=color, yerr=errs, capsize=2, label=label)
+    for i, (g, _) in enumerate(C1_GROUPS):
+        d, p1 = b.get(g, {}).get("D", {}).get("E_c2w"), b.get(g, {}).get("P1", {}).get("E_c2w")
+        if d and p1:
+            rel = statistics.mean(p1) / statistics.mean(d) - 1
+            a1.text(i + 0.5 * w, statistics.mean(p1) + 0.4, f"{rel * 100:+.0f}%", ha="center", fontsize=8, color="#0072B2")
+    a1.set_xticks(range(len(C1_GROUPS)), [g[1] for g in C1_GROUPS], fontsize=9)
+    a1.set_ylabel("code2wav GPU ms per audio second (E)")
+    a1.set_title("C1: dense vs packed flow on real batch shapes (3 timed passes)")
+    a1.set_ylim(0, 15.5)
+    a1.legend(fontsize=8, loc="upper center", ncol=2)
+    gates = q["gates"]
+    d_mcd = q["vs_ref"]["D"]["summary"]["mcd_db"]
+    names = ["D_ng", "P0", "P1", "P2", "P1h"]
+    vals = [gates[n]["mcd_db"] - d_mcd for n in names]
+    colors = ["#999999", "#E69F00", "#0072B2", "#CC79A7", "#56B4E9"]
+    a2.bar(range(len(names)), vals, color=colors)
+    a2.axhline(0.1, color="#D55E00", ls="--", lw=1, label="registered margin +0.1 dB")
+    a2.legend(fontsize=8, loc="upper left")
+    for i, (n, v) in enumerate(zip(names, vals)):
+        a2.text(i, v + 0.03, f"{v:+.2f}\n{'pass' if gates[n]['pass'] else 'fail'}", ha="center", fontsize=8)
+    a2.set_xticks(range(len(names)), names)
+    a2.set_ylabel("MCD vs FP32 reference, minus D's (dB)")
+    a2.set_title("Quality gate (26 segments)")
+    a2.set_ylim(-0.1, 1.5)
+    caption(fig, "C1 microbenchmark (this round), one RTX A6000: flow + HiFT of code2wav loaded alone, replaying 47,484 real batches exported "
+                 "from Experiments 9–10 (groups as labelled). Bars = mean of 3 timed passes (error bars = half range, ≤ 0.3 %). "
+                 f"MCD of D vs the FP32 reference is {d_mcd:.2f} dB because the sampled excitation differs between runs, so only the "
+                 "difference to D is shown; D_ng (same math as D) fails the ASR rule, which marks the noise floor. Microbenchmark, "
+                 "not an end-to-end result.")
+    return save(fig, out, "fig07_c1_flow_packed")
+
+
+def fig_c2(out: Path) -> list[Path]:
+    """C2: HiFT GPU time per audio second for default, fold, channels-last and FP16 arms."""
+    import statistics
+
+    c2 = json.loads(C2_BENCH.read_text())
+    plt = plt_setup()
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(13, 4.6), gridspec_kw={"width_ratios": [1.4, 1]})
+    groups = list(c2["E_hift"])
+    labels = {"A": "A default (FP32)", "B": "B weight-norm folded", "C": "C channels-last", "D": "D FP16 body"}
+    colors = {"A": "#555555", "B": "#009E73", "C": "#E69F00", "D": "#CC79A7"}
+    w = 0.2
+    for j, arm in enumerate("ABCD"):
+        ys = [statistics.mean(c2["E_hift"][g][arm]) for g in groups]
+        errs = [(max(c2["E_hift"][g][arm]) - min(c2["E_hift"][g][arm])) / 2 for g in groups]
+        a1.bar([i + (j - 1.5) * w for i in range(len(groups))], ys, width=w, yerr=errs, capsize=2, color=colors[arm], label=labels[arm])
+    short = {"exp10_t2_k4_c2_graph|w3b|fifo16": "W3b fifo16", "exp10_t2_k4_c2_graph|mix|fifo16": "MIX fifo16", "exp09_t2_k2_c4|w3l|fifo16": "W3L 2+2+4"}
+    a1.set_xticks(range(len(groups)), [short.get(g, g) for g in groups])
+    a1.set_ylabel("HiFT GPU ms per audio second")
+    a1.set_title("C2: HiFT time per arm (3 timed passes)")
+    a1.legend(fontsize=8, loc="upper right")
+    prof = c2["profile"]
+    E = {a: statistics.mean(statistics.mean(v[a]) for v in c2["E_hift"].values()) for a in "ABCD"}
+    kern = {a: sum(prof[a]["families_ms_per_audio_s"].values()) for a in "ABCD"}
+    a2.bar(range(4), [E[a] for a in "ABCD"], color="#DDDDDD", label="event-timed HiFT time")
+    a2.bar(range(4), [kern[a] for a in "ABCD"], color=[colors[a] for a in "ABCD"], width=0.5, label="sum of kernel time (profiler)")
+    for i, a in enumerate("ABCD"):
+        a2.text(i, E[a] + 0.05, f"{kern[a] / E[a] * 100:.0f}% kernels", ha="center", fontsize=8)
+    a2.set_xticks(range(4), list("ABCD"))
+    a2.set_ylabel("ms per audio second (mean of groups)")
+    a2.set_title("Kernel time vs event-timed time")
+    a2.legend(fontsize=8, loc="upper left")
+    caption(fig, "C2 microbenchmark (this round), one RTX A6000, fixed real-length mels and fixed excitation noise, decode_body compiled "
+                 "as in the stock component. Quality gates: B bit-identical (pass); C rel. RMS 9.1e-4, MCD 0.18 dB (fail); D MCD 0.83 dB "
+                 "(fail). Right: kernel sums come from a separate profiler pass. Microbenchmark, not an end-to-end result.")
+    return save(fig, out, "fig08_c2_hift")
+
+
 FIGURES: dict[str, Callable[[Path], list[Path]]] = {"placement": fig_placement, "p0_admission": fig_p0_admission,
                                                     "p0_capacity": fig_p0_capacity, "c2w_shapes": fig_c2w_shapes,
-                                                    "c2w_kernels": fig_c2w_kernels, "duplex_ttfa": fig_duplex_ttfa}
+                                                    "c2w_kernels": fig_c2w_kernels, "duplex_ttfa": fig_duplex_ttfa,
+                                                    "c1": fig_c1, "c2": fig_c2}
 
 
 def main() -> int:
