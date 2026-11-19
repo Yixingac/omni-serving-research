@@ -72,22 +72,28 @@ def stage_of_pid(exp: Path) -> dict[int, str]:
     return out
 
 
-def send_windows(exp: Path, phase_names: list[str]) -> dict[str, tuple[float, float]]:
-    """Per measured phase with a client request file: (first send, last send) in wall seconds, i.e. the part of the
-    phase with arriving load. After the last send a phase drains -- the last long requests finish and the log thins
-    out -- so a silence there is not a pause of a loaded server (seen in P1's W3L cells: every watcher pause fell
-    111-135 s into a cell whose sending ended at 110 s)."""
+def send_windows(exp: Path, phases: list[dict[str, Any]]) -> dict[str, tuple[float, float]]:
+    """Per measured phase: the part of it with arriving load, in wall seconds.
+    - With a client request file: first send to last send. Before the first send a plugin phase may still be
+      preparing (R3 renders every frame first, and its 8 render workers starve the runner's sampler); after the last
+      send the phase drains -- the last long requests finish and the log thins out -- so a silence there is not a
+      pause of a loaded server (P1's W3L cells: every watcher pause fell 111-135 s into a cell whose sending ended at
+      110 s).
+    - Without one (full-duplex sessions stream for the whole phase): the whole phase."""
     from omni_research.analysis.experiment_analysis import clock_anchor
 
     anchor = clock_anchor(exp)
-    if anchor is None:
-        return {}
-    mono0, wall0 = anchor
     out: dict[str, tuple[float, float]] = {}
-    for name in phase_names:
+    for p in phases:
+        name = p.get("phase")
         f = exp / "raw" / f"requests_{name}.jsonl"
         if not f.exists():
+            if name and (exp / "raw" / f"duplex_{name}").exists() and p.get("started") and p.get("ended"):
+                out[name] = (p["started"], p["ended"])
             continue
+        if anchor is None:
+            continue
+        mono0, wall0 = anchor
         sent = []
         with open(f) as fh:
             for line in fh:
@@ -202,7 +208,7 @@ def analyze_run(exp: Path, gap_s: float = 1.0, dense_s: float = 0.25) -> dict[st
     # A full-duplex server logs in bursts once per 1-s unit and idles between them, so its log gaps are not pauses.
     duplex = any((exp / "raw").glob("duplex_*"))
     dense = spacing is not None and spacing <= dense_s and not duplex
-    sends = send_windows(exp, [p["phase"] for p in phases if p.get("phase")])
+    sends = send_windows(exp, phases)
     log_gaps = [describe_gap(g, per_s) for lo, hi in windows for g in gaps_in(times, lo, hi, gap_s)]
     for g in log_gaps:
         g["under_load"] = under_load(g["start"], sends)
@@ -210,6 +216,8 @@ def analyze_run(exp: Path, gap_s: float = 1.0, dense_s: float = 0.25) -> dict[st
         g["gc_overlap"] = [{"pid": c["pid"], "stage": stages.get(c["pid"]), "duration_ms": c["duration_ms"]}
                            for c in gcs if c["start"] < g["start"] + g["gap_s"] and c["end"] > g["start"]]
     sampler_gaps = [describe_gap((r["t0"], r["t1"]), per_s) for r in in_measured if r["spacing_s"] > 1.8]
+    for g in sampler_gaps:
+        g["under_load"] = under_load(g["start"], sends)
     base = lambda key: statistics.median([r.get(key) or 0.0 for r in in_measured]) if in_measured else None  # noqa: E731
     return {"run": exp.name, "measured_s": round(sum(hi - lo for lo, hi in windows), 1), "duplex": duplex,
             "log_median_spacing_s": spacing, "log_dense": dense,
@@ -233,14 +241,18 @@ def summarize(runs: list[dict[str, Any]]) -> dict[str, Any]:
             "log_gaps_in_drain": sum(1 for g in gaps if g.get("under_load") is False),
             "max_log_gap_s": max((g["gap_s"] for g in gaps), default=None),
             "sampler_gaps": sum(len(r["sampler_gaps"]) for r in runs),
+            "sampler_gaps_under_load": sum(1 for r in runs for g in r["sampler_gaps"] if g.get("under_load")),
             "gaps_with_io_stall": sum(1 for g in gaps if (g["io_full_ms_per_s_max"] or 0) >= 100),
             "gaps_with_d_state": sum(1 for g in gaps if (g["d_state_max"] or 0) > 0),
             "gaps_with_gc_overlap": sum(1 for g in gaps if g.get("gc_overlap")),
             "watched_runs": sum(1 for r in runs if r.get("watcher")),
             "watcher_pauses": sum(r["watcher"]["pauses"] for r in runs if r.get("watcher")),
             "watcher_max_pause_s": max((r["watcher"]["max_pause_s"] or 0 for r in runs if r.get("watcher")), default=None),
-            "watcher_pauses_under_load": sum(r["watcher"]["pauses_under_load"] for r in runs if r.get("watcher")),
-            "watcher_max_pause_under_load_s": max((r["watcher"]["max_pause_under_load_s"] or 0 for r in runs if r.get("watcher")), default=None),
+            # a watcher pause means something only where the log is dense (sparse logs fall silent by themselves)
+            "watcher_pauses_under_load": sum(r["watcher"]["pauses_under_load"] for r in runs if r.get("watcher") and r["log_dense"]),
+            "watcher_max_pause_under_load_s": max((r["watcher"]["max_pause_under_load_s"] or 0 for r in runs
+                                                   if r.get("watcher") and r["log_dense"]), default=None),
+            "watcher_pauses_under_load_sparse_log": sum(r["watcher"]["pauses_under_load"] for r in runs if r.get("watcher") and not r["log_dense"]),
             "watcher_pauses_in_drain": sum(r["watcher"]["pauses_in_drain"] for r in runs if r.get("watcher")),
             "watcher_slow_stats": sum(r["watcher"]["slow_stats"] for r in runs if r.get("watcher")),
             "watcher_slow_stat_max_s": max((r["watcher"]["slow_stat_max_s"] or 0 for r in runs if r.get("watcher")), default=None),

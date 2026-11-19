@@ -128,3 +128,20 @@ def test_gaps_and_watcher_pauses_are_split_into_under_load_and_drain(tmp_path):
     assert (w["pauses_under_load"], w["pauses_in_drain"], w["max_pause_under_load_s"]) == (1, 2, 1.5)
     s = ps.summarize([r])
     assert (s["log_gaps_under_load"], s["log_gaps_in_drain"], s["watcher_pauses_under_load"], s["watcher_pauses_in_drain"]) == (1, 1, 1, 2)
+
+
+def test_duplex_phase_counts_as_under_load_and_sampler_gaps_are_classified(tmp_path):
+    exp = _run(tmp_path, [T0 + 0.1 * i for i in range(200)], [_sample(T0 + i, 0.0) for i in (0, 1, 2, 3, 6, 7, 8)])  # 3 s sampler gap
+    (exp / "raw" / "duplex_open").mkdir()
+    r = ps.analyze_run(exp)
+    assert r["sampler_gaps"] and all(g["under_load"] for g in r["sampler_gaps"])
+    assert ps.summarize([r])["sampler_gaps_under_load"] == len(r["sampler_gaps"])
+
+
+def test_sampler_gap_before_the_first_send_is_not_under_load(tmp_path):
+    exp = _run(tmp_path, [T0 + 0.1 * i for i in range(200)], [_sample(T0 + i, 0.0) for i in (0, 1, 4, 5, 6, 7, 8, 9, 10, 11, 12)])
+    mono0, wall0 = 5_000_000_000, int(T0 * 1e9)
+    (exp / "raw" / "bench_trace.jsonl").write_text(json.dumps({"clock": {"mono_anchor_ns": mono0, "wall_anchor_ns": wall0}}) + "\n")
+    (exp / "raw" / "requests_open.jsonl").write_text("".join(json.dumps({"sent_ns": mono0 + int(k * 1e9)}) + "\n" for k in range(5, 12)))
+    r = ps.analyze_run(exp)  # the 1 s -> 4 s gap is while the phase prepares, before its first send at 5 s
+    assert r["sampler_gaps"] and r["sampler_gaps"][0]["under_load"] is False
