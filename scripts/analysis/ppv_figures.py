@@ -266,9 +266,66 @@ def fig_c2w_kernels(out: Path) -> list[Path]:
     return save(fig, out, "fig05_code2wav_kernels")
 
 
+R1_SUMMARY = PV / "results/r1_summary.json"
+
+
+def fig_duplex_ttfa(out: Path) -> list[Path]:
+    """R1: where the full-duplex TTFA goes (per answered turn) and which stage dominates a speaking unit."""
+    import statistics
+
+    d = json.loads(R1_SUMMARY.read_text())
+    turns = [t for t in d["ttfa_turns"] if t["phase"].endswith("_A") and not t.get("early_start")]
+    plt = plt_setup()
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(13, 4.8), gridspec_kw={"width_ratios": [1.25, 1]})
+    parts = [("a_wait_unit_end_ms", "(a) wait for the 1-s unit to fill", "#999999"),
+             ("b_listen_ms", "(b) extra listening units", "#E69F00"),
+             ("c_service_ms", "(c) speaking unit's processing", "#0072B2")]
+    groups = [(f"k = {k}\n(n = {sum(1 for t in turns if t['k'] == k)})", [t for t in turns if t["k"] == k])
+              for k in sorted({t["k"] for t in turns})]
+    for x, (label, ts) in enumerate(groups):
+        bottom = 0.0
+        for key, name, color in parts:  # means: the three parts add up to the mean TTFA exactly
+            v = statistics.fmean(t[key] for t in ts) / 1000
+            a1.bar(x, v, bottom=bottom, color=color, label=name if x == 0 else None, width=0.6)
+            bottom += v
+        p50 = statistics.median(t["ttfa_ms"] for t in ts) / 1000
+        top = max(t["ttfa_ms"] for t in ts) / 1000
+        a1.scatter([x] * len(ts), [t["ttfa_ms"] / 1000 for t in ts], s=10, color="#333333", zorder=3)
+        a1.text(x, top + 0.06, f"mean {bottom:.2f} s\nP50 {p50:.2f} s", ha="center", fontsize=9)
+    ref = d["chat_reference"]["A"]["pooled"]["ttfa_ms"]
+    xr = len(groups)
+    a1.bar(xr, ref["p50"] / 1000, color="white", edgecolor="#555555", hatch="//", width=0.6,
+           label="request-response reference (different semantics)")
+    a1.text(xr, ref["p50"] / 1000 + 0.08, f"P50 {ref['p50'] / 1000:.2f} s\n(n = {ref['n']})", ha="center", fontsize=9)
+    a1.set_xticks(range(len(groups) + 1), [g[0] for g in groups] + ["chat path\n1 request at a time"])
+    a1.set_ylabel("seconds")
+    a1.set_title("Full-duplex TTFA, end of utterance → first audio\n(stack = mean of each part; dots = turns)")
+    a1.set_ylim(0, 2.9)
+    a1.legend(loc="upper left", fontsize=8)
+    st = d["server_stages"]["pooled"]["speaking_units"]
+    order = ["perception", "thinker", "talker", "speech"]
+    vals = [st["stages"][s]["queue_plus_service_ms"]["p50"] for s in order]
+    colors = ["#56B4E9", "#009E73", "#CC79A7", "#D55E00"]
+    left = 0.0
+    for s, v, c in zip(order, vals, colors):
+        a2.barh(0, v, left=left, color=c, height=0.4, label=f"{s} {v:.0f} ms")
+        left += v
+    a2.set_yticks([])
+    a2.set_xlabel("milliseconds (median queue + service per speaking unit)")
+    a2.set_title(f"Inside one speaking unit (n = {st['units']}, unit time P50 {st['unit_time_ms']['p50']:.0f} ms)")
+    a2.legend(loc="upper center", ncol=2, fontsize=9)
+    a2.set_ylim(-0.5, 0.9)
+    caption(fig, "R1 (this round): one full-duplex session per run, 3 blocks × 300 s (phase A without request events for TTFA; phase B "
+                 "with events for stage times), one RTX A6000, stock SGLang-Omni 520b49ee (--variant session --enable-realtime), "
+                 "synthetic spoken questions. k = extra 1-s units the model listened before speaking. The chat-path bar answers the "
+                 "same questions with max_tokens 64 and one short sentence, measured from sending the whole request (no end-of-speech "
+                 "detection), so it is not a like-for-like speed comparison.")
+    return save(fig, out, "fig06_duplex_ttfa")
+
+
 FIGURES: dict[str, Callable[[Path], list[Path]]] = {"placement": fig_placement, "p0_admission": fig_p0_admission,
                                                     "p0_capacity": fig_p0_capacity, "c2w_shapes": fig_c2w_shapes,
-                                                    "c2w_kernels": fig_c2w_kernels}
+                                                    "c2w_kernels": fig_c2w_kernels, "duplex_ttfa": fig_duplex_ttfa}
 
 
 def main() -> int:
