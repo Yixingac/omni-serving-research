@@ -145,3 +145,16 @@ def test_sampler_gap_before_the_first_send_is_not_under_load(tmp_path):
     (exp / "raw" / "requests_open.jsonl").write_text("".join(json.dumps({"sent_ns": mono0 + int(k * 1e9)}) + "\n" for k in range(5, 12)))
     r = ps.analyze_run(exp)  # the 1 s -> 4 s gap is while the phase prepares, before its first send at 5 s
     assert r["sampler_gaps"] and r["sampler_gaps"][0]["under_load"] is False
+
+
+def test_stack_dumps_are_summarised_by_main_thread_and_non_idle_frames(tmp_path):
+    exp = _run(tmp_path, [T0 + 0.1 * i for i in range(50)], [_sample(T0 + i, 0.0) for i in range(6)])
+    (exp / "stacks").mkdir()
+    worker_idle = 'Thread 0x01 (most recent call first):\n  File "/x/queue.py", line 1 in get\n\n'
+    worker_busy = 'Thread 0x02 (most recent call first):\n  File "/x/code2wav.py", line 9 in decode_waveforms\n\n'
+    main = 'Current thread 0x03 (most recent call first):\n  File "/x/selectors.py", line 4 in select\n\n'
+    # dump 1 lists the main thread last, dump 2 first and without a busy worker
+    (exp / "stacks" / "stack_1.txt").write_text("registered pid=1 starttime=2\n" + worker_idle + worker_busy + main + main + worker_idle)
+    s = ps.analyze_run(exp)["stacks"]
+    assert s["process_dumps"] == 2 and s["dumps_with_non_idle_thread"] == 1
+    assert s["main_thread_top"] == {"selectors.py:select": 2} and s["non_idle_top"] == {"code2wav.py:decode_waveforms": 1}

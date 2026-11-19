@@ -138,6 +138,54 @@ def watcher_records(exp: Path, windows: dict[str, tuple[float, float]] | None = 
             "slow_stat_s": [r["stat_s"] for r in slow], "errors": sum(1 for r in recs if r.get("event") == "watcher_error")}
 
 
+FRAME = re.compile(r'File "(.+?)", line (\d+) in (\S+)')
+# innermost frames that mean "waiting for work" (event loop, queues, thread pools, pipes)
+IDLE_FRAMES = {"threading.py:wait", "queue.py:get", "selectors.py:select", "thread.py:_worker",
+               "threading.py:_wait_for_tstate_lock", "connection.py:_recv", "connection.py:wait", "socket.py:accept",
+               "subproc_pool.py:_recv_msg", "exp_trace.py:flush_gc_records"}
+
+
+def stack_summary(exp: Path) -> dict[str, Any] | None:
+    """What the server processes were doing at the watcher's SIGUSR2 dumps (P1 runtime with the stack hook). A
+    process's file holds one block per thread per dump with no separator between dumps, and faulthandler lists the
+    signalled ("Current", i.e. main) thread wherever it falls, so a new dump starts when a thread id repeats.
+    Reported: the main threads' innermost frames and every innermost frame that is not an idle wait."""
+    files = sorted((exp / "stacks").glob("stack_*.txt"))
+    if not files:
+        return None
+    main: dict[str, int] = {}
+    busy: dict[str, int] = {}
+    dumps = with_busy = 0
+    header = re.compile(r"^(Current thread|Thread) (0x[0-9a-f]+) \(most recent call first\):", re.M)
+    for f in files:
+        text = f.read_text(errors="ignore")
+        heads = list(header.finditer(text))
+        groups: list[list[tuple[bool, str]]] = []
+        seen: set[str] = set()
+        for k, h in enumerate(heads):
+            body = text[h.end():heads[k + 1].start() if k + 1 < len(heads) else len(text)]
+            m = FRAME.search(body)
+            key = f"{Path(m.group(1)).name}:{m.group(3)}" if m else "?"
+            if not groups or h.group(2) in seen:
+                groups.append([])
+                seen = set()
+            seen.add(h.group(2))
+            groups[-1].append((h.group(1) == "Current thread", key))
+        for g in groups:
+            dumps += 1
+            found = False
+            for is_main, key in g:
+                if is_main:
+                    main[key] = main.get(key, 0) + 1
+                if key not in IDLE_FRAMES and key != "?":
+                    busy[key] = busy.get(key, 0) + 1
+                    found = True
+            with_busy += found
+    top = lambda d: dict(sorted(d.items(), key=lambda kv: -kv[1])[:10])  # noqa: E731
+    return {"process_dumps": dumps, "dumps_with_non_idle_thread": with_busy, "main_thread_top": top(main),
+            "non_idle_top": top(busy)}
+
+
 def gaps_in(times: list[float], lo: float, hi: float, gap_s: float) -> list[tuple[float, float]]:
     inside = [t for t in times if lo <= t <= hi]
     return [(a, b) for a, b in zip(inside, inside[1:]) if b - a > gap_s]
@@ -223,6 +271,7 @@ def analyze_run(exp: Path, gap_s: float = 1.0, dense_s: float = 0.25) -> dict[st
             "log_median_spacing_s": spacing, "log_dense": dense,
             "log_gaps": log_gaps if dense else [], "log_gaps_sparse_log": [] if dense else log_gaps,
             "sampler_gaps": sampler_gaps, "watcher": watcher_records(exp, sends), "send_windows": len(sends),
+            "stacks": stack_summary(exp),
             "gc_gen2": {"count": len(gcs), "duration_ms_p50": statistics.median([c["duration_ms"] for c in gcs]) if gcs else None,
                         "duration_ms_max": max((c["duration_ms"] for c in gcs), default=None),
                         "by_stage": {st: sum(1 for c in gcs if stages.get(c["pid"]) == st) for st in sorted({stages.get(c["pid"]) or "unknown" for c in gcs})}
