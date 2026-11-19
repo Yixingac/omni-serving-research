@@ -34,5 +34,13 @@
  "ppv_r0_duplex_functional": {
   "included": true,
   "reason": "R0 functional validation, all five registered conditions evaluated"
+ },
+ "ppv_r3_screen_c1": {
+  "included": false,
+  "reason": "FAILED at the smoke phase: the ppv-kv research patch read Req.extend_input_len, which does not exist at that call site in SGLang 0.5.21, and crashed the thinker scheduler; no measurement (patch fixed before any re-run)"
+ },
+ "ppv_r3_screen_c4": {
+  "included": false,
+  "reason": "FAILED at the smoke phase: the ppv-kv research patch read Req.extend_input_len, which does not exist at that call site in SGLang 0.5.21, and crashed the thinker scheduler; no measurement (patch fixed before any re-run)"
  }
 }

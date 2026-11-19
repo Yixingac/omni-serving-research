@@ -45,6 +45,7 @@ def run_facts(run_dir: Path | None) -> dict[str, Any]:
         return {}
     man = read_json(run_dir / "manifest.json") or {}
     res = read_json(run_dir / "result.json") or {}
+    cfg = read_json(run_dir / "config.json") or {}
     env = man.get("environment") or {}
     models = env.get("models") or {}
     slurm = env.get("slurm") or {}
@@ -57,6 +58,8 @@ def run_facts(run_dir: Path | None) -> dict[str, Any]:
         "slurm_job": slurm.get("SLURM_JOB_ID"),
         "slurm_step": slurm.get("SLURM_STEP_ID"),
         "run_status": res.get("status") or man.get("status"),
+        # the sglang-omni commit is 520b49ee for every worktree; the research patch is identified by the runtime profile
+        "runtime_profile": cfg.get("runtime_profile"),
         "server_restarts": len(res.get("server_restarts") or []),
     }
 
@@ -94,8 +97,8 @@ def build(state: dict[str, Any], data_root: Path | None, inclusion: dict[str, An
 
 def to_markdown(rows: list[dict[str, Any]], extra: list[dict[str, Any]] | None = None) -> str:
     cols = ["experiment_id", "orchestrator_status", "run_status", "started", "ended", "gpus", "gpu_hours_allocated",
-            "slurm_step", "research_repo_commit", "sglang_omni_commit", "model_revision", "run_dir", "included",
-            "inclusion_reason"]
+            "slurm_step", "research_repo_commit", "sglang_omni_commit", "runtime_profile", "model_revision", "run_dir",
+            "included", "inclusion_reason"]
     lines = ["| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
     for r in rows + (extra or []):
         lines.append("| " + " | ".join("" if r.get(c) is None else str(r.get(c)) for c in cols) + " |")

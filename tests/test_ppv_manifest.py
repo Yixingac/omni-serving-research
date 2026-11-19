@@ -33,6 +33,7 @@ def test_build_reads_state_and_run_files_and_keeps_failed_attempts(tmp_path):
         "research_repo_commit": "bce117a0123456789", "research_repo_dirty": False, "sglang_omni_commit": "520b49ee69385d4a",
         "models": {"s0": {"path": "~/m", "revision": "fb09628e"}}, "slurm": {"SLURM_JOB_ID": "454290", "SLURM_STEP_ID": "131"}}}))
     (run / "result.json").write_text(json.dumps({"status": "ok", "server_restarts": [{"t": 1}]}))
+    (run / "config.json").write_text(json.dumps({"runtime_profile": "unicorn_instr"}))
     inc = {"ppv_p0_cap32_block1_a2": {"included": True, "reason": "registered arm A, block 1"}}
     rows = pm.build(_state(f"/nfs/someone/results/experiments/{run.name}"), root, inc)
     assert [r["experiment_id"] for r in rows] == ["ppv_p0_cap32_block1", "ppv_p0_cap32_block1_a2"]  # start order, ppv only
@@ -41,6 +42,7 @@ def test_build_reads_state_and_run_files_and_keeps_failed_attempts(tmp_path):
     assert failed["run_dir"] == "20261118_ppv_p0_cap32_block1_run01" and failed["included"] is None
     assert ok["gpu_hours_allocated"] == 4.0 and ok["slurm_step"] == "131" and ok["research_repo_commit"] == "bce117a012"
     assert ok["model_revision"] == "fb09628e" and ok["server_restarts"] == 1 and ok["included"] is True
+    assert ok["runtime_profile"] == "unicorn_instr"
     text = json.dumps(rows) + pm.to_markdown(rows)
     assert "/nfs/" not in text and "/somewhere/" not in text
     assert "Allocated GPU-hours, all attempts: 4.04" in pm.to_markdown(rows)
