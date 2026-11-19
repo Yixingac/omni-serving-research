@@ -34,7 +34,21 @@
 
 ## Slide 4 — GPU Placement and Stage Imbalance
 
-[filled after P0 blocks 2–3]
+- **Research claim.** With eight GPUs and three heterogeneous stages, how the GPUs are divided decides capacity and tail latency: 2+2+4 is best for W3b, and moving one more GPU to the vocoder (2+1+5) costs a quarter of the capacity because the single Talker becomes the bottleneck.
+- **Main figure.** `figures/fig01_gpu_placement.png` (experiment 9: closed-loop capacity and open-loop P95 per placement).
+- **Supporting evidence.** Experiment 9 (3 blocks): 2+2+4 23.77 req/s vs 2+6 22.12 (+7.5 %, CI +2.8..+12.1) vs 2+1+5 17.75 (−25 %); open loop at 23.5 req/s P95 3.74 vs 4.34 s. This round's reference runs reproduce 2+2+4 at 23.58 req/s and arm A reproduces 2+1+5 at 17.37 req/s.
+- **What I should explain.** Stages saturate at different loads, so the optimum is where the stage capacities balance (experiment 9's leave-one-placement-out capacity model); GPU utilization alone does not reveal the bottleneck (the 2+1+5 Talker GPU was 65 % busy).
+- **Likely questions.** "Is 2+2+4 universal?" — no: experiment 19 found 3+5 best for a text/speech mix. "Capacity counts the drain?" — yes, registered as in experiment 9; the busy-window throughput is 20–36 % higher but ranks placements the same way.
+- **Sources.** experiment 9 README §7; `results/p0_summary.json` (A and reference arms).
+
+## Slide 5 — The Talker Admission Bottleneck
+
+- **Research claim.** The 2+1+5 deficit was a software admission limit, not missing GPU capacity: raising one Talker setting from 32 to 64 running requests raises capacity by 31 % (3 of 3 blocks), and the Talker then runs at the new cap with its GPU half idle.
+- **Main figure.** `figures/fig02_talker_admission.png` (running vs queued at 256 in flight; decode step time vs batch size) and `figures/fig03_talker_cap_capacity.png` (capacity and open-loop goodput).
+- **Supporting evidence.** H0a supported (+30.4 / +29.8 / +31.9 %, W3L +30 %); H0c refuted (still −3.7 % vs 2+2+4; P95 8.2 s vs 4.9 s at 31 req/s); talker step 3.8 → 6.1 ms when the batch doubles (+23 % tokens/s); KV not limiting.
+- **What I should explain.** Why the registered prediction (+10–20 %) was too low (bigger batches amortize per-step overhead; queueing collapses once admission opens); why we cannot separate the admission effect from CUDA-graph coverage (the pinned version refuses a graph limit below the cap, so the control arm could not start); what the H0b label does and does not show (busy-polling CPU).
+- **Likely questions.** "Why not raise it to 128?" — not registered this round; the talker still binds at 64, so it is the obvious next point, together with KV checks. "Is this just a tuning knob?" — the point is methodological: a GPU-utilization or KV view would have blamed hardware; per-stage admission belongs in the placement model.
+- **Sources.** `final_experiment_results.md` P0; `results/p0_summary.json`; `preregistration.md` (P0 addendum, Erratum E-P0-G).
 
 ## Slide 5 — The Talker Admission Bottleneck
 

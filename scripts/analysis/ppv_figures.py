@@ -104,8 +104,9 @@ def fig_placement(out: Path) -> list[Path]:
 
 
 P0_SUMMARY = PV / "results/p0_summary.json"
-P0_ARMS = [("A", "A: cap 32 (default)", "#CC79A7", "s"), ("G", "G: cap 64, graphs ≤32", "#56B4E9", "v"),
-           ("B", "B: cap 64, graphs ≤64", "#0072B2", "D"), ("R", "Ref: 2+2+4, cap 32", "#E69F00", "o")]
+# Arm G (cap 64, graphs <= 32) could not start at the pin (Erratum E-P0-G), so it has no data and no position here.
+P0_ARMS = [("A", "A: cap 32 (default)", "#CC79A7", "s"), ("B", "B: cap 64, graphs ≤64", "#0072B2", "D"),
+           ("R", "Ref: 2+2+4, cap 32", "#E69F00", "o")]
 
 
 def _interval(values: list[float]) -> dict[str, Any]:
@@ -159,8 +160,9 @@ def fig_p0_admission(out: Path) -> list[Path]:
     a2.set_title("Talker decode step time vs batch size")
     a2.legend(loc="upper left", fontsize=9)
     n = {arm: sum(1 for r in runs if r["arm"] == arm) for arm, *_ in P0_ARMS}
-    caption(fig, "P0 (this round): 2+1+5 placement (1 talker GPU) with talker max_running_requests 32 (A), 64 with CUDA graphs "
-                 "up to 32 (G) or up to 64 (B); reference 2+2+4. Runs per arm: " + ", ".join(f"{k} {v}" for k, v in n.items())
+    caption(fig, "P0 (this round): 2+1+5 placement (1 talker GPU) with talker max_running_requests 32 (A) or 64 (B, which also "
+                 "captures CUDA graphs up to 64 — the pinned version refuses a graph limit below the cap, so arm G could not run); "
+                 "reference 2+2+4. Runs per arm: " + ", ".join(f"{k} {v}" for k, v in n.items())
             + ". Left: medians over SGLang decode-log lines in the closed-loop W3b 256 level (talker lines separated by tokens per "
               "running request > 200); points = blocks, bars = t 95 % CI. Right: median log throughput per batch size, "
               f"pooled over all talker lines of each arm's runs (≥ 20 lines per size). {COMMON}.")
@@ -177,8 +179,8 @@ def fig_p0_capacity(out: Path) -> list[Path]:
         for j, w in enumerate(("w3b", "w3l")):
             st = _interval([r["capacity"].get(w) for r in runs if r["arm"] == arm and r["capacity"].get(w) is not None])
             if st["n"]:
-                errbar(a1, j * 5 + i, st, color, marker, label=label if j == 0 else None)
-    a1.set_xticks([1.5, 6.5], ["W3b (256 in flight)", "W3L (128 in flight)"])
+                errbar(a1, j * 4 + i, st, color, marker, label=label if j == 0 else None)
+    a1.set_xticks([1, 5], ["W3b (256 in flight)", "W3L (128 in flight)"])
     a1.set_ylabel("completed requests / s")
     a1.set_title("Closed-loop capacity")
     a1.set_ylim(bottom=0)
@@ -204,8 +206,9 @@ def fig_p0_capacity(out: Path) -> list[Path]:
     a2.set_ylabel("goodput (requests / s meeting the SLO)")
     a2.set_title("Open-loop goodput: TTFT ≤ 1 s and e2e / audio s ≤ 0.5")
     a2.legend(loc="upper left", fontsize=9)
-    caption(fig, "P0 (this round), 3 blocks per arm (points = blocks, bars = t 95 % CI). Capacity = completed / (last completion − "
-                 "first send) at the top closed-loop level without request events (registered, as in Experiment 9). Right: mean "
+    caption(fig, "P0 (this round), 3 blocks per arm (points = blocks, bars = t 95 % CI); the reference ran W3b only (registered addendum). "
+                 "Capacity = completed / (last completion − first send) at the top closed-loop level without request events (registered, "
+                 "as in Experiment 9). Right: mean "
                  "over blocks; rings = at least one block not steady (in-flight slope > 5 % of the offered rate), so that "
                  f"rate's throughput is not a stable capacity. {COMMON}; /v1/chat/completions.")
     return save(fig, out, "fig03_talker_cap_capacity")

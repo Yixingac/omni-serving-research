@@ -193,3 +193,36 @@ Why the registered verdicts came out this way (analysis after the fact, rules un
 **Limitations.** Synthetic sessions; levels 2–8 have two blocks, not three; the one-GPU smoke (30 s) did not reach the memory growth that broke level 8, so the placement rule chose an arm that fails at its top level; first-reply warm-up and the client stall contaminate level 1; the first-limiting-stage rule cannot see out-of-memory failures; stage timing comes from server request events.
 
 **中文小结。** 一张 A6000、`max_sessions 8` 时，1、2、4 个会话的 1 秒单元都能按时处理（跑了的区组里错过率 ≤ 0.6%）；8 个会话时 46% 的单元超时或丢失，原因是显存：语音进程的状态涨到 13.6 GiB，远超它 0.15 的份额，会话因 CUDA OOM 失败。计算是逐渐变慢的（说话单元的处理从 353 ms 涨到 707 ms），三个 GPU 阶段各慢约 89 ms，不是某一个阶段先满。按登记规则，两个“容量”都是“低于最低档”，但原因是两个和负载无关的问题：服务启动后第一次回答特别慢（区组 2），以及客户端写 NFS 时卡住 1.34 秒（区组 1）——后者正是 P3 要找的那种停顿的第一条直接证据。另外，nvidia-smi 的利用率在这种每秒一次的周期负载下读数不可信，改看功耗。
+
+---
+
+## P0 — Is the Talker's admission cap what limits the 2+1+5 placement?
+
+**Research question.** In the 2+1+5 placement (thinker 2 GPUs, one talker GPU, code2wav 5 GPUs), the single talker was the bottleneck while its GPU was only ~65 % busy and its scheduler sat at 32 running requests with ~180 queued (实验 9). Does raising the talker's `max_running_requests` from 32 to 64 raise the service's capacity, and does 2+1+5 then catch up with 2+2+4?
+
+**Hypothesis (registered in `p0_p3_experiment_plan.md` P0 before any run; addendum and Erratum E-P0-G in `preregistration.md`).** H0a: B's W3b capacity ≥ +5 % over A in all 3 blocks and B's talker runs > 32 requests (median) at W3b 256 → supported; < +2 % in all blocks → refuted. H0c: B ≥ reference 2+2+4 in all blocks → supported; < in all → refuted (registered prediction: refuted). H0b classifies what limits B. Prediction (Estimated from the batch-size/step-time curve): talker throughput +10–20 %, 2+1+5 capacity 19.5–21.3 req/s, still below 2+2+4.
+
+**Setup.** Runs `ppv_p0_{cap32,cap64,ref_t2_k2_c4}_block{1,2,3}_a2` (22:35–02:49, 8 GPUs each, 9 runs; block order seeded with 20261119), instrumented runtime of 实验 9 (`unicorn_instr`), server restarted for every run. Arm A = 实验 9's 2+1+5 unchanged; arm B = only `stages.talker.engine.max_running_requests: 64`, which at the pinned version also captures CUDA graphs up to batch 64; reference = 2+2+4 unchanged (W3b only). Workloads W3b (closed loop 64/128/256 as separate phases + 256 with request events; open loop 15.5–31 req/s, 60 s each) and W3L (A and B only; closed 128, open 8–12 req/s). Arm G (cap 64, graphs ≤ 32) could not start: the pinned version refuses a graph limit below the cap (Erratum E-P0-G), so B vs A is the **joint** effect of the admission cap and graph coverage, not a single-variable admission effect. Four attempt-1 runs failed at start for a harness reason (F1) and are kept in the manifest.
+
+**Evidence** (`results/p0_summary.json`; `figures/fig02_talker_admission.png`, `figures/fig03_talker_cap_capacity.png`).
+
+| Arm | W3b capacity by block (req/s) | mean | W3L capacity by block | stable open-loop W3b rate by block |
+|---|---|---|---|---|
+| A cap 32 | 17.35 / 17.37 / 17.39 | 17.37 | 7.24 / 7.19 / 7.34 | 21.0 / 23.5 / 21.0 |
+| B cap 64 (+ graphs to 64) | 22.63 / 22.55 / 22.94 | 22.71 | 9.50 / 9.48 / 9.35 | ≥ 31.0 (top rate) in all blocks |
+| Reference 2+2+4 | 23.05 / 23.57 / 24.11 | 23.58 | not run | ≥ 31.0 (top rate) in all blocks |
+
+- **H0a: supported.** B vs A W3b capacity +30.4 / +29.8 / +31.9 % (mean +30.7 %, t 95 % CI +28.0..+33.4 %); B's talker ran 64 requests (median) at W3b 256 in every block. W3L: +31.1 / +31.7 / +27.3 % (mean +30.1 %).
+- **H0c: refuted** (as predicted). B vs reference −1.8 / −4.3 / −4.9 % (mean −3.7 %, CI −7.7..+0.3 %).
+- **H0b** (registered classes): "CPU/scheduling-limited" in all blocks — the talker remains the stage holding most requests (73–74 % of residence), its GPU is 53–58 % busy and its process uses ~100 % of a core. The CPU criterion cannot separate real work from a busy-polling scheduler loop (limitation M1); KV is not limiting (KV-trigger share 0 % over 3,017 high-load lines; token usage ≤ 0.13), so arm C was not run.
+- Talker scheduler at W3b 256: A runs 32 with 180–183 queued (talker queue P50 8.3–8.7 s); B runs 64 with 127–129 queued (queue P50 4.2–4.4 s); reference talkers run 15–16 with nothing queued, and code2wav becomes the stage holding most requests (60–62 % of residence, code2wav GPUs 86–89 % busy).
+- Talker decode step time (SGLang log, pooled): 3.79 ms at batch 32 and 6.13 ms at 64 for B, i.e. 8.5k → 10.4k tokens/s (+23 %); A's step at 32 is 4.09 ms.
+- Open loop W3b (throughput / P95 / goodput, mean of blocks): at 26 req/s A is unstable (20.5 req/s, P95 17 s, goodput 5.4) while B (25.0, 5.2 s, 25.0) and the reference (25.2, 4.0 s, 25.2) are stable; at 31 req/s B is still steady but at P95 8.1–8.3 s and goodput 16–19 req/s, whereas the reference holds P95 4.9 s and goodput 29.5.
+
+**Result.** Raising the talker's admission cap (with the graph coverage that comes with it at the pin) is worth +31 % capacity for 2+1+5 on both workloads — more than the +10–20 % we predicted — and brings it within 4 % of 2+2+4 in closed-loop capacity, but not to parity: near saturation its tail latency and goodput stay well behind (P95 8 s vs 5 s at 31 req/s). With the higher cap the talker immediately runs at the new limit with ~128 requests waiting while its GPU is half idle.
+
+**Interpretation.** The 2+1+5 deficit in 实验 9 was mostly a software admission limit, not a lack of GPU: one configuration value recovered most of the gap between placements. Larger talker batches amortize per-step overhead (step time grows from 3.8 to 6.1 ms when the batch doubles), and the talker is still admission-bound at 64, so the remaining gap to 2+2+4 is consistent with the cap still binding and with the single talker GPU's step time, not with KV memory. Because the pinned implementation ties the CUDA-graph limit to the cap, we cannot say how much of the +31 % comes from admitting more requests versus capturing graphs for larger batches. The capacity model therefore has to include per-stage admission limits, not only per-stage GPU throughput: a placement search that only balances GPU work would have rejected 2+1+5 for the wrong reason.
+
+**Limitations.** One node, synthetic W3b/W3L; joint change of cap and graph coverage (Erratum E-P0-G); the H0b CPU criterion is weak (M1); the reference ran W3b only; open-loop rates top out at 31 req/s, so the stable capacities of B and the reference are lower bounds; the registered capacity includes the final drain (as in 实验 9).
+
+**中文小结。** 只把 talker 的同时处理名额从 32 改成 64（固定版本会同时把 CUDA graph 录到 64），2+1+5 的容量在 W3b 和 W3L 上都提高约 31%（3 个区组 +30.4/+29.8/+31.9%），比事先预测的 +10–20% 还多，闭环容量离最好的 2+2+4 只差约 4%；但高负载下尾延迟和 goodput 仍明显落后（31 请求/秒时 P95 8 秒对 5 秒），按登记规则“追上 2+2+4”被反驳。名额放开后 talker 立刻又顶在 64、排队约 128 个，卡只忙一半——瓶颈仍是软件准入，而不是 GPU 或 KV（KV 触发条件 0%）。由于固定版本不允许 graph 上限低于名额，名额和 graph 覆盖的贡献分不开。
