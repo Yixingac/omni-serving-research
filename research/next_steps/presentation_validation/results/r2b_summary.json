@@ -1,0 +1,660 @@
+{
+ "generated_by": "scripts/analysis/ppv_r2_report.py --r2b",
+ "rules": "preregistration.md R2b (+ R2 items 9-16)",
+ "runs": {
+  "block1": "20261119_ppv_r2b_ms8_2gpu_block1_run01",
+  "block2": "20261119_ppv_r2b_ms8_2gpu_block2_run01",
+  "block3": "20261119_ppv_r2b_ms8_2gpu_block3_run01"
+ },
+ "run_status": {
+  "block1": "ok",
+  "block2": "ok",
+  "block3": "ok"
+ },
+ "excluded_runs": [],
+ "placement": "ms8_2gpu (R2b)",
+ "arms": {
+  "ms8_2gpu": {
+   "levels": [
+    {
+     "level": 4,
+     "blocks_ran": [
+      1,
+      2,
+      3
+     ],
+     "blocks_expected": 3,
+     "all_blocks_ran": true,
+     "skipped_in_blocks": {},
+     "no_failed_no_503_no_pacing": false,
+     "unit_miss_rate": 1.0,
+     "meets_serving_target": false,
+     "deadline_miss_all_turns": {
+      "0.5s": 1.0,
+      "1s": 1.0,
+      "2s": 1.0
+     },
+     "meets_deadline_target": {
+      "0.5s": false,
+      "1s": false,
+      "2s": false
+     },
+     "per_block": {
+      "1": {
+       "ran": true,
+       "sessions": 4,
+       "sessions_failed": 4,
+       "denials": 0,
+       "pacing_violations": 0,
+       "unit_miss_rate": 1.0,
+       "unit_lag_p50_ms": 24303.873157024384,
+       "ttfa_p50_ms": null,
+       "deadline_miss_all_turns": {
+        "0.5s": 1.0,
+        "1s": 1.0,
+        "2s": 1.0
+       },
+       "mean_open_sessions": 3.991021440909681,
+       "gpu": {
+        "0": {
+         "samples": 719,
+         "util_mean": 10.05702364394993,
+         "util_zero_share": 0.7343532684283728,
+         "power_mean_w": 157.97723226703755,
+         "mem_max_mib": 22503.0,
+         "util_suspect": true
+        },
+        "1": {
+         "samples": 719,
+         "util_mean": 90.83449235048678,
+         "util_zero_share": 0.048678720445062586,
+         "power_mean_w": 188.45883171070932,
+         "mem_max_mib": 42556.0,
+         "util_suspect": false
+        }
+       },
+       "cpu": {
+        "coordinator": {
+         "n": 144,
+         "p50": 3.8,
+         "p90": 4.8,
+         "p95": 4.8,
+         "p99": 5.7,
+         "mean": 3.5541666666666663,
+         "max": 5.7
+        },
+        "perception": {
+         "n": 144,
+         "p50": 3.8,
+         "p90": 5.7,
+         "p95": 5.7,
+         "p99": 8.112999999999994,
+         "mean": 3.197222222222222,
+         "max": 9.5
+        },
+        "speech": {
+         "n": 144,
+         "p50": 15.2,
+         "p90": 16.2,
+         "p95": 16.2,
+         "p99": 17.057,
+         "mean": 10.386805555555556,
+         "max": 17.1
+        },
+        "talker": {
+         "n": 144,
+         "p50": 14.3,
+         "p90": 18.1,
+         "p95": 19.0,
+         "p99": 19.956999999999997,
+         "mean": 11.303472222222222,
+         "max": 27.6
+        },
+        "thinker": {
+         "n": 144,
+         "p50": 169.15,
+         "p90": 212.57,
+         "p95": 218.97,
+         "p99": 223.05499999999998,
+         "mean": 160.51388888888889,
+         "max": 246.8
+        }
+       },
+       "servers_exited": null,
+       "oom_events": 0,
+       "oom_first": null,
+       "server_stage_timing": "available",
+       "speak_share": 0.96875,
+       "unit_lag_speaking_ms": {
+        "n": 372,
+        "p50": 25055.35475587845,
+        "p90": 46309.68588466643,
+        "p95": 48791.982659721376,
+        "p99": 51132.9065577507,
+        "mean": 25911.409342122333,
+        "max": 51787.87631225586
+       },
+       "unit_lag_listening_ms": {
+        "n": 12,
+        "p50": 2254.7532782554626,
+        "p90": 2720.7324644088744,
+        "p95": null,
+        "p99": null,
+        "mean": 2267.134307305018,
+        "max": 2900.9562339782715
+       }
+      },
+      "2": {
+       "ran": true,
+       "sessions": 4,
+       "sessions_failed": 4,
+       "denials": 0,
+       "pacing_violations": 31,
+       "unit_miss_rate": 1.0,
+       "unit_lag_p50_ms": 26166.35104227066,
+       "ttfa_p50_ms": null,
+       "deadline_miss_all_turns": {
+        "0.5s": 1.0,
+        "1s": 1.0,
+        "2s": 1.0
+       },
+       "mean_open_sessions": 3.9909727460317947,
+       "gpu": {
+        "0": {
+         "samples": 706,
+         "util_mean": 13.390934844192634,
+         "util_zero_share": 0.7280453257790368,
+         "power_mean_w": 157.32245042492917,
+         "mem_max_mib": 22723.0,
+         "util_suspect": true
+        },
+        "1": {
+         "samples": 706,
+         "util_mean": 91.28753541076487,
+         "util_zero_share": 0.053824362606232294,
+         "power_mean_w": 186.0586685552408,
+         "mem_max_mib": 42556.0,
+         "util_suspect": false
+        }
+       },
+       "cpu": {
+        "coordinator": {
+         "n": 144,
+         "p50": 3.8,
+         "p90": 4.8,
+         "p95": 4.8,
+         "p99": 5.7,
+         "mean": 3.646527777777778,
+         "max": 5.7
+        },
+        "perception": {
+         "n": 144,
+         "p50": 3.8,
+         "p90": 4.8,
+         "p95": 5.7,
+         "p99": 6.7,
+         "mean": 3.197222222222222,
+         "max": 8.6
+        },
+        "speech": {
+         "n": 144,
+         "p50": 15.149999999999999,
+         "p90": 16.2,
+         "p95": 16.2,
+         "p99": 16.755999999999997,
+         "mean": 10.404166666666667,
+         "max": 17.1
+        },
+        "talker": {
+         "n": 144,
+         "p50": 15.2,
+         "p90": 18.07,
+         "p95": 18.2,
+         "p99": 19.0,
+         "mean": 11.330555555555556,
+         "max": 33.6
+        },
+        "thinker": {
+         "n": 144,
+         "p50": 168.25,
+         "p90": 212.8,
+         "p95": 220.84,
+         "p99": 250.9949999999997,
+         "mean": 162.47777777777776,
+         "max": 328.4
+        }
+       },
+       "servers_exited": null,
+       "oom_events": 0,
+       "oom_first": null,
+       "server_stage_timing": "available",
+       "speak_share": 0.96875,
+       "unit_lag_speaking_ms": {
+        "n": 372,
+        "p50": 26937.280919075012,
+        "p90": 47658.35242414474,
+        "p95": 49955.18430123329,
+        "p99": 52150.247000694275,
+        "mean": 27265.998800059802,
+        "max": 52786.930970191956
+       },
+       "unit_lag_listening_ms": {
+        "n": 12,
+        "p50": 2412.3771810531616,
+        "p90": 2888.0618043899535,
+        "p95": null,
+        "p99": null,
+        "mean": 2426.8139703273773,
+        "max": 3085.923316001892
+       }
+      },
+      "3": {
+       "ran": true,
+       "sessions": 4,
+       "sessions_failed": 4,
+       "denials": 0,
+       "pacing_violations": 0,
+       "unit_miss_rate": 1.0,
+       "unit_lag_p50_ms": 26154.24834060669,
+       "ttfa_p50_ms": null,
+       "deadline_miss_all_turns": {
+        "0.5s": 1.0,
+        "1s": 1.0,
+        "2s": 1.0
+       },
+       "mean_open_sessions": 3.9903456055167172,
+       "gpu": {
+        "0": {
+         "samples": 713,
+         "util_mean": 13.301542776998598,
+         "util_zero_share": 0.7082748948106592,
+         "power_mean_w": 157.9036325385694,
+         "mem_max_mib": 23759.0,
+         "util_suspect": true
+        },
+        "1": {
+         "samples": 713,
+         "util_mean": 93.58064516129032,
+         "util_zero_share": 0.0364656381486676,
+         "power_mean_w": 187.2426227208976,
+         "mem_max_mib": 42556.0,
+         "util_suspect": false
+        }
+       },
+       "cpu": {
+        "coordinator": {
+         "n": 143,
+         "p50": 3.8,
+         "p90": 4.8,
+         "p95": 4.8,
+         "p99": 5.7,
+         "mean": 3.744055944055944,
+         "max": 19.9
+        },
+        "perception": {
+         "n": 143,
+         "p50": 3.8,
+         "p90": 5.7,
+         "p95": 5.7,
+         "p99": 8.180000000000012,
+         "mean": 3.4181818181818184,
+         "max": 9.6
+        },
+        "speech": {
+         "n": 143,
+         "p50": 15.3,
+         "p90": 16.2,
+         "p95": 16.3,
+         "p99": 17.1,
+         "mean": 10.54055944055944,
+         "max": 17.2
+        },
+        "talker": {
+         "n": 143,
+         "p50": 15.3,
+         "p90": 17.2,
+         "p95": 18.1,
+         "p99": 20.52200000000001,
+         "mean": 11.35034965034965,
+         "max": 32.4
+        },
+        "thinker": {
+         "n": 143,
+         "p50": 174.5,
+         "p90": 211.42,
+         "p95": 219.63,
+         "p99": 256.2720000000003,
+         "mean": 162.96153846153845,
+         "max": 300.3
+        }
+       },
+       "servers_exited": null,
+       "oom_events": 0,
+       "oom_first": null,
+       "server_stage_timing": "available",
+       "speak_share": 0.96875,
+       "unit_lag_speaking_ms": {
+        "n": 372,
+        "p50": 26926.116792678833,
+        "p90": 46797.735206604,
+        "p95": 49262.01233997345,
+        "p99": 51606.705887355805,
+        "mean": 26952.18874671126,
+        "max": 52288.450921058655
+       },
+       "unit_lag_listening_ms": {
+        "n": 12,
+        "p50": 2235.871289730072,
+        "p90": 2789.861052799225,
+        "p95": null,
+        "p99": null,
+        "mean": 2254.819422483444,
+        "max": 2904.681646347046
+       }
+      }
+     },
+     "block_p50": {
+      "ttfa_ms": {
+       "n": 0,
+       "mean": null,
+       "lo": null,
+       "hi": null,
+       "values": []
+      },
+      "unit_lag_ms": {
+       "n": 3,
+       "mean": 25541.49084663391,
+       "lo": 22878.713948473727,
+       "hi": 28204.267744794095,
+       "values": [
+        24303.873157024384,
+        26166.35104227066,
+        26154.24834060669
+       ]
+      }
+     },
+     "pooled": {
+      "sessions": 12,
+      "sessions_failed": 12,
+      "errors": 13,
+      "fatal_errors": 12,
+      "units_planned": 2160,
+      "units_missed": 2160,
+      "turns": 84,
+      "answered": 0,
+      "no_response": 84,
+      "replies_with_audio": 12,
+      "replies_with_stall": {
+       "0ms": 12,
+       "80ms": 12,
+       "250ms": 12
+      },
+      "audio_s_total": 1116.0,
+      "decisions": {
+       "speak": 1116,
+       "text_only": 0,
+       "listen": 36
+      },
+      "pacing_violations": 31,
+      "ttfa_ms": {
+       "n": 0,
+       "p50": null,
+       "p90": null,
+       "p95": null,
+       "p99": null,
+       "mean": null,
+       "max": null
+      },
+      "unit_lag_ms": {
+       "n": 1152,
+       "p50": 25606.98816728592,
+       "p90": 46614.66768350601,
+       "p95": 49360.65340595246,
+       "p99": 51648.01029778481,
+       "mean": 25947.565325581367,
+       "max": 52786.930970191956
+      },
+      "first_audio_latency_ms": {
+       "n": 12,
+       "p50": 2875.709939479828,
+       "p90": 3319.02718372345,
+       "p95": null,
+       "p99": null,
+       "mean": 2819.1966371536255,
+       "max": 3393.2944412231445
+      },
+      "delta_gap_ms": {
+       "n": 1104,
+       "p50": 1532.6663546562195,
+       "p90": 1583.8941638946533,
+       "p95": 1592.4746136665344,
+       "p99": 1603.0841464805603,
+       "mean": 1533.9613851844401,
+       "max": 1744.3425788879395
+      },
+      "denials": 0,
+      "mean_open_sessions": [
+       3.991021440909681,
+       3.9909727460317947,
+       3.9903456055167172
+      ],
+      "oom_events": 0
+     },
+     "descriptive": {
+      "speak_share": 0.96875,
+      "unit_lag_speaking_ms": {
+       "n": 1116,
+       "p50": 26295.891319274902,
+       "p90": 46874.39242267609,
+       "p95": 49413.332376003265,
+       "p99": 51655.05962338448,
+       "mean": 26709.86562963113,
+       "max": 52786.930970191956
+      },
+      "unit_lag_listening_ms": {
+       "n": 36,
+       "p50": 2289.6444911956787,
+       "p90": 2848.391942024231,
+       "p95": 2901.887587070465,
+       "p99": null,
+       "mean": 2316.255900038613,
+       "max": 3085.923316001892
+      },
+      "ttfa_parts": {
+       "answered": 0,
+       "early_start": 0,
+       "k_counts": {},
+       "a_wait_unit_end_ms": {
+        "n": 0,
+        "p50": null,
+        "p90": null,
+        "p95": null,
+        "p99": null,
+        "mean": null,
+        "max": null
+       },
+       "b_listen_ms": {
+        "n": 0,
+        "p50": null,
+        "p90": null,
+        "p95": null,
+        "p99": null,
+        "mean": null,
+        "max": null
+       },
+       "c_service_ms": {
+        "n": 0,
+        "p50": null,
+        "p90": null,
+        "p95": null,
+        "p99": null,
+        "mean": null,
+        "max": null
+       }
+      }
+     }
+    },
+    {
+     "level": 8,
+     "blocks_ran": [],
+     "blocks_expected": 3,
+     "all_blocks_ran": false,
+     "skipped_in_blocks": {
+      "1": "earlier phase duplex_n4 failed (escalation stops)",
+      "2": "earlier phase duplex_n4 failed (escalation stops)",
+      "3": "earlier phase duplex_n4 failed (escalation stops)"
+     },
+     "no_failed_no_503_no_pacing": true,
+     "unit_miss_rate": null,
+     "meets_serving_target": false,
+     "deadline_miss_all_turns": {
+      "0.5s": null,
+      "1s": null,
+      "2s": null
+     },
+     "meets_deadline_target": {
+      "0.5s": false,
+      "1s": false,
+      "2s": false
+     },
+     "per_block": {
+      "1": {
+       "ran": false,
+       "skipped": true,
+       "reason": "earlier phase duplex_n4 failed (escalation stops)"
+      },
+      "2": {
+       "ran": false,
+       "skipped": true,
+       "reason": "earlier phase duplex_n4 failed (escalation stops)"
+      },
+      "3": {
+       "ran": false,
+       "skipped": true,
+       "reason": "earlier phase duplex_n4 failed (escalation stops)"
+      }
+     },
+     "block_p50": {
+      "ttfa_ms": {
+       "n": 0,
+       "mean": null,
+       "lo": null,
+       "hi": null,
+       "values": []
+      },
+      "unit_lag_ms": {
+       "n": 0,
+       "mean": null,
+       "lo": null,
+       "hi": null,
+       "values": []
+      }
+     }
+    }
+   ],
+   "serving_capacity": {
+    "capacity": null,
+    "bounded": true,
+    "levels_meeting": [],
+    "statement": "below the lowest level"
+   },
+   "deadline_capacity": {
+    "0.5s": {
+     "capacity": null,
+     "bounded": true,
+     "levels_meeting": [],
+     "statement": "below the lowest level"
+    },
+    "1s": {
+     "capacity": null,
+     "bounded": true,
+     "levels_meeting": [],
+     "statement": "below the lowest level"
+    },
+    "2s": {
+     "capacity": null,
+     "bounded": true,
+     "levels_meeting": [],
+     "statement": "below the lowest level"
+    }
+   },
+   "stop_rule_skips": {
+    "8": {
+     "1": "earlier phase duplex_n4 failed (escalation stops)",
+     "2": "earlier phase duplex_n4 failed (escalation stops)",
+     "3": "earlier phase duplex_n4 failed (escalation stops)"
+    }
+   },
+   "first_limiting_stage": {
+    "verdict": null,
+    "reason": "fewer than two levels ran"
+   },
+   "model_behaviour_at_lowest_level": {
+    "level": 4,
+    "0.5s": {
+     "turns": 84,
+     "missed": 84,
+     "model_driven": 84,
+     "share": 1.0,
+     "statement": "主要是模型的轮次决策，不是服务容量"
+    },
+    "1s": {
+     "turns": 84,
+     "missed": 84,
+     "model_driven": 84,
+     "share": 1.0,
+     "statement": "主要是模型的轮次决策，不是服务容量"
+    },
+    "2s": {
+     "turns": 84,
+     "missed": 84,
+     "model_driven": 84,
+     "share": 1.0,
+     "statement": "主要是模型的轮次决策，不是服务容量"
+    }
+   },
+   "first_reply_after_start": {
+    "1": {
+     "first_answer_ttfa_ms": null,
+     "later_answers_ttfa_p50_ms": null,
+     "first_answer_parts": null
+    },
+    "2": {
+     "first_answer_ttfa_ms": null,
+     "later_answers_ttfa_p50_ms": null,
+     "first_answer_parts": null
+    },
+    "3": {
+     "first_answer_ttfa_ms": null,
+     "later_answers_ttfa_p50_ms": null,
+     "first_answer_parts": null
+    }
+   },
+   "server_args": [
+    "--variant",
+    "session",
+    "--enable-realtime",
+    "--max_sessions",
+    "8",
+    "--thinker.gpu",
+    "1",
+    "--thinker.gpu_memory_fraction",
+    "0.85"
+   ]
+  }
+ },
+ "verdict_h_r2b": {
+  "verdict": "反驳",
+  "level": 8,
+  "meets_serving_target": false,
+  "unit_miss_rate": null,
+  "oom_events_by_block": {},
+  "blocks_ran": [],
+  "skipped_in_blocks": {
+   "1": "earlier phase duplex_n4 failed (escalation stops)",
+   "2": "earlier phase duplex_n4 failed (escalation stops)",
+   "3": "earlier phase duplex_n4 failed (escalation stops)"
+  },
+  "missing_blocks": []
+ }
+}

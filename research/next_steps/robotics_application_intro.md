@@ -399,31 +399,36 @@ Every figure listed above already exists in the repository; none needs to be red
 
 ## 9. Spoken Introduction
 
-### A. 90-second introduction
+### A. 90-second introduction (updated 2026-11-19 with this round's results)
 
-> I'm studying how to serve a real-time robot assistant — a robot that watches through a camera, listens through a microphone, sometimes calls tools, and answers by speaking. The model we use, MiniCPM-o 4.5, is not one network but a pipeline: a language model called the Thinker writes the answer, a smaller Talker turns it into speech codes, and a vocoder called Code2Wav turns those codes into audio. We serve it with SGLang-Omni on eight RTX A6000s.
+> I study how to serve a real-time robot assistant: a robot that watches through a camera, listens, sometimes calls tools, and answers by speaking. The model we use, MiniCPM-o 4.5, is a pipeline of three different networks: a Thinker language model writes the answer, a small Talker turns it into speech codes, and a vocoder, Code2Wav, turns the codes into audio. We serve it with SGLang-Omni on eight RTX A6000s, and every comparison is registered before it runs and repeated in paired blocks.
 >
-> In controlled, pre-registered experiments we found three things. First, the stages saturate at very different loads, so how you divide the GPUs matters more than how many you have: the best split we tested is two GPUs for the Thinker, two for the Talker, and four for the vocoder, and moving one more GPU to the vocoder makes things 25% worse because the single Talker hits a software cap of 32 concurrent requests. Second, at high load the vocoder queue dominates latency, and first-in-first-out batching wastes up to 28% of its compute on padding. Third, on this serving path the robot cannot speak until the whole pipeline finishes, so time to first audio is about two seconds even when the system is idle.
+> Three results. First, the bottleneck is often a software limit between stages, not a GPU: one Talker setting, how many requests it admits at once, cost about 30 % of the service's capacity while the Talker's GPU sat half idle. Second, under load the vocoder decides speech latency, but its batching policy only matters past saturation: there, grouping requests by length keeps goodput near the offered load where first-come batching collapses, and the "maximum wait" fix we registered helped nobody. A compiler change, packed variable-length attention in the vocoder, cuts its GPU time by up to 42 % in isolation, but in the precision the code uses it failed our audio-quality gate. Third, in full-duplex conversation one A6000 keeps four sessions real-time, but the first spoken answer takes 1.4 seconds mostly because of the model's turn-taking, not compute; camera frames saturate the GPU's image encoder long before CPU preprocessing matters; and robot sessions lose KV-cache reuse to request routing across replicas, not to eviction.
 >
-> My next step is to study scheduling and compiler-level optimizations on that interaction-critical path, including the full-duplex mode we have not measured yet.
+> Next, I want to treat stage admission, turn-taking and precision-safe compilation as one serving problem for interactive robots.
 
-### B. 3–5 minute technical introduction
+(≈ 240 words; ≈ 90–100 s at a normal pace.)
 
-> The application I care about is a voice-interactive robot assistant. Unlike a chatbot, it has continuous inputs — video frames and audio — and its output is speech, so the latency that matters is time to first audio, not time to first token. It also runs in sessions: the user asks follow-ups, refers to objects in view, the robot sometimes calls tools, and the user may interrupt.
+
+### B. 3–5 minute technical introduction (updated 2026-11-19)
+
+> The application I care about is a voice-interactive robot assistant. It has continuous inputs — camera frames and speech — and its output is speech, so the latency that matters is time to first audio, not time to first token. It runs in sessions: the user asks follow-ups about what the robot sees, the robot sometimes plans, calls a tool and then answers, and the user may interrupt.
 >
-> We use MiniCPM-o 4.5 because it is an open omni model that SGLang-Omni serves both in a request–response mode and in a native full-duplex mode, and it fits on a 48-gigabyte card, which lets us explore placements on eight A6000s. Inside, it is three heterogeneous models. The Thinker is an 8-billion-parameter transformer; its decode step reads all weights and runs at about 85% of memory bandwidth. The Talker is a 0.2-billion-parameter autoregressive model whose decode step is about 180 tiny kernels — it is launch-bound. Code2Wav is a flow-matching vocoder: a 16-block DiT solved with 10 Euler steps under classifier-free guidance, followed by a HiFT network. It is compute-bound and costs about 0.2 seconds of GPU time per request.
+> We serve MiniCPM-o 4.5 with SGLang-Omni on one node with eight RTX A6000s. The model is three networks with very different costs: an 8-billion-parameter Thinker that is memory-bandwidth-bound, a small Talker whose decode step is about 180 tiny kernels, and a flow-matching vocoder, Code2Wav, that costs about 0.2 seconds of GPU time per request. SGLang-Omni runs each stage as its own process, so we can choose how many GPUs each stage gets. Every experiment in this talk was registered before it ran, repeated in three paired blocks, and is reported even when it failed its gate.
 >
-> SGLang-Omni runs each stage as its own process and lets us place stages on GPUs. Our experiments are pre-registered with paired blocks, and we separate closed-loop capacity from open-loop stable throughput.
+> First, stage admission. With eight GPUs, giving the vocoder five GPUs and the Talker one (2+1+5) was 25 % worse than 2+2+4, even though the Talker GPU was only about 65 % busy. Its scheduler sat at exactly 32 running requests with about 180 queued. Raising that one software limit to 64 raised the service's capacity by 31 % in all three blocks, and the Talker GPU stayed half idle. A GPU-utilization view would have blamed hardware.
 >
-> Three observations shape the research questions. First, stage imbalance. With eight GPUs, the best split we tested was 2+2+4, which beat the default 2+6 by 7.5% in capacity and lowered P95 latency by about 14% at the highest stable rate. But 2+1+5 was 25% worse. The single Talker GPU was only 65% busy; its scheduler logs show it pinned at 32 running requests with about 180 waiting. So the bottleneck was a software admission cap, not compute — something GPU utilization would never reveal.
+> Second, the vocoder under overload. In the full 2+2+4 service, grouping vocoder requests by length changes nothing below saturation, but past saturation it keeps goodput near the offered load where first-come batching collapses — for long answers 14 against 5 requests per second. The fix we registered for starvation, a maximum wait, protected nobody, because length-aware batching already anchors each batch on the oldest request; under overload it simply turned batches back into arrival order.
 >
-> Second, the vocoder. At concurrency 256, a request spends over five seconds in Code2Wav, 42% of it queueing. When short and long replies are batched first-in-first-out, 28% of the flow computation is padding; batching by length increases vocoder throughput by 30% — but only when the vocoder is saturated, and it makes some short requests wait longer. A kernel census shows the biggest single kernel is a memory-efficient attention kernel chosen because the model passes a padding mask, at an estimated occupancy of 33%, and CUDA graphs cover almost none of the batched work.
+> Third, compiler work has to pass a quality gate. Packing the vocoder's variable-length attention removes a masked attention kernel and its mask preparation and cuts vocoder GPU time by 13 to 42 % on real batch shapes. But the pinned code runs that path in BF16, and the audio-quality gate failed; the same packing in FP16 kept quality. So we report a microbenchmark result, not an end-to-end gain. HiFT's folding, channels-last and FP16 gave nothing, because that network is dominated by per-call overhead.
 >
-> Third, local wins are not end-to-end wins. Making the Thinker launch one step ahead removed its idle gaps entirely and made tokens about 9% faster, but speech latency improved only 2 to 5%, within noise. A follow-up that copied hidden states asynchronously failed our pre-registered correctness check, so we never benchmarked it.
+> Fourth, the interactive path. On the native full-duplex path, one A6000 keeps one-second audio units real-time for up to four sessions, but the first spoken answer arrives 1.36 seconds after the user stops — of which only about 0.35 seconds is computation; the rest is the unit structure and the model deciding to listen one more unit. Interrupted answers keep playing for about five seconds. For camera input, the GPU's image encoder, not CPU preprocessing, limits how many frames per second a replica can answer.
 >
-> And on the measured path, speech is serial: the robot cannot start speaking until all three stages finish, so time to first audio is about two seconds even at low load.
+> Finally, agent sessions. We looked for KV-cache pressure with up to 128 robot sessions and found none from eviction — at most 3 % of prefill was lost to it. What does cost reuse is request-level routing across two Thinker replicas: about a quarter of all prefill recomputes a session's history on the other replica, and when the answer that follows a plan lands there, its first token is two to three times later.
 >
-> This leads to three questions. How should capacity and admission be divided across stages as the mix of spoken and silent steps changes? What limits time to first audio and barge-in latency in the full-duplex mode, which we have not measured yet? And which compiler and runtime optimizations shorten the vocoder's critical path — for example, specializing the flow model's attention for variable-length batches and compiling the vocoder at lower precision — while surviving end-to-end validation? The next experiments are small: a one-parameter test of the Talker cap, a duplex functional validation, a working-set measurement for robot-like sessions, and a vocoder microbenchmark.
+> These results define three next experiments: FP16 packed vocoder attention end-to-end with the quality gate, session-affinity routing for agent turns, and a turn-taking change on the duplex path.
+
+(≈ 650 words; ≈ 4.5 min.)
 
 ---
 
@@ -444,23 +449,34 @@ Every figure listed above already exists in the repository; none needs to be red
 | Can you measure duplex TTFA today? | Yes, since 2026-11-19 (R0–R2, one A6000, synthetic speech): TTFA 1.36 s at the median with one session (0.86 s when the model does not wait an extra unit); 1-s units stay real-time up to 4 sessions. *(Answer on 2026-11-18 was: not yet.)* |
 | Why does the robot need 1.4 s to answer if a unit takes 0.35 s to process? *(added 2026-11-19)* | Because speech is cut into 1-s units: on average ~0.3 s passes before the unit holding the end of the question is complete, and in 54 % of turns the model listens one more unit before speaking. Compute is ~0.35 s. The lever is the turn-taking policy and the unit size, not kernels. |
 | Can the user interrupt the robot? *(added 2026-11-19)* | Not promptly at the pinned version: there is no `response.cancel`, and an interrupted reply kept playing 5.1 s at the median. Upstream added a cancel path later; it was not tested here. |
-| What limits the number of concurrent sessions per GPU? *(added 2026-11-19)* | Memory, first: at 8 sessions on one A6000 the speech stage's state grew to 13.6 GiB against its 15 % share; both blocks logged CUDA OOM allocator failures and in one of them 7 of 8 sessions failed. Compute degraded gradually and evenly across stages. A two-GPU placement met its smoke rule, but every unit in that smoke was late; it is queued as R2b. |
+| What limits the number of concurrent sessions per GPU? *(added 2026-11-19)* | Memory, first: at 8 sessions on one A6000 the speech stage's state grew to 13.6 GiB against its 15 % share; both blocks logged CUDA OOM allocator failures and in one of them 7 of 8 sessions failed. Compute degraded gradually and evenly across stages. The registered two-GPU placement (thinker on its own GPU, R2b) was worse: even 4 sessions missed every unit in all three blocks. |
+| Does length-aware vocoder batching help the whole service? *(added 2026-11-19, P1)* | Only past saturation. At 0.9X and 1.0X of capacity all five policies give the same goodput; at 1.1X length-aware batching (Length8) kept goodput near the offered load where FIFO16 collapsed (W3L 13.9 / 15.0 / 14.3 vs 2.2 / 8.2 / 4.3 req/s), but it also halves the batch cap, so order and cap are not separated. The registered "maximum wait" helped nobody: Length8 already anchors each batch on the oldest request. |
+| Do robot sessions need agent-aware KV-cache management? *(added 2026-11-19, R4)* | Not for eviction: up to 128 sessions, reuse lost to eviction stayed ≤ 3 % of prefill tokens. Reuse is lost to request-level routing across the two Thinker replicas (23–33 % of prefill at every level), and at 8–16 sessions that slows the routed requests' first token by ≥ 1.2×; the answer after a plan is hit hardest (1.7–3.4×). So the next step is session-affinity routing, not a new eviction policy. |
+| What limits continuous camera input? *(updated 2026-11-19, R3)* | The GPU: each frame needs the image encoder and a prefill on the replica's GPU, so one A6000 answers about 7–8 single frames or 9–11 two-second clips per second whatever the offered rate. CPU preprocessing never queued, and four preprocessing workers instead of one improved none of the saturated cells in any of three blocks. |
+| Did you see the stalls from experiment 9 again? *(added 2026-11-19, P3)* | Once, under load: a 1.3-s full-service stall in P1 coincided with a node-wide I/O stall, a server process in uninterruptible I/O sleep and a 1.1-s stat on the shared NFS. It points at blocking I/O on the shared file system, but one event is not proof; the NFS-vs-local-disk control is registered (P3). |
+| Is the asynchronous hidden-state copy correct now? *(added 2026-11-19, P2)* | Under a verify mode that keeps a reference copy of every row, yes: 885 requests bit-exact, 0 mismatches. Experiment 11's original failure stands (different timing); the speed runs follow after this talk. |
 | Did compiler work help? *(added 2026-11-19)* | In microbenchmarks only, and only on batched shapes: packed variable-length flow attention cut vocoder GPU time by 13–42 %, but the pinned implementation runs it in BF16 and fails the audio-quality gate (FP16 passes, exploratory). HiFT folding, channels-last and FP16 gave nothing. No end-to-end compiler gain is claimed. |
 | Why not report GPU utilization for the duplex runs? *(added 2026-11-19)* | nvidia-smi read 0 % for most samples while the card drew 118–219 W, most likely because the 1 Hz unit cadence aliases with its sampling (not verified). We report power and server stage timing instead. |
 
 ---
 
-## 11. 中文研究说明（准备报告用）
+## 11. 中文研究说明（准备报告用；2026-11-19 按报告前验证的结果重写）
 
-**一句话**：我们研究的是“会看、会听、会调用工具、用语音回答的机器人助手”背后的服务系统；用 MiniCPM-o 4.5 + SGLang-Omni 在 8 张 A6000 上做了 19 个编号实验里的大部分，发现决定语音体验的是阶段之间的分工和声码器（Code2Wav）的排队，而不是大模型本身。
+**一句话**：我们研究“会看、会听、会调用工具、用语音回答的机器人助手”背后的服务系统。用 MiniCPM-o 4.5 + SGLang-Omni（固定提交 `520b49ee`）在一台 8 张 A6000 的机器上做事先登记、按区组配对的实验。结论是：决定体验的是阶段之间的配合——准入上限、过载时声码器怎么组批、全双工的轮次决策、会话的请求落在哪个副本——而不是某一个 kernel。
 
-**报告时最重要的三点**：
-1. **分工比卡数重要**：2+2+4 最好；2+1+5 反而差 25%，因为唯一的 talker 被“最多同时 32 个请求”的软件上限卡住，卡只忙 65%。本轮从实验 9 的调度日志确认：80–83% 的时间正好 32 个在跑、约 180 个在排队。但“改成 64 就能变快”还只是假设（P0 要验证）。
-2. **声码器是语音的瓶颈**：高负载时 code2wav 里 42% 的时间在排队；长短混合时 28% 的计算浪费在补齐上；按长度组批在声码器饱和时 +30%，没饱和时没有效果。kernel 普查显示最大的单个 kernel 是带 padding mask 的注意力（19%）。
-3. **局部优化不等于端到端优化**：thinker 提前发射把空档消掉、每 token 快 9%，语音端到端只快 2–5%（区间含 0）；异步拷贝没通过正确性检查。
+**报告时最重要的五点（都是实测，括号里是条件）**：
+1. **准入上限，不是 GPU，卡住了 2+1+5**：talker 同时最多 32 个请求，改成 64 以后容量 +31%（3 个区组 +30.4/+29.8/+31.9%），talker 的 GPU 仍然只忙一半左右；但仍比 2+2+4 低 3.7%（P0）。
+2. **声码器的组批策略只在过载时有影响**：0.9X、1.0X 时 5 种组批 goodput 一样；1.1X 过载时，按长度组批（Length8）的 goodput 保持在提供负载附近（W3L 13.9/15.0/14.3 对 FIFO16 2.2/8.2/4.3 请求/秒），而登记的“最长等待”修补没有帮到任何人，过载时反而把收益吐回去（P1；Length8 同时改了顺序和批上限，分不开）。
+3. **编译器优化要过音质门槛**：flow 的打包变长注意力在批处理形状上把声码器 GPU 时间减少 13–42%（微基准），但固定版本用 BF16 跑这条路径，音质没过门槛；FP16 能保住音质（探索性）。HiFT 的折叠、channels-last、FP16 都没有收益（C1、C2）。
+4. **全双工的首个语音回答主要被轮次决策决定**：TTFA 中位数 1.36 秒，其中计算只有约 0.35 秒；一张卡 4 个会话以内单元都按时，8 个会话先出问题的是显存；打断后回答还要继续约 5 秒（R0–R2）。
+5. **机器人会话丢掉 KV 复用是因为路由，不是因为驱逐**：两个 thinker 副本、按请求分发时，约一半请求落到另一个副本，每一档都有 23–33% 的 prefill 是在重算会话历史；驱逐造成的损失最多 3%（R4，到 128 个会话）。最疼的是“计划→回答”这一步：回答落到另一个副本时首个 token 慢 1.7–3.4 倍。
 
-**必须讲清楚的边界**：没有真实机器人；所有数据来自 `/v1/chat/completions` 的请求-响应路径；全双工 `/v1/realtime` 还没跑过，上游的全双工数字是 H200 上的，不能当成我们的结果；Agent 负载是合成的短会话。
+**必须讲清楚的边界**：没有真实机器人、真实摄像头和麦克风，输入全是合成的；一台机器、一个模型；只有 3 个区组，区间宽；有几处登记的设计或分析在执行中出了问题，都记了勘误或偏离（E-C1、E-P0-G、E-P1-X、E-R2b、E-R4-REF，D1–D3），原始计划保留。
 
-**三个研究问题**：RQ1 阶段感知的放置和准入；RQ2 实时交互的关键路径（首段音频、打断延迟）；RQ3 关键路径上的编译器/运行时优化（flow 的变长注意力和打包 graph、HiFT 的精度和布局）。
+**补充（R2b、P2、P3）**：把 thinker 单独放到第二张卡（R2b）反而更糟，4 个会话就全部超时；实验 11 的异步拷贝在检查模式下 885 个请求逐位正确（P2 门槛通过，速度在报告后测）；约 6.5 小时里出现 1 次 1.3 秒的全服务停顿，和共享文件系统的 I/O 卡顿同时发生（P3，因果未定）。
 
-**被问到“新在哪里”时**：不要说“前人没做过”，要说“在我们查到的文献里，多阶段 omni 流水线 + 带工具等待和语音最终步的会话 + 工作站 GPU 这个组合没有测量”，并说明这还需要和导师一起确认。
+**负面结果要主动讲**：P1 的三个假设都是“不确定”，最长等待是负面结果；C1 的登记候选没过音质门槛；C2 没有收益；R3 预测的“CPU 预处理是瓶颈”不成立（3 个区组的确认也一样）；R2 的登记容量判定是“低于最低档”（原因是首个回答预热和一次客户端 I/O 卡顿）。
+
+**三个研究问题**（编号沿用本文 §5）：RQ1 阶段感知的放置和准入；RQ2 实时交互的关键路径（首段音频、打断）；RQ3 关键路径上的编译器/运行时优化。任务书的综合分析（`presentation_validation/final_experiment_results.md` 最后一节）按“系统瓶颈 / 编译器与运行时 / 实时机器人”的顺序写，对应本文的 RQ1 / RQ3 / RQ2。
+
+**被问到“新在哪里”时**：不要说“前人没做过”，要说“在我们查到的文献里，多阶段 omni 流水线 + 带工具等待和语音最终步的会话 + 工作站 GPU 这个组合没有被测量过”，并说明这还需要和导师一起确认。

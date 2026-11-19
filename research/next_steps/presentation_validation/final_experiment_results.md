@@ -341,3 +341,149 @@ Why the registered verdicts came out this way (analysis after the fact, rules un
 **Limitations.** One node; synthetic W3b/W3L/MIX; open loop at three rates only, and “1.1X” was not the same load in every block (block 2_a2's draw was lighter); unsteady cells are window-dependent, so their goodput describes these 75–90 s, not a capacity; Length8 and FIFO16 differ in order and cap; W3b never reached saturation, so H1c covers the unsaturated regime only; X came from one pre-run (E-P1-X); block 1 had stack dumps in its drains, 2_a2 and 3 none (D3); the interaction with packed flow was not run because C1 failed its quality gate (NOT APPLICABLE).
 
 **中文小结。** P1 在完整服务（2+2+4）上，用开环泊松到达把负载推到 0.9X、1.0X、1.1X，比较 code2wav 的 5 种组批：FIFO16、Length8，以及 Length8 加 0.5/1/2 秒的最长等待。3 个区组、135 个格子全部有效，没有一个请求失败。登记的三个假设都是**不确定**：最长等待 1 秒相对 FIFO16 的 goodput 在 1.0X 只差 +0.05% 到 +1.9%；它没有把短请求的排队 P99 降到 Length8 的 0.8 倍，过载时反而在两个区组里升到 1.84 倍和 2.30 倍；W3b 有两格超过 5% 的容差。描述性的结果是：只有过载时组批策略才有影响。MIX 和 W3L 在 1.1X 时，Length8 的 goodput 在三个区组都保持在提供负载附近（W3L 13.9/15.0/14.3 请求/秒，FIFO16 只有 2.2/8.2/4.3）；加上最长等待以后，过载时大部分批次变成强制选入（W3L 48–100%），实际退化成按到达顺序组批，goodput 又掉回去一大截（W3L 区组 1 从 13.9 掉到 4.3）。原因是 Length8 每一批都以最老的请求为锚，本来就不会饿死请求（超过 FIFO16 同组 P95 三倍的比例最多 0.4%），最长等待没有东西可保护。注意：Length8 同时改了顺序和批上限（8 对 16），这一轮分不开两者各自的作用；1.1X 在区组 2 的实际负载偏轻；W3b 在 32 请求/秒仍未饱和。
+
+---
+
+## R4 — Do multimodal robot sessions put the thinker's KV cache under pressure?
+
+**Research question.** Do multimodal robot sessions create a working set large enough to cause meaningful KV-cache eviction and recomputation in the thinker, and if reuse is lost, is it lost to capacity (eviction) or to request-level replica routing?
+
+**Hypotheses and gates (registered 2026-11-18 before any R4 run; `r3_r4_design.md` §3.5; analysis corrected by Erratum E-R4-REF before blocks 2–3 were analysed).** Per level, *eviction pressure* = reuse lost to eviction ≥ 10 % of the level's prefill tokens **and** those requests' TTFT median ≥ 1.2 × that of clean pairs; *routing cost* likewise for reuse lost to a replica change. Conclusion in order: eviction pressure anywhere → A/B of session affinity and cost-aware eviction; else routing cost → session-affinity A/B only; neither → **“当前实验条件下，尚无证据支持引入更复杂的 Agent-aware Cache Management。”** Stable only if all 3 blocks agree. Ratios (working set ÷ capacity) are reported but do not decide. ThunderAgent and FlashStates are not ported.
+
+**Setup.**
+- Runtime `unicorn_ppv_kv` (520b49ee + default-off KV logging patch, `SGLANG_OMNI_EXP_KV=1`); 2+2+4 request-response path with two thinker replicas behind request-level routing; request events on.
+- Synthetic robot sessions (`src/omni_research/sessions/robot_sessions.py`): a unique preamble per session (only the system prompt is shared); every turn a new synthetic camera frame, a unique synthetic spoken request and a caption; half the turns first ask for a short text plan, wait for a simulated tool (median 0.3 s) and add a 40–200-token tool result; spoken answers; 4–10 turns, think time median 2 s. Earlier turns go back as text; control: the last two turns' image and audio re-sent (`history_media=2`).
+- One run per block: 8 → 16 → 32 → 64 → 128 sessions, then 32 sessions with media history; same content in every block; 3 blocks 08:24–08:56, nothing else on the node. Smoke passed before (every request joined to its prefill line; ≈ 308 media tokens per turn).
+
+**Evidence** (`results/r4_working_set.json`, figure `fig12_r4_working_set`; Measured; blocks 1 / 2 / 3; reference per E-R4-REF):
+
+| Sessions | Working set ÷ capacity (peak) | Reuse lost to eviction | Reuse lost to routing | Routed TTFT ÷ clean (registered) | … within a turn (plan → answer) | … next turn | Clean pairs | Eviction pressure | Routing cost |
+|---|---|---|---|---|---|---|---|---|---|
+| 8 | 0.05 / 0.04 / 0.05 | 0 / 0 / 0 % | 23 / 29 / 27 % | 1.28 / 1.21 / 1.27 | 2.02 / 2.25 / 2.55 | 1.27 / 1.15 / 1.16 | 47 / 36 / 41 | no ×3 | **yes ×3** |
+| 16 | 0.06 / 0.07 / 0.07 | 0 / 0 / 0 % | 24 / 27 / 27 % | 1.53 / 2.22 / 1.62 | 3.36 / 2.80 / 4.12 | 1.14 / 1.08 / 1.01 | 85 / 66 / 77 | no ×3 | **yes ×3** |
+| 32 | 0.15 / 0.14 / 0.16 | 0.1 / 0.1 / 0.1 % | 27 / 25 / 26 % | 1.07 / 1.14 / 1.08 | 1.72 / 1.70 / 1.74 | 0.95 / 0.94 / 0.86 | 125 / 118 / 94 | no ×3 | no ×3 |
+| 64 | 0.28 / 0.25 / 0.25 | 3.0 / 2.2 / 2.9 % | 27 / 26 / 28 % | not comparable | — | — | 0 / 0 / 2 | no ×3 | undetermined ×3 |
+| 128 | 0.53 / 0.49 / 0.53 | 2.4 / 2.2 / 2.6 % | 33 / 33 / 34 % | not comparable | — | — | 1 / 0 / 0 | no ×3 | undetermined ×3 |
+
+- **Validity.** No request failed in any level of any block; every request was joined to its prefill line; both thinker replicas logged in every block.
+- **Capacity.** Each thinker replica holds 127,039 KV tokens; running requests never held more than 43,069 of them (128 sessions) and no request ever waited for KV. The pool reads 100 % resident from 32 sessions on only because the radix cache keeps finished prefixes until it needs the space; the logical working set peaks at about half of capacity at 128 sessions.
+- **Eviction.** Evictions start at 32 sessions and reach 714–724 k tokens per run (both replicas) at 128 sessions, but they almost never hit a prefix a session needed next: ≤ 3.0 % of prefill tokens at every level.
+- **Routing.** 40–57 % of a session's consecutive requests land on the other replica, and each recomputes the session's history: 23–34 % of all prefill tokens at every level. At 8 and 16 sessions, in all 3 blocks, those requests' median first token is ≥ 1.21× that of clean pairs (registered routing cost); at 32 sessions 1.07–1.14×; at 64–128 sessions too few clean pairs remain to compare.
+- **Where it hurts (descriptive, not registered).** Split by transition, a routed answer that follows its own plan is 1.70–4.12× slower to its first token than a clean one at 8–32 sessions; a routed next-turn request 0.86–1.27×, because it brings new media anyway and reuses only ~60 % of its prompt even on the same replica.
+- **Media-history control (32 sessions, descriptive).** Re-sending the last two turns' media cuts next-turn reuse from 0.53–0.55 to 0.23–0.24 (all pairs) and raises median TTFT from 0.78–0.85 s to 1.65–1.87 s.
+- The registered code's verdict (`verdict_v1_registered_code`) gives the same conclusion, but at 64 and 128 sessions for the wrong reason (zero loss from an undefined reference).
+
+**Result.** Stable across all 3 blocks: **no eviction pressure, but cross-replica routing loses reuse that costs first-token time → the registered next step is a session-affinity routing A/B, not an eviction policy.** The registered sentence for the “neither” case does not apply, because routing does cost time. For eviction-side cache management specifically, nothing in these runs calls for it: eviction cost ≤ 3 % of prefill even when the working set reached half of the KV pool.
+
+**Interpretation.** With two replicas and request-level routing, KV reuse in agent sessions is lost to placement, not to capacity: a session's history lives on one replica and about half of its requests are sent to the other. The cost is largest exactly where agent turns are tight — the spoken answer right after a tool call — and at low load, where prefill time is a large share of first-token time. A session-affinity rule (or cache-aware routing) addresses this directly and more cheaply than a new eviction policy.
+
+**Limitations.** One node; synthetic sessions (no real robot, camera or speech); text history by design; two replicas only; the TTFT criterion could not be evaluated at 64–128 sessions; the within-turn / next-turn split is descriptive; the previous level's evictable cache shares the pool with the next level (only own-session losses are counted).
+
+**中文小结。** R4 用合成的机器人会话（每轮新画面、新语音，一半的轮次先计划、调用工具、再回答）在 2+2+4（两个 thinker 副本）上从 8 个会话加到 128 个，3 个区组结论一致：**没有驱逐压力**（驱逐造成的复用损失最多占 prefill 的 3%，128 个会话时工作集也只占 KV 容量的一半左右），但**路由有代价**：约一半请求被分到另一个副本，每一档都有 23–34% 的 prefill 在重算会话历史；8、16 个会话时这些请求的首个 token 慢 1.21–2.22 倍，最疼的是“工具调用之后的回答”（慢 1.7–4.1 倍，描述性）。按登记规则，下一步是会话粘性路由的 A/B，而不是新的驱逐策略；登记的“尚无证据支持引入更复杂的 Agent-aware Cache Management”这句话针对的是“两种都没有”的情形，这里不适用。分析途中发现登记规则在缓存池满时没有定义（没有“干净的一对”），按勘误 E-R4-REF 在分析区组 2、3 之前修正，原代码的判定一并保留，结论相同。
+
+---
+
+## P2 — Is the side-stream hidden-state copy bit-exact?
+
+**Research question.** 实验 11's asynchronous hidden-state copy (`sidecopy`) failed its correctness check, so its performance was never benchmarked. With a verify mode that keeps a launch-stream reference copy of every row, is the side-stream copy bit-exact in every finished request?
+
+**Gate (registered; `p1_p2_p3_design.md` §2.3).** Pass only if every `exp_hidden_verify` event has all four checks true, every speech request that finished in a check phase has exactly one verify event, the server log has no mismatch warning, and there is no client error except the deliberate timeouts and no restart. Any failure → stop, report, no performance runs. 实验 11's original failure is not rewritten.
+
+**Setup.** Runtime `unicorn_ppv_verify` (实验 11's patch + `sidecopy_verify`; only one file differs); 2+6; 实验 11's check phases (greedy load at concurrency 1/8/32/64, text/speech, short/long, with/without seed, a client-timeout abort phase and the phase after it, W3XL), events and digests on; run `ppv_p2_verify`, 08:56–09:01.
+
+**Evidence** (`results/p2_verify.json`; Measured). 885 finished speech requests verified, each with exactly one verify event; 0 mismatches, 0 unverified, 0 duplicates, 0 failed checks, 0 mismatch warnings in the log, no erratum on expected rows, no restart.
+
+**Result.** **Gate passed**: under verify timing the side-stream copy is bit-exact in all 885 requests. This does not turn 实验 11's failed check into a pass: that run used a different code path (no reference copy, different timing) and its failure stands. Following the registration, the 9 performance runs (实验 11's design, runtime `unicorn_async`, whose worktree was checked to equal 520b49ee + 实验 11's patch file by file) were queued at 10:19 and finish after the presentation; they are not reported here.
+
+**Limitations.** Verify checks the copy path, not the snapshot itself (if the graph buffer were overwritten before the snapshot, both copies would agree on wrong data); verify adds a clone, a blocking copy and a device sync per request, so “bit-exact under verify timing” is not a proof for plain `sidecopy` timing.
+
+**中文小结。** P2 用加了“参照拷贝”的检查模式重跑实验 11 的检查段落：885 个带语音的请求全部逐位相等，没有一处不一致，登记的门槛**通过**。这只说明在检查模式的时序下旁路拷贝是对的；实验 11 原来“未通过”的结论不改。按登记，9 个性能运行已在 10:19 放入队列，结果在报告之后才有。
+
+---
+
+## R2b — With the thinker on a second GPU, do 8 duplex sessions stop failing?
+
+**Research question and registration (2026-11-19 04:00, after R2, before any R2b run; erratum E-R2b 05:48).** R2 on one GPU ran out of memory at 8 sessions. Does the registered two-GPU placement `ms8_2gpu` (thinker alone on a second GPU, memory fraction 0.85) remove the failures and keep units on time? Supported if 8 sessions meet R2's serving target in all 3 blocks without OOM; refuted if no block's 8-session level meets it (including when the stop rule skips it); the smoke had already shown every unit late (E-R2b).
+
+**Setup.** Stock runtime, `--variant session --enable-realtime --max_sessions 8 --thinker.gpu 1 --thinker.gpu_memory_fraction 0.85`; 4 then 8 sessions × 180 s (stop rule: 8 skipped if 4 fails); 3 blocks 09:01–09:15. All three blocks got the same GPU pair (boards d4ff46d0 + 51b87964), linked through the PCIe host bridge (`NODE`, no NVLink); the smoke's pair was `PIX`.
+
+**Evidence** (`results/r2b_summary.json`; Measured). At 4 sessions, in every block: all 4 sessions failed, 100 % of units missed (lag P50 24.3 / 26.2 / 26.2 s), no first audio arrived. The thinker's GPU read 91–94 % busy at 186–188 W with 42.6 GB used; the other GPU 10–13 % (utilisation suspect, aliasing) at 157–158 W; the thinker process used ~1.7 CPU cores. No OOM line. The stop rule skipped 8 sessions in all blocks. On one GPU (R2), the same 4 sessions missed ≤ 0.6 % of units.
+
+**Result.** **Refuted**: moving the thinker to its own GPU did not rescue 8 sessions; it broke 4 sessions that worked on one GPU. The cause is unknown (Hypothesis: the thinker path behaves differently when it is on another card — e.g. the cross-GPU hand-off of the duplex session state over a non-NVLink link — the thinker GPU's high utilisation says it is busy, not idle; not verified).
+
+**Limitations.** One GPU pair, not controlled (orchestrator choice); no profiling; the duplex path's multi-GPU support at the pinned commit is untested upstream on A6000s.
+
+**中文小结。** R2b 把 thinker 单独放到第二张卡上，想解决 R2 在 8 个会话时的显存失败。结果 3 个区组在 4 个会话时就全部失败：单元 100% 超时、延迟中位数 24–26 秒，按停止规则没有跑 8 个会话，登记判定为**反驳**。而同样 4 个会话放在一张卡上（R2）时，单元错过率不到 0.6%。原因不明；thinker 那张卡 91–94% 忙，两张卡之间不是 NVLink（假设，未验证）。
+
+---
+
+## P3 — What were 实验 9's short full-service stalls?
+
+**Research question.** 实验 9 saw two short full-service pauses (one of 3.09 s with no line in the shared server log). Do such pauses recur, and when they do, is the shared network file system (NFS), garbage collection or something else involved?
+
+**Design (registered; no decision rule beyond “report every gap with its evidence”).** Low-overhead observation in every run of this round: Linux pressure-stall information (PSI) and process states in the runner's 1-s sampler; gen-2 GC timing (P1 runtime); a live watcher that stats the server log every 0.1 s and records silences > 1 s during load phases and stats slower than 0.2 s. Stack dumps through SIGUSR2 were switched off after one crashed a code2wav process (F6, D3). A gap counts as *under load* only between a phase's first and last send. The registered NFS-vs-local-disk control was queued at 10:19 after this report (go decision and expected power written before it ran, `preregistration.md`).
+
+**Evidence** (scan of 36 runs, 19 with dense logs, ≈ 6.5 h of dense-log measurement; `scripts/analysis/ppv_p3_stalls.py`; Measured).
+- 11 under-load log silences > 1 s (1.03–1.26 s). Eight fall in the first 0.4–1.8 s of a closed-loop level, before any of its requests could complete, with no I/O pressure; two are quiet logging while completions continued (W3L open loop). One is a real stall (next bullet).
+- **One full-service stall under load:** P1 block 2_a2, 07:37:48, cell W3b / Length8 + τ 1 s / 0.9X (inside its measured window). The client received no completion and no first audio for 1.30 s while it kept sending (28 requests; ≈ 24 completions/s around it); the server log was silent for 1.075 s; in that second the node's PSI recorded 0.66 s of full I/O stall, one server process was in uninterruptible I/O sleep and none was running, and the watcher's own stat of the server log on NFS took 1.115 s (so the watcher itself was blocked and logged no pause); no gen-2 GC overlapped. This cell is one of the two H1c cells over the 5 % margin; P1's verdicts are unchanged (no registered exclusion for stalls; H1c inconclusive either way).
+- Client-side stalls with the same I/O signature in duplex runs: R0 (2.25-s sampler gap, I/O full 474 ms/s, two client processes in uninterruptible sleep) and R2 block 1 (1.34 s, both client processes in uninterruptible sleep).
+- Watcher: 267 log silences in 13 runs, 255 of them in drains after the last send (a cell's long requests finishing); slow stats up to 1.5 s; 154 gen-2 collections in measured phases, longest 747 ms, none overlapping a gap. Stack dumps at drain silences (P1 block 1, 120 process dumps): main threads idle in the event loop, the only active work code2wav finishing the last requests; no thread in file I/O.
+
+**Result.** A stall was observed, so the registered no-stall sentence does not apply. **Root cause remains unknown**, but the one full-service stall coincided with a node-wide I/O stall, a server process blocked in I/O and a 1.1-s metadata call on the shared NFS, and the duplex client stalls show the same signature: blocking I/O on the shared file system is now the leading candidate (Hypothesis), GC is not (no overlap). One event shows coincidence, not cause.
+
+**Interpretation.** Every stage process logs synchronously to the shared NFS home; if one write or metadata call blocks for a second, that process blocks, and because the stages wait on each other one blocked process can stop the whole pipeline. The control (NFS vs node-local disk, ABBA) tests this, but at one stall in ~6.5 h its 1 h per arm has about a 14 % chance of catching a stall in the NFS arm.
+
+**Limitations.** Rare events; 1-s process-state sampling (the blocked process is not identified by name); PSI is node-wide (other users' I/O shows the same way); no stack for the stall (dumps were off after F6).
+
+**中文小结。** 本轮在约 6.5 小时的日志密集测量里，负载期间只出现了 **1 次** 全服务停顿（P1 区组 2_a2，07:37:48，客户端 1.3 秒收不到任何完成），同一秒里整台机器的 I/O 压力有 0.66 秒是“全部卡住”，一个服务进程处于不可中断的 I/O 睡眠，监视器自己在 NFS 上 stat 日志也卡了 1.1 秒；没有 GC 重叠。其他 10 次日志静默都不是停顿（闭环刚开始的正常静默，或者只是日志安静）。全双工的客户端也有两次同样特征的卡顿。所以“没有观察到停顿”那句固定措辞不适用；根本原因仍未确定，共享文件系统上的阻塞 I/O 是目前最可能的候选（假设）。本地盘对 NFS 的对照已放进队列，但按这个频率它很可能什么也看不到（每组约 14% 的机会）。
+
+---
+
+## Annotation of every performance result
+
+Common to all rows unless stated: MiniCPM-o 4.5 (revision `fb09628e`), SGLang-Omni `520b49ee` (SGLang 0.5.21, torch 2.13.0), RTX A6000 48 GB, one node, Slurm job 454290.
+
+| Exp. | 1 Model / version (runtime) | 2 GPU | 3 Workload | 4 Concurrency / arrival rate | 5 Batch setting | 6 GPU placement | 7 Repetitions | 8 Measurement window | 9 Metric definition | 10 Baseline | 11 Uncertainty / limitations |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| R0 | stock | 1 | synthetic spoken questions (duplex-v1), real-time paced 16 kHz | 1 and 2 sessions | server default (`--variant session --enable-realtime`) | all duplex stages on one GPU | 1 functional run | 300 s per level | unit on time = 1-s unit finished within its second; 5 registered conditions | none (pass/fail) | single run; synthetic speech |
+| R1 | stock | 1 | duplex-v1 sessions with scripted barge-in; chat reference: 48 one-sentence requests | 1 session; chat: one request at a time | default; chat max_tokens 64 | one GPU | 3 blocks | phase A (no events) and B (events) per block | TTFA = last packet of the utterance → first audio delta; a + b + c decomposition | request-response path (different semantics) | t interval (df 2) of block P50s; N = 37 turns; block 1 overlapped C1/C2 (D1) |
+| R2 | stock | 1 | duplex-v1 sessions | 1/2/4/8 sessions | `max_sessions 8` | one GPU (ms8_1gpu) | 3 blocks (levels 2–8: 2 blocks, stop rule) | 180 s per level | unit miss, unit lag, deadline miss (1 s; 0.5/2 s sensitivity); capacity = takewhile | the 1-session level | warm-up and client stall in level 1; OOM at 8 |
+| C1 | flow DiT of 520b49ee | 1 | real batch shapes exported from 实验 10 (W3b/MIX fifo16, length8, W3L, exp10val) | n/a (microbenchmark) | dense (D), packed (P0), packed + compile (P1, BF16), FP16 packed (P1h, exploratory) | one GPU | 3 timed passes | CUDA events per shape group | E = code2wav GPU ms per audio second; MCD vs FP32 reference; ASR | D | microbenchmark only; quality gate failed; MCD noise floor |
+| C2 | HiFT of 520b49ee | 1 | 3 real shape groups | n/a | A default, B fold, C channels-last, D FP16 body | one GPU | 3 timed passes | CUDA events | HiFT GPU ms per audio second | A | ±5 % pass-to-pass; overlapped R1 block 1 |
+| P0 | `unicorn_instr` (= 实验 9 instrumentation) | 8 | W3b, W3L | closed loop 64/128/256 in flight; open loop W3b 15.5–31 req/s, W3L 8–12 req/s | talker `max_running_requests` 32 (A) vs 64 (B; graph max bs follows, Erratum E-P0-G) | 2+1+5 (A, B), 2+2+4 (reference) | 3 blocks | closed-loop levels; open loop 60 s (W3b) / 90 s (W3L) | capacity = completed / (last completion − first send); goodput (TTFT ≤ 1 s and e2e/audio ≤ 0.5) | arm A | t interval df 2; joint cap + graph change; H0b CPU criterion weak (M1) |
+| R3 | `unicorn_ppv_kv` (default-off preprocessing-concurrency patch) | 1 per arm (+ 7 CPU cores) | synthetic camera frames (PNG) / 2-s clips (H.264), circle-count question | screening 1/4/16 sessions × 0.5/1/2 fps; confirmation the 5 saturated cells; one request in flight per session | preprocessing concurrency 1 vs 4; server batching default | one `--text-only` replica per arm, arms side by side on two GPUs | screening 1 run per arm; confirmation 3 blocks | 60 s per cell after 10 s warm-up | saturated = ≥ 10 % dropped or ≥ 20 % late; class by preprocessing share/slot and GPU busy; improvement = drop −5 points and −20 % relative, or first-response P95 −20 % | concurrency 1 | arm and GPU board confounded (M9); nvidia-smi aliasing at light load; small synthetic frames; slot metric over-counts |
+| P1 | `unicorn_ppv_maxwait` (实验 10 batching patch + max-wait rule + gc log) | 8 | W3b, W3L, MIX (实验 9/10 synthetic workloads) | open-loop Poisson at 0.9X/1.0X/1.1X: W3b 26/29/32, W3L and MIX 13/14.5/16 req/s (X from the FIFO16 pre-run, E-P1-X) | code2wav FIFO16, Length8, Length8 + τ 0.5/1/2 s (window 64) | 2+2+4 (`t2_k2_c4`) | 3 blocks (block 2 re-run as 2_a2, D3) | 75 s (W3L 90 s) per cell after 15 s (20 s) warm-up dropped by scheduled send time | goodput = measured requests with TTFT ≤ 1 s and e2e/audio ≤ 0.5 ÷ send window; code2wav queue = dispatch → dequeue | FIFO16 (H1a, H1c), Length8 (H1b) | t interval df 2 over block means; open loop at 3 rates; block 1 had stack dumps in its drains; stable capacity is a lower bound when the top rate is steady |
+| R2b | stock | 2 | duplex-v1 sessions (same content as R2) | 4 and 8 sessions | `max_sessions 8`, thinker `gpu_memory_fraction 0.85` | thinker on its own GPU, other duplex stages on the first (`ms8_2gpu`); GPU pair from `logs/env/nvidia_topo.txt` | 3 blocks | 180 s per level | as R2 (unit miss, lag, deadline miss, OOM lines) | R2 `ms8_1gpu` (descriptive only) | the smoke had every unit late (E-R2b); GPU pair not controlled |
+| R4 | `unicorn_ppv_kv` (KV pool / prefill events, default-off) | 8 | synthetic robot sessions: unique preamble, a new camera frame + synthetic speech per turn, half the turns with a tool call; text history (control: last 2 turns' media) | 8 → 16 → 32 → 64 → 128 sessions, then 32 with media history; 4–10 turns, think time median 2 s | server default | 2+2+4, two thinker replicas, request-level routing | 3 blocks | one phase per level, each until its sessions finish | lost reuse (recomputed tokens) by cause: eviction / routing / structural; TTFT of those requests vs clean pairs; working set ÷ KV capacity | clean pairs (same replica, no eviction in between) | one node; synthetic sessions; leftover prefix cache from the previous level shares the pool (only the level's own misses are judged) |
+| P2 | `unicorn_ppv_verify` (实验 11 patch + `sidecopy_verify`) | 8 | 实验 11 check phases: greedy load at concurrency 1/8/32/64, text/speech, short/long, with/without seed, client-timeout abort phase, W3XL | per phase as in 实验 11 | server default | 2+6 | 1 run (correctness gate) | every finished speech request of every check phase | gate: all four checks true in every `exp_hidden_verify` event, one event per finished speech request, no mismatch line, no client error except the intended timeouts, no restart | the launch-stream reference copy | checks the copy path, not the snapshot itself; verify timing differs from plain sidecopy |
+| P3 | observation in every run (PSI, process states, gc log and live watcher in P1-runtime runs) | all GPUs of each run | whatever each run ran | — | — | — | every run once | each run's load phases (send window = first to last send) | under-load log gap > 1 s; watcher pause > 1 s while armed; sampler gap; slow stat > 0.2 s; gen-2 GC | none | dense-log time only for the watcher; stack dumps stopped after F6 (D3) |
+
+---
+
+## Synthesis — what the evidence says about the three research questions
+
+Numbering follows the task brief (system bottleneck / compiler and runtime / real-time robotics); in `../robotics_application_intro.md` §5 these are RQ1 / RQ3 / RQ2. Labels: Measured, Derived, Estimated, Hypothesis, Unknown, Blocked.
+
+### RQ1 — Where is the system-level bottleneck of omni serving on one 8-GPU node?
+
+- **Evidence.** 实验 9 (placement, 3 blocks); P0 (talker admission cap, 3 blocks); P0 stage residence; P1 (code2wav batching past saturation, 3 blocks, 135 cells); P3 (stall observation in every run).
+- **Main result (Measured).** Capacity is set by how the GPUs are split *and* by per-stage software limits. In 2+1+5 the talker's admission cap of 32 bound the whole service: raising it to 64 added 30–32 % capacity in every block while the talker GPU stayed 53–58 % busy. In 2+2+4 code2wav holds most of a request's residence (61 %), and its batching policy matters only once code2wav is overloaded: below saturation all five P1 settings give the same goodput; past it, length-aware batching keeps goodput near the offered load where first-come batching collapses (W3L 1.1X: 13.9 / 15.0 / 14.3 vs 2.2 / 8.2 / 4.3 req/s; descriptive).
+- **Failures / negative results.** H0c refuted (2+1+5 with cap 64 is still 3.7 % behind 2+2+4); arm G blocked by the pinned version, so admission and CUDA-graph coverage cannot be separated; P1's registered H1a–H1c inconclusive and the maximum wait a negative result.
+- **Remaining unknown.** Whether a cap of 128 helps further; how much of Length8's overload gain is length grouping and how much the smaller cap; the root cause of the rare full-service stalls (one in ~6.5 h, coinciding with an NFS I/O stall).
+- **Next hypothesis.** A downstream-aware admission rule (bounding what the talker hands to an overloaded code2wav) keeps goodput near the offered load past saturation under every batching policy; Length8's overload gain comes mostly from length grouping (FIFO8 on the same cells recovers less than half of it).
+
+### RQ2 — Which compiler and runtime techniques reduce the cost of the speech stages?
+
+- **Evidence.** Kernel census (existing); C1 (flow dense vs packed, microbenchmark on 112 real batches per arm); C2 (HiFT); P1 (runtime batching); P2 (side-stream copy correctness).
+- **Main result.** Packed variable-length attention plus compilation cuts code2wav GPU time per audio second by 13–42 % on batched real shapes (Measured, microbenchmark; masked attention −59 %, mask preparation removed) and does nothing at ~1.2 requests per batch; HiFT gains nothing from folding, layout or FP16 (per-call overhead dominates). The hidden-state side copy that failed 实验 11 is bit-exact under the verify mode in all 885 requests (Measured; performance runs queued, not reported).
+- **Failures / negative results.** The registered packed path runs in BF16 and fails the quality gate (MCD +1.01 dB), so no end-to-end test ran; FP16 HiFT is slower; the maximum wait hurts at overload.
+- **Remaining unknown.** End-to-end value of FP16 packed flow at saturation; whether sidecopy pays off (P2 performance runs pending).
+- **Next hypothesis.** FP16 packed flow lowers code2wav GPU time per audio second in the saturated full service by roughly its microbenchmark gain on Length8 batches (−25 % on MIX) and keeps MCD within +0.1 dB of the dense path.
+
+### RQ3 — What does real-time multimodal robot interaction need from the serving system?
+
+- **Evidence.** R0 (duplex functional), R1 (TTFA decomposition), R2 + R2b (sessions and a two-GPU split), R3 screening + confirmation (camera), R4 (agent working set).
+- **Main result (Measured).** The duplex path works on one A6000 and keeps units real-time for up to 4 sessions; the first spoken response (1.36 s median) is dominated by the unit structure and the model's turn-taking (compute ≈ 0.35 s); at 8 sessions GPU memory fails first. Camera input is limited by GPU work per frame (≈ 7–8 frames or 9–11 clips per second per A6000), never by CPU preprocessing. In agent sessions KV reuse is lost to request-level routing across replicas (23–34 % of prefill; the answer after a plan 1.7–4.1× slower to first token), not to eviction (≤ 3 %).
+- **Failures / negative results.** R2's registered capacity verdict is “below the lowest level”; the two-GPU split (R2b) is refuted and breaks even 4 sessions (all units late); preprocessing concurrency 4 improved no camera cell in any block; interruptions are not honoured (5.1 s).
+- **Remaining unknown.** Why the thinker-on-its-own-GPU placement fails; real camera and microphone behaviour; the duplex path with a cancel mechanism.
+- **Next hypothesis.** Session-affinity routing removes most of the routed recompute (from ~25 % to < 5 % of prefill) and cuts the answer-after-plan first-token time by ≥ 40 % at 8–16 sessions; a turn-taking change (end-of-turn trigger or shorter units) lowers duplex TTFA by ≈ 0.5 s at the median without raising unit misses.

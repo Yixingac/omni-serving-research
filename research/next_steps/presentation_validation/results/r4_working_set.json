@@ -1,0 +1,4296 @@
+{
+ "generated_by": "scripts/analysis/ppv_r4_report.py",
+ "runs": {
+  "20261119_ppv_r4_smoke_run01": {
+   "smoke": {
+    "r4_smoke_n4": {
+     "requests": 15,
+     "joined_share": 1.0,
+     "input_tokens_p50_by_turn": {
+      "0": 561,
+      "1": 689.0,
+      "2": 763.0
+     },
+     "max_input_tokens": 887
+    },
+    "r4_smoke_n4_media2": {
+     "requests": 20,
+     "joined_share": 1.0,
+     "input_tokens_p50_by_turn": {
+      "0": 655.5,
+      "1": 1130,
+      "2": 1546
+     },
+     "max_input_tokens": 1836
+    },
+    "r4_smoke_n4_textonly": {
+     "requests": 15,
+     "joined_share": 1.0,
+     "input_tokens_p50_by_turn": {
+      "0": 255,
+      "1": 396.0,
+      "2": 387.0
+     },
+     "max_input_tokens": 630
+    },
+    "media_tokens_per_turn": {
+     "p50": 308.5,
+     "values": [
+      314,
+      278,
+      303,
+      325
+     ]
+    }
+   },
+   "replicas": [
+    "1596860:0",
+    "1596861:1"
+   ]
+  },
+  "20261119_ppv_r4_block1_run01": {
+   "levels": [
+    {
+     "phase": "r4_n8",
+     "sessions": 8,
+     "requests": 87,
+     "errors": 0,
+     "window_s": 56.8,
+     "pool": {
+      "2549352:0": {
+       "capacity_tokens": 127039,
+       "resident_peak": 22526,
+       "resident_peak_ratio": 0.17731562748447327,
+       "held_by_running_peak": 2391,
+       "evicted_tokens": 0,
+       "evictable_at_start": 88,
+       "waiting_peak": 0
+      },
+      "2549353:1": {
+       "capacity_tokens": 127039,
+       "resident_peak": 22423,
+       "resident_peak_ratio": 0.17650485284046633,
+       "held_by_running_peak": 2659,
+       "evicted_tokens": 0,
+       "evictable_at_start": 58,
+       "waiting_peak": 0
+      }
+     },
+     "logical_working_set_peak": {
+      "2549352:0": 5184,
+      "2549353:1": 6402
+     },
+     "logical_ratio_peak": {
+      "2549352:0": 0.040806366548855076,
+      "2549353:1": 0.050393973504199496
+     },
+     "attribution": {
+      "requests_joined": 87,
+      "shared_floor_tokens": 70.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9955156950672646,
+        "n": 17,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": 0.6204058919905076,
+        "n": 30,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 79,
+       "cross_replica": 32,
+       "same_replica_evicted": 0,
+       "clean": 47,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9945054945054945,
+        "n": 25
+       },
+       "next_turn": {
+        "median": 0.585888493244232,
+        "n": 54
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 9858,
+       "eviction": 0,
+       "unexplained_same_replica": 882
+      },
+      "prefill_tokens": 42346,
+      "cached_tokens": 55722,
+      "lost_share_of_prefill": {
+       "routing": 0.23280335305606817,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.020826428776951934
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 0.2985747685,
+        "n": 32
+       },
+       "clean": {
+        "p50": 0.233629135,
+        "n": 47
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "within_turn": {
+        "routing": {
+         "p50": 0.295201344,
+         "n": 8
+        },
+        "clean": {
+         "p50": 0.146400222,
+         "n": 17
+        }
+       },
+       "next_turn": {
+        "routing": {
+         "p50": 0.3218854875,
+         "n": 24
+        },
+        "clean": {
+         "p50": 0.2538068915,
+         "n": 30
+        }
+       }
+      }
+     },
+     "attribution_v1_registered_code": {
+      "requests_joined": 87,
+      "shared_floor_tokens": 70.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9955156950672646,
+        "n": 17,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": 0.6204058919905076,
+        "n": 30,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 79,
+       "cross_replica": 32,
+       "same_replica_evicted": 0,
+       "clean": 47,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9945054945054945,
+        "n": 25
+       },
+       "next_turn": {
+        "median": 0.585888493244232,
+        "n": 54
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 9858,
+       "eviction": 0,
+       "unexplained_same_replica": 882
+      },
+      "prefill_tokens": 42346,
+      "cached_tokens": 55722,
+      "lost_share_of_prefill": {
+       "routing": 0.23280335305606817,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.020826428776951934
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 0.2985747685,
+        "n": 32
+       },
+       "clean": {
+        "p50": 0.233629135,
+        "n": 47
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "within_turn": {
+        "routing": {
+         "p50": 0.295201344,
+         "n": 8
+        },
+        "clean": {
+         "p50": 0.146400222,
+         "n": 17
+        }
+       },
+       "next_turn": {
+        "routing": {
+         "p50": 0.3218854875,
+         "n": 24
+        },
+        "clean": {
+         "p50": 0.2538068915,
+         "n": 30
+        }
+       }
+      }
+     },
+     "ttft_s": {
+      "p50": 0.26203887,
+      "p95": 0.926533546,
+      "n": 87
+     },
+     "session_s_p50": 32.215683939499996
+    },
+    {
+     "phase": "r4_n16",
+     "sessions": 16,
+     "requests": 157,
+     "errors": 0,
+     "window_s": 65.9,
+     "pool": {
+      "2549352:0": {
+       "capacity_tokens": 127039,
+       "resident_peak": 58716,
+       "resident_peak_ratio": 0.46218877667487934,
+       "held_by_running_peak": 3519,
+       "evicted_tokens": 0,
+       "evictable_at_start": 21823,
+       "waiting_peak": 0
+      },
+      "2549353:1": {
+       "capacity_tokens": 127039,
+       "resident_peak": 60678,
+       "resident_peak_ratio": 0.4776328529034391,
+       "held_by_running_peak": 3806,
+       "evicted_tokens": 0,
+       "evictable_at_start": 22008,
+       "waiting_peak": 0
+      }
+     },
+     "logical_working_set_peak": {
+      "2549352:0": 8182,
+      "2549353:1": 7074
+     },
+     "logical_ratio_peak": {
+      "2549352:0": 0.06440541880839742,
+      "2549353:1": 0.05568368768645849
+     },
+     "attribution": {
+      "requests_joined": 157,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9940327245952862,
+        "n": 26,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": 0.6345733041575492,
+        "n": 59,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 141,
+       "cross_replica": 56,
+       "same_replica_evicted": 0,
+       "clean": 85,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9917081260364843,
+        "n": 43
+       },
+       "next_turn": {
+        "median": 0.5401321919403681,
+        "n": 98
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 16954,
+       "eviction": 0,
+       "unexplained_same_replica": 2935
+      },
+      "prefill_tokens": 71487,
+      "cached_tokens": 84574,
+      "lost_share_of_prefill": {
+       "routing": 0.23715978560013615,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.04106162438189444
+      },
+      "ttft_s_by_cause": {
+       "clean": {
+        "p50": 0.357533017,
+        "n": 85
+       },
+       "routing": {
+        "p50": 0.546994486,
+        "n": 56
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "within_turn": {
+        "clean": {
+         "p50": 0.160204784,
+         "n": 26
+        },
+        "routing": {
+         "p50": 0.538805848,
+         "n": 17
+        }
+       },
+       "next_turn": {
+        "clean": {
+         "p50": 0.485115783,
+         "n": 59
+        },
+        "routing": {
+         "p50": 0.555183124,
+         "n": 39
+        }
+       }
+      }
+     },
+     "attribution_v1_registered_code": {
+      "requests_joined": 157,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9940327245952862,
+        "n": 26,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": 0.6345733041575492,
+        "n": 59,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 141,
+       "cross_replica": 56,
+       "same_replica_evicted": 0,
+       "clean": 85,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9917081260364843,
+        "n": 43
+       },
+       "next_turn": {
+        "median": 0.5401321919403681,
+        "n": 98
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 16954,
+       "eviction": 0,
+       "unexplained_same_replica": 2935
+      },
+      "prefill_tokens": 71487,
+      "cached_tokens": 84574,
+      "lost_share_of_prefill": {
+       "routing": 0.23715978560013615,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.04106162438189444
+      },
+      "ttft_s_by_cause": {
+       "clean": {
+        "p50": 0.357533017,
+        "n": 85
+       },
+       "routing": {
+        "p50": 0.546994486,
+        "n": 56
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "within_turn": {
+        "clean": {
+         "p50": 0.160204784,
+         "n": 26
+        },
+        "routing": {
+         "p50": 0.538805848,
+         "n": 17
+        }
+       },
+       "next_turn": {
+        "clean": {
+         "p50": 0.485115783,
+         "n": 59
+        },
+        "routing": {
+         "p50": 0.555183124,
+         "n": 39
+        }
+       }
+      }
+     },
+     "ttft_s": {
+      "p50": 0.467331483,
+      "p95": 0.981396894,
+      "n": 157
+     },
+     "session_s_p50": 31.436896505500002
+    },
+    {
+     "phase": "r4_n32",
+     "sessions": 32,
+     "requests": 328,
+     "errors": 0,
+     "window_s": 72.8,
+     "pool": {
+      "2549352:0": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127038,
+       "resident_peak_ratio": 0.9999921284015145,
+       "held_by_running_peak": 10741,
+       "evicted_tokens": 15099,
+       "evictable_at_start": 58716,
+       "waiting_peak": 0
+      },
+      "2549353:1": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127038,
+       "resident_peak_ratio": 0.9999921284015145,
+       "held_by_running_peak": 11930,
+       "evicted_tokens": 16716,
+       "evictable_at_start": 60678,
+       "waiting_peak": 0
+      }
+     },
+     "logical_working_set_peak": {
+      "2549352:0": 16924,
+      "2549353:1": 19231
+     },
+     "logical_ratio_peak": {
+      "2549352:0": 0.13321893276867733,
+      "2549353:1": 0.1513787104747361
+     },
+     "attribution": {
+      "requests_joined": 328,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9948315430261356,
+        "n": 44,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": 0.6031363088057901,
+        "n": 81,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 296,
+       "cross_replica": 139,
+       "same_replica_evicted": 32,
+       "clean": 125,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.7570075196981225,
+        "n": 104
+       },
+       "next_turn": {
+        "median": 0.5311855913360126,
+        "n": 192
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 41935,
+       "eviction": 218,
+       "unexplained_same_replica": 3968
+      },
+      "prefill_tokens": 157963,
+      "cached_tokens": 186357,
+      "lost_share_of_prefill": {
+       "routing": 0.26547552929848345,
+       "eviction": 0.0013773543211920377,
+       "unexplained_same_replica": 0.0251229477120205
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 0.839003509,
+        "n": 139
+       },
+       "clean": {
+        "p50": 0.785965193,
+        "n": 125
+       },
+       "eviction": {
+        "p50": 0.573190535,
+        "n": 32
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "next_turn": {
+        "routing": {
+         "p50": 0.861158468,
+         "n": 86
+        },
+        "clean": {
+         "p50": 0.907760252,
+         "n": 81
+        },
+        "eviction": {
+         "p50": 0.573915855,
+         "n": 25
+        }
+       },
+       "within_turn": {
+        "routing": {
+         "p50": 0.798448359,
+         "n": 53
+        },
+        "clean": {
+         "p50": 0.464318322,
+         "n": 44
+        },
+        "eviction": {
+         "p50": 0.572465215,
+         "n": 7
+        }
+       }
+      }
+     },
+     "attribution_v1_registered_code": {
+      "requests_joined": 328,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9948315430261356,
+        "n": 44,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": 0.6031363088057901,
+        "n": 81,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 296,
+       "cross_replica": 139,
+       "same_replica_evicted": 32,
+       "clean": 125,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.7570075196981225,
+        "n": 104
+       },
+       "next_turn": {
+        "median": 0.5311855913360126,
+        "n": 192
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 41935,
+       "eviction": 218,
+       "unexplained_same_replica": 3968
+      },
+      "prefill_tokens": 157963,
+      "cached_tokens": 186357,
+      "lost_share_of_prefill": {
+       "routing": 0.26547552929848345,
+       "eviction": 0.0013773543211920377,
+       "unexplained_same_replica": 0.0251229477120205
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 0.839003509,
+        "n": 139
+       },
+       "clean": {
+        "p50": 0.785965193,
+        "n": 125
+       },
+       "eviction": {
+        "p50": 0.573190535,
+        "n": 32
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "next_turn": {
+        "routing": {
+         "p50": 0.861158468,
+         "n": 86
+        },
+        "clean": {
+         "p50": 0.907760252,
+         "n": 81
+        },
+        "eviction": {
+         "p50": 0.573915855,
+         "n": 25
+        }
+       },
+       "within_turn": {
+        "routing": {
+         "p50": 0.798448359,
+         "n": 53
+        },
+        "clean": {
+         "p50": 0.464318322,
+         "n": 44
+        },
+        "eviction": {
+         "p50": 0.572465215,
+         "n": 7
+        }
+       }
+      }
+     },
+     "ttft_s": {
+      "p50": 0.7776364295,
+      "p95": 1.432160168,
+      "n": 328
+     },
+     "session_s_p50": 37.666490960999994
+    },
+    {
+     "phase": "r4_n64",
+     "sessions": 64,
+     "requests": 664,
+     "errors": 0,
+     "window_s": 89.7,
+     "pool": {
+      "2549352:0": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127036,
+       "resident_peak_ratio": 0.9999763852045435,
+       "held_by_running_peak": 19942,
+       "evicted_tokens": 164915,
+       "evictable_at_start": 126995,
+       "waiting_peak": 0
+      },
+      "2549353:1": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127039,
+       "resident_peak_ratio": 1.0,
+       "held_by_running_peak": 21191,
+       "evicted_tokens": 163937,
+       "evictable_at_start": 125218,
+       "waiting_peak": 0
+      }
+     },
+     "logical_working_set_peak": {
+      "2549352:0": 35171,
+      "2549353:1": 30193
+     },
+     "logical_ratio_peak": {
+      "2549352:0": 0.2768519903336771,
+      "2549353:1": 0.2376671730728359
+     },
+     "attribution": {
+      "requests_joined": 664,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9949720619551171,
+        "n": 0,
+        "source": "run"
+       },
+       "next_turn": {
+        "median": 0.6170694338779665,
+        "n": 0,
+        "source": "run"
+       }
+      },
+      "counts": {
+       "pairs": 600,
+       "cross_replica": 295,
+       "same_replica_evicted": 305,
+       "clean": 0,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9899396378269618,
+        "n": 213
+       },
+       "next_turn": {
+        "median": 0.5445960125918153,
+        "n": 387
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 84111,
+       "eviction": 9263,
+       "unexplained_same_replica": 0
+      },
+      "prefill_tokens": 313764,
+      "cached_tokens": 379973,
+      "lost_share_of_prefill": {
+       "routing": 0.2680699733981946,
+       "eviction": 0.029523381432244745,
+       "unexplained_same_replica": 0.0
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 1.219507072,
+        "n": 295
+       },
+       "eviction": {
+        "p50": 1.130723061,
+        "n": 305
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "within_turn": {
+        "routing": {
+         "p50": 0.979788088,
+         "n": 103
+        },
+        "eviction": {
+         "p50": 0.9415733525000001,
+         "n": 110
+        }
+       },
+       "next_turn": {
+        "eviction": {
+         "p50": 1.191046203,
+         "n": 195
+        },
+        "routing": {
+         "p50": 1.328692936,
+         "n": 192
+        }
+       }
+      }
+     },
+     "attribution_v1_registered_code": {
+      "requests_joined": 664,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": null,
+        "n": 0,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": null,
+        "n": 0,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 600,
+       "cross_replica": 295,
+       "same_replica_evicted": 305,
+       "clean": 0,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9899396378269618,
+        "n": 213
+       },
+       "next_turn": {
+        "median": 0.5445960125918153,
+        "n": 387
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 0,
+       "eviction": 0,
+       "unexplained_same_replica": 0
+      },
+      "prefill_tokens": 313764,
+      "cached_tokens": 379973,
+      "lost_share_of_prefill": {
+       "routing": 0.0,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.0
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 1.219507072,
+        "n": 295
+       },
+       "eviction": {
+        "p50": 1.130723061,
+        "n": 305
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "within_turn": {
+        "routing": {
+         "p50": 0.979788088,
+         "n": 103
+        },
+        "eviction": {
+         "p50": 0.9415733525000001,
+         "n": 110
+        }
+       },
+       "next_turn": {
+        "eviction": {
+         "p50": 1.191046203,
+         "n": 195
+        },
+        "routing": {
+         "p50": 1.328692936,
+         "n": 192
+        }
+       }
+      }
+     },
+     "ttft_s": {
+      "p50": 1.1579109445,
+      "p95": 2.207883643,
+      "n": 664
+     },
+     "session_s_p50": 50.950585366
+    },
+    {
+     "phase": "r4_n128",
+     "sessions": 128,
+     "requests": 1313,
+     "errors": 0,
+     "window_s": 148.1,
+     "pool": {
+      "2549352:0": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127039,
+       "resident_peak_ratio": 1.0,
+       "held_by_running_peak": 43069,
+       "evicted_tokens": 350708,
+       "evictable_at_start": 126908,
+       "waiting_peak": 0
+      },
+      "2549353:1": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127037,
+       "resident_peak_ratio": 0.9999842568030289,
+       "held_by_running_peak": 33904,
+       "evicted_tokens": 363321,
+       "evictable_at_start": 127014,
+       "waiting_peak": 0
+      }
+     },
+     "logical_working_set_peak": {
+      "2549352:0": 67788,
+      "2549353:1": 66516
+     },
+     "logical_ratio_peak": {
+      "2549352:0": 0.5335999181353758,
+      "2549353:1": 0.5235872448618141
+     },
+     "attribution": {
+      "requests_joined": 1313,
+      "shared_floor_tokens": 70.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9949720619551171,
+        "n": 1,
+        "source": "run"
+       },
+       "next_turn": {
+        "median": 0.6170694338779665,
+        "n": 0,
+        "source": "run"
+       }
+      },
+      "counts": {
+       "pairs": 1185,
+       "cross_replica": 601,
+       "same_replica_evicted": 583,
+       "clean": 1,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9887890122265122,
+        "n": 434
+       },
+       "next_turn": {
+        "median": 0.5483005366726297,
+        "n": 751
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 224845,
+       "eviction": 16455,
+       "unexplained_same_replica": 0
+      },
+      "prefill_tokens": 683570,
+      "cached_tokens": 710021,
+      "lost_share_of_prefill": {
+       "routing": 0.32892798012969304,
+       "eviction": 0.024071614191574546,
+       "unexplained_same_replica": 0.0
+      },
+      "ttft_s_by_cause": {
+       "eviction": {
+        "p50": 5.249229359,
+        "n": 583
+       },
+       "routing": {
+        "p50": 5.361536493,
+        "n": 601
+       },
+       "clean": {
+        "p50": 0.125947625,
+        "n": 1
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "next_turn": {
+        "eviction": {
+         "p50": 5.443073063,
+         "n": 366
+        },
+        "routing": {
+         "p50": 5.478703709,
+         "n": 385
+        }
+       },
+       "within_turn": {
+        "routing": {
+         "p50": 5.215070699,
+         "n": 216
+        },
+        "eviction": {
+         "p50": 4.262512704,
+         "n": 217
+        },
+        "clean": {
+         "p50": 0.125947625,
+         "n": 1
+        }
+       }
+      }
+     },
+     "attribution_v1_registered_code": {
+      "requests_joined": 1313,
+      "shared_floor_tokens": 70.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9972268441486412,
+        "n": 1,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": null,
+        "n": 0,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 1185,
+       "cross_replica": 601,
+       "same_replica_evicted": 583,
+       "clean": 1,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9887890122265122,
+        "n": 434
+       },
+       "next_turn": {
+        "median": 0.5483005366726297,
+        "n": 751
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 128733,
+       "eviction": 479,
+       "unexplained_same_replica": 0
+      },
+      "prefill_tokens": 683570,
+      "cached_tokens": 710021,
+      "lost_share_of_prefill": {
+       "routing": 0.18832420289710786,
+       "eviction": 0.0007006501567076264,
+       "unexplained_same_replica": 0.0
+      },
+      "ttft_s_by_cause": {
+       "eviction": {
+        "p50": 5.249229359,
+        "n": 583
+       },
+       "routing": {
+        "p50": 5.361536493,
+        "n": 601
+       },
+       "clean": {
+        "p50": 0.125947625,
+        "n": 1
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "next_turn": {
+        "eviction": {
+         "p50": 5.443073063,
+         "n": 366
+        },
+        "routing": {
+         "p50": 5.478703709,
+         "n": 385
+        }
+       },
+       "within_turn": {
+        "routing": {
+         "p50": 5.215070699,
+         "n": 216
+        },
+        "eviction": {
+         "p50": 4.262512704,
+         "n": 217
+        },
+        "clean": {
+         "p50": 0.125947625,
+         "n": 1
+        }
+       }
+      }
+     },
+     "ttft_s": {
+      "p50": 5.020873582,
+      "p95": 8.849639624,
+      "n": 1313
+     },
+     "session_s_p50": 103.639902586
+    },
+    {
+     "phase": "r4_n32_media2",
+     "sessions": 32,
+     "requests": 327,
+     "errors": 0,
+     "window_s": 92.0,
+     "pool": {
+      "2549352:0": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127038,
+       "resident_peak_ratio": 0.9999921284015145,
+       "held_by_running_peak": 19289,
+       "evicted_tokens": 161096,
+       "evictable_at_start": 124678,
+       "waiting_peak": 0
+      },
+      "2549353:1": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127038,
+       "resident_peak_ratio": 0.9999921284015145,
+       "held_by_running_peak": 26044,
+       "evicted_tokens": 157075,
+       "evictable_at_start": 126876,
+       "waiting_peak": 0
+      }
+     },
+     "logical_working_set_peak": {
+      "2549352:0": 25263,
+      "2549353:1": 33005
+     },
+     "logical_ratio_peak": {
+      "2549352:0": 0.19886019253929896,
+      "2549353:1": 0.25980210801407444
+     },
+     "attribution": {
+      "requests_joined": 327,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9949720619551171,
+        "n": 0,
+        "source": "run"
+       },
+       "next_turn": {
+        "median": 0.6170694338779665,
+        "n": 0,
+        "source": "run"
+       }
+      },
+      "counts": {
+       "pairs": 295,
+       "cross_replica": 138,
+       "same_replica_evicted": 157,
+       "clean": 0,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9906542056074766,
+        "n": 109
+       },
+       "next_turn": {
+        "median": 0.23633779570878416,
+        "n": 186
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 106052,
+       "eviction": 42922,
+       "unexplained_same_replica": 0
+      },
+      "prefill_tokens": 309824,
+      "cached_tokens": 170000,
+      "lost_share_of_prefill": {
+       "routing": 0.3422970015350082,
+       "eviction": 0.13853766643713267,
+       "unexplained_same_replica": 0.0
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 1.7647244055,
+        "n": 138
+       },
+       "eviction": {
+        "p50": 1.663987746,
+        "n": 157
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "next_turn": {
+        "routing": {
+         "p50": 1.867505621,
+         "n": 87
+        },
+        "eviction": {
+         "p50": 1.904230813,
+         "n": 99
+        }
+       },
+       "within_turn": {
+        "routing": {
+         "p50": 1.683776621,
+         "n": 51
+        },
+        "eviction": {
+         "p50": 1.0664124005,
+         "n": 58
+        }
+       }
+      }
+     },
+     "attribution_v1_registered_code": {
+      "requests_joined": 327,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": null,
+        "n": 0,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": null,
+        "n": 0,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 295,
+       "cross_replica": 138,
+       "same_replica_evicted": 157,
+       "clean": 0,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9906542056074766,
+        "n": 109
+       },
+       "next_turn": {
+        "median": 0.23633779570878416,
+        "n": 186
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 0,
+       "eviction": 0,
+       "unexplained_same_replica": 0
+      },
+      "prefill_tokens": 309824,
+      "cached_tokens": 170000,
+      "lost_share_of_prefill": {
+       "routing": 0.0,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.0
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 1.7647244055,
+        "n": 138
+       },
+       "eviction": {
+        "p50": 1.663987746,
+        "n": 157
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "next_turn": {
+        "routing": {
+         "p50": 1.867505621,
+         "n": 87
+        },
+        "eviction": {
+         "p50": 1.904230813,
+         "n": 99
+        }
+       },
+       "within_turn": {
+        "routing": {
+         "p50": 1.683776621,
+         "n": 51
+        },
+        "eviction": {
+         "p50": 1.0664124005,
+         "n": 58
+        }
+       }
+      }
+     },
+     "ttft_s": {
+      "p50": 1.646924983,
+      "p95": 4.619844388,
+      "n": 327
+     },
+     "session_s_p50": 55.9663079575
+    }
+   ],
+   "run_reference_reuse": {
+    "within_turn": 0.9949720619551171,
+    "next_turn": 0.6170694338779665
+   },
+   "verdict": {
+    "levels": [
+     {
+      "phase": "r4_n8",
+      "sessions": 8,
+      "logical_ratio_peak": 0.050393973504199496,
+      "resident_ratio_peak": 0.17731562748447327,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0,
+      "routing_loss_share": 0.23280335305606817,
+      "clean_pairs": 47,
+      "ttft_comparable": true,
+      "reference": {
+       "within_turn": [
+        "level",
+        17
+       ],
+       "next_turn": [
+        "level",
+        30
+       ]
+      },
+      "eviction_pressure": "no",
+      "routing_cost": "yes"
+     },
+     {
+      "phase": "r4_n16",
+      "sessions": 16,
+      "logical_ratio_peak": 0.06440541880839742,
+      "resident_ratio_peak": 0.4776328529034391,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0,
+      "routing_loss_share": 0.23715978560013615,
+      "clean_pairs": 85,
+      "ttft_comparable": true,
+      "reference": {
+       "within_turn": [
+        "level",
+        26
+       ],
+       "next_turn": [
+        "level",
+        59
+       ]
+      },
+      "eviction_pressure": "no",
+      "routing_cost": "yes"
+     },
+     {
+      "phase": "r4_n32",
+      "sessions": 32,
+      "logical_ratio_peak": 0.1513787104747361,
+      "resident_ratio_peak": 0.9999921284015145,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0013773543211920377,
+      "routing_loss_share": 0.26547552929848345,
+      "clean_pairs": 125,
+      "ttft_comparable": true,
+      "reference": {
+       "within_turn": [
+        "level",
+        44
+       ],
+       "next_turn": [
+        "level",
+        81
+       ]
+      },
+      "eviction_pressure": "no",
+      "routing_cost": "no"
+     },
+     {
+      "phase": "r4_n64",
+      "sessions": 64,
+      "logical_ratio_peak": 0.2768519903336771,
+      "resident_ratio_peak": 1.0,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.029523381432244745,
+      "routing_loss_share": 0.2680699733981946,
+      "clean_pairs": 0,
+      "ttft_comparable": false,
+      "reference": {
+       "within_turn": [
+        "run",
+        0
+       ],
+       "next_turn": [
+        "run",
+        0
+       ]
+      },
+      "eviction_pressure": "no",
+      "routing_cost": "undetermined"
+     },
+     {
+      "phase": "r4_n128",
+      "sessions": 128,
+      "logical_ratio_peak": 0.5335999181353758,
+      "resident_ratio_peak": 1.0,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.024071614191574546,
+      "routing_loss_share": 0.32892798012969304,
+      "clean_pairs": 1,
+      "ttft_comparable": false,
+      "reference": {
+       "within_turn": [
+        "run",
+        1
+       ],
+       "next_turn": [
+        "run",
+        0
+       ]
+      },
+      "eviction_pressure": "no",
+      "routing_cost": "undetermined"
+     }
+    ],
+    "conclusion": "no eviction pressure, but cross-replica routing loses reuse that costs TTFT: next is a session-affinity A/B"
+   },
+   "verdict_v1_registered_code": {
+    "levels": [
+     {
+      "phase": "r4_n8",
+      "sessions": 8,
+      "logical_ratio_peak": 0.050393973504199496,
+      "resident_ratio_peak": 0.17731562748447327,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0,
+      "routing_loss_share": 0.23280335305606817,
+      "eviction_pressure": false,
+      "routing_cost": true
+     },
+     {
+      "phase": "r4_n16",
+      "sessions": 16,
+      "logical_ratio_peak": 0.06440541880839742,
+      "resident_ratio_peak": 0.4776328529034391,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0,
+      "routing_loss_share": 0.23715978560013615,
+      "eviction_pressure": false,
+      "routing_cost": true
+     },
+     {
+      "phase": "r4_n32",
+      "sessions": 32,
+      "logical_ratio_peak": 0.1513787104747361,
+      "resident_ratio_peak": 0.9999921284015145,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0013773543211920377,
+      "routing_loss_share": 0.26547552929848345,
+      "eviction_pressure": false,
+      "routing_cost": false
+     },
+     {
+      "phase": "r4_n64",
+      "sessions": 64,
+      "logical_ratio_peak": 0.2768519903336771,
+      "resident_ratio_peak": 1.0,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0,
+      "routing_loss_share": 0.0,
+      "eviction_pressure": false,
+      "routing_cost": false
+     },
+     {
+      "phase": "r4_n128",
+      "sessions": 128,
+      "logical_ratio_peak": 0.5335999181353758,
+      "resident_ratio_peak": 1.0,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0007006501567076264,
+      "routing_loss_share": 0.18832420289710786,
+      "eviction_pressure": false,
+      "routing_cost": true
+     }
+    ],
+    "conclusion": "no eviction pressure, but cross-replica routing loses reuse that costs TTFT: next is a session-affinity A/B"
+   },
+   "structural": {
+    "r4_n32_media2": {
+     "vs": "r4_n32",
+     "next_turn_reuse_text": 0.6031363088057901,
+     "next_turn_reuse_media": null,
+     "next_turn_reuse_all_pairs_text": 0.5311855913360126,
+     "next_turn_reuse_all_pairs_media": 0.23633779570878416,
+     "ttft_p50_text": 0.7776364295,
+     "ttft_p50_media": 1.646924983
+    }
+   },
+   "utc_offset_known": true,
+   "replicas": [
+    "2549352:0",
+    "2549353:1"
+   ]
+  },
+  "20261119_ppv_r4_block2_run01": {
+   "levels": [
+    {
+     "phase": "r4_n8",
+     "sessions": 8,
+     "requests": 87,
+     "errors": 0,
+     "window_s": 57.0,
+     "pool": {
+      "2555339:0": {
+       "capacity_tokens": 127039,
+       "resident_peak": 23362,
+       "resident_peak_ratio": 0.183896283818355,
+       "held_by_running_peak": 2727,
+       "evicted_tokens": 0,
+       "evictable_at_start": 88,
+       "waiting_peak": 0
+      },
+      "2555340:1": {
+       "capacity_tokens": 127039,
+       "resident_peak": 23483,
+       "resident_peak_ratio": 0.18484874723510103,
+       "held_by_running_peak": 1948,
+       "evicted_tokens": 0,
+       "evictable_at_start": 58,
+       "waiting_peak": 0
+      }
+     },
+     "logical_working_set_peak": {
+      "2555339:0": 5354,
+      "2555340:1": 5204
+     },
+     "logical_ratio_peak": {
+      "2555339:0": 0.04214453829139083,
+      "2555340:1": 0.040963798518565166
+     },
+     "attribution": {
+      "requests_joined": 87,
+      "shared_floor_tokens": 70.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9951368031230376,
+        "n": 10,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": 0.6461174741617546,
+        "n": 26,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 79,
+       "cross_replica": 43,
+       "same_replica_evicted": 0,
+       "clean": 36,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.6790606653620352,
+        "n": 25
+       },
+       "next_turn": {
+        "median": 0.5928274040800339,
+        "n": 54
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 12879,
+       "eviction": 0,
+       "unexplained_same_replica": 909
+      },
+      "prefill_tokens": 44596,
+      "cached_tokens": 53821,
+      "lost_share_of_prefill": {
+       "routing": 0.28879138155222867,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.020378868621583973
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 0.279971086,
+        "n": 43
+       },
+       "clean": {
+        "p50": 0.23144390199999998,
+        "n": 36
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "within_turn": {
+        "routing": {
+         "p50": 0.306798459,
+         "n": 15
+        },
+        "clean": {
+         "p50": 0.13644612299999997,
+         "n": 10
+        }
+       },
+       "next_turn": {
+        "routing": {
+         "p50": 0.2747771135,
+         "n": 28
+        },
+        "clean": {
+         "p50": 0.2388587845,
+         "n": 26
+        }
+       }
+      }
+     },
+     "attribution_v1_registered_code": {
+      "requests_joined": 87,
+      "shared_floor_tokens": 70.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9951368031230376,
+        "n": 10,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": 0.6461174741617546,
+        "n": 26,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 79,
+       "cross_replica": 43,
+       "same_replica_evicted": 0,
+       "clean": 36,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.6790606653620352,
+        "n": 25
+       },
+       "next_turn": {
+        "median": 0.5928274040800339,
+        "n": 54
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 12879,
+       "eviction": 0,
+       "unexplained_same_replica": 909
+      },
+      "prefill_tokens": 44596,
+      "cached_tokens": 53821,
+      "lost_share_of_prefill": {
+       "routing": 0.28879138155222867,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.020378868621583973
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 0.279971086,
+        "n": 43
+       },
+       "clean": {
+        "p50": 0.23144390199999998,
+        "n": 36
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "within_turn": {
+        "routing": {
+         "p50": 0.306798459,
+         "n": 15
+        },
+        "clean": {
+         "p50": 0.13644612299999997,
+         "n": 10
+        }
+       },
+       "next_turn": {
+        "routing": {
+         "p50": 0.2747771135,
+         "n": 28
+        },
+        "clean": {
+         "p50": 0.2388587845,
+         "n": 26
+        }
+       }
+      }
+     },
+     "ttft_s": {
+      "p50": 0.258577973,
+      "p95": 0.891693941,
+      "n": 87
+     },
+     "session_s_p50": 31.7330716515
+    },
+    {
+     "phase": "r4_n16",
+     "sessions": 16,
+     "requests": 157,
+     "errors": 0,
+     "window_s": 62.6,
+     "pool": {
+      "2555339:0": {
+       "capacity_tokens": 127039,
+       "resident_peak": 62096,
+       "resident_peak_ratio": 0.4887947795558844,
+       "held_by_running_peak": 3868,
+       "evicted_tokens": 0,
+       "evictable_at_start": 21306,
+       "waiting_peak": 0
+      },
+      "2555340:1": {
+       "capacity_tokens": 127039,
+       "resident_peak": 61116,
+       "resident_peak_ratio": 0.48108061304009003,
+       "held_by_running_peak": 3264,
+       "evicted_tokens": 0,
+       "evictable_at_start": 23483,
+       "waiting_peak": 0
+      }
+     },
+     "logical_working_set_peak": {
+      "2555339:0": 8065,
+      "2555340:1": 8384
+     },
+     "logical_ratio_peak": {
+      "2555339:0": 0.0634844417855934,
+      "2555340:1": 0.06599548170246931
+     },
+     "attribution": {
+      "requests_joined": 157,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9942243564092303,
+        "n": 22,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": 0.6417799175249355,
+        "n": 44,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 141,
+       "cross_replica": 75,
+       "same_replica_evicted": 0,
+       "clean": 66,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9895397489539749,
+        "n": 43
+       },
+       "next_turn": {
+        "median": 0.5378835917834015,
+        "n": 98
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 19480,
+       "eviction": 0,
+       "unexplained_same_replica": 2439
+      },
+      "prefill_tokens": 73185,
+      "cached_tokens": 81672,
+      "lost_share_of_prefill": {
+       "routing": 0.26617947356868304,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.03332594054034488
+      },
+      "ttft_s_by_cause": {
+       "clean": {
+        "p50": 0.2425618655,
+        "n": 66
+       },
+       "routing": {
+        "p50": 0.539635529,
+        "n": 75
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "within_turn": {
+        "clean": {
+         "p50": 0.1576638785,
+         "n": 22
+        },
+        "routing": {
+         "p50": 0.441677424,
+         "n": 21
+        }
+       },
+       "next_turn": {
+        "clean": {
+         "p50": 0.516173533,
+         "n": 44
+        },
+        "routing": {
+         "p50": 0.559262522,
+         "n": 54
+        }
+       }
+      }
+     },
+     "attribution_v1_registered_code": {
+      "requests_joined": 157,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9942243564092303,
+        "n": 22,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": 0.6417799175249355,
+        "n": 44,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 141,
+       "cross_replica": 75,
+       "same_replica_evicted": 0,
+       "clean": 66,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9895397489539749,
+        "n": 43
+       },
+       "next_turn": {
+        "median": 0.5378835917834015,
+        "n": 98
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 19480,
+       "eviction": 0,
+       "unexplained_same_replica": 2439
+      },
+      "prefill_tokens": 73185,
+      "cached_tokens": 81672,
+      "lost_share_of_prefill": {
+       "routing": 0.26617947356868304,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.03332594054034488
+      },
+      "ttft_s_by_cause": {
+       "clean": {
+        "p50": 0.2425618655,
+        "n": 66
+       },
+       "routing": {
+        "p50": 0.539635529,
+        "n": 75
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "within_turn": {
+        "clean": {
+         "p50": 0.1576638785,
+         "n": 22
+        },
+        "routing": {
+         "p50": 0.441677424,
+         "n": 21
+        }
+       },
+       "next_turn": {
+        "clean": {
+         "p50": 0.516173533,
+         "n": 44
+        },
+        "routing": {
+         "p50": 0.559262522,
+         "n": 54
+        }
+       }
+      }
+     },
+     "ttft_s": {
+      "p50": 0.486587258,
+      "p95": 0.989114315,
+      "n": 157
+     },
+     "session_s_p50": 30.401855767
+    },
+    {
+     "phase": "r4_n32",
+     "sessions": 32,
+     "requests": 328,
+     "errors": 0,
+     "window_s": 72.7,
+     "pool": {
+      "2555339:0": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127035,
+       "resident_peak_ratio": 0.999968513606058,
+       "held_by_running_peak": 9543,
+       "evicted_tokens": 17650,
+       "evictable_at_start": 62096,
+       "waiting_peak": 0
+      },
+      "2555340:1": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127037,
+       "resident_peak_ratio": 0.9999842568030289,
+       "held_by_running_peak": 10421,
+       "evicted_tokens": 17320,
+       "evictable_at_start": 61116,
+       "waiting_peak": 0
+      }
+     },
+     "logical_working_set_peak": {
+      "2555339:0": 15381,
+      "2555340:1": 17987
+     },
+     "logical_ratio_peak": {
+      "2555339:0": 0.12107305630554396,
+      "2555340:1": 0.14158644195876857
+     },
+     "attribution": {
+      "requests_joined": 328,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9939097846986493,
+        "n": 40,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": 0.5747415173144281,
+        "n": 78,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 296,
+       "cross_replica": 147,
+       "same_replica_evicted": 31,
+       "clean": 118,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9898635477582846,
+        "n": 104
+       },
+       "next_turn": {
+        "median": 0.5476906100815351,
+        "n": 192
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 39616,
+       "eviction": 86,
+       "unexplained_same_replica": 2861
+      },
+      "prefill_tokens": 157182,
+      "cached_tokens": 187218,
+      "lost_share_of_prefill": {
+       "routing": 0.2520374501190994,
+       "eviction": 0.0005463612184300928,
+       "unexplained_same_replica": 0.018201422483256197
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 0.941043251,
+        "n": 147
+       },
+       "clean": {
+        "p50": 0.8220369670000001,
+        "n": 118
+       },
+       "eviction": {
+        "p50": 0.421172248,
+        "n": 31
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "next_turn": {
+        "routing": {
+         "p50": 0.8535478745,
+         "n": 96
+        },
+        "clean": {
+         "p50": 0.9085774165,
+         "n": 78
+        },
+        "eviction": {
+         "p50": 0.543394236,
+         "n": 18
+        }
+       },
+       "within_turn": {
+        "clean": {
+         "p50": 0.574630618,
+         "n": 40
+        },
+        "routing": {
+         "p50": 0.976023536,
+         "n": 51
+        },
+        "eviction": {
+         "p50": 0.210662442,
+         "n": 13
+        }
+       }
+      }
+     },
+     "attribution_v1_registered_code": {
+      "requests_joined": 328,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9939097846986493,
+        "n": 40,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": 0.5747415173144281,
+        "n": 78,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 296,
+       "cross_replica": 147,
+       "same_replica_evicted": 31,
+       "clean": 118,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9898635477582846,
+        "n": 104
+       },
+       "next_turn": {
+        "median": 0.5476906100815351,
+        "n": 192
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 39616,
+       "eviction": 86,
+       "unexplained_same_replica": 2861
+      },
+      "prefill_tokens": 157182,
+      "cached_tokens": 187218,
+      "lost_share_of_prefill": {
+       "routing": 0.2520374501190994,
+       "eviction": 0.0005463612184300928,
+       "unexplained_same_replica": 0.018201422483256197
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 0.941043251,
+        "n": 147
+       },
+       "clean": {
+        "p50": 0.8220369670000001,
+        "n": 118
+       },
+       "eviction": {
+        "p50": 0.421172248,
+        "n": 31
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "next_turn": {
+        "routing": {
+         "p50": 0.8535478745,
+         "n": 96
+        },
+        "clean": {
+         "p50": 0.9085774165,
+         "n": 78
+        },
+        "eviction": {
+         "p50": 0.543394236,
+         "n": 18
+        }
+       },
+       "within_turn": {
+        "clean": {
+         "p50": 0.574630618,
+         "n": 40
+        },
+        "routing": {
+         "p50": 0.976023536,
+         "n": 51
+        },
+        "eviction": {
+         "p50": 0.210662442,
+         "n": 13
+        }
+       }
+      }
+     },
+     "ttft_s": {
+      "p50": 0.843207619,
+      "p95": 1.45366844,
+      "n": 328
+     },
+     "session_s_p50": 38.426300028
+    },
+    {
+     "phase": "r4_n64",
+     "sessions": 64,
+     "requests": 664,
+     "errors": 0,
+     "window_s": 93.3,
+     "pool": {
+      "2555339:0": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127038,
+       "resident_peak_ratio": 0.9999921284015145,
+       "held_by_running_peak": 22383,
+       "evicted_tokens": 162078,
+       "evictable_at_start": 127035,
+       "waiting_peak": 0
+      },
+      "2555340:1": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127038,
+       "resident_peak_ratio": 0.9999921284015145,
+       "held_by_running_peak": 23550,
+       "evicted_tokens": 165220,
+       "evictable_at_start": 125020,
+       "waiting_peak": 0
+      }
+     },
+     "logical_working_set_peak": {
+      "2555339:0": 31125,
+      "2555340:1": 32384
+     },
+     "logical_ratio_peak": {
+      "2555339:0": 0.24500350286132605,
+      "2555340:1": 0.2549138453545762
+     },
+     "attribution": {
+      "requests_joined": 664,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9944182801325658,
+        "n": 0,
+        "source": "run"
+       },
+       "next_turn": {
+        "median": 0.6048767008808524,
+        "n": 0,
+        "source": "run"
+       }
+      },
+      "counts": {
+       "pairs": 600,
+       "cross_replica": 292,
+       "same_replica_evicted": 308,
+       "clean": 0,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9906716417910447,
+        "n": 213
+       },
+       "next_turn": {
+        "median": 0.5418875927889714,
+        "n": 387
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 82144,
+       "eviction": 6901,
+       "unexplained_same_replica": 0
+      },
+      "prefill_tokens": 312686,
+      "cached_tokens": 381590,
+      "lost_share_of_prefill": {
+       "routing": 0.26270371529301095,
+       "eviction": 0.02207061096775114,
+       "unexplained_same_replica": 0.0
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 1.2383356435000001,
+        "n": 292
+       },
+       "eviction": {
+        "p50": 1.1139893225000002,
+        "n": 308
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "within_turn": {
+        "routing": {
+         "p50": 1.1577428735,
+         "n": 102
+        },
+        "eviction": {
+         "p50": 0.820832825,
+         "n": 111
+        }
+       },
+       "next_turn": {
+        "eviction": {
+         "p50": 1.323174045,
+         "n": 197
+        },
+        "routing": {
+         "p50": 1.3084208899999998,
+         "n": 190
+        }
+       }
+      }
+     },
+     "attribution_v1_registered_code": {
+      "requests_joined": 664,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": null,
+        "n": 0,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": null,
+        "n": 0,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 600,
+       "cross_replica": 292,
+       "same_replica_evicted": 308,
+       "clean": 0,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9906716417910447,
+        "n": 213
+       },
+       "next_turn": {
+        "median": 0.5418875927889714,
+        "n": 387
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 0,
+       "eviction": 0,
+       "unexplained_same_replica": 0
+      },
+      "prefill_tokens": 312686,
+      "cached_tokens": 381590,
+      "lost_share_of_prefill": {
+       "routing": 0.0,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.0
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 1.2383356435000001,
+        "n": 292
+       },
+       "eviction": {
+        "p50": 1.1139893225000002,
+        "n": 308
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "within_turn": {
+        "routing": {
+         "p50": 1.1577428735,
+         "n": 102
+        },
+        "eviction": {
+         "p50": 0.820832825,
+         "n": 111
+        }
+       },
+       "next_turn": {
+        "eviction": {
+         "p50": 1.323174045,
+         "n": 197
+        },
+        "routing": {
+         "p50": 1.3084208899999998,
+         "n": 190
+        }
+       }
+      }
+     },
+     "ttft_s": {
+      "p50": 1.1890551125000002,
+      "p95": 2.781093041,
+      "n": 664
+     },
+     "session_s_p50": 52.545204386
+    },
+    {
+     "phase": "r4_n128",
+     "sessions": 128,
+     "requests": 1313,
+     "errors": 0,
+     "window_s": 143.8,
+     "pool": {
+      "2555339:0": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127028,
+       "resident_peak_ratio": 0.9999134124166594,
+       "held_by_running_peak": 26975,
+       "evicted_tokens": 357924,
+       "evictable_at_start": 126775,
+       "waiting_peak": 0
+      },
+      "2555340:1": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127037,
+       "resident_peak_ratio": 0.9999842568030289,
+       "held_by_running_peak": 30627,
+       "evicted_tokens": 364283,
+       "evictable_at_start": 125091,
+       "waiting_peak": 0
+      }
+     },
+     "logical_working_set_peak": {
+      "2555339:0": 62017,
+      "2555340:1": 62341
+     },
+     "logical_ratio_peak": {
+      "2555339:0": 0.4881729232755296,
+      "2555340:1": 0.49072332118483303
+     },
+     "attribution": {
+      "requests_joined": 1313,
+      "shared_floor_tokens": 70.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9944182801325658,
+        "n": 0,
+        "source": "run"
+       },
+       "next_turn": {
+        "median": 0.6048767008808524,
+        "n": 0,
+        "source": "run"
+       }
+      },
+      "counts": {
+       "pairs": 1185,
+       "cross_replica": 575,
+       "same_replica_evicted": 610,
+       "clean": 0,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9888517141266306,
+        "n": 434
+       },
+       "next_turn": {
+        "median": 0.5439153439153439,
+        "n": 751
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 230526,
+       "eviction": 15365,
+       "unexplained_same_replica": 0
+      },
+      "prefill_tokens": 692535,
+      "cached_tokens": 700344,
+      "lost_share_of_prefill": {
+       "routing": 0.33287212872618677,
+       "eviction": 0.022187163060855563,
+       "unexplained_same_replica": 0.0
+      },
+      "ttft_s_by_cause": {
+       "eviction": {
+        "p50": 5.561750497,
+        "n": 610
+       },
+       "routing": {
+        "p50": 5.685562334,
+        "n": 575
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "next_turn": {
+        "eviction": {
+         "p50": 5.6989286215,
+         "n": 390
+        },
+        "routing": {
+         "p50": 5.716995328,
+         "n": 361
+        }
+       },
+       "within_turn": {
+        "eviction": {
+         "p50": 5.0293894224999995,
+         "n": 220
+        },
+        "routing": {
+         "p50": 5.5223460455,
+         "n": 214
+        }
+       }
+      }
+     },
+     "attribution_v1_registered_code": {
+      "requests_joined": 1313,
+      "shared_floor_tokens": 70.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": null,
+        "n": 0,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": null,
+        "n": 0,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 1185,
+       "cross_replica": 575,
+       "same_replica_evicted": 610,
+       "clean": 0,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9888517141266306,
+        "n": 434
+       },
+       "next_turn": {
+        "median": 0.5439153439153439,
+        "n": 751
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 0,
+       "eviction": 0,
+       "unexplained_same_replica": 0
+      },
+      "prefill_tokens": 692535,
+      "cached_tokens": 700344,
+      "lost_share_of_prefill": {
+       "routing": 0.0,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.0
+      },
+      "ttft_s_by_cause": {
+       "eviction": {
+        "p50": 5.561750497,
+        "n": 610
+       },
+       "routing": {
+        "p50": 5.685562334,
+        "n": 575
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "next_turn": {
+        "eviction": {
+         "p50": 5.6989286215,
+         "n": 390
+        },
+        "routing": {
+         "p50": 5.716995328,
+         "n": 361
+        }
+       },
+       "within_turn": {
+        "eviction": {
+         "p50": 5.0293894224999995,
+         "n": 220
+        },
+        "routing": {
+         "p50": 5.5223460455,
+         "n": 214
+        }
+       }
+      }
+     },
+     "ttft_s": {
+      "p50": 5.351229414,
+      "p95": 7.634204538,
+      "n": 1313
+     },
+     "session_s_p50": 97.68460001700001
+    },
+    {
+     "phase": "r4_n32_media2",
+     "sessions": 32,
+     "requests": 327,
+     "errors": 0,
+     "window_s": 90.7,
+     "pool": {
+      "2555339:0": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127039,
+       "resident_peak_ratio": 1.0,
+       "held_by_running_peak": 22786,
+       "evicted_tokens": 157830,
+       "evictable_at_start": 124869,
+       "waiting_peak": 0
+      },
+      "2555340:1": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127032,
+       "resident_peak_ratio": 0.9999448988106014,
+       "held_by_running_peak": 14773,
+       "evicted_tokens": 163258,
+       "evictable_at_start": 126784,
+       "waiting_peak": 0
+      }
+     },
+     "logical_working_set_peak": {
+      "2555339:0": 30164,
+      "2555340:1": 24134
+     },
+     "logical_ratio_peak": {
+      "2555339:0": 0.23743889671675628,
+      "2555340:1": 0.18997315784916444
+     },
+     "attribution": {
+      "requests_joined": 327,
+      "shared_floor_tokens": 70.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9944182801325658,
+        "n": 0,
+        "source": "run"
+       },
+       "next_turn": {
+        "median": 0.6048767008808524,
+        "n": 0,
+        "source": "run"
+       }
+      },
+      "counts": {
+       "pairs": 295,
+       "cross_replica": 154,
+       "same_replica_evicted": 141,
+       "clean": 0,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.38876651982378857,
+        "n": 109
+       },
+       "next_turn": {
+        "median": 0.23008370685361834,
+        "n": 186
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 112870,
+       "eviction": 38560,
+       "unexplained_same_replica": 0
+      },
+      "prefill_tokens": 313820,
+      "cached_tokens": 161325,
+      "lost_share_of_prefill": {
+       "routing": 0.35966607772797127,
+       "eviction": 0.12287276749334759,
+       "unexplained_same_replica": 0.0
+      },
+      "ttft_s_by_cause": {
+       "eviction": {
+        "p50": 1.881797986,
+        "n": 141
+       },
+       "routing": {
+        "p50": 2.034175284,
+        "n": 154
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "next_turn": {
+        "eviction": {
+         "p50": 2.263609691,
+         "n": 89
+        },
+        "routing": {
+         "p50": 2.165265582,
+         "n": 97
+        }
+       },
+       "within_turn": {
+        "eviction": {
+         "p50": 1.0555879235,
+         "n": 52
+        },
+        "routing": {
+         "p50": 1.897218912,
+         "n": 57
+        }
+       }
+      }
+     },
+     "attribution_v1_registered_code": {
+      "requests_joined": 327,
+      "shared_floor_tokens": 70.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": null,
+        "n": 0,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": null,
+        "n": 0,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 295,
+       "cross_replica": 154,
+       "same_replica_evicted": 141,
+       "clean": 0,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.38876651982378857,
+        "n": 109
+       },
+       "next_turn": {
+        "median": 0.23008370685361834,
+        "n": 186
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 0,
+       "eviction": 0,
+       "unexplained_same_replica": 0
+      },
+      "prefill_tokens": 313820,
+      "cached_tokens": 161325,
+      "lost_share_of_prefill": {
+       "routing": 0.0,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.0
+      },
+      "ttft_s_by_cause": {
+       "eviction": {
+        "p50": 1.881797986,
+        "n": 141
+       },
+       "routing": {
+        "p50": 2.034175284,
+        "n": 154
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "next_turn": {
+        "eviction": {
+         "p50": 2.263609691,
+         "n": 89
+        },
+        "routing": {
+         "p50": 2.165265582,
+         "n": 97
+        }
+       },
+       "within_turn": {
+        "eviction": {
+         "p50": 1.0555879235,
+         "n": 52
+        },
+        "routing": {
+         "p50": 1.897218912,
+         "n": 57
+        }
+       }
+      }
+     },
+     "ttft_s": {
+      "p50": 1.870852331,
+      "p95": 5.300855093,
+      "n": 327
+     },
+     "session_s_p50": 55.968983441000006
+    }
+   ],
+   "run_reference_reuse": {
+    "within_turn": 0.9944182801325658,
+    "next_turn": 0.6048767008808524
+   },
+   "verdict": {
+    "levels": [
+     {
+      "phase": "r4_n8",
+      "sessions": 8,
+      "logical_ratio_peak": 0.04214453829139083,
+      "resident_ratio_peak": 0.18484874723510103,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0,
+      "routing_loss_share": 0.28879138155222867,
+      "clean_pairs": 36,
+      "ttft_comparable": true,
+      "reference": {
+       "within_turn": [
+        "level",
+        10
+       ],
+       "next_turn": [
+        "level",
+        26
+       ]
+      },
+      "eviction_pressure": "no",
+      "routing_cost": "yes"
+     },
+     {
+      "phase": "r4_n16",
+      "sessions": 16,
+      "logical_ratio_peak": 0.06599548170246931,
+      "resident_ratio_peak": 0.4887947795558844,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0,
+      "routing_loss_share": 0.26617947356868304,
+      "clean_pairs": 66,
+      "ttft_comparable": true,
+      "reference": {
+       "within_turn": [
+        "level",
+        22
+       ],
+       "next_turn": [
+        "level",
+        44
+       ]
+      },
+      "eviction_pressure": "no",
+      "routing_cost": "yes"
+     },
+     {
+      "phase": "r4_n32",
+      "sessions": 32,
+      "logical_ratio_peak": 0.14158644195876857,
+      "resident_ratio_peak": 0.9999842568030289,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0005463612184300928,
+      "routing_loss_share": 0.2520374501190994,
+      "clean_pairs": 118,
+      "ttft_comparable": true,
+      "reference": {
+       "within_turn": [
+        "level",
+        40
+       ],
+       "next_turn": [
+        "level",
+        78
+       ]
+      },
+      "eviction_pressure": "no",
+      "routing_cost": "no"
+     },
+     {
+      "phase": "r4_n64",
+      "sessions": 64,
+      "logical_ratio_peak": 0.2549138453545762,
+      "resident_ratio_peak": 0.9999921284015145,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.02207061096775114,
+      "routing_loss_share": 0.26270371529301095,
+      "clean_pairs": 0,
+      "ttft_comparable": false,
+      "reference": {
+       "within_turn": [
+        "run",
+        0
+       ],
+       "next_turn": [
+        "run",
+        0
+       ]
+      },
+      "eviction_pressure": "no",
+      "routing_cost": "undetermined"
+     },
+     {
+      "phase": "r4_n128",
+      "sessions": 128,
+      "logical_ratio_peak": 0.49072332118483303,
+      "resident_ratio_peak": 0.9999842568030289,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.022187163060855563,
+      "routing_loss_share": 0.33287212872618677,
+      "clean_pairs": 0,
+      "ttft_comparable": false,
+      "reference": {
+       "within_turn": [
+        "run",
+        0
+       ],
+       "next_turn": [
+        "run",
+        0
+       ]
+      },
+      "eviction_pressure": "no",
+      "routing_cost": "undetermined"
+     }
+    ],
+    "conclusion": "no eviction pressure, but cross-replica routing loses reuse that costs TTFT: next is a session-affinity A/B"
+   },
+   "verdict_v1_registered_code": {
+    "levels": [
+     {
+      "phase": "r4_n8",
+      "sessions": 8,
+      "logical_ratio_peak": 0.04214453829139083,
+      "resident_ratio_peak": 0.18484874723510103,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0,
+      "routing_loss_share": 0.28879138155222867,
+      "eviction_pressure": false,
+      "routing_cost": true
+     },
+     {
+      "phase": "r4_n16",
+      "sessions": 16,
+      "logical_ratio_peak": 0.06599548170246931,
+      "resident_ratio_peak": 0.4887947795558844,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0,
+      "routing_loss_share": 0.26617947356868304,
+      "eviction_pressure": false,
+      "routing_cost": true
+     },
+     {
+      "phase": "r4_n32",
+      "sessions": 32,
+      "logical_ratio_peak": 0.14158644195876857,
+      "resident_ratio_peak": 0.9999842568030289,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0005463612184300928,
+      "routing_loss_share": 0.2520374501190994,
+      "eviction_pressure": false,
+      "routing_cost": false
+     },
+     {
+      "phase": "r4_n64",
+      "sessions": 64,
+      "logical_ratio_peak": 0.2549138453545762,
+      "resident_ratio_peak": 0.9999921284015145,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0,
+      "routing_loss_share": 0.0,
+      "eviction_pressure": false,
+      "routing_cost": false
+     },
+     {
+      "phase": "r4_n128",
+      "sessions": 128,
+      "logical_ratio_peak": 0.49072332118483303,
+      "resident_ratio_peak": 0.9999842568030289,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0,
+      "routing_loss_share": 0.0,
+      "eviction_pressure": false,
+      "routing_cost": false
+     }
+    ],
+    "conclusion": "no eviction pressure, but cross-replica routing loses reuse that costs TTFT: next is a session-affinity A/B"
+   },
+   "structural": {
+    "r4_n32_media2": {
+     "vs": "r4_n32",
+     "next_turn_reuse_text": 0.5747415173144281,
+     "next_turn_reuse_media": null,
+     "next_turn_reuse_all_pairs_text": 0.5476906100815351,
+     "next_turn_reuse_all_pairs_media": 0.23008370685361834,
+     "ttft_p50_text": 0.843207619,
+     "ttft_p50_media": 1.870852331
+    }
+   },
+   "utc_offset_known": true,
+   "replicas": [
+    "2555339:0",
+    "2555340:1"
+   ]
+  },
+  "20261119_ppv_r4_block3_run01": {
+   "levels": [
+    {
+     "phase": "r4_n8",
+     "sessions": 8,
+     "requests": 87,
+     "errors": 0,
+     "window_s": 56.9,
+     "pool": {
+      "2561300:0": {
+       "capacity_tokens": 127039,
+       "resident_peak": 23104,
+       "resident_peak_ratio": 0.18186541140909485,
+       "held_by_running_peak": 2042,
+       "evicted_tokens": 0,
+       "evictable_at_start": 88,
+       "waiting_peak": 0
+      },
+      "2561301:1": {
+       "capacity_tokens": 127039,
+       "resident_peak": 23203,
+       "resident_peak_ratio": 0.18264469965915978,
+       "held_by_running_peak": 2013,
+       "evicted_tokens": 0,
+       "evictable_at_start": 58,
+       "waiting_peak": 0
+      }
+     },
+     "logical_working_set_peak": {
+      "2561300:0": 5097,
+      "2561301:1": 5805
+     },
+     "logical_ratio_peak": {
+      "2561300:0": 0.04012153748061619,
+      "2561301:1": 0.04569462920835334
+     },
+     "attribution": {
+      "requests_joined": 87,
+      "shared_floor_tokens": 70.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9958471760797342,
+        "n": 11,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": 0.6306303089808245,
+        "n": 30,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 79,
+       "cross_replica": 38,
+       "same_replica_evicted": 0,
+       "clean": 41,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.671152228763667,
+        "n": 25
+       },
+       "next_turn": {
+        "median": 0.5997412702277303,
+        "n": 54
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 11703,
+       "eviction": 0,
+       "unexplained_same_replica": 1240
+      },
+      "prefill_tokens": 44082,
+      "cached_tokens": 54316,
+      "lost_share_of_prefill": {
+       "routing": 0.26548321930801977,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.028136036611219155
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 0.29262334850000005,
+        "n": 38
+       },
+       "clean": {
+        "p50": 0.23116558,
+        "n": 41
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "within_turn": {
+        "routing": {
+         "p50": 0.3002161,
+         "n": 14
+        },
+        "clean": {
+         "p50": 0.117670598,
+         "n": 11
+        }
+       },
+       "next_turn": {
+        "routing": {
+         "p50": 0.2845119995,
+         "n": 24
+        },
+        "clean": {
+         "p50": 0.2455024075,
+         "n": 30
+        }
+       }
+      }
+     },
+     "attribution_v1_registered_code": {
+      "requests_joined": 87,
+      "shared_floor_tokens": 70.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9958471760797342,
+        "n": 11,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": 0.6306303089808245,
+        "n": 30,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 79,
+       "cross_replica": 38,
+       "same_replica_evicted": 0,
+       "clean": 41,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.671152228763667,
+        "n": 25
+       },
+       "next_turn": {
+        "median": 0.5997412702277303,
+        "n": 54
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 11703,
+       "eviction": 0,
+       "unexplained_same_replica": 1240
+      },
+      "prefill_tokens": 44082,
+      "cached_tokens": 54316,
+      "lost_share_of_prefill": {
+       "routing": 0.26548321930801977,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.028136036611219155
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 0.29262334850000005,
+        "n": 38
+       },
+       "clean": {
+        "p50": 0.23116558,
+        "n": 41
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "within_turn": {
+        "routing": {
+         "p50": 0.3002161,
+         "n": 14
+        },
+        "clean": {
+         "p50": 0.117670598,
+         "n": 11
+        }
+       },
+       "next_turn": {
+        "routing": {
+         "p50": 0.2845119995,
+         "n": 24
+        },
+        "clean": {
+         "p50": 0.2455024075,
+         "n": 30
+        }
+       }
+      }
+     },
+     "ttft_s": {
+      "p50": 0.261105558,
+      "p95": 0.854068494,
+      "n": 87
+     },
+     "session_s_p50": 31.934922161499998
+    },
+    {
+     "phase": "r4_n16",
+     "sessions": 16,
+     "requests": 157,
+     "errors": 0,
+     "window_s": 63.6,
+     "pool": {
+      "2561300:0": {
+       "capacity_tokens": 127039,
+       "resident_peak": 60081,
+       "resident_peak_ratio": 0.4729335086075929,
+       "held_by_running_peak": 4089,
+       "evicted_tokens": 0,
+       "evictable_at_start": 21066,
+       "waiting_peak": 0
+      },
+      "2561301:1": {
+       "capacity_tokens": 127039,
+       "resident_peak": 61828,
+       "resident_peak_ratio": 0.4866851911617692,
+       "held_by_running_peak": 3824,
+       "evicted_tokens": 0,
+       "evictable_at_start": 23203,
+       "waiting_peak": 0
+      }
+     },
+     "logical_working_set_peak": {
+      "2561300:0": 8081,
+      "2561301:1": 8561
+     },
+     "logical_ratio_peak": {
+      "2561300:0": 0.06361038736136147,
+      "2561301:1": 0.06738875463440361
+     },
+     "attribution": {
+      "requests_joined": 157,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9942922374429224,
+        "n": 25,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": 0.6560267937839248,
+        "n": 52,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 141,
+       "cross_replica": 64,
+       "same_replica_evicted": 0,
+       "clean": 77,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9916387959866221,
+        "n": 43
+       },
+       "next_turn": {
+        "median": 0.539082114735658,
+        "n": 98
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 19642,
+       "eviction": 0,
+       "unexplained_same_replica": 2367
+      },
+      "prefill_tokens": 72202,
+      "cached_tokens": 83089,
+      "lost_share_of_prefill": {
+       "routing": 0.27203851404175255,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.0327840795744835
+      },
+      "ttft_s_by_cause": {
+       "clean": {
+        "p50": 0.354073432,
+        "n": 77
+       },
+       "routing": {
+        "p50": 0.5740011295,
+        "n": 64
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "within_turn": {
+        "clean": {
+         "p50": 0.16509728,
+         "n": 25
+        },
+        "routing": {
+         "p50": 0.6809513094999999,
+         "n": 18
+        }
+       },
+       "next_turn": {
+        "routing": {
+         "p50": 0.5583061035000001,
+         "n": 46
+        },
+        "clean": {
+         "p50": 0.552353493,
+         "n": 52
+        }
+       }
+      }
+     },
+     "attribution_v1_registered_code": {
+      "requests_joined": 157,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9942922374429224,
+        "n": 25,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": 0.6560267937839248,
+        "n": 52,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 141,
+       "cross_replica": 64,
+       "same_replica_evicted": 0,
+       "clean": 77,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9916387959866221,
+        "n": 43
+       },
+       "next_turn": {
+        "median": 0.539082114735658,
+        "n": 98
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 19642,
+       "eviction": 0,
+       "unexplained_same_replica": 2367
+      },
+      "prefill_tokens": 72202,
+      "cached_tokens": 83089,
+      "lost_share_of_prefill": {
+       "routing": 0.27203851404175255,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.0327840795744835
+      },
+      "ttft_s_by_cause": {
+       "clean": {
+        "p50": 0.354073432,
+        "n": 77
+       },
+       "routing": {
+        "p50": 0.5740011295,
+        "n": 64
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "within_turn": {
+        "clean": {
+         "p50": 0.16509728,
+         "n": 25
+        },
+        "routing": {
+         "p50": 0.6809513094999999,
+         "n": 18
+        }
+       },
+       "next_turn": {
+        "routing": {
+         "p50": 0.5583061035000001,
+         "n": 46
+        },
+        "clean": {
+         "p50": 0.552353493,
+         "n": 52
+        }
+       }
+      }
+     },
+     "ttft_s": {
+      "p50": 0.484742953,
+      "p95": 0.951876787,
+      "n": 157
+     },
+     "session_s_p50": 32.1916438575
+    },
+    {
+     "phase": "r4_n32",
+     "sessions": 32,
+     "requests": 328,
+     "errors": 0,
+     "window_s": 76.0,
+     "pool": {
+      "2561300:0": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127037,
+       "resident_peak_ratio": 0.9999842568030289,
+       "held_by_running_peak": 10671,
+       "evicted_tokens": 17706,
+       "evictable_at_start": 60081,
+       "waiting_peak": 0
+      },
+      "2561301:1": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127037,
+       "resident_peak_ratio": 0.9999842568030289,
+       "held_by_running_peak": 11189,
+       "evicted_tokens": 18536,
+       "evictable_at_start": 61828,
+       "waiting_peak": 0
+      }
+     },
+     "logical_working_set_peak": {
+      "2561300:0": 19438,
+      "2561301:1": 19794
+     },
+     "logical_ratio_peak": {
+      "2561300:0": 0.15300813136123553,
+      "2561301:1": 0.1558104204220751
+     },
+     "attribution": {
+      "requests_joined": 328,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9942263279445728,
+        "n": 31,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": 0.5740922473012757,
+        "n": 63,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 296,
+       "cross_replica": 169,
+       "same_replica_evicted": 33,
+       "clean": 94,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.6693275732531931,
+        "n": 104
+       },
+       "next_turn": {
+        "median": 0.5498989499582619,
+        "n": 192
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 41380,
+       "eviction": 86,
+       "unexplained_same_replica": 2531
+      },
+      "prefill_tokens": 160018,
+      "cached_tokens": 184528,
+      "lost_share_of_prefill": {
+       "routing": 0.25859729680002363,
+       "eviction": 0.0005367421651378515,
+       "unexplained_same_replica": 0.01581385492195936
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 0.924792556,
+        "n": 169
+       },
+       "clean": {
+        "p50": 0.8600075094999999,
+        "n": 94
+       },
+       "eviction": {
+        "p50": 0.452078662,
+        "n": 33
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "next_turn": {
+        "routing": {
+         "p50": 0.9005385050000001,
+         "n": 110
+        },
+        "clean": {
+         "p50": 1.044735969,
+         "n": 63
+        },
+        "eviction": {
+         "p50": 0.626683183,
+         "n": 19
+        }
+       },
+       "within_turn": {
+        "routing": {
+         "p50": 0.926460904,
+         "n": 59
+        },
+        "clean": {
+         "p50": 0.532541548,
+         "n": 31
+        },
+        "eviction": {
+         "p50": 0.210624782,
+         "n": 14
+        }
+       }
+      }
+     },
+     "attribution_v1_registered_code": {
+      "requests_joined": 328,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9942263279445728,
+        "n": 31,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": 0.5740922473012757,
+        "n": 63,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 296,
+       "cross_replica": 169,
+       "same_replica_evicted": 33,
+       "clean": 94,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.6693275732531931,
+        "n": 104
+       },
+       "next_turn": {
+        "median": 0.5498989499582619,
+        "n": 192
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 41380,
+       "eviction": 86,
+       "unexplained_same_replica": 2531
+      },
+      "prefill_tokens": 160018,
+      "cached_tokens": 184528,
+      "lost_share_of_prefill": {
+       "routing": 0.25859729680002363,
+       "eviction": 0.0005367421651378515,
+       "unexplained_same_replica": 0.01581385492195936
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 0.924792556,
+        "n": 169
+       },
+       "clean": {
+        "p50": 0.8600075094999999,
+        "n": 94
+       },
+       "eviction": {
+        "p50": 0.452078662,
+        "n": 33
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "next_turn": {
+        "routing": {
+         "p50": 0.9005385050000001,
+         "n": 110
+        },
+        "clean": {
+         "p50": 1.044735969,
+         "n": 63
+        },
+        "eviction": {
+         "p50": 0.626683183,
+         "n": 19
+        }
+       },
+       "within_turn": {
+        "routing": {
+         "p50": 0.926460904,
+         "n": 59
+        },
+        "clean": {
+         "p50": 0.532541548,
+         "n": 31
+        },
+        "eviction": {
+         "p50": 0.210624782,
+         "n": 14
+        }
+       }
+      }
+     },
+     "ttft_s": {
+      "p50": 0.852818725,
+      "p95": 1.572845872,
+      "n": 328
+     },
+     "session_s_p50": 38.6804973475
+    },
+    {
+     "phase": "r4_n64",
+     "sessions": 64,
+     "requests": 664,
+     "errors": 0,
+     "window_s": 90.0,
+     "pool": {
+      "2561300:0": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127037,
+       "resident_peak_ratio": 0.9999842568030289,
+       "held_by_running_peak": 21141,
+       "evicted_tokens": 166550,
+       "evictable_at_start": 126984,
+       "waiting_peak": 0
+      },
+      "2561301:1": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127039,
+       "resident_peak_ratio": 1.0,
+       "held_by_running_peak": 19304,
+       "evicted_tokens": 163377,
+       "evictable_at_start": 125058,
+       "waiting_peak": 0
+      }
+     },
+     "logical_working_set_peak": {
+      "2561300:0": 29426,
+      "2561301:1": 31767
+     },
+     "logical_ratio_peak": {
+      "2561300:0": 0.23162965703445398,
+      "2561301:1": 0.2500570690890199
+     },
+     "attribution": {
+      "requests_joined": 664,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9945054945054945,
+        "n": 2,
+        "source": "run"
+       },
+       "next_turn": {
+        "median": 0.6218390804597701,
+        "n": 0,
+        "source": "run"
+       }
+      },
+      "counts": {
+       "pairs": 600,
+       "cross_replica": 297,
+       "same_replica_evicted": 301,
+       "clean": 2,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.705470737913486,
+        "n": 213
+       },
+       "next_turn": {
+        "median": 0.551617873651772,
+        "n": 387
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 86826,
+       "eviction": 9163,
+       "unexplained_same_replica": 0
+      },
+      "prefill_tokens": 314858,
+      "cached_tokens": 376592,
+      "lost_share_of_prefill": {
+       "routing": 0.2757635029264648,
+       "eviction": 0.029100851887982414,
+       "unexplained_same_replica": 0.0
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 1.156783999,
+        "n": 297
+       },
+       "eviction": {
+        "p50": 1.176156485,
+        "n": 301
+       },
+       "clean": {
+        "p50": 0.112649057,
+        "n": 2
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "within_turn": {
+        "routing": {
+         "p50": 1.09074468,
+         "n": 112
+        },
+        "eviction": {
+         "p50": 1.079103596,
+         "n": 99
+        },
+        "clean": {
+         "p50": 0.112649057,
+         "n": 2
+        }
+       },
+       "next_turn": {
+        "eviction": {
+         "p50": 1.2041742965,
+         "n": 202
+        },
+        "routing": {
+         "p50": 1.212417433,
+         "n": 185
+        }
+       }
+      }
+     },
+     "attribution_v1_registered_code": {
+      "requests_joined": 664,
+      "shared_floor_tokens": 79.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9968974351107566,
+        "n": 2,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": null,
+        "n": 0,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 600,
+       "cross_replica": 297,
+       "same_replica_evicted": 301,
+       "clean": 2,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.705470737913486,
+        "n": 213
+       },
+       "next_turn": {
+        "median": 0.551617873651772,
+        "n": 387
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 57452,
+       "eviction": 190,
+       "unexplained_same_replica": 0
+      },
+      "prefill_tokens": 314858,
+      "cached_tokens": 376592,
+      "lost_share_of_prefill": {
+       "routing": 0.18247096376148533,
+       "eviction": 0.0006037357566230077,
+       "unexplained_same_replica": 9.417312817427735e-07
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 1.156783999,
+        "n": 297
+       },
+       "eviction": {
+        "p50": 1.176156485,
+        "n": 301
+       },
+       "clean": {
+        "p50": 0.112649057,
+        "n": 2
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "within_turn": {
+        "routing": {
+         "p50": 1.09074468,
+         "n": 112
+        },
+        "eviction": {
+         "p50": 1.079103596,
+         "n": 99
+        },
+        "clean": {
+         "p50": 0.112649057,
+         "n": 2
+        }
+       },
+       "next_turn": {
+        "eviction": {
+         "p50": 1.2041742965,
+         "n": 202
+        },
+        "routing": {
+         "p50": 1.212417433,
+         "n": 185
+        }
+       }
+      }
+     },
+     "ttft_s": {
+      "p50": 1.1383490045,
+      "p95": 2.157345257,
+      "n": 664
+     },
+     "session_s_p50": 51.0154715405
+    },
+    {
+     "phase": "r4_n128",
+     "sessions": 128,
+     "requests": 1313,
+     "errors": 0,
+     "window_s": 145.1,
+     "pool": {
+      "2561300:0": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127038,
+       "resident_peak_ratio": 0.9999921284015145,
+       "held_by_running_peak": 36937,
+       "evicted_tokens": 359095,
+       "evictable_at_start": 126740,
+       "waiting_peak": 0
+      },
+      "2561301:1": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127039,
+       "resident_peak_ratio": 1.0,
+       "held_by_running_peak": 30532,
+       "evicted_tokens": 365364,
+       "evictable_at_start": 127030,
+       "waiting_peak": 0
+      }
+     },
+     "logical_working_set_peak": {
+      "2561300:0": 66908,
+      "2561301:1": 66314
+     },
+     "logical_ratio_peak": {
+      "2561300:0": 0.5266729114681319,
+      "2561301:1": 0.5219971819677421
+     },
+     "attribution": {
+      "requests_joined": 1313,
+      "shared_floor_tokens": 70.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9945054945054945,
+        "n": 0,
+        "source": "run"
+       },
+       "next_turn": {
+        "median": 0.6218390804597701,
+        "n": 0,
+        "source": "run"
+       }
+      },
+      "counts": {
+       "pairs": 1185,
+       "cross_replica": 599,
+       "same_replica_evicted": 586,
+       "clean": 0,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9901959276574803,
+        "n": 434
+       },
+       "next_turn": {
+        "median": 0.5368314833501514,
+        "n": 751
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 234589,
+       "eviction": 18132,
+       "unexplained_same_replica": 0
+      },
+      "prefill_tokens": 694139,
+      "cached_tokens": 699290,
+      "lost_share_of_prefill": {
+       "routing": 0.3379566162386169,
+       "eviction": 0.026122042771281915,
+       "unexplained_same_replica": 0.0
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 5.018748705,
+        "n": 599
+       },
+       "eviction": {
+        "p50": 4.559092563,
+        "n": 586
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "next_turn": {
+        "routing": {
+         "p50": 4.98211359,
+         "n": 386
+        },
+        "eviction": {
+         "p50": 4.905316943,
+         "n": 365
+        }
+       },
+       "within_turn": {
+        "eviction": {
+         "p50": 4.196460004,
+         "n": 221
+        },
+        "routing": {
+         "p50": 5.180593596,
+         "n": 213
+        }
+       }
+      }
+     },
+     "attribution_v1_registered_code": {
+      "requests_joined": 1313,
+      "shared_floor_tokens": 70.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": null,
+        "n": 0,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": null,
+        "n": 0,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 1185,
+       "cross_replica": 599,
+       "same_replica_evicted": 586,
+       "clean": 0,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.9901959276574803,
+        "n": 434
+       },
+       "next_turn": {
+        "median": 0.5368314833501514,
+        "n": 751
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 0,
+       "eviction": 0,
+       "unexplained_same_replica": 0
+      },
+      "prefill_tokens": 694139,
+      "cached_tokens": 699290,
+      "lost_share_of_prefill": {
+       "routing": 0.0,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.0
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 5.018748705,
+        "n": 599
+       },
+       "eviction": {
+        "p50": 4.559092563,
+        "n": 586
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "next_turn": {
+        "routing": {
+         "p50": 4.98211359,
+         "n": 386
+        },
+        "eviction": {
+         "p50": 4.905316943,
+         "n": 365
+        }
+       },
+       "within_turn": {
+        "eviction": {
+         "p50": 4.196460004,
+         "n": 221
+        },
+        "routing": {
+         "p50": 5.180593596,
+         "n": 213
+        }
+       }
+      }
+     },
+     "ttft_s": {
+      "p50": 4.353816935,
+      "p95": 9.526688567,
+      "n": 1313
+     },
+     "session_s_p50": 99.1941717775
+    },
+    {
+     "phase": "r4_n32_media2",
+     "sessions": 32,
+     "requests": 327,
+     "errors": 0,
+     "window_s": 88.6,
+     "pool": {
+      "2561300:0": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127031,
+       "resident_peak_ratio": 0.999937027212116,
+       "held_by_running_peak": 21598,
+       "evicted_tokens": 159647,
+       "evictable_at_start": 125220,
+       "waiting_peak": 0
+      },
+      "2561301:1": {
+       "capacity_tokens": 127039,
+       "resident_peak": 127038,
+       "resident_peak_ratio": 0.9999921284015145,
+       "held_by_running_peak": 15608,
+       "evicted_tokens": 157738,
+       "evictable_at_start": 126165,
+       "waiting_peak": 0
+      }
+     },
+     "logical_working_set_peak": {
+      "2561300:0": 27994,
+      "2561301:1": 25277
+     },
+     "logical_ratio_peak": {
+      "2561300:0": 0.22035752800321162,
+      "2561301:1": 0.198970394918096
+     },
+     "attribution": {
+      "requests_joined": 327,
+      "shared_floor_tokens": 88.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": 0.9945054945054945,
+        "n": 0,
+        "source": "run"
+       },
+       "next_turn": {
+        "median": 0.6218390804597701,
+        "n": 0,
+        "source": "run"
+       }
+      },
+      "counts": {
+       "pairs": 295,
+       "cross_replica": 161,
+       "same_replica_evicted": 134,
+       "clean": 0,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.40144128868164475,
+        "n": 109
+       },
+       "next_turn": {
+        "median": 0.2349368101344778,
+        "n": 186
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 113932,
+       "eviction": 37679,
+       "unexplained_same_replica": 0
+      },
+      "prefill_tokens": 310115,
+      "cached_tokens": 166937,
+      "lost_share_of_prefill": {
+       "routing": 0.3673876183166339,
+       "eviction": 0.12150121380792764,
+       "unexplained_same_replica": 0.0
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 1.802800388,
+        "n": 161
+       },
+       "eviction": {
+        "p50": 1.8454598275,
+        "n": 134
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "next_turn": {
+        "routing": {
+         "p50": 1.920367682,
+         "n": 104
+        },
+        "eviction": {
+         "p50": 2.113470016,
+         "n": 82
+        }
+       },
+       "within_turn": {
+        "routing": {
+         "p50": 1.468054525,
+         "n": 57
+        },
+        "eviction": {
+         "p50": 1.1852936354999999,
+         "n": 52
+        }
+       }
+      }
+     },
+     "attribution_v1_registered_code": {
+      "requests_joined": 327,
+      "shared_floor_tokens": 88.0,
+      "reference_reuse": {
+       "within_turn": {
+        "median": null,
+        "n": 0,
+        "source": "level"
+       },
+       "next_turn": {
+        "median": null,
+        "n": 0,
+        "source": "level"
+       }
+      },
+      "counts": {
+       "pairs": 295,
+       "cross_replica": 161,
+       "same_replica_evicted": 134,
+       "clean": 0,
+       "unknown_eviction": 0
+      },
+      "reuse_all_pairs": {
+       "within_turn": {
+        "median": 0.40144128868164475,
+        "n": 109
+       },
+       "next_turn": {
+        "median": 0.2349368101344778,
+        "n": 186
+       }
+      },
+      "lost_reuse_tokens": {
+       "routing": 0,
+       "eviction": 0,
+       "unexplained_same_replica": 0
+      },
+      "prefill_tokens": 310115,
+      "cached_tokens": 166937,
+      "lost_share_of_prefill": {
+       "routing": 0.0,
+       "eviction": 0.0,
+       "unexplained_same_replica": 0.0
+      },
+      "ttft_s_by_cause": {
+       "routing": {
+        "p50": 1.802800388,
+        "n": 161
+       },
+       "eviction": {
+        "p50": 1.8454598275,
+        "n": 134
+       }
+      },
+      "ttft_s_by_transition_and_cause": {
+       "next_turn": {
+        "routing": {
+         "p50": 1.920367682,
+         "n": 104
+        },
+        "eviction": {
+         "p50": 2.113470016,
+         "n": 82
+        }
+       },
+       "within_turn": {
+        "routing": {
+         "p50": 1.468054525,
+         "n": 57
+        },
+        "eviction": {
+         "p50": 1.1852936354999999,
+         "n": 52
+        }
+       }
+      }
+     },
+     "ttft_s": {
+      "p50": 1.725032189,
+      "p95": 3.706445431,
+      "n": 327
+     },
+     "session_s_p50": 51.701835467500004
+    }
+   ],
+   "run_reference_reuse": {
+    "within_turn": 0.9945054945054945,
+    "next_turn": 0.6218390804597701
+   },
+   "verdict": {
+    "levels": [
+     {
+      "phase": "r4_n8",
+      "sessions": 8,
+      "logical_ratio_peak": 0.04569462920835334,
+      "resident_ratio_peak": 0.18264469965915978,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0,
+      "routing_loss_share": 0.26548321930801977,
+      "clean_pairs": 41,
+      "ttft_comparable": true,
+      "reference": {
+       "within_turn": [
+        "level",
+        11
+       ],
+       "next_turn": [
+        "level",
+        30
+       ]
+      },
+      "eviction_pressure": "no",
+      "routing_cost": "yes"
+     },
+     {
+      "phase": "r4_n16",
+      "sessions": 16,
+      "logical_ratio_peak": 0.06738875463440361,
+      "resident_ratio_peak": 0.4866851911617692,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0,
+      "routing_loss_share": 0.27203851404175255,
+      "clean_pairs": 77,
+      "ttft_comparable": true,
+      "reference": {
+       "within_turn": [
+        "level",
+        25
+       ],
+       "next_turn": [
+        "level",
+        52
+       ]
+      },
+      "eviction_pressure": "no",
+      "routing_cost": "yes"
+     },
+     {
+      "phase": "r4_n32",
+      "sessions": 32,
+      "logical_ratio_peak": 0.1558104204220751,
+      "resident_ratio_peak": 0.9999842568030289,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0005367421651378515,
+      "routing_loss_share": 0.25859729680002363,
+      "clean_pairs": 94,
+      "ttft_comparable": true,
+      "reference": {
+       "within_turn": [
+        "level",
+        31
+       ],
+       "next_turn": [
+        "level",
+        63
+       ]
+      },
+      "eviction_pressure": "no",
+      "routing_cost": "no"
+     },
+     {
+      "phase": "r4_n64",
+      "sessions": 64,
+      "logical_ratio_peak": 0.2500570690890199,
+      "resident_ratio_peak": 1.0,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.029100851887982414,
+      "routing_loss_share": 0.2757635029264648,
+      "clean_pairs": 2,
+      "ttft_comparable": false,
+      "reference": {
+       "within_turn": [
+        "run",
+        2
+       ],
+       "next_turn": [
+        "run",
+        0
+       ]
+      },
+      "eviction_pressure": "no",
+      "routing_cost": "undetermined"
+     },
+     {
+      "phase": "r4_n128",
+      "sessions": 128,
+      "logical_ratio_peak": 0.5266729114681319,
+      "resident_ratio_peak": 1.0,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.026122042771281915,
+      "routing_loss_share": 0.3379566162386169,
+      "clean_pairs": 0,
+      "ttft_comparable": false,
+      "reference": {
+       "within_turn": [
+        "run",
+        0
+       ],
+       "next_turn": [
+        "run",
+        0
+       ]
+      },
+      "eviction_pressure": "no",
+      "routing_cost": "undetermined"
+     }
+    ],
+    "conclusion": "no eviction pressure, but cross-replica routing loses reuse that costs TTFT: next is a session-affinity A/B"
+   },
+   "verdict_v1_registered_code": {
+    "levels": [
+     {
+      "phase": "r4_n8",
+      "sessions": 8,
+      "logical_ratio_peak": 0.04569462920835334,
+      "resident_ratio_peak": 0.18264469965915978,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0,
+      "routing_loss_share": 0.26548321930801977,
+      "eviction_pressure": false,
+      "routing_cost": true
+     },
+     {
+      "phase": "r4_n16",
+      "sessions": 16,
+      "logical_ratio_peak": 0.06738875463440361,
+      "resident_ratio_peak": 0.4866851911617692,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0,
+      "routing_loss_share": 0.27203851404175255,
+      "eviction_pressure": false,
+      "routing_cost": true
+     },
+     {
+      "phase": "r4_n32",
+      "sessions": 32,
+      "logical_ratio_peak": 0.1558104204220751,
+      "resident_ratio_peak": 0.9999842568030289,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0005367421651378515,
+      "routing_loss_share": 0.25859729680002363,
+      "eviction_pressure": false,
+      "routing_cost": false
+     },
+     {
+      "phase": "r4_n64",
+      "sessions": 64,
+      "logical_ratio_peak": 0.2500570690890199,
+      "resident_ratio_peak": 1.0,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0006037357566230077,
+      "routing_loss_share": 0.18247096376148533,
+      "eviction_pressure": false,
+      "routing_cost": true
+     },
+     {
+      "phase": "r4_n128",
+      "sessions": 128,
+      "logical_ratio_peak": 0.5266729114681319,
+      "resident_ratio_peak": 1.0,
+      "over_registered_ratio": false,
+      "eviction_loss_share": 0.0,
+      "routing_loss_share": 0.0,
+      "eviction_pressure": false,
+      "routing_cost": false
+     }
+    ],
+    "conclusion": "no eviction pressure, but cross-replica routing loses reuse that costs TTFT: next is a session-affinity A/B"
+   },
+   "structural": {
+    "r4_n32_media2": {
+     "vs": "r4_n32",
+     "next_turn_reuse_text": 0.5740922473012757,
+     "next_turn_reuse_media": null,
+     "next_turn_reuse_all_pairs_text": 0.5498989499582619,
+     "next_turn_reuse_all_pairs_media": 0.2349368101344778,
+     "ttft_p50_text": 0.852818725,
+     "ttft_p50_media": 1.725032189
+    }
+   },
+   "utc_offset_known": true,
+   "replicas": [
+    "2561300:0",
+    "2561301:1"
+   ]
+  }
+ },
+ "combined": {
+  "conclusion": "no eviction pressure, but cross-replica routing loses reuse that costs TTFT: next is a session-affinity A/B",
+  "stable": true,
+  "by_block": {
+   "20261119_ppv_r4_block1_run01": "no eviction pressure, but cross-replica routing loses reuse that costs TTFT: next is a session-affinity A/B",
+   "20261119_ppv_r4_block2_run01": "no eviction pressure, but cross-replica routing loses reuse that costs TTFT: next is a session-affinity A/B",
+   "20261119_ppv_r4_block3_run01": "no eviction pressure, but cross-replica routing loses reuse that costs TTFT: next is a session-affinity A/B"
+  }
+ },
+ "combined_v1_registered_code": {
+  "conclusion": "no eviction pressure, but cross-replica routing loses reuse that costs TTFT: next is a session-affinity A/B",
+  "stable": true,
+  "by_block": {
+   "20261119_ppv_r4_block1_run01": "no eviction pressure, but cross-replica routing loses reuse that costs TTFT: next is a session-affinity A/B",
+   "20261119_ppv_r4_block2_run01": "no eviction pressure, but cross-replica routing loses reuse that costs TTFT: next is a session-affinity A/B",
+   "20261119_ppv_r4_block3_run01": "no eviction pressure, but cross-replica routing loses reuse that costs TTFT: next is a session-affinity A/B"
+  }
+ }
+}

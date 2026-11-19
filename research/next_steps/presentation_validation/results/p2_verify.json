@@ -1,0 +1,84 @@
+{
+ "generated_by": "scripts/analysis/ppv_p2_report.py",
+ "run": "20261119_ppv_p2_verify_run01",
+ "gate": "通过",
+ "reasons": [],
+ "per_phase": {
+  "chk_c1": {
+   "verify_events": 18,
+   "speech_ok": 18,
+   "unverified": 0,
+   "duplicates": 0,
+   "failed": 0
+  },
+  "chk_c8": {
+   "verify_events": 56,
+   "speech_ok": 48,
+   "unverified": 0,
+   "duplicates": 0,
+   "failed": 0
+  },
+  "chk_c32": {
+   "verify_events": 128,
+   "speech_ok": 96,
+   "unverified": 0,
+   "duplicates": 0,
+   "failed": 0
+  },
+  "chk_c64": {
+   "verify_events": 192,
+   "speech_ok": 128,
+   "unverified": 0,
+   "duplicates": 0,
+   "failed": 0
+  },
+  "chk_mix_text": {
+   "verify_events": 67,
+   "speech_ok": 52,
+   "unverified": 0,
+   "duplicates": 0,
+   "failed": 0
+  },
+  "chk_mix_long": {
+   "verify_events": 128,
+   "speech_ok": 96,
+   "unverified": 0,
+   "duplicates": 0,
+   "failed": 0
+  },
+  "chk_mix_seed": {
+   "verify_events": 128,
+   "speech_ok": 96,
+   "unverified": 0,
+   "duplicates": 0,
+   "failed": 0
+  },
+  "chk_timeout": {
+   "verify_events": 0,
+   "speech_ok": 0,
+   "unverified": 0,
+   "duplicates": 0,
+   "failed": 0
+  },
+  "chk_after": {
+   "verify_events": 128,
+   "speech_ok": 96,
+   "unverified": 0,
+   "duplicates": 0,
+   "failed": 0
+  },
+  "chk_w3xl": {
+   "verify_events": 40,
+   "speech_ok": 32,
+   "unverified": 0,
+   "duplicates": 0,
+   "failed": 0
+  }
+ },
+ "requests_verified": 885,
+ "mismatches": [],
+ "mismatch_count": 0,
+ "log_warnings": 0,
+ "erratum_expected_rows": [],
+ "erratum_count": 0
+}

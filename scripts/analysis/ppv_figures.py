@@ -463,6 +463,14 @@ def fig_duplex_sessions(out: Path) -> list[Path]:
                 ms=8, label="2 GPUs (R2b), speaking units, P50")
         a1.plot(bx, [lv["descriptive"]["unit_lag_speaking_ms"].get("p99") for lv in blv], marker="D", ls="none", color="#D55E00",
                 mfc="white", ms=8, label="2 GPUs (R2b), speaking units, P99")
+        ymax = 1800.0  # R2b's lag can be tens of seconds: mark points above the axis instead of rescaling the R2 curves
+        for lv in blv:
+            p50 = lv["descriptive"]["unit_lag_speaking_ms"].get("p50")
+            if p50 is not None and p50 > ymax:
+                a1.annotate(f"R2b, {lv['level']} sessions:\nP50 {p50 / 1e3:.0f} s (off scale)", xy=(lv["level"], ymax * 0.97),
+                            xytext=(lv["level"] * 0.65, ymax * 0.64), ha="center", fontsize=8, color="#D55E00",
+                            arrowprops={"arrowstyle": "->", "color": "#D55E00"})
+        a1.set_ylim(0, ymax)
         verdict = (b.get("verdict_h_r2b") or {}).get("verdict")
         r2b_note = (" Diamonds: R2b, the registered 2-GPU split (thinker on its own GPU) at 4 and 8 sessions, "
                     f"{len(b.get('runs') or {})} block(s); registered verdict: {VERDICT_EN.get(verdict, verdict)}; "
@@ -689,7 +697,7 @@ def fig_r4_working_set(out: Path) -> list[Path]:
                 slot[cause].append((share.get(cause) or 0.0) * 100)
             slot["routing_cost"].append((status.get(x["sessions"]) or {}).get("routing_cost"))
     a1.axhline(0.8, color="#D55E00", ls=":", lw=1)
-    a1.text(8, 0.82, "0.8: flagged, does not decide", color="#D55E00", fontsize=8)
+    a1.text(40, 0.82, "0.8: flagged, does not decide", color="#D55E00", fontsize=8)
     a1.set_xscale("log", base=2)
     levels = sorted(by_level)
     a1.set_xticks(levels, [str(v) for v in levels])

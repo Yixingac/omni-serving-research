@@ -395,7 +395,7 @@ def run_reference(levels: list[dict[str, Any]]) -> dict[str, float | None]:
 def strip_private(obj: Any) -> Any:
     """Drop the per-pair clean ratios (kept only to pool the run-level reference) before writing the JSON."""
     if isinstance(obj, dict):
-        return {k: strip_private(v) for k, v in obj.items() if not k.startswith("_")}
+        return {k: strip_private(v) for k, v in obj.items() if not (isinstance(k, str) and k.startswith("_"))}
     if isinstance(obj, list):
         return [strip_private(v) for v in obj]
     return obj

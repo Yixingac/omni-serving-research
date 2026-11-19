@@ -169,6 +169,7 @@ def test_run_reference_pools_the_clean_pairs_of_the_main_levels_only():
     ref = r4.run_reference([lv("r4_n8", [0.6, 0.62]), lv("r4_n16", [0.64]), lv("r4_n32_media2", [0.1, 0.1, 0.1])])
     assert ref == {"within_turn": None, "next_turn": 0.62}
     assert r4.strip_private({"a": {"_clean_ratios": [1], "median": 2}, "b": [{"_x": 1, "y": 2}]}) == {"a": {"median": 2}, "b": [{"y": 2}]}
+    assert r4.strip_private({"by_turn": {0: 561, 1: 689}}) == {"by_turn": {0: 561, 1: 689}}  # smoke: integer keys
 
 
 def _lv(name, n, ev, rt, clean_n, clean_p50=0.3, ev_p50=0.6, rt_p50=0.6):
