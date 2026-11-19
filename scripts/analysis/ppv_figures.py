@@ -13,6 +13,8 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
+import statistics
 import sys
 from pathlib import Path
 from typing import Any, Callable
@@ -603,11 +605,72 @@ def fig_p1_batching(out: Path) -> list[Path]:
     return save(fig, out, "fig11_p1_batching")
 
 
+R4_SUMMARY = PV / "results/r4_working_set.json"
+
+
+def fig_r4_working_set(out: Path) -> list[Path]:
+    """R4: KV working set vs capacity per session count, and reuse lost to eviction or routing (registered thresholds)."""
+    d = json.loads(R4_SUMMARY.read_text())
+    runs = {run: r for run, r in sorted(d["runs"].items()) if r.get("levels")}
+    if not runs:
+        raise FileNotFoundError(2, "no R4 main run in the summary", str(R4_SUMMARY))
+    plt = plt_setup()
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(13, 4.8))
+    shades = ["#0072B2", "#56B4E9", "#009E73"]
+    by_level: dict[int, dict[str, list[float]]] = {}
+    for (run, r), color in zip(runs.items(), shades):
+        lv = sorted((x for x in r["levels"] if "_media" not in x["phase"] and x.get("sessions")), key=lambda x: x["sessions"])
+        xs = [x["sessions"] for x in lv]
+        logical = [max((x.get("logical_ratio_peak") or {}).values(), default=None) for x in lv]
+        resident = [max((p.get("resident_peak_ratio") or 0.0 for p in (x.get("pool") or {}).values()), default=None) for x in lv]
+        block = re.search(r"block(\d+)", run)
+        tag = f"block {block.group(1)}" if block else run
+        a1.plot(xs, logical, marker="o", color=color, label=f"logical working set / capacity ({tag})")
+        a1.plot(xs, resident, marker="s", ls="--", color=color, mfc="white", label=f"resident KV / capacity ({tag})")
+        for x in lv:
+            share = ((x.get("attribution") or {}).get("lost_share_of_prefill") or {})
+            slot = by_level.setdefault(x["sessions"], {"eviction": [], "routing": []})
+            for cause in ("eviction", "routing"):
+                slot[cause].append((share.get(cause) or 0.0) * 100)
+    a1.axhline(0.8, color="#D55E00", ls=":", lw=1)
+    a1.text(8, 0.82, "0.8: flagged, does not decide", color="#D55E00", fontsize=8)
+    a1.set_xscale("log", base=2)
+    levels = sorted(by_level)
+    a1.set_xticks(levels, [str(v) for v in levels])
+    a1.set_xlabel("concurrent robot sessions (2+2+4, two thinker replicas)")
+    a1.set_ylabel("peak ratio (max over thinker replicas)")
+    a1.set_title("KV working set vs capacity")
+    a1.legend(fontsize=7, loc="upper left")
+    w = 0.38
+    for i, (cause, color) in enumerate((("eviction", "#CC79A7"), ("routing", "#E69F00"))):
+        xs = [k + (i - 0.5) * w for k in range(len(levels))]
+        means = [statistics.fmean(by_level[v][cause]) if by_level[v][cause] else 0.0 for v in levels]
+        a2.bar(xs, means, width=w, color=color, label=f"lost to {cause} (mean over blocks)")
+        for x, v in zip(xs, levels):
+            a2.scatter([x] * len(by_level[v][cause]), by_level[v][cause], color="black", s=8, zorder=3)
+    a2.axhline(10, color="#D55E00", ls=":", lw=1)
+    a2.text(-0.4, 10.4, "registered threshold: 10 % of prefill tokens (and TTFT ≥ 1.2× clean)", color="#D55E00", fontsize=8)
+    a2.set_xticks(range(len(levels)), [str(v) for v in levels])
+    a2.set_xlabel("concurrent robot sessions")
+    a2.set_ylabel("lost reuse (% of the level's prefill tokens)")
+    a2.set_title("Reuse lost to eviction or to replica routing")
+    a2.legend(fontsize=8, loc="upper left")
+    comb = (d.get("combined") or {}).get("conclusion")
+    caption(fig, "R4 (this round): full service on 2+2+4, runtime 520b49ee + default-off KV logging patch, synthetic multimodal robot "
+                 "sessions (one new camera frame and a unique spoken request per turn, half the turns with a tool call; earlier turns "
+                 "sent back as text), 8 → 128 sessions in one run per block, " + f"{len(runs)} block(s). "
+                 "Logical working set = the latest prompt + completion of every live session on a replica; resident = cached + running "
+                 "KV. Dots = blocks. The media-history contrast (32 sessions) is reported in the text, not here. "
+            + ("Registered conclusion across blocks: see the results." if comb else ""))
+    return save(fig, out, "fig12_r4_working_set")
+
+
 FIGURES: dict[str, Callable[[Path], list[Path]]] = {"placement": fig_placement, "p0_admission": fig_p0_admission,
                                                     "p0_capacity": fig_p0_capacity, "c2w_shapes": fig_c2w_shapes,
                                                     "c2w_kernels": fig_c2w_kernels, "duplex_ttfa": fig_duplex_ttfa,
                                                     "c1": fig_c1, "c2": fig_c2, "duplex_sessions": fig_duplex_sessions,
-                                                    "r3_camera": fig_r3_camera, "p1_batching": fig_p1_batching}
+                                                    "r3_camera": fig_r3_camera, "p1_batching": fig_p1_batching,
+                                                    "r4_working_set": fig_r4_working_set}
 
 
 def main() -> int:

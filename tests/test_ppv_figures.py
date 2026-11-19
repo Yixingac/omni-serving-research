@@ -52,3 +52,22 @@ def test_p1_figure_draws_from_a_summary_and_never_draws_unbounded_means(tmp_path
     paths = pf.fig_p1_batching(tmp_path / "out")
     assert [q.suffix for q in paths] == [".png", ".svg"] and all(q.stat().st_size > 1000 for q in paths)
     assert "inconclusive" in paths[1].read_text() and "w3b fifo16 x110" in paths[1].read_text()
+
+
+def test_r4_figure_draws_blocks_from_a_summary(tmp_path, monkeypatch):
+    import json
+
+    def level(n, k):
+        return {"phase": f"r4_n{n}", "sessions": n, "logical_ratio_peak": {"a": 0.01 * n / 8 + k * 0.001},
+                "pool": {"a": {"resident_peak_ratio": 0.02 * n / 8}},
+                "attribution": {"lost_share_of_prefill": {"eviction": 0.0, "routing": 0.02 + k * 0.01}}}
+
+    runs = {f"20261119_ppv_r4_block{k}_run01": {"levels": [level(n, k) for n in (8, 16, 32, 64, 128)] + [
+        {"phase": "r4_n32_media2", "sessions": 32}], "verdict": {"conclusion": "x"}} for k in (1, 2, 3)}
+    runs["20261119_ppv_r4_smoke_run01"] = {"smoke": {}}
+    p = tmp_path / "r4.json"
+    p.write_text(json.dumps({"runs": runs, "combined": {"conclusion": "x"}}))
+    monkeypatch.setattr(pf, "R4_SUMMARY", p)
+    paths = pf.fig_r4_working_set(tmp_path / "out")
+    assert [q.suffix for q in paths] == [".png", ".svg"] and all(q.stat().st_size > 1000 for q in paths)
+    assert "block 3" in paths[1].read_text()
