@@ -77,3 +77,21 @@ def test_duplex_runs_never_count_log_gaps(tmp_path):
     (exp / "raw" / "duplex_duplex_s1").mkdir()
     r = ps.analyze_run(exp)
     assert r["duplex"] and not r["log_dense"] and r["log_gaps"] == [] and len(r["log_gaps_sparse_log"]) == 1
+
+
+def test_gen2_gc_is_counted_in_measured_phases_and_matched_to_an_overlapping_gap(tmp_path):
+    # lines until 7.9 s, then from 10.5 s; a 1.5 s collection starts at 8.0 s and its log line is written when it ends
+    lines = [T0 + 0.1 * i for i in range(0, 80)] + [T0 + 10.5 + 0.1 * i for i in range(0, 80)]
+    exp = _run(tmp_path, lines, [_sample(T0 + i, 0.0) for i in range(21)])
+    gc_in_gap = _log_line(T0 + 9.5).rstrip("\n").replace("x: line", f"exp_trace: exp_gc generation=2 pid=4242 stage= start_ns={int((T0 + 8.0) * 1e9)} duration_ms=1500.0 collected=7")
+    gc_startup = _log_line(T0 - 3).rstrip("\n").replace("x: line", f"exp_trace: exp_gc generation=2 pid=4242 stage= start_ns={int((T0 - 3) * 1e9)} duration_ms=900.0 collected=7")
+    with open(exp / "logs" / "server_s0.log", "a") as fh:
+        fh.write(gc_in_gap + "\n" + gc_startup + "\n")
+    (exp / "raw" / "server_events" / "open").mkdir(parents=True)
+    (exp / "raw" / "server_events" / "open" / "events_code2wav@r1_4242.jsonl").write_text("")
+    r = ps.analyze_run(exp)
+    assert r["gc_gen2"]["count"] == 1 and r["gc_gen2"]["duration_ms_max"] == 1500.0  # the start-up one is outside
+    assert r["gc_gen2"]["by_stage"] == {"code2wav": 1}
+    gap = next(g for g in r["log_gaps"] if g["gap_s"] > 1.5)
+    assert gap["gc_overlap"] == [{"pid": 4242, "stage": "code2wav", "duration_ms": 1500.0}]
+    assert ps.summarize([r])["gaps_with_gc_overlap"] == 1

@@ -28,6 +28,9 @@ from pathlib import Path
 from typing import Any
 
 STAMP = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}) ")
+# Gen-2 garbage collections logged by the P1 patch (sglang_omni.profiler.exp_trace): start in epoch ns, duration in ms.
+GC = re.compile(r"exp_gc generation=2 pid=(\d+) stage=\S* start_ns=(\d+) duration_ms=([0-9.]+)")
+EVENT_FILE = re.compile(r"^events_(?P<stage>[a-z0-9_]+?)(?:@r\d+)?_(?P<pid>\d+)\.jsonl$")
 MEASURED_KINDS = ("closed_loop", "open_loop", "plugin", "agent", "replay")
 
 
@@ -46,6 +49,27 @@ def log_times(lines, offset_s: float) -> list[float]:
             naive = dt.datetime.strptime(m.group(1), "%Y-%m-%d %H:%M:%S").replace(tzinfo=dt.timezone.utc)
             out.append(naive.timestamp() - offset_s + int(m.group(2)) / 1e3)
     return sorted(out)
+
+
+def gc_events(lines) -> list[dict[str, Any]]:
+    out = []
+    for line in lines:
+        m = GC.search(line)
+        if m:
+            start = int(m.group(2)) / 1e9
+            out.append({"pid": int(m.group(1)), "start": start, "end": start + float(m.group(3)) / 1e3,
+                        "duration_ms": float(m.group(3))})
+    return out
+
+
+def stage_of_pid(exp: Path) -> dict[int, str]:
+    """pid -> stage from the server-event file names (only runs that recorded request events)."""
+    out: dict[int, str] = {}
+    for f in (exp / "raw" / "server_events").rglob("events_*.jsonl"):
+        m = EVENT_FILE.match(f.name)
+        if m:
+            out[int(m.group("pid"))] = m.group("stage")
+    return out
 
 
 def gaps_in(times: list[float], lo: float, hi: float, gap_s: float) -> list[tuple[float, float]]:
@@ -107,20 +131,31 @@ def analyze_run(exp: Path, gap_s: float = 1.0, dense_s: float = 0.25) -> dict[st
     per_s = psi_per_second(samples)
     in_measured = [r for r in per_s if any(lo <= r["t0"] <= hi for lo, hi in windows)]
     times: list[float] = []
+    gcs: list[dict[str, Any]] = []
     if log_path.exists():
         with open(log_path, errors="ignore") as fh:
-            times = log_times(fh, utc_offset_s(manifest))
+            lines = fh.readlines()
+        times = log_times(lines, utc_offset_s(manifest))
+        gcs = [g for g in gc_events(lines) if any(lo <= g["start"] <= hi for lo, hi in windows)]
+    stages = stage_of_pid(exp)
     spacing = median_spacing(times, windows)
     # A full-duplex server logs in bursts once per 1-s unit and idles between them, so its log gaps are not pauses.
     duplex = any((exp / "raw").glob("duplex_*"))
     dense = spacing is not None and spacing <= dense_s and not duplex
     log_gaps = [describe_gap(g, per_s) for lo, hi in windows for g in gaps_in(times, lo, hi, gap_s)]
+    for g in log_gaps:  # a gen-2 collection overlapping the gap (its process cannot log while it collects)
+        g["gc_overlap"] = [{"pid": c["pid"], "stage": stages.get(c["pid"]), "duration_ms": c["duration_ms"]}
+                           for c in gcs if c["start"] < g["start"] + g["gap_s"] and c["end"] > g["start"]]
     sampler_gaps = [describe_gap((r["t0"], r["t1"]), per_s) for r in in_measured if r["spacing_s"] > 1.8]
     base = lambda key: statistics.median([r.get(key) or 0.0 for r in in_measured]) if in_measured else None  # noqa: E731
     return {"run": exp.name, "measured_s": round(sum(hi - lo for lo, hi in windows), 1), "duplex": duplex,
             "log_median_spacing_s": spacing, "log_dense": dense,
             "log_gaps": log_gaps if dense else [], "log_gaps_sparse_log": [] if dense else log_gaps,
             "sampler_gaps": sampler_gaps,
+            "gc_gen2": {"count": len(gcs), "duration_ms_p50": statistics.median([c["duration_ms"] for c in gcs]) if gcs else None,
+                        "duration_ms_max": max((c["duration_ms"] for c in gcs), default=None),
+                        "by_stage": {st: sum(1 for c in gcs if stages.get(c["pid"]) == st) for st in sorted({stages.get(c["pid"]) or "unknown" for c in gcs})}
+                        if gcs else {}},
             "baseline": {"io_full_ms_per_s_median": base("io_full_ms_per_s"), "io_some_ms_per_s_median": base("io_some_ms_per_s"),
                          "cpu_some_ms_per_s_median": base("cpu_some_ms_per_s"), "d_state_seconds": sum(1 for r in in_measured if r["d_state"]),
                          "psi_seconds": len(in_measured)}}
@@ -134,7 +169,10 @@ def summarize(runs: list[dict[str, Any]]) -> dict[str, Any]:
             "max_log_gap_s": max((g["gap_s"] for g in gaps), default=None),
             "sampler_gaps": sum(len(r["sampler_gaps"]) for r in runs),
             "gaps_with_io_stall": sum(1 for g in gaps if (g["io_full_ms_per_s_max"] or 0) >= 100),
-            "gaps_with_d_state": sum(1 for g in gaps if (g["d_state_max"] or 0) > 0)}
+            "gaps_with_d_state": sum(1 for g in gaps if (g["d_state_max"] or 0) > 0),
+            "gaps_with_gc_overlap": sum(1 for g in gaps if g.get("gc_overlap")),
+            "gc_gen2_in_measured_phases": sum(r["gc_gen2"]["count"] for r in runs),
+            "gc_gen2_max_ms": max((r["gc_gen2"]["duration_ms_max"] or 0 for r in runs), default=None)}
 
 
 def main() -> int:
