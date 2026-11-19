@@ -61,15 +61,17 @@
 
 ## Slide 7 — Compiler / Runtime Optimization Results
 
-[C1 and C2 written; P1 filled after its runs]
-
 - **Research claim (C1).** Packing the flow DiT's variable-length attention removes the masked attention and its mask preparation and cuts code2wav GPU time per audio second by 13–42 % on batched real shapes — but the pinned implementation runs the packed path in BF16 and fails the audio-quality gate, while the same packing in FP16 keeps quality.
 - **Research claim (C2).** HiFT's compile-time optimizations (weight-norm folding, channels-last, FP16) give no measurable gain; FP16 halves kernel time but makes the call slower because HiFT is dominated by per-call overhead.
-- **Main figures.** `figures/fig07_c1_flow_packed.png`; `figures/fig08_c2_hift.png`.
-- **Supporting evidence.** C1: P1 vs dense −24 % (W3b fifo16), −42 % (MIX fifo16), −25 % (MIX length8), −1 % at ~1.2 requests per batch; identical in three timed passes; MCD vs FP32 reference +1.01 dB (BF16, fail) vs +0.06 dB (FP16, pass). C2: fold exact but −5..+7 % (noise); channels-last and FP16 fail numerical gates; FP16 +31..+50 % slower; kernels are 77 % of the call (35 % with FP16).
+- **Research claim (P1).** On the full service, the code2wav batching policy matters only past saturation. There, length-aware batching (Length8) keeps goodput near the offered load where first-come batching (FIFO16) collapses; adding a maximum wait, the registered fix for starvation, protects nobody and gives part of the gain back.
+- **Main figures.** `figures/fig07_c1_flow_packed.png`; `figures/fig08_c2_hift.png`; `figures/fig11_p1_batching.png` (P1).
+- **Supporting evidence.** C1: arm P1 (packed + compiled; not experiment P1) vs dense −24 % (W3b fifo16), −42 % (MIX fifo16), −25 % (MIX length8), −1 % at ~1.2 requests per batch; identical in three timed passes; MCD vs FP32 reference +1.01 dB (BF16, fail) vs +0.06 dB (FP16, pass). C2: fold exact but −5..+7 % (noise); channels-last and FP16 fail numerical gates; FP16 +31..+50 % slower; kernels are 77 % of the call (35 % with FP16).
+- **Supporting evidence (P1, 3 blocks, 135 cells, no failed request).** H1a, H1b, H1c all inconclusive (τ 1 s vs FIFO16 goodput +0.05 to +1.9 % at 1.0X; short-request queue P99 × 0.88–2.30 of Length8's). At 1.1X, W3L goodput Length8 13.9 / 15.0 / 14.3 vs FIFO16 2.2 / 8.2 / 4.3 req/s (descriptive); with τ 1 s, 84–92 % of W3L batches were forced and block 1 fell to 4.3 req/s.
 - **What I should explain.** Correctness first: the registered candidate failed quality, so we draw no performance conclusion and ran no end-to-end test; the FP16 arm was exploratory and becomes the next registered experiment. The overlap with length-aware batching (packing gains less on length8 batches). Why a kernel-level win (FP16 HiFT) can lose at the call level.
+- **What I should explain (P1).** Length8 anchors every batch on the oldest waiting request, so it never starves anyone; under overload every waiting request is older than any τ we tried, so the maximum wait turns the batch back into arrival order. In open loop every request completes eventually; the settings differ in how many finish within the latency target. Length8 also lowers the batch cap from 16 to 8, so order and cap are not separated (next experiment: FIFO8).
 - **Likely questions.** "Why not write a Triton varlen kernel?" — FlashAttention-2 varlen already runs on sm_86; the bottleneck was precision and compilation, not the kernel. "Is MCD meaningful here?" — only relative to the dense path against the same reference; equivalent runs already differ by ~4 dB because the excitation is sampled.
-- **Sources.** `final_experiment_results.md` C1, C2; `results/c1_*.json`, `results/c2_*.json`.
+- **Likely questions (P1).** "Is the gain just the smaller batch?" — partly, possibly: on code2wav alone 实验 10 measured FIFO8 +7 % vs Length8 +30 % over FIFO16, but the full-service split is untested. "Why call 1.1X overload if block 2 was steady?" — its random draw was lighter (15.3 vs 17.1 / 16.8 req/s realised), which is why we show every block.
+- **Sources.** `final_experiment_results.md` C1, C2, P1; `results/c1_*.json`, `results/c2_*.json`, `results/p1_summary.json`.
 
 ## Slide 8 — Full-Duplex Interaction Results
 

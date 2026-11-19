@@ -269,3 +269,57 @@ Why the registered verdicts came out this way (analysis after the fact, rules un
 **Limitations.** Synthetic frames of ≈ 2.5 KB (CPU decode cost is a lower bound); request-response path only; text-only replica; one block per arm at screening; the encoder's “service” time is dispatch-to-completion on a GPU shared by all stages of the replica, so the events cannot separate its own compute from waiting for the GPU or for requests batched with it; nvidia-smi utilisation is unusable at light load; `processor` timing includes host-to-device copies.
 
 **中文小结（筛选）。** 一张 A6000 上的纯文字副本，合成摄像头每个时刻发一帧图（或 2 秒短片）。16 个会话时，每秒能接受的请求封顶在约 7.6 帧（单张 PNG）或约 9.5 段短片，再提高帧率只会多丢帧。时间都花在图像编码器上（服务时间从约 50–70 ms 涨到 0.8–1.4 s），GPU 功耗顶在 300 W 上限附近、频率被压低；饱和格子里 CPU 预处理只占服务端时间的 2–8%。按登记规则，5 个饱和格子都是“GPU 受限”，没有一个是“预处理受限”。把预处理并发从 1 提到 4，18 个格子都没有改善，事先的预测（短片在 16 个会话时卡在预处理上，提高并发有帮助）在筛选阶段不成立。另外，“跟得上”不等于“新鲜”：单张 PNG、16 个会话 × 0.5 帧/秒只丢 4.4%（低于 10% 的饱和线），但回答中位数晚 1.50 秒（P95 1.86 秒）。3 个区组的确认运行排在 P1 之后，结果补在下面。
+
+---
+
+## P1 — Does length-aware code2wav batching with a maximum wait help the full service near saturation?
+
+**Research question.** 实验 10 found that grouping code2wav requests by length raises code2wav throughput when code2wav alone is saturated, but on the full service below saturation batches held only ~1.2 requests, so nothing could be shown there. On the full 2+2+4 service driven to and past its capacity, does Length8 batching with a maximum wait τ (old requests are forced into the next batch) raise goodput, keep short requests from starving, and leave short-answer traffic no worse?
+
+**Hypotheses and gates (registered in `../p0_p3_experiment_plan.md` P1; details written before any P1 data in `p1_p2_p3_design.md` §1.3; X fixed by the pre-run, Erratum E-P1-X).**
+- H1a: on MIX at 1.0X and 1.1X, Length8 + τ 1 s goodput ≥ 1.05 × FIFO16 in all 3 blocks → supported; ≤ FIFO16 everywhere → refuted; otherwise inconclusive.
+- H1b: on MIX at 1.0X and 1.1X, short requests' code2wav queue P99 with τ 1 s ≤ 0.8 × Length8's, with audio seconds per second ≥ 0.95 × Length8's, in all 3 blocks → supported; otherwise inconclusive.
+- H1c: on W3b at every rate, Length8 + τ 1 s end-to-end P95 ≤ 1.05 × FIFO16's in all 3 blocks → supported; otherwise inconclusive.
+- Registered failure modes: the talker or thinker may saturate before code2wav; in open loop any dequeue order only redistributes queueing; τ too small degenerates to FIFO, too large does not protect short requests.
+
+**Setup.**
+- Runtime `unicorn_ppv_maxwait` = 520b49ee + 实验 10's batching patch + the max-wait rule (code2wav only) + gc logging; 2+2+4 (`t2_k2_c4`), flow CUDA graphs on, request events on in every cell.
+- X = busy-window throughput of the FIFO16 closed-loop pre-run: W3b 28.96, W3L 14.52, MIX 14.67 req/s (Erratum E-P1-X). Rates 0.9X/1.0X/1.1X rounded to 0.5: W3b 26/29/32, W3L and MIX 13/14.5/16 req/s.
+- 5 settings: FIFO16, Length8, Length8 + τ 0.5/1/2 s (look-ahead window 64). Length8 differs from FIFO16 in two ways: it groups by length *and* caps a batch at 8 requests instead of 16. Length8 anchors every batch on the oldest waiting request and fills it with the requests closest in length; with τ, requests that have waited ≥ τ are taken first, in arrival order.
+- One open-loop cell per workload × setting × rate (45 per block), each after a control phase that writes all four keys; 15 s (W3L 20 s) warm-up dropped by scheduled send time, then 75 s (W3L 90 s) measured. Poisson arrivals with seed 20261119 + block (+ rate), so the five settings of a block and rate see the same requests at the same times.
+- 3 blocks, one server start each, workload order rotated per block, cells in a seeded random order. Block 2 died when P3's SIGUSR2 stack dump segfaulted a code2wav process (F6, deviation D3) and was re-run as `ppv_p1_block2_a2` without the stack hook (06:31–07:54); the verdicts use blocks 1, 2_a2 and 3. Block 1 ran 03:23–04:44, block 3 05:07–06:31, block 2_a2 06:31–07:54; no other run overlapped any block (orchestrator start and end times).
+
+**Evidence** (`results/p1_summary.json`, figure `fig11_p1_batching`; Measured; per-block values in block order 1 / 2_a2 / 3).
+- **Validity.** 135 of 135 cells usable: the control file was applied to every batch, no request failed or timed out, no server restarted. Every measured request completed in every cell, so the completion rate equals the realised arrival rate (MIX 1.1X: 17.1 / 15.3 / 16.8 req/s) and the settings differ only in latency. First-token P95 ≤ 0.34 s in every cell, so goodput is lost to the end-to-end criterion (code2wav queueing), not to TTFT.
+- **Registered contrasts:**
+
+| Hypothesis | Cells | Ratio per block (1 / 2_a2 / 3) | Gate | Verdict |
+|---|---|---|---|---|
+| H1a goodput, τ 1 s ÷ FIFO16 − 1 | MIX 1.0X | +0.05 % / +1.9 % / +0.09 % | ≥ +5 % in all 6 | **inconclusive** |
+| | MIX 1.1X | +87.6 % / +1.6 % / +18.5 % | | |
+| H1b short-request queue P99, τ 1 s ÷ Length8 | MIX 1.0X | 0.88 / 1.26 / 0.88 | ≤ 0.8 in all 6 (audio ratio 0.995–1.003, gate met) | **inconclusive** |
+| | MIX 1.1X | 0.97 / 1.84 / 2.30 | | |
+| H1c e2e P95, τ 1 s ÷ FIFO16 | W3b 0.9X | 1.046 / 1.100 / 0.991 | ≤ 1.05 in all 9 | **inconclusive** |
+| | W3b 1.0X | 0.991 / 1.006 / 0.979 | | |
+| | W3b 1.1X | 1.085 / 0.795 / 0.969 | | |
+
+- **Which cells were overloaded.** MIX and W3L at 1.1X: the in-flight count kept growing in blocks 1 and 3 under FIFO16. Block 2_a2's 1.1X draw was lighter (MIX: 15.3 req/s realised and 338 audio-s/s offered, against 17.1 / 16.8 req/s and 380 / 366 audio-s/s in blocks 1 and 3), and its FIFO16 MIX cell stayed steady. W3b was steady in all 45 cells: 32 req/s (1.1X) is still below W3b's open-loop capacity on 2+2+4, so H1c was tested below saturation only.
+- **Length8 against FIFO16 at overload (descriptive, not a registered test; order and batch cap change together):**
+
+| Cell | Goodput FIFO16 → Length8 (req/s) | e2e P95 FIFO16 → Length8 (s) | Padding FIFO16 → Length8 | Requests per batch FIFO16 → Length8 |
+|---|---|---|---|---|
+| MIX 1.1X | 6.6 / 14.4 / 11.4 → 15.4 / 15.1 / 16.1 | 20.3 / 9.7 / 17.2 → 11.5 / 8.1 / 9.7 | 33 / 21 / 29 % → 25 / 17 / 21 % | 8.9 / 2.3 / 4.0 → 4.4 / 1.9 / 2.6 |
+| W3L 1.1X | 2.2 / 8.2 / 4.3 → 13.9 / 15.0 / 14.3 | 32.2 / 24.5 / 38.2 → 18.1 / 13.2 / 18.3 | 19 / 16 / 19 % → 7 / 11 / 7 % | 14.9 / 8.8 / 12.5 → 7.8 / 7.2 / 7.3 |
+
+  At 0.9X and 1.0X all five settings are within a few percent on goodput (MIX 1.0X means 14.6–14.8 req/s; W3b within 3 % at every rate).
+- **What the maximum wait did at overload.** At 1.1X a large share of batches contained forced (aged) requests: MIX τ 0.5 / 1 / 2 s: 65 / 10 / 44 %, 69 / 6 / 26 %, 40 / 1 / 10 %; W3L: 99 / 71 / 100 %, 92 / 84 / 92 %, 96 / 48 / 97 %. Goodput fell below Length8's wherever the cell was overloaded (MIX τ 1 s 12.5 / 14.7 / 13.5 against 15.4 / 15.1 / 16.1; W3L τ 1 s 4.3 / 15.0 / 7.4 against 13.9 / 15.0 / 14.3; τ 0.5 s and 2 s alike), padding rose back (W3L τ 1 s 16 / 14 / 15 % against 7 / 11 / 7 %), and short requests waited longer, not shorter (short-request queue P99, MIX τ 1 s 5.1 / 3.4 / 7.0 s against 5.2 / 1.9 / 3.0 s; W3L 19.4 / 5.6 / 19.9 s against 10.8 / 5.8 / 11.4 s).
+- **Starvation.** The share of requests whose code2wav queue exceeded 3 × FIFO16's P95 of the same length group, block and rate was ≤ 0.6 % in 134 of 135 cells (2.5 % in one W3b 1.1X τ 1 s cell); Length8 without a maximum wait never exceeded 0.4 %.
+- **Stable capacity** (highest steady rate per block; “≥” = the top rate was steady, a lower bound): MIX FIFO16 14.5 / ≥ 16 / 14.5, Length8 and every τ ≥ 16 / ≥ 16 / 14.5; W3L FIFO16 14.5 / 13 / 13, Length8 ≥ 16 / ≥ 16 / 13, τ 1 s 14.5 / ≥ 16 / 14.5; W3b ≥ 32 for every setting. Several W3L cells sit near the steadiness threshold, so these steps are noisy.
+
+**Result.** All three registered hypotheses are **inconclusive**: H1a because at 1.0X the maximum wait changes goodput by +0.05 to +1.9 % and at 1.1X the gain over FIFO16 (+1.6 to +87.6 %) depends on whether the block was overloaded; H1b because the maximum wait never lowered the short-request queue P99 to 0.8 × Length8's, and at 1.1X it raised it in two of three blocks (× 1.84, × 2.30); H1c because two of nine W3b cells exceed the 5 % margin (× 1.10 and × 1.085) while the others are within it. Descriptively, the maximum wait is a negative result: wherever the service was overloaded it gave back part of Length8's goodput (W3L block 1: 13.9 → 4.3 req/s), and it protected no one, because Length8 starved no one to begin with. Length8 itself is the only setting that kept goodput near the offered rate past saturation (MIX and W3L 1.1X, all three blocks), but this round cannot say whether length grouping or the smaller batch cap does it.
+
+**Interpretation.** Length8 already bounds waiting: every batch is anchored on the oldest waiting request, so a request is skipped at most until it becomes the oldest. The maximum wait therefore had nothing to fix. Under overload every waiting request is older than τ (queue P99 of several seconds against τ ≤ 2 s), so the rule fills batches in arrival order: Length8 degenerates into first-come batching with a cap of 8, padding returns and goodput falls toward FIFO16's. This is the registered failure mode “τ too small degenerates to FIFO”, here for every τ tested, because the overload queue is longer than any of them. Below saturation the dequeue order only redistributes queueing (the other registered failure mode): 0.9X and 1.0X look the same for all five settings. The batching policy matters only once code2wav is overloaded, and there what helps is fewer, length-matched requests per batch (Hypothesis on the mechanism: at overload FIFO16's batches averaged up to 14.9 requests with 16–33 % padding, so the flow model spends GPU time on padding. On code2wav alone, 实验 10 measured MIX audio throughput over FIFO16 at +7 % for FIFO8, +11 % for Length16 and +30 % for Length8 (3 runs each), so the cap alone explains part of the difference, not all of it; P1 has no FIFO8 arm to separate them on the full service). For the system: a stage policy cannot replace admission control; past capacity, the queue grows under every setting and only the slope differs.
+
+**Limitations.** One node; synthetic W3b/W3L/MIX; open loop at three rates only, and “1.1X” was not the same load in every block (block 2_a2's draw was lighter); unsteady cells are window-dependent, so their goodput describes these 75–90 s, not a capacity; Length8 and FIFO16 differ in order and cap; W3b never reached saturation, so H1c covers the unsaturated regime only; X came from one pre-run (E-P1-X); block 1 had stack dumps in its drains, 2_a2 and 3 none (D3); the interaction with packed flow was not run because C1 failed its quality gate (NOT APPLICABLE).
+
+**中文小结。** P1 在完整服务（2+2+4）上，用开环泊松到达把负载推到 0.9X、1.0X、1.1X，比较 code2wav 的 5 种组批：FIFO16、Length8，以及 Length8 加 0.5/1/2 秒的最长等待。3 个区组、135 个格子全部有效，没有一个请求失败。登记的三个假设都是**不确定**：最长等待 1 秒相对 FIFO16 的 goodput 在 1.0X 只差 +0.05% 到 +1.9%；它没有把短请求的排队 P99 降到 Length8 的 0.8 倍，过载时反而在两个区组里升到 1.84 倍和 2.30 倍；W3b 有两格超过 5% 的容差。描述性的结果是：只有过载时组批策略才有影响。MIX 和 W3L 在 1.1X 时，Length8 的 goodput 在三个区组都保持在提供负载附近（W3L 13.9/15.0/14.3 请求/秒，FIFO16 只有 2.2/8.2/4.3）；加上最长等待以后，过载时大部分批次变成强制选入（W3L 48–100%），实际退化成按到达顺序组批，goodput 又掉回去一大截（W3L 区组 1 从 13.9 掉到 4.3）。原因是 Length8 每一批都以最老的请求为锚，本来就不会饿死请求（超过 FIFO16 同组 P95 三倍的比例最多 0.4%），最长等待没有东西可保护。注意：Length8 同时改了顺序和批上限（8 对 16），这一轮分不开两者各自的作用；1.1X 在区组 2 的实际负载偏轻；W3b 在 32 请求/秒仍未饱和。

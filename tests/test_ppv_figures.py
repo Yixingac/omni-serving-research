@@ -2,6 +2,7 @@
 never drawn as zeros (no GPU, no network)."""
 
 import importlib.util
+import re
 import sys
 from pathlib import Path
 
@@ -12,6 +13,15 @@ sys.path.insert(0, str(HERE))
 spec = importlib.util.spec_from_file_location("ppv_figures", HERE / "ppv_figures.py")
 pf = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(pf)
+
+
+def svg_text(path: Path) -> str:
+    """Searchable text of a figure SVG. With svg.fonttype 'path' matplotlib writes every text line as an XML comment
+    before its glyphs; wrapped captions break at spaces, and where they break depends on font settings left behind by
+    earlier tests (a CJK sans-serif from exp01_*), so the comment lines are joined before a phrase is searched. The
+    whitespace-collapsed source is appended for text written as <text> elements."""
+    raw = path.read_text()
+    return " ".join(" ".join(re.findall(r"<!-- (.*?) -->", raw, flags=re.S)).split()) + " " + " ".join(raw.split())
 
 
 @pytest.mark.parametrize("name", sorted(pf.FIGURES))
@@ -51,7 +61,7 @@ def test_p1_figure_draws_from_a_summary_and_never_draws_unbounded_means(tmp_path
     monkeypatch.setattr(pf, "P1_SUMMARY", p)
     paths = pf.fig_p1_batching(tmp_path / "out")
     assert [q.suffix for q in paths] == [".png", ".svg"] and all(q.stat().st_size > 1000 for q in paths)
-    assert "inconclusive" in paths[1].read_text() and "w3b fifo16 x110" in paths[1].read_text()
+    assert "inconclusive" in svg_text(paths[1]) and "w3b fifo16 x110" in svg_text(paths[1])
 
 
 def test_r4_figure_draws_blocks_from_a_summary(tmp_path, monkeypatch):
@@ -70,7 +80,7 @@ def test_r4_figure_draws_blocks_from_a_summary(tmp_path, monkeypatch):
     monkeypatch.setattr(pf, "R4_SUMMARY", p)
     paths = pf.fig_r4_working_set(tmp_path / "out")
     assert [q.suffix for q in paths] == [".png", ".svg"] and all(q.stat().st_size > 1000 for q in paths)
-    assert "block 3" in paths[1].read_text()
+    assert "block 3" in svg_text(paths[1])
 
 
 def test_duplex_sessions_figure_overlays_r2b_only_when_it_exists(tmp_path, monkeypatch):
@@ -82,10 +92,10 @@ def test_duplex_sessions_figure_overlays_r2b_only_when_it_exists(tmp_path, monke
     p.write_text(json.dumps({"runs": {"block1": "x", "block2": "y", "block3": "z"}, "verdict_h_r2b": {"verdict": "支持"},
                              "arms": {"ms8_2gpu": {"levels": lv}}}))
     monkeypatch.setattr(pf, "R2B_SUMMARY", p)
-    svg = pf.fig_duplex_sessions(tmp_path / "with")[1].read_text()
+    svg = svg_text(pf.fig_duplex_sessions(tmp_path / "with")[1])
     assert "R2b" in svg and "supported" in svg
     monkeypatch.setattr(pf, "R2B_SUMMARY", tmp_path / "missing.json")
-    assert "R2b" not in pf.fig_duplex_sessions(tmp_path / "without")[1].read_text()
+    assert "R2b" not in svg_text(pf.fig_duplex_sessions(tmp_path / "without")[1])
 
 
 def test_r3_figure_overlays_the_confirmation_only_when_it_exists(tmp_path, monkeypatch):
@@ -96,7 +106,7 @@ def test_r3_figure_overlays_the_confirmation_only_when_it_exists(tmp_path, monke
     p = tmp_path / "conf.json"
     p.write_text(json.dumps({"confirmation": conf}))
     monkeypatch.setattr(pf, "R3_CONFIRM", p)
-    svg = pf.fig_r3_camera(tmp_path / "with")[1].read_text()
+    svg = svg_text(pf.fig_r3_camera(tmp_path / "with")[1])
     assert "3-block confirmation" in svg and "not supported" in svg
     monkeypatch.setattr(pf, "R3_CONFIRM", tmp_path / "missing.json")
-    assert "3-block confirmation" not in pf.fig_r3_camera(tmp_path / "without")[1].read_text()
+    assert "3-block confirmation" not in svg_text(pf.fig_r3_camera(tmp_path / "without")[1])

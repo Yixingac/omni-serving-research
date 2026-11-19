@@ -594,16 +594,18 @@ def _num(x: Any) -> float | None:
 
 
 def fig_p1_batching(out: Path) -> list[Path]:
-    """P1: code2wav batching policy on the full 2+2+4 service near saturation -- the three registered contrasts."""
+    """P1: code2wav batching policy on the full 2+2+4 service near saturation -- the three registered contrasts, plus
+    W3L goodput as a descriptive panel (not a registered test)."""
     d = json.loads(P1_SUMMARY.read_text())
     summ = d["summary"]
     plt = plt_setup()
-    fig, axes = plt.subplots(1, 3, figsize=(15.5, 4.8))
+    fig, axes = plt.subplots(2, 2, figsize=(13.5, 9.6))
     panels = [("mix", "goodput_rps", 1.0, "MIX: goodput (req/s)", "H1a"),
               ("mix", "short_queue_p99_ms", 1e-3, "MIX: short requests' code2wav queue P99 (s)", "H1b"),
-              ("w3b", "e2e_p95", 1.0, "W3b: end-to-end P95 (s)", "H1c")]
+              ("w3b", "e2e_p95", 1.0, "W3b: end-to-end P95 (s)", "H1c"),
+              ("w3l", "goodput_rps", 1.0, "W3L: goodput (req/s)", None)]
     unbounded = []
-    for ax, (w, metric, scale, title, h) in zip(axes, panels):
+    for ax, (w, metric, scale, title, h) in zip(axes.flat, panels):
         for j, (st, label, color, mk) in enumerate(P1_SETTINGS):
             pts = []
             for tag in ("x090", "x100", "x110"):
@@ -618,23 +620,31 @@ def fig_p1_batching(out: Path) -> list[Path]:
                     continue
                 ci = c[metric].get("ci95")
                 steady = all(bool(v) for v in c.get("steady") or [])
+                runs = [r * scale for r in (c[metric].get("runs") or []) if _num(r) is not None]
                 pts.append((x + (j - 2) * 0.09, mean * scale,
                             (mean - ci[0]) * scale if ci and _num(ci[0]) is not None else 0.0,
-                            (ci[1] - mean) * scale if ci and _num(ci[1]) is not None else 0.0, steady))
+                            (ci[1] - mean) * scale if ci and _num(ci[1]) is not None else 0.0, steady, runs))
             if not pts:
                 continue
             ax.plot([p[0] for p in pts], [p[1] for p in pts], color=color, lw=1.2, label=label)
-            for x, y, lo, hi, steady in pts:
+            for x, y, lo, hi, steady, runs in pts:
                 ax.errorbar([x], [y], yerr=[[lo], [hi]], marker=mk, color=color, mfc=color if steady else "white", capsize=3, ls="none")
-        verdict = (d.get("verdicts") or {}).get(h) or {}
-        ax.set_title(f"{title}\n{h}: {VERDICT_EN.get(verdict.get('verdict'), verdict.get('verdict') or 'n/a')}", fontsize=10)
+                ax.plot([x + 0.035] * len(runs), runs, ls="none", marker=".", ms=4, color=color, alpha=0.6)
+        if h:
+            verdict = (d.get("verdicts") or {}).get(h) or {}
+            ax.set_title(f"{title}\n{h}: {VERDICT_EN.get(verdict.get('verdict'), verdict.get('verdict') or 'n/a')}", fontsize=10)
+        else:
+            ax.set_title(f"{title}\ndescriptive, not a registered test", fontsize=10)
         ax.set_xlabel("offered load (req/s): 0.9X / 1.0X / 1.1X")
-    axes[0].legend(fontsize=8, loc="best")
+    axes.flat[0].legend(fontsize=8, loc="lower left")
+    fig.subplots_adjust(hspace=0.42, wspace=0.18)
     caption(fig, "P1 (this round): full service on 2+2+4, runtime 520b49ee + experiment 10's batching patch + max wait (code2wav only), open loop "
-                 "with Poisson arrivals at 0.9X/1.0X/1.1X where X is the pre-run's busy-window throughput (FIFO16); 75 s measured per cell "
-                 "(W3b, MIX) after warm-up, same arrival sequence for all settings within a block; 3 blocks; mean with 95 % t interval "
-                 "(df 2). Hollow markers: not steady in every block (an unsteady cell's throughput is not a capacity). Goodput = TTFT ≤ 1 s "
-                 "and e2e ≤ 0.5 × audio length; failures count against it. Short = below the cell's median audio length."
+                 "with Poisson arrivals at 0.9X/1.0X/1.1X where X is the pre-run's busy-window throughput (FIFO16); 75 s (W3L 90 s) measured "
+                 "per cell after warm-up, same arrival sequence for all settings within a block; 3 blocks; mean with 95 % t interval "
+                 "(df 2), small dots = the 3 blocks. Hollow markers: not steady in every block (an unsteady cell's throughput is not a "
+                 "capacity). Goodput = TTFT ≤ 1 s and e2e ≤ 0.5 × audio length; failures count against it. Short = below the cell's median "
+                 "audio length. Every measured request completed in every cell, so settings differ in latency, not in completions. "
+                 "Length8 differs from FIFO16 in both order and batch cap (8 vs 16)."
             + (f" Not drawn (unbounded mean): {', '.join(unbounded)}." if unbounded else ""))
     return save(fig, out, "fig11_p1_batching")
 
