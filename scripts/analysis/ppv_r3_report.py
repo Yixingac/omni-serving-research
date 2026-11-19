@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import statistics
 import sys
 from collections import defaultdict
@@ -139,6 +140,42 @@ def confirm_cells(cells: dict[str, dict[str, dict[str, Any]]], limit: int = 6) -
     return [k for *_, k in chosen[:limit]]
 
 
+CONFIRM_RE = re.compile(r"ppv_r3_confirm_seq_c(\d+)_block(\d+)")
+BLOCKS = (1, 2, 3)
+
+
+def cell_key(c: dict[str, Any]) -> str:
+    return f"{c['shape']}_s{c['sessions']}_f{c['fps']:g}"
+
+
+def confirm_verdicts(runs: list[dict[str, Any]]) -> dict[str, Any]:
+    """Registered (r3_r4_design.md 2.4): per confirmation cell, concurrency 4 is compared with 1 inside each block;
+    支持 when it improves in all 3 blocks, 不支持 when in none, 不确定 otherwise; a missing block or arm is 数据不足.
+    Also, per block, concurrency 1's class and both arms' drop ratio and first-response P95 (descriptive)."""
+    by: dict[str, dict[int, dict[str, dict[str, Any]]]] = defaultdict(lambda: defaultdict(dict))
+    for run in runs:
+        m = CONFIRM_RE.search(run.get("experiment_id") or "")
+        if not m:
+            continue
+        for c in run["cells"]:
+            by[cell_key(c)][int(m.group(2))][str(c["max_concurrency"])] = c
+    out: dict[str, Any] = {}
+    for key, blocks in sorted(by.items()):
+        imp = {str(b): (improved(blocks[b]["1"], blocks[b]["4"]) if "1" in blocks.get(b, {}) and "4" in blocks.get(b, {}) else None)
+               for b in BLOCKS}
+        vals = list(imp.values())
+        verdict = ("数据不足" if any(v is None for v in vals) else "支持" if all(vals) else "不支持" if not any(vals) else "不确定")
+        col = lambda conc, f: {str(b): (f(blocks[b][conc]) if conc in blocks.get(b, {}) else None) for b in BLOCKS}  # noqa: E731
+        out[key] = {"verdict": verdict, "improved_by_block": imp,
+                    "class_c1_by_block": col("1", lambda c: c.get("class")),
+                    "drop_ratio": {"c1": col("1", lambda c: c.get("drop_ratio")), "c4": col("4", lambda c: c.get("drop_ratio"))},
+                    "first_response_p95_s": {"c1": col("1", lambda c: (c.get("first_response_s") or {}).get("p95")),
+                                             "c4": col("4", lambda c: (c.get("first_response_s") or {}).get("p95"))},
+                    "sent_per_s": {"c1": col("1", lambda c: c.get("sent") / 60.0 if c.get("sent") is not None else None)},
+                    "gpu_power_mean_w_c1": col("1", lambda c: c.get("gpu_power_mean_w"))}
+    return out
+
+
 def gpu_evidence(win: dict[str, dict[str, Any]], gpus: list[int]) -> dict[str, Any]:
     """Descriptive GPU columns next to gpu_busy_mean (the registered class still uses only gpu_busy_mean): nvidia-smi
     utilisation aliases under periodic per-session loads (seen in R0), so mean power and the share of 0 % readings are
@@ -209,6 +246,13 @@ def main() -> int:
     for run in runs:
         for c in run["cells"]:
             cells[f"{c['shape']}_s{c['sessions']}_f{c['fps']:g}"][str(c["max_concurrency"])] = c
+    if any(CONFIRM_RE.search(r.get("experiment_id") or "") for r in runs):
+        # confirmation runs: never pool blocks; the registered verdict is per cell over the three blocks
+        out = {"generated_by": "scripts/analysis/ppv_r3_report.py", "runs": runs, "confirmation": confirm_verdicts(runs)}
+        Path(a.out).parent.mkdir(parents=True, exist_ok=True)
+        Path(a.out).write_text(json.dumps(out, ensure_ascii=False, indent=1))
+        print(json.dumps({k: v["verdict"] for k, v in out["confirmation"].items()}, ensure_ascii=False))
+        return 0
     out = {"generated_by": "scripts/analysis/ppv_r3_report.py", "runs": runs,
            "improved_by_concurrency_4": {k: improved(v["1"], v["4"]) for k, v in cells.items() if "1" in v and "4" in v},
            "confirm_cells": confirm_cells(cells)}

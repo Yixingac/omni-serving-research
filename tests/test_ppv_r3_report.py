@@ -91,3 +91,25 @@ def test_gpu_evidence_reports_power_and_flags_aliased_utilisation():
     assert r3.gpu_evidence(win, [0]) == {"gpu_power_mean_w": 180.0, "gpu_util_zero_share": 1.0, "gpu_util_suspect": True}
     assert r3.gpu_evidence(win, [1])["gpu_util_suspect"] is False
     assert r3.gpu_evidence(win, [7]) == {}
+
+
+def test_confirmation_verdict_is_per_cell_over_three_paired_blocks():
+    def cell(conc, drop, p95, shape="frame", sessions=16, fps=1.0):
+        return {"shape": shape, "sessions": sessions, "fps": fps, "max_concurrency": conc, "drop_ratio": drop,
+                "first_response_s": {"p95": p95}, "class": "gpu_bound", "sent": 450}
+
+    def run(conc, block, cells):
+        return {"experiment_id": f"ppv_r3_confirm_seq_c{conc}_block{block}", "cells": cells}
+
+    runs = []
+    for b in (1, 2, 3):
+        runs.append(run(1, b, [cell(1, 0.50, 2.0), cell(1, 0.60, 2.0, shape="clip")]))
+        # frame: no change in any block; clip: concurrency 4 drops far fewer frames in blocks 1-2 only
+        runs.append(run(4, b, [cell(4, 0.50, 2.0), cell(4, 0.30 if b < 3 else 0.60, 2.0, shape="clip")]))
+    v = r3.confirm_verdicts(runs)
+    assert v["frame_s16_f1"]["verdict"] == "不支持" and v["clip_s16_f1"]["verdict"] == "不确定"
+    assert v["clip_s16_f1"]["improved_by_block"] == {"1": True, "2": True, "3": False}
+    assert r3.confirm_verdicts(runs[:-1])["clip_s16_f1"]["verdict"] == "数据不足"
+    better = [run(1, b, [cell(1, 0.5, 2.0)]) for b in (1, 2, 3)] + [run(4, b, [cell(4, 0.2, 2.0)]) for b in (1, 2, 3)]
+    assert r3.confirm_verdicts(better)["frame_s16_f1"]["verdict"] == "支持"
+    assert r3.confirm_verdicts([{"experiment_id": "ppv_r3_screen_c1_a2", "cells": [cell(1, 0.5, 2.0)]}]) == {}
