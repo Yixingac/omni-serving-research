@@ -64,7 +64,7 @@ def test_rendered_plans_run_from_the_worktree():
     files = mp.render()
     names = {Path(p).name for p in files if p.startswith("configs/experiments/plan_")}
     assert names == {"plan_ppv_r0.json", "plan_ppv_r1.json", "plan_ppv_r2_smoke.json", "plan_ppv_r2_ms4_1gpu.json",
-                     "plan_ppv_r2_ms8_2gpu.json", "plan_ppv_r2_ms8_1gpu.json"}
+                     "plan_ppv_r2_ms8_2gpu.json", "plan_ppv_r2_ms8_1gpu.json", "plan_ppv_r2b.json"}
     for p, text in files.items():
         if Path(p).name.startswith("plan_"):
             for e in json.loads(text)["experiments"]:
@@ -85,3 +85,15 @@ def test_runs_of_a_plan_are_chained_so_latency_runs_never_overlap():
         assert exps[0]["dependencies"] == []
         for prev, cur in zip(exps, exps[1:]):
             assert cur["dependencies"] == [prev["experiment_id"]]
+
+
+def test_r2b_reuses_the_2gpu_configs_under_new_ids_after_p2_verify():
+    r2b = mp.r2b_entries()
+    orig = mp.r2_entries("ms8_2gpu")
+    assert [c["experiment_id"] for c, _ in r2b] == [f"ppv_r2b_ms8_2gpu_block{b}" for b in (1, 2, 3)]
+    for (c, m), (o, _) in zip(r2b, orig):
+        strip = lambda d: {k: v for k, v in d.items() if k not in ("experiment_id", "description")}  # noqa: E731
+        assert strip(c) == strip(o)
+        assert -718 < m["priority"] < -714  # behind P2 verify (-714), ahead of the P2 performance runs (-721..)
+    plan = json.loads(mp.render()["configs/experiments/plan_ppv_r2b.json"])
+    assert [e["dependencies"] for e in plan["experiments"]] == [[], ["ppv_r2b_ms8_2gpu_block1"], ["ppv_r2b_ms8_2gpu_block2"]]

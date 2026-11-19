@@ -297,3 +297,30 @@ async def test_suspect_gpu_utilisation_is_flagged_and_ooms_are_counted_per_level
     assert fl["resource"] == "neither saturated (uncertain)"  # the registered test, unchanged
     assert fl["gpu_util_suspect"] is True and "unreliable input" in fl["resource_input_note"]
     assert fl["stage_gpu_power_mean_w"] == [150.0, 150.0, 150.0]
+
+
+def _r2b_level(blocks: dict[str, dict], meets: bool) -> list[dict]:
+    return [{"level": 8, "per_block": blocks, "meets_serving_target": meets, "unit_miss_rate": 0.0,
+             "blocks_ran": sorted(int(k) for k, b in blocks.items() if b.get("ran")), "skipped_in_blocks": {}}]
+
+
+def test_r2b_verdict_follows_the_registered_rule():
+    ok = {"ran": True, "sessions_failed": 0, "oom_events": 0}
+    oom = {"ran": True, "sessions_failed": 0, "oom_events": 3}
+    failed = {"ran": True, "sessions_failed": 2, "oom_events": 0}
+    skipped = {"ran": False, "skipped": True, "reason": "stop rule"}
+    missing = {"ran": False, "skipped": False, "reason": "no ok run for this block"}
+    v = r2.verdict_r2b
+    assert v(_r2b_level({"1": ok, "2": ok, "3": ok}, True))["verdict"] == "支持"
+    # meeting R2's target is not enough when a block logged an OOM at 8 sessions
+    assert v(_r2b_level({"1": ok, "2": oom, "3": ok}, True))["verdict"] == "不确定"
+    assert v(_r2b_level({"1": oom, "2": failed, "3": skipped}, False))["verdict"] == "反驳"
+    assert v(_r2b_level({"1": ok, "2": failed, "3": failed}, False))["verdict"] == "不确定"
+    assert v(_r2b_level({"1": ok, "2": ok, "3": missing}, False))["verdict"] == "数据不足"
+    assert v([])["verdict"] == "数据不足"
+
+
+def test_r2b_ids_are_separate_from_r2():
+    assert r2.R2B_RE.match("ppv_r2b_ms8_2gpu_block3").groups() == ("ms8_2gpu", "3")
+    assert r2.R2B_RE.match("ppv_r2_ms8_2gpu_block3") is None
+    assert r2.RUN_RE.match("ppv_r2b_ms8_2gpu_block3") is None

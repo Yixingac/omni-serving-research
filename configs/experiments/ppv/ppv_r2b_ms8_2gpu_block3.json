@@ -1,0 +1,76 @@
+{
+ "runtime_profile": "unicorn",
+ "hardware_label": "a6000x2",
+ "seed": 20261119,
+ "assets": "synthetic-v1",
+ "experiment_id": "ppv_r2b_ms8_2gpu_block3",
+ "description": "R2b（R2 之后登记，见 preregistration.md R2b）：R2 第 3 个区组：max_sessions 8、2 张 A6000，并发会话 4/8 依次各 180 秒，开服务端请求事件；上一档有会话失败就不再升档。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "s0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1
+   ],
+   "args": [
+    "--variant",
+    "session",
+    "--enable-realtime",
+    "--max_sessions",
+    "8",
+    "--thinker.gpu",
+    "1",
+    "--thinker.gpu_memory_fraction",
+    "0.85"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "plugin",
+   "module": "duplex.phase",
+   "name": "duplex_n4",
+   "sessions": 4,
+   "duration_s": 180.0,
+   "lead_in_s": 2.0,
+   "answer_window_s": 12.0,
+   "barge_in_every": 0,
+   "barge_in_offset_s": 3.0,
+   "stagger_s": 1.0,
+   "session_seed": 20261119,
+   "asset_pool": "duplex-v1",
+   "output_modalities": [
+    "audio"
+   ],
+   "save_audio_sessions": 1,
+   "server_events": true
+  },
+  {
+   "kind": "plugin",
+   "module": "duplex.phase",
+   "name": "duplex_n8",
+   "sessions": 8,
+   "duration_s": 180.0,
+   "lead_in_s": 2.0,
+   "answer_window_s": 12.0,
+   "barge_in_every": 0,
+   "barge_in_offset_s": 3.0,
+   "stagger_s": 1.0,
+   "session_seed": 20261119,
+   "asset_pool": "duplex-v1",
+   "output_modalities": [
+    "audio"
+   ],
+   "save_audio_sessions": 1,
+   "server_events": true,
+   "skip_if_failed": [
+    "duplex_n4"
+   ],
+   "stop_if_unit_miss_above": 0.01
+  }
+ ]
+}

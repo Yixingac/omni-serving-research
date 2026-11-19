@@ -160,6 +160,19 @@ def r2_entries(arm: str) -> list[tuple[dict, dict]]:
     return out
 
 
+def r2b_entries() -> list[tuple[dict, dict]]:
+    """R2b (registered after R2's data, before any R2b run; preregistration.md R2b): the registered 2-GPU split at 4 and
+    8 sessions -- the same configs as ppv_r2_ms8_2gpu_block*, which were generated but never queued, under new IDs.
+    Queued behind P2 verify (-714) so no other run shares the node; the plan chains the three blocks."""
+    out = []
+    for block, (c, m) in enumerate(r2_entries("ms8_2gpu"), start=1):
+        c = json.loads(json.dumps(c))
+        c["experiment_id"] = c["experiment_id"].replace("ppv_r2_", "ppv_r2b_", 1)
+        c["description"] = "R2b（R2 之后登记，见 preregistration.md R2b）：" + c["description"]
+        out.append((c, {**m, "priority": -714 - block}))
+    return out
+
+
 def command(experiment_id: str) -> str:
     return f"cd {CODE_DIR} && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh {EXP_DIR}/{experiment_id}.json"
 
@@ -170,6 +183,7 @@ PLANS = {
     "plan_ppv_r2_smoke": ("R2 放置冒烟（max_sessions 8 能否单卡启动；双卡拆分能否跑通）。", r2_smoke_entries),
     **{f"plan_ppv_r2_{arm}": (f"R2 并发会话扫描，{arm}，3 个区组，只在 R0 通过、冒烟决定放置后放入。",
                               functools.partial(r2_entries, arm)) for arm in R2_ARMS},
+    "plan_ppv_r2b": ("R2b：双卡放置（thinker 单独占第 2 张卡）下 4、8 个会话，3 个区组串行，排在 P2 逐位检查之后。", r2b_entries),
 }
 
 

@@ -324,6 +324,74 @@ def placement(smokes: dict[str, dict[str, Any]], arms_run: list[str]) -> dict[st
             "consistent": None if expected is None else sorted(arms_run) == sorted(expected)}
 
 
+def arm_report(arm: str, mains: dict[int, Path]) -> dict[str, Any]:
+    """One placement arm over its blocks (block -> latest run): levels, capacities, first limiting stage."""
+    _, _, levels = R2_ARMS[arm]
+    raw: dict[int, dict[int, dict[str, Any]]] = defaultdict(dict)
+    args: list[str] = []
+    for block in range(1, BLOCKS + 1):
+        exp = mains.get(block)
+        if exp is None:
+            for lv in levels:
+                raw[lv][block] = {"ran": False, "skipped": False, "reason": "no ok run for this block"}
+            continue
+        args = args or server_args(exp)
+        gpu = load_gpu_samples_utc(exp)
+        cpu = read_jsonl(exp / "raw" / "cpu_samples.jsonl")
+        pids = pid_stages([exp / "raw" / "server_events"])
+        ooms = oom_events(exp)
+        for lv in levels:
+            raw[lv][block] = level_block(exp, lv, gpu, cpu, pids, ooms)
+    entries = [level_entry(lv, raw[lv], BLOCKS) for lv in levels]
+    serving = capacity(entries, lambda e: e["meets_serving_target"])
+    deadline = {f"{d:g}s": capacity(entries, lambda e, k=f"{d:g}s": e["meets_deadline_target"][k]) for d in DEADLINES_S}
+    lowest = min(levels)
+    return {"levels": entries, "serving_capacity": serving, "deadline_capacity": deadline,
+            "stop_rule_skips": {str(e["level"]): e["skipped_in_blocks"] for e in entries if e["skipped_in_blocks"]},
+            "first_limiting_stage": first_limiting_stage(entries, raw, args),
+            "model_behaviour_at_lowest_level": {"level": lowest, **model_behaviour(raw[lowest])},
+            "first_reply_after_start": first_reply(raw, levels),
+            "server_args": args}
+
+
+R2B_RE = re.compile(r"^ppv_r2b_(ms8_2gpu)_block(\d+)(?:_a\d+)?$")
+
+
+def verdict_r2b(entries: list[dict[str, Any]], level: int = 8) -> dict[str, Any]:
+    """preregistration.md R2b. 支持: the 8-session level meets R2's serving target (all 3 blocks ran; no failed session,
+    503 or pacing violation; pooled unit miss <= 1 %) and no block logged a CUDA OOM in it. 反驳: in every block the
+    level was skipped by the stop rule or had a failed session or an OOM. 数据不足: a block's run does not exist.
+    Otherwise 不确定."""
+    e = next((x for x in entries if x["level"] == level), None)
+    if e is None:
+        return {"verdict": "数据不足", "reason": f"no level {level}"}
+    blocks = e["per_block"]
+    missing = [k for k, b in blocks.items() if not b.get("ran") and b.get("reason") == "no ok run for this block"]
+    ooms = {k: b["oom_events"] for k, b in blocks.items() if b.get("ran")}
+    bad = {k: (not b.get("ran")) or b["sessions_failed"] > 0 or b["oom_events"] > 0 for k, b in blocks.items()}
+    if missing:
+        verdict = "数据不足"
+    elif e["meets_serving_target"] and len(ooms) == BLOCKS and not any(ooms.values()):
+        verdict = "支持"
+    elif len(bad) == BLOCKS and all(bad.values()):
+        verdict = "反驳"
+    else:
+        verdict = "不确定"
+    return {"verdict": verdict, "level": level, "meets_serving_target": e["meets_serving_target"],
+            "unit_miss_rate": e["unit_miss_rate"], "oom_events_by_block": ooms, "blocks_ran": e["blocks_ran"],
+            "skipped_in_blocks": e["skipped_in_blocks"], "missing_blocks": missing}
+
+
+def build_r2b(exps: list[Path]) -> dict[str, Any]:
+    chosen, excluded = choose_runs(exps, R2B_RE, lambda m: ("main", m.group(1), int(m.group(2))), require_ok=False)
+    mains = {b: p for (_, _, b), p in chosen.items()}
+    rep = arm_report("ms8_2gpu", mains)
+    return {"generated_by": "scripts/analysis/ppv_r2_report.py --r2b", "rules": "preregistration.md R2b (+ R2 items 9-16)",
+            "runs": {f"block{b}": p.name for b, p in sorted(mains.items())},
+            "run_status": {f"block{b}": run_status(p) for b, p in sorted(mains.items())}, "excluded_runs": excluded,
+            "placement": "ms8_2gpu (R2b)", "arms": {"ms8_2gpu": rep}, "verdict_h_r2b": verdict_r2b(rep["levels"])}
+
+
 def build(exps: list[Path]) -> dict[str, Any]:
     # Item 9b: the latest run of each block (or smoke) whatever its status; each level is judged on the data it has.
     chosen, excluded = choose_runs(exps, RUN_RE, lambda m: (m.group(1) or "main", m.group(2), int(m.group(3) or 0)),
@@ -336,33 +404,7 @@ def build(exps: list[Path]) -> dict[str, Any]:
                            "runs": {f"{k[0]}_{k[1]}_block{k[2]}": p.name for k, p in sorted(chosen.items(), key=lambda kv: str(kv[0]))},
                            "excluded_runs": excluded, "smoke": smokes, "placement": placement(smokes, arms), "arms": {}}
     for arm in arms:
-        _, _, levels = R2_ARMS[arm]
-        raw: dict[int, dict[int, dict[str, Any]]] = defaultdict(dict)
-        args: list[str] = []
-        for block in range(1, BLOCKS + 1):
-            exp = chosen.get(("main", arm, block))
-            if exp is None:
-                for lv in levels:
-                    raw[lv][block] = {"ran": False, "skipped": False, "reason": "no ok run for this block"}
-                continue
-            args = args or server_args(exp)
-            gpu = load_gpu_samples_utc(exp)
-            cpu = read_jsonl(exp / "raw" / "cpu_samples.jsonl")
-            pids = pid_stages([exp / "raw" / "server_events"])
-            ooms = oom_events(exp)
-            for lv in levels:
-                raw[lv][block] = level_block(exp, lv, gpu, cpu, pids, ooms)
-        entries = [level_entry(lv, raw[lv], BLOCKS) for lv in levels]
-        serving = capacity(entries, lambda e: e["meets_serving_target"])
-        deadline = {f"{d:g}s": capacity(entries, lambda e, k=f"{d:g}s": e["meets_deadline_target"][k]) for d in DEADLINES_S}
-        lowest = min(levels)
-        out["arms"][arm] = {
-            "levels": entries, "serving_capacity": serving, "deadline_capacity": deadline,
-            "stop_rule_skips": {str(e["level"]): e["skipped_in_blocks"] for e in entries if e["skipped_in_blocks"]},
-            "first_limiting_stage": first_limiting_stage(entries, raw, args),
-            "model_behaviour_at_lowest_level": {"level": lowest, **model_behaviour(raw[lowest])},
-            "first_reply_after_start": first_reply(raw, levels),
-            "server_args": args}
+        out["arms"][arm] = arm_report(arm, {b: p for (kind, a, b), p in chosen.items() if kind == "main" and a == arm})
     out["cross_placement"] = cross_placement(out["arms"])
     return out
 
@@ -401,6 +443,8 @@ def markdown(r: dict[str, Any]) -> str:
         return "N/A" if x is None else (f"{x:.{nd}f}" if isinstance(x, float) else str(x))
 
     lines = ["# R2 summary (generated)", "", f"Placement: {r['placement']}", ""]
+    if "verdict_h_r2b" in r:
+        lines += [f"R2b verdict: {r['verdict_h_r2b']}", ""]
     for arm, a in r["arms"].items():
         cap = (f"Serving capacity: {a['serving_capacity']['statement']}; deadline capacity (1 s): "
                f"{a['deadline_capacity']['1s']['statement']}")
@@ -425,10 +469,11 @@ def main() -> int:
     ap.add_argument("--exp", action="append", default=[])
     ap.add_argument("--out", required=True)
     ap.add_argument("--md")
+    ap.add_argument("--r2b", action="store_true", help="analyse the R2b runs (ppv_r2b_ms8_2gpu_block*) instead of R2")
     a = ap.parse_args()
     if a.data_root is None and not a.exp:
         ap.error("give --data-root or --exp")
-    rep = build(discover_runs(a.data_root, a.exp))
+    rep = (build_r2b if a.r2b else build)(discover_runs(a.data_root, a.exp))
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     Path(a.out).write_text(json.dumps(rep, indent=1, ensure_ascii=False, default=str))
     if a.md:
