@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+"""P3 of the pre-presentation validation: pauses in every run of this round, aligned with Linux pressure (PSI).
+
+    python scripts/analysis/ppv_p3_stalls.py --data-root <results root> --pattern '*ppv_*' \
+        --out research/next_steps/presentation_validation/results/p3_stalls.json
+
+For each run, the measured phases (closed loop, open loop, plugin, agent, replay) are scanned for
+- log gaps: no line in the shared server log (every stage process writes logs/server_s0.log) for more than --gap-s;
+- sampler gaps: the runner's 1 s CPU sampler (raw/cpu_samples.jsonl) itself missing a beat (> 1.8 s between records),
+  i.e. the client/runner process was blocked too;
+and every gap is described with the node's pressure stall information in and around it (I/O, CPU and memory stall
+time from the cumulative PSI totals, in ms per second of wall time) and the number of processes in uninterruptible
+sleep (state D). A log gap is only meaningful where the log is dense: runs whose median line spacing inside measured
+phases exceeds --dense-s, and full-duplex runs (which log in bursts once per 1-s unit), are flagged "sparse" and their
+log gaps are reported but not counted; their sampler gaps still count. The server log has naive local wall-clock stamps; the run's manifest gives the UTC offset.
+Descriptive only: P3 registered no decision rule beyond "report every gap with its evidence; a run without gaps says
+nothing about the cause".
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import json
+import re
+import statistics
+from pathlib import Path
+from typing import Any
+
+STAMP = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}) ")
+MEASURED_KINDS = ("closed_loop", "open_loop", "plugin", "agent", "replay")
+
+
+def utc_offset_s(manifest: dict[str, Any]) -> float:
+    """'-0500' -> -18000.0"""
+    off = manifest.get("utc_offset") or "+0000"
+    sign = -1 if off.startswith("-") else 1
+    return sign * (int(off[1:3]) * 3600 + int(off[3:5]) * 60)
+
+
+def log_times(lines, offset_s: float) -> list[float]:
+    out = []
+    for line in lines:
+        m = STAMP.match(line)
+        if m:
+            naive = dt.datetime.strptime(m.group(1), "%Y-%m-%d %H:%M:%S").replace(tzinfo=dt.timezone.utc)
+            out.append(naive.timestamp() - offset_s + int(m.group(2)) / 1e3)
+    return sorted(out)
+
+
+def gaps_in(times: list[float], lo: float, hi: float, gap_s: float) -> list[tuple[float, float]]:
+    inside = [t for t in times if lo <= t <= hi]
+    return [(a, b) for a, b in zip(inside, inside[1:]) if b - a > gap_s]
+
+
+def median_spacing(times: list[float], windows: list[tuple[float, float]]) -> float | None:
+    d = []
+    for lo, hi in windows:
+        inside = [t for t in times if lo <= t <= hi]
+        d += [b - a for a, b in zip(inside, inside[1:])]
+    return statistics.median(d) if d else None
+
+
+def psi_per_second(samples: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Per consecutive pair of samples: stall ms per second of wall time for io/cpu/memory (some and full), the
+    D-state count and the sample spacing."""
+    out = []
+    for a, b in zip(samples, samples[1:]):
+        dt_s = (b["t_wall_ns"] - a["t_wall_ns"]) / 1e9
+        if dt_s <= 0:
+            continue
+        row: dict[str, Any] = {"t0": a["t_wall_ns"] / 1e9, "t1": b["t_wall_ns"] / 1e9, "spacing_s": dt_s,
+                               "d_state": sum((g.get("states") or {}).get("disk-sleep", 0) for g in (b.get("groups") or {}).values()
+                                              if isinstance(g, dict))}
+        for res in ("io", "cpu", "memory"):
+            pa, pb = (a.get("psi") or {}).get(res) or {}, (b.get("psi") or {}).get(res) or {}
+            for kind in ("some", "full"):
+                k = f"{kind}_total"
+                if k in pa and k in pb:
+                    row[f"{res}_{kind}_ms_per_s"] = (pb[k] - pa[k]) / 1e3 / dt_s
+        out.append(row)
+    return out
+
+
+def describe_gap(g: tuple[float, float], per_s: list[dict[str, Any]], margin_s: float = 1.0) -> dict[str, Any]:
+    lo, hi = g[0] - margin_s, g[1] + margin_s
+    rows = [r for r in per_s if r["t1"] >= lo and r["t0"] <= hi]
+    peak = lambda key: max((r.get(key) or 0.0 for r in rows), default=None)  # noqa: E731
+    return {"start": round(g[0], 3), "gap_s": round(g[1] - g[0], 3), "samples": len(rows),
+            "io_full_ms_per_s_max": peak("io_full_ms_per_s"), "io_some_ms_per_s_max": peak("io_some_ms_per_s"),
+            "cpu_some_ms_per_s_max": peak("cpu_some_ms_per_s"), "memory_some_ms_per_s_max": peak("memory_some_ms_per_s"),
+            "d_state_max": max((r["d_state"] for r in rows), default=None),
+            "sampler_spacing_max_s": max((r["spacing_s"] for r in rows), default=None)}
+
+
+def analyze_run(exp: Path, gap_s: float = 1.0, dense_s: float = 0.25) -> dict[str, Any] | None:
+    phases_path, log_path = exp / "analysis" / "phases.json", exp / "logs" / "server_s0.log"
+    if not phases_path.exists():
+        return None
+    manifest = json.loads((exp / "manifest.json").read_text()) if (exp / "manifest.json").exists() else {}
+    phases = [p for p in json.loads(phases_path.read_text()) if p.get("kind") in MEASURED_KINDS and p.get("ended")]
+    windows = [(p["started"], p["ended"]) for p in phases]
+    samples = []
+    if (exp / "raw" / "cpu_samples.jsonl").exists():
+        with open(exp / "raw" / "cpu_samples.jsonl") as fh:
+            samples = [json.loads(x) for x in fh if x.strip()]
+    per_s = psi_per_second(samples)
+    in_measured = [r for r in per_s if any(lo <= r["t0"] <= hi for lo, hi in windows)]
+    times: list[float] = []
+    if log_path.exists():
+        with open(log_path, errors="ignore") as fh:
+            times = log_times(fh, utc_offset_s(manifest))
+    spacing = median_spacing(times, windows)
+    # A full-duplex server logs in bursts once per 1-s unit and idles between them, so its log gaps are not pauses.
+    duplex = any((exp / "raw").glob("duplex_*"))
+    dense = spacing is not None and spacing <= dense_s and not duplex
+    log_gaps = [describe_gap(g, per_s) for lo, hi in windows for g in gaps_in(times, lo, hi, gap_s)]
+    sampler_gaps = [describe_gap((r["t0"], r["t1"]), per_s) for r in in_measured if r["spacing_s"] > 1.8]
+    base = lambda key: statistics.median([r.get(key) or 0.0 for r in in_measured]) if in_measured else None  # noqa: E731
+    return {"run": exp.name, "measured_s": round(sum(hi - lo for lo, hi in windows), 1), "duplex": duplex,
+            "log_median_spacing_s": spacing, "log_dense": dense,
+            "log_gaps": log_gaps if dense else [], "log_gaps_sparse_log": [] if dense else log_gaps,
+            "sampler_gaps": sampler_gaps,
+            "baseline": {"io_full_ms_per_s_median": base("io_full_ms_per_s"), "io_some_ms_per_s_median": base("io_some_ms_per_s"),
+                         "cpu_some_ms_per_s_median": base("cpu_some_ms_per_s"), "d_state_seconds": sum(1 for r in in_measured if r["d_state"]),
+                         "psi_seconds": len(in_measured)}}
+
+
+def summarize(runs: list[dict[str, Any]]) -> dict[str, Any]:
+    dense = [r for r in runs if r["log_dense"]]
+    gaps = [g for r in dense for g in r["log_gaps"]]
+    return {"runs": len(runs), "dense_log_runs": len(dense), "measured_s_dense": round(sum(r["measured_s"] for r in dense), 1),
+            "log_gaps_over_1s": len(gaps), "log_gaps_over_2s": sum(1 for g in gaps if g["gap_s"] > 2),
+            "max_log_gap_s": max((g["gap_s"] for g in gaps), default=None),
+            "sampler_gaps": sum(len(r["sampler_gaps"]) for r in runs),
+            "gaps_with_io_stall": sum(1 for g in gaps if (g["io_full_ms_per_s_max"] or 0) >= 100),
+            "gaps_with_d_state": sum(1 for g in gaps if (g["d_state_max"] or 0) > 0)}
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--data-root", required=True)
+    ap.add_argument("--pattern", default="*ppv_*")
+    ap.add_argument("--gap-s", type=float, default=1.0)
+    ap.add_argument("--dense-s", type=float, default=0.25)
+    ap.add_argument("--out", required=True)
+    a = ap.parse_args()
+    root = Path(a.data_root).expanduser() / "experiments"
+    runs = [r for exp in sorted(root.glob(a.pattern)) if (r := analyze_run(exp, a.gap_s, a.dense_s))]
+    doc = {"generated_by": "scripts/analysis/ppv_p3_stalls.py", "gap_s": a.gap_s, "dense_s": a.dense_s,
+           "summary": summarize(runs), "runs": runs}
+    Path(a.out).parent.mkdir(parents=True, exist_ok=True)
+    Path(a.out).write_text(json.dumps(doc, ensure_ascii=False, indent=1))
+    print(json.dumps(doc["summary"], indent=1))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
