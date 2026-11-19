@@ -42,3 +42,46 @@ Verdict (`scripts/analysis/ppv_r0_verdict.py`, registered rules): all five condi
 **Limitations.** Synthetic TTS questions with fixed pauses, not real users or a robot; one run (functional validation, not a latency study); TTFA samples (12 and 19) are too few for P95/P99; demo sampling (temperature 0.7) makes turn-taking stochastic; the client shares the node with the server; 0.75 % of client packets were sent > 80 ms late (max 1.19 s), which the unit-lag metric accounts for (it uses actual send times) but which made the server's input bursty at those moments; `response.cancel` does not exist at the pin, so interruption can only be studied as the model stopping by itself.
 
 **中文小结。** 固定版本的原生全双工在一张 A6000 上能稳定运行：1 个和 2 个会话各 5 分钟，900 个 1 秒单元全部在当秒内处理完（错过率 0%），没有错误，音频有效，GPU 大部分时间空闲。但“话说完到开口”的中位数约 1.5 秒，1 秒内开口的回合只有约 3 成——时间主要花在等单元切出和模型多听的那几个单元上，而不是计算（一个开口单元的音频约 0.39 秒就准备好）。这条路径和请求-响应路径是不同的流水线，数字不能直接比较。
+
+---
+
+## R1 — What determines the latency of the first spoken response (single session)
+
+**Research question.** What determines the latency of the first spoken response of a full-duplex session on one A6000, and how does it relate to the request-response path?
+
+**Hypothesis / registered expectation (Estimated, not a decision rule; `preregistration.md` R1).** Unit lag P50 0.3–0.9 s; duplex TTFA ≈ wait for the unit boundary (0–1 s) + unit processing + k × 1 s for k extra listening units; chat-path TTFA ≈ end-to-end, 2–3 s on one GPU. Analysis rules (TTFA decomposition, stage shares on speaking units, event-overhead flag) were registered at 23:51, before any R1 data was analysed.
+
+**Setup.** Three blocks (runs `ppv_r1_duplex_block{1,2,3}`, 23:41–00:24, 1 GPU each, chained so that no two latency runs overlapped; block 1 overlapped the C1/C2 microbenchmarks on other GPUs — deviation D1). Each run: 30 s smoke, then one session for 300 s without request events (phase A, primary) and one with server request events (phase B, stage timing), order reversed in block 2; every third question is followed 3 s later by an interrupting question. Same pinned stock runtime and inputs as R0. Request-response reference `ppv_r1_chat_ref_block{1,2,3}` on the same single A6000 (default speech pipeline with code2wav in its own process): the same 24 questions as speech input, speech output, `max_tokens` 64 and "answer in one short sentence", temperature 0, concurrency 1, 48 requests per phase.
+
+**Evidence** (pooled over 3 blocks, phase A unless stated; `results/r1_summary.json`).
+
+| Metric | Full duplex (1 session) | Request-response reference (1 request at a time) |
+|---|---|---|
+| Turns / answered with audio / no response | 48 / 37 / 11 | 144 requests, 144 ok |
+| TTFA P50 (block P50s, t 95 % CI) | 1,361 ms (1,373 / 1,169 / 1,373; 1,013–1,597) | 724 ms (726 / 709 / 735; 691–756) |
+| TTFA P95 (N) | 1,708 ms (37); P99 N/A | 1,112 ms (144); P99 1,799 ms |
+| Reply length P50 | 9.6 s of audio, 107 characters | 4.1 s of audio, 52 characters |
+| Unit lag P50 / P99 (N = 900) | 72 / 429 ms; 0 of 900 units missed | — |
+| Speaking-unit service time (unit ready → first audio delta) P50 | 353 ms (N = 41) | — |
+| Audio delta spacing P50 | 991 ms | one chunk per request |
+| Replies stalling at 0 / 80 / 250 ms start-up buffer | 36 / 16 / 0 of 41 (buffer needed P50 65 ms, P90 165 ms) | — |
+| Interruptions (scripted / valid) and stop latency P50 / max | 12 / 12; the interrupted reply kept playing 5.06 s (P90 11.3 s, max 11.6 s) | not applicable |
+
+TTFA decomposition per answered turn (registered definition; the three parts add up to TTFA exactly; N = 37, no early starts):
+
+| Part | P50 |
+|---|---|
+| (a) wait until the unit holding the end of the utterance is complete | 319 ms |
+| (b) extra listening units k before the first speaking unit | k = 0 in 17 turns, k = 1 in 20 turns (1 unit ≈ 0.96 s) |
+| (c) speaking unit's service time | 350 ms |
+| TTFA when k = 0 / k = 1 | 862 ms (n = 17) / 1,472 ms (n = 20) |
+
+Server-side stage shares of a speaking unit's processing time (phase B, 381 speaking units, unit time P50 351 ms): thinker 41 % (queue + service P50 142 ms), talker 24 % (88 ms), speech/vocoder 24 % (82 ms), perception 5 % (17 ms), hand-offs 3 %, other 2 %. Request events did not visibly change the client-side unit lag (B vs A P50 +4.9 %, below the registered 10 % flag). Deviation D1 check: block 1 vs blocks 2–3 unit lag P50 +1.7 %, P90 +0.5 %, TTFA P50 +8 % (within the block-to-block spread; the B phase shows the opposite order).
+
+**Result.** With one session, the full-duplex path always keeps up (no missed units) and starts speaking 1.36 s (median) after the user stops talking. Compute is not the dominant term: a speaking unit is processed in ~0.35 s, of which the thinker is the largest stage (41 %). The rest is the unit structure and turn-taking: on average ~0.32 s waiting for the current 1-s unit to fill, plus a full extra unit in 54 % of answered turns, in which the model keeps listening. When the model does not wait an extra unit, TTFA is 0.86 s. Interruptions are not handled promptly at the pin: an interrupted reply continued for a median 5.1 s, because `response.cancel` does not exist and the model stops only by its own decision.
+
+**Interpretation.** For the first spoken response, the lever is the unit size and the turn-taking decision, not kernel speed: the k = 1 turns cost ~0.6 s more than k = 0 turns at the median, which is larger than the entire speaking unit's compute. Within compute, the thinker matters most, so compiler work on the vocoder alone (C1/C2) can shorten at most ~24 % of 0.35 s per unit on this path. The request-response reference is faster at concurrency 1 (0.72 s) but answers are half as long, it has no end-of-speech detection in the measurement (a real application would add a voice-activity timeout), and it returns all audio at once; the comparison shows the two paths have different latency structures, not that one implementation is faster.
+
+**Limitations.** One session; synthetic questions with fixed pauses; temperature 0.7 makes k stochastic; interruptions are scripted at fixed offsets; stage timing only in phase B (with request events); TTFA P99 is N/A (N = 37); the reference differs in pipeline (FP16 flow + compile vs FP32 flow without compile in the duplex speech stage), answer length, sampling and the starting point of TTFA.
+
+**中文小结。** 一个会话时，全双工从“话说完”到“开口”的中位数是 1.36 秒，单元处理始终跟得上（900 个单元 0 个错过）。拆开看：等当前 1 秒单元凑满约 0.32 秒，一半以上的回合模型还要再多听一个单元（约 1 秒），真正的计算只要约 0.35 秒（其中 thinker 占 41%，talker、语音合成各约 24%）。模型不多听的回合 TTFA 只有 0.86 秒。所以首段语音延迟的主要杠杆是单元大小和轮次决策，不是 kernel。打断处理是明显的短板：固定版本没有取消接口，被打断的回答中位数还要继续说 5 秒。请求-响应路径一次一个请求时 TTFA 0.72 秒，但回答只有一半长、也没算端点检测，不能说它“更快”。
