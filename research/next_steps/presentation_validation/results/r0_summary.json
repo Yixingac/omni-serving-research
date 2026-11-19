@@ -1,5 +1,5 @@
 {
- "generated_by": "omni_research.duplex.report + scripts/analysis/ppv_r0_verdict.py",
+ "generated_by": "omni_research.duplex.report (a16ab6e) + scripts/analysis/ppv_r0_verdict.py",
  "run": "20261118_ppv_r0_duplex_functional_run01",
  "verdict": "通过",
  "conditions": {
@@ -9,6 +9,7 @@
   "4_valid_audio": true,
   "5_unit_latency_extractable": true
  },
+ "gpu_note": "nvidia-smi utilisation reads 0 for most samples under the 1 Hz duplex load while the card draws 140-170 W (idle ~35 W); readings are flagged util_suspect and are not used as evidence (R2 investigation).",
  "phases": {
   "duplex_smoke": {
    "duration_s": 30.9,
@@ -78,16 +79,16 @@
      "max": 1141.96217918396
     }
    },
-   "gpu": [
-    {
-     "phase": "duplex_smoke",
-     "gpu": "0",
+   "gpu_window": {
+    "0": {
      "samples": 154,
-     "sampled_util_mean": 0.0,
-     "sampled_util_zero_fraction": 1.0,
-     "mem_max_mib": 32541.0
+     "util_mean": 0.0,
+     "util_zero_share": 1.0,
+     "power_mean_w": 141.6838961038961,
+     "mem_max_mib": 32541.0,
+     "util_suspect": true
     }
-   ],
+   },
    "cpu": {
     "server_cpu_percent_mean": 24.05,
     "client_cpu_percent_mean": 7.66,
@@ -190,16 +191,16 @@
      "max": 1359.2138605117798
     }
    },
-   "gpu": [
-    {
-     "phase": "duplex_s1",
-     "gpu": "0",
+   "gpu_window": {
+    "0": {
      "samples": 1492,
-     "sampled_util_mean": 4.39544235924933,
-     "sampled_util_zero_fraction": 0.8739946380697051,
-     "mem_max_mib": 32683.0
+     "util_mean": 4.39544235924933,
+     "util_zero_share": 0.8739946380697051,
+     "power_mean_w": 143.05238605898123,
+     "mem_max_mib": 32683.0,
+     "util_suspect": true
     }
-   ],
+   },
    "cpu": {
     "server_cpu_percent_mean": 23.47438596491228,
     "client_cpu_percent_mean": 5.529824561403509,
@@ -302,16 +303,16 @@
      "max": 1338.034441947937
     }
    },
-   "gpu": [
-    {
-     "phase": "duplex_s2",
-     "gpu": "0",
+   "gpu_window": {
+    "0": {
      "samples": 1495,
-     "sampled_util_mean": 11.270234113712375,
-     "sampled_util_zero_fraction": 0.7096989966555184,
-     "mem_max_mib": 33921.0
+     "util_mean": 11.270234113712375,
+     "util_zero_share": 0.7096989966555184,
+     "power_mean_w": 166.31051505016723,
+     "mem_max_mib": 33921.0,
+     "util_suspect": true
     }
-   ],
+   },
    "cpu": {
     "server_cpu_percent_mean": 43.54111498257839,
     "client_cpu_percent_mean": 6.379094076655052,

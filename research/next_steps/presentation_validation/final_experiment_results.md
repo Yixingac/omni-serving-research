@@ -29,19 +29,19 @@
 | Audio delta spacing within a reply P50 | 994 ms | 992 ms |
 | Replies with a playback stall at 0 / 80 / 250 ms start-up buffer | 13 / 4 / 0 of 14 | 20 / 10 / 1 of 23 |
 | Assistant audio received | 113.8 s | 238.6 s |
-| GPU utilization (nvidia-smi, 0.2 s samples) mean; memory max | 4.4 %; 32.7 GB | 11.3 % (71 % of samples at 0); 33.9 GB |
+| GPU power mean (idle ≈ 35 W); memory max | 143 W; 32.7 GB | 166 W; 33.9 GB |
 | Server process-tree CPU mean (100 = one core) | 23 % | 44 % |
 | Client packets later than 80 ms behind schedule | 28 of 3,750 (max 1.19 s) | 43 of 7,500 (max 0.75 s) |
 
 Verdict (`scripts/analysis/ppv_r0_verdict.py`, registered rules): all five conditions hold and the unit miss rate is 0 % in both phases → **pass, real-time at 1 and 2 sessions**. Sources: run directory above (cluster), summary JSON `results/r0_summary.json`.
 
-**Result.** The native full-duplex path runs on a single A6000 with the pinned version: every 1-s unit of every session was processed within its own second (P99 unit lag ≤ 0.52 s), audio replies were valid, and nothing failed over 10 minutes of streamed speech. The GPU was mostly idle (4–11 % sampled utilization).
+**Result.** The native full-duplex path runs on a single A6000 with the pinned version: every 1-s unit of every session was processed within its own second (P99 unit lag ≤ 0.52 s), audio replies were valid, and nothing failed over 10 minutes of streamed speech. nvidia-smi's utilization counter is not usable for this load: it read 0 % in 87 % (1 session) and 71 % (2 sessions) of samples while the card drew 143–166 W against ≈ 35 W idle, an aliasing with the strictly periodic 1-s units found during the R2 analysis; utilization is therefore not reported (power and stage timing are).
 
 **Interpretation.** On this path the first spoken response is not limited by compute: a speaking unit's audio is ready ~0.39 s after the unit's input is complete, yet TTFA from the end of a question is ~1.5 s at the median and only 29 % (1 session) of turns meet a 1-s deadline. The gap comes from the unit structure — speech is cut into 1-s units, so the system first waits for the unit that contains the end of the utterance, and the model often listens for one or more further units before it decides to speak (187 of 300 units were listening units with one session). Output arrives once per unit (deltas every ~1 s), so a player needs a start-up buffer of roughly 250 ms to avoid stalls. Going from 1 to 2 sessions left unit lag unchanged at the median but raised TTFA (P50 1.46 → 1.66 s) and the share of unanswered turns (2/14 → 9/28); whether this is load or model turn-taking is the question of R1/R2. This path differs from the request-response path measured in 实验 1–19 (different pipeline configuration, FP32 flow without compile in the speech stage, streaming sessions), so these numbers are not comparable to the chat-path TTFA without the semantic caveats in R1.
 
 **Limitations.** Synthetic TTS questions with fixed pauses, not real users or a robot; one run (functional validation, not a latency study); TTFA samples (12 and 19) are too few for P95/P99; demo sampling (temperature 0.7) makes turn-taking stochastic; the client shares the node with the server; 0.75 % of client packets were sent > 80 ms late (max 1.19 s), which the unit-lag metric accounts for (it uses actual send times) but which made the server's input bursty at those moments; `response.cancel` does not exist at the pin, so interruption can only be studied as the model stopping by itself.
 
-**中文小结。** 固定版本的原生全双工在一张 A6000 上能稳定运行：1 个和 2 个会话各 5 分钟，900 个 1 秒单元全部在当秒内处理完（错过率 0%），没有错误，音频有效，GPU 大部分时间空闲。但“话说完到开口”的中位数约 1.5 秒，1 秒内开口的回合只有约 3 成——时间主要花在等单元切出和模型多听的那几个单元上，而不是计算（一个开口单元的音频约 0.39 秒就准备好）。这条路径和请求-响应路径是不同的流水线，数字不能直接比较。
+**中文小结。** 固定版本的原生全双工在一张 A6000 上能稳定运行：1 个和 2 个会话各 5 分钟，900 个 1 秒单元全部在当秒内处理完（错过率 0%），没有错误，音频有效（GPU 利用率读数在这种每秒一次的周期负载下不可信，改看功耗：143–166 W，空闲约 35 W）。但“话说完到开口”的中位数约 1.5 秒，1 秒内开口的回合只有约 3 成——时间主要花在等单元切出和模型多听的那几个单元上，而不是计算（一个开口单元的音频约 0.39 秒就准备好）。这条路径和请求-响应路径是不同的流水线，数字不能直接比较。
 
 ---
 
@@ -156,3 +156,40 @@ Per-pass changes vs A: B −5..+7 %, C −5..+7 % (within the ±5 % pass-to-pass
 **Limitations.** Microbenchmark only; three shape groups; HiFT timing has ±5 % pass-to-pass spread; kernel sums and event times come from different passes; the FP16 arm converts the whole body including weight-norm parametrizations and uses dynamic-shape compilation, so part of its overhead may be specific to this implementation; overlapped R1 block 1 (D1).
 
 **中文小结。** HiFT 的三项编译期优化都没有带来可测的加速：weight-norm 折叠逐位正确但时间没变；channels-last 去掉了布局转换，卷积却变慢，而且数值差异超过门槛；FP16 把 kernel 时间减了 42%，音质没过门槛（MCD 0.83 dB），总时间反而多了 30%——因为 HiFT 每个请求单独调用、kernel 很小，GPU 有大量时间在等主机端。按登记的放弃条件，这个方向停止。如果还要优化 HiFT，杠杆更可能是跨请求批量调用或给 HiFT 录 graph（假设，未测）。
+
+---
+
+## R2 — How does interaction latency change with the number of concurrent sessions?
+
+**Research question.** What is the first stage or resource that limits real-time interaction as the number of full-duplex sessions on one A6000 grows?
+
+**Hypothesis and rules (registered, `preregistration.md` R2 and "R1/R2 分析口径补充", before any R2 data).** Placement chosen by the smoke rule: if `max_sessions 8` starts on one GPU and 8 sessions run 30 s without failure, use one GPU with levels 1/2/4/8. Each block runs the levels from low to high for 180 s; escalation stops after a level with a failed session or unit miss > 1 %. Serving capacity = highest level that ran in all three blocks with no failed session, no 503, no pacing violation and pooled unit miss ≤ 1 %. Deadline capacity = highest level with deadline miss ≤ 5 % (1 s; 0.5 and 2 s sensitivity). First limiting stage = largest increase in per-unit queue + service median from the lowest level to the first level with miss > 1 %.
+
+**Setup.** Smokes `ppv_r2_smoke_ms8_1gpu` and `_ms8_2gpu` (00:28–00:32): the one-GPU smoke passed, so the registered rule selected `ms8_1gpu`. Main runs `ppv_r2_ms8_1gpu_block{1,2,3}` (00:33–01:10, 1 GPU each, chained, no overlap with other latency runs): stock runtime, `--variant session --enable-realtime --max_sessions 8`, same inputs as R0/R1, server request events on.
+
+**Evidence** (`results/r2_summary.json`; P99 only with N ≥ 100).
+
+| Sessions | Blocks run | Unit miss rate (pooled) | Speaking-unit lag P50 / P99 | Listening-unit lag P50 | TTFA P50 (N) | Turns missing the 1 s deadline | Extra listening units k = 0 / 1 / 2 | Failures |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 3 / 3 | 0.56 % | 353 / 608 ms | 74 ms | 935 ms (18) | 50 % | 12 / 3 / 3 | none |
+| 2 | 2 / 3 | 0 % | 395 / 744 ms | 74 ms | 1,737 ms (22) | 88 % | 6 / 16 / 0 | none |
+| 4 | 2 / 3 | 0.14 % | 464 / 902 ms | 77 ms | 1,557 ms (44) | 92 % | 17 / 25 / 2 | none |
+| 8 | 2 / 3 | **45.6 %** | 707 / 1,480 ms | 98 ms | 1,755 ms (74) | 94 % | 34 / 39 / 1 | 25 and 49 CUDA out-of-memory events; 7 failed sessions (block 3) |
+
+Registered verdicts: serving capacity **below the lowest level**; deadline capacity (1 s, also 0.5 and 2 s) **below the lowest level**; first limiting stage **talker, resource "neither saturated (uncertain)"**; at 1 session, 11 of 12 deadline misses are model-driven (no response, or k ≥ 1 with a + c ≤ 1 s).
+
+Why the registered verdicts came out this way (analysis after the fact, rules unchanged):
+- Block 2 stopped escalating after level 1 because its unit miss rate was 1.67 %: all five missed units belong to the **first reply after server start** (unit lags 2.5, 2.2, 1.5 s). The first answer after start is slow in every block (TTFA 2.8, 4.5, 2.8 s vs ≈ 0.9 s later). Hypothesis: a one-time lazy initialization on the first talker generation, which start-up warm-up never reaches because the first three units are forced to listen; unlike R0/R1, the R2 runs had no smoke phase before level 1.
+- Block 1's level 1 had 16 late packets: one 1.34 s **client stall** in which both client processes were in uninterruptible I/O sleep, Linux I/O pressure (full, avg10) rose from 0.18 to 7.15, the CPU sampler skipped a second and the shared server log has no line for that second. Hypothesis: the client's trace writes to NFS blocked its event loop (see P3).
+- Without these two artefacts, level 1 would meet the serving target in all blocks; levels 2–8 still cannot qualify because block 2 never ran them.
+- The first-limiting-stage verdict is not robust: controlling for unit kind, all three GPU stages slow by about the same amount from 1 to 8 sessions (speaking units only: thinker +89.8, talker +88.7, speech +88.2 ms); the talker leads by 7 ms only because of the speaking/listening mix.
+- The apparent 3–4× slower single session (all-unit lag P50 279 ms vs 72 ms in R1) is a statistic, not a slower server: unit lag is bimodal (speaking ≈ 350 ms, listening ≈ 74 ms) and level 1 had 50 % speaking units against 42–44 % in R1; per kind, level 1 matches R1.
+- nvidia-smi utilization is unreliable under this periodic load (0 % readings at 120–220 W); power and stage timing are used instead.
+
+**Result.** On one A6000 with `max_sessions 8`, the duplex path kept its 1-s units real-time with 1, 2 and 4 concurrent sessions in the blocks that ran (unit miss ≤ 0.6 %), and broke at 8 sessions (46 % of units late or missing) because the card ran out of memory: the speech process grew to 13.6 GiB against its nominal 0.15 share (≈ 7.1 GiB) and sessions failed with CUDA OOM. Compute slowed gradually rather than hitting a wall — the speaking unit's processing rose from 353 to 707 ms (P50) and to 1.48 s at P99, so at 8 sessions some units no longer fit in their second even before the OOM failures. The registered capacity verdicts are "below the lowest level", driven by a first-reply warm-up and a client I/O stall rather than by sustained load.
+
+**Interpretation.** The first resource to give out as sessions grow is **GPU memory on the shared card** (the speech stage's state grows beyond its nominal fraction), not a single compute stage; compute degrades evenly across thinker, talker and vocoder (≈ +89 ms each per speaking unit from 1 to 8 sessions). Turn-taking dominates TTFA at every level (deadline misses are mostly model-driven), so more sessions mostly widen the tail of the speaking unit. A placement that splits the stages over two GPUs (the registered `ms8_2gpu` arm, whose smoke passed) or a bounded speech-state budget is the next experiment; this round did not run it because the registered smoke rule selected the one-GPU arm.
+
+**Limitations.** Synthetic sessions; levels 2–8 have two blocks, not three; the one-GPU smoke (30 s) did not reach the memory growth that broke level 8, so the placement rule chose an arm that fails at its top level; first-reply warm-up and the client stall contaminate level 1; the first-limiting-stage rule cannot see out-of-memory failures; stage timing comes from server request events.
+
+**中文小结。** 一张 A6000、`max_sessions 8` 时，1、2、4 个会话的 1 秒单元都能按时处理（跑了的区组里错过率 ≤ 0.6%）；8 个会话时 46% 的单元超时或丢失，原因是显存：语音进程的状态涨到 13.6 GiB，远超它 0.15 的份额，会话因 CUDA OOM 失败。计算是逐渐变慢的（说话单元的处理从 353 ms 涨到 707 ms），三个 GPU 阶段各慢约 89 ms，不是某一个阶段先满。按登记规则，两个“容量”都是“低于最低档”，但原因是两个和负载无关的问题：服务启动后第一次回答特别慢（区组 2），以及客户端写 NFS 时卡住 1.34 秒（区组 1）——后者正是 P3 要找的那种停顿的第一条直接证据。另外，nvidia-smi 的利用率在这种每秒一次的周期负载下读数不可信，改看功耗。

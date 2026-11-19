@@ -78,5 +78,17 @@
  "ppv_r2_smoke_ms8_2gpu": {
   "included": true,
   "reason": "R2 placement smoke for the 2-GPU arm; not needed after the 1-GPU smoke passed"
+ },
+ "ppv_r2_ms8_1gpu_block1": {
+  "included": true,
+  "reason": "R2 block 1 (ms8_1gpu chosen by the registered smoke rule)"
+ },
+ "ppv_r2_ms8_1gpu_block2": {
+  "included": true,
+  "reason": "R2 block 2 (ms8_1gpu chosen by the registered smoke rule); levels 2-8 skipped by the stop rule after the first-reply warm-up at level 1"
+ },
+ "ppv_r2_ms8_1gpu_block3": {
+  "included": true,
+  "reason": "R2 block 3 (ms8_1gpu chosen by the registered smoke rule)"
  }
 }
