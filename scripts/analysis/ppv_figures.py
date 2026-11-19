@@ -539,7 +539,9 @@ def fig_r3_camera(out: Path) -> list[Path]:
                                 fmt=mk, color="black", mfc="black" if conc == "c1" else "white", ms=4, capsize=3, lw=1)
         verdicts = {k: VERDICT_EN.get(v["verdict"], v["verdict"]) for k, v in conf.items()}
         confirm_note = (" Black: 3-block confirmation of the registered cells (mean, whiskers = block range; filled = concurrency 1). "
-                        "Registered verdicts for concurrency 4: " + ", ".join(f"{k} {v}" for k, v in sorted(verdicts.items())) + ".")
+                        "Registered verdicts for concurrency 4: " + ", ".join(f"{k} {v}" for k, v in sorted(verdicts.items())) + ". "
+                        "The two arms ran on different GPU boards (concurrency 1 on another board in block 1), so arm and board "
+                        "are confounded; the long concurrency-1 whiskers for clip are that board.")
     handles = [Line2D([], [], color=colors["frame"], marker="o", label="frame (one PNG)"),
                Line2D([], [], color=colors["clip"], marker="o", label="clip (2 s H.264)"),
                *[Line2D([], [], color="#555555", ls=styles[n], label=f"{n} session{'s' if n > 1 else ''}, fps 0.5 / 1 / 2") for n in (1, 4, 16)],
@@ -571,13 +573,13 @@ def fig_r3_camera(out: Path) -> list[Path]:
     a2.set_title("Where a request's server time goes (1 fps, concurrency 1)")
     a2.legend(fontsize=8, loc="upper center", ncol=3)
     n = {g: by[g][1]["sent"] for g in groups}
-    caption(fig, "R3 screening (this round): one --text-only replica on one RTX A6000 and 7 CPU cores, SGLang-Omni 520b49ee + "
+    caption(fig, "R3 (this round): one --text-only replica on one RTX A6000 and 7 CPU cores, SGLang-Omni 520b49ee + "
                  "default-off preprocessing-concurrency patch; synthetic 640×360 camera frames (frame = one PNG, clip = last 2 s at "
                  "8 fps as H.264), one request in flight per session (late ticks dropped), 60 s per cell, one run per concurrency "
-                 "(no blocks yet). Sessions 1/4/16 × 0.5/1/2 fps. Right: stage medians from request events (not additive); "
+                 "at screening. Sessions 1/4/16 × 0.5/1/2 fps. Right (screening): stage medians from request events (not additive); "
                  "requests per bar group: " + ", ".join(f"{s} {k}×{f:g}: {v}" for (s, k, f), v in n.items())
-            + ". At concurrency 1 all 5 saturated cells are GPU-bound by the registered rule (at concurrency 4 two of them are 'cause unclear', "
-              "74–75 % GPU busy); concurrency 4 improved no cell." + confirm_note)
+            + ". At screening, all 5 saturated cells are GPU-bound at concurrency 1 by the registered rule (at concurrency 4 two of them are 'cause unclear', "
+              "74–75 % GPU busy; in the confirmation the two clip cells are 'cause unclear' at concurrency 1); concurrency 4 improved no cell." + confirm_note)
     return save(fig, out, "fig10_r3_camera")
 
 

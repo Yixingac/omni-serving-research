@@ -1,0 +1,1908 @@
+{
+ "generated_by": "scripts/analysis/ppv_r3_report.py",
+ "runs": [
+  {
+   "run": "20261119_ppv_r3_confirm_seq_c1_block1_run01",
+   "experiment_id": "ppv_r3_confirm_seq_c1_block1",
+   "cells": [
+    {
+     "phase": "cam_frame_s4_f2",
+     "sessions": 4,
+     "fps": 2.0,
+     "shape": "frame",
+     "max_concurrency": 1,
+     "ticks": 480,
+     "sent": 360,
+     "dropped": 120,
+     "drop_ratio": 0.25,
+     "late_ratio": 0.3333333333333333,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 0.398611599,
+      "p95": 0.601773426,
+      "p99": 0.632569487,
+      "n": 360
+     },
+     "completion_s": {
+      "p50": 0.450166506,
+      "p95": 0.658677314,
+      "n": 360
+     },
+     "answer_correct_share": 0.9833333333333333,
+     "prompt_tokens_p50": 235,
+     "gpu_busy_mean": 89.28239202657808,
+     "gpu_power_mean_w": 285.0782392026578,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": null,
+     "server": {
+      "requests_with_events": 360,
+      "preprocessing_wait_ms_p50": 0.147055,
+      "preprocessing_wait_ms_p95": 0.312539,
+      "preprocessing_service_ms_p50": 33.390894,
+      "image_encoder_service_ms_p50": 221.076088,
+      "thinker_queue_ms_p50": 3.170632,
+      "thinker_prefill_ms_p50": 102.321357,
+      "server_first_terminal_ms_p50": 447.092422,
+      "preprocessing_share_of_server_time": 0.0750134588503493,
+      "preprocessing_slot_utilisation": 0.24670455955378887,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.003063,
+       "cache_key": 0.567253,
+       "video_frames": 0.00175,
+       "processor": 26.790925,
+       "inline_media_load": 3.309443,
+       "total": 30.542972
+      },
+      "preprocess_inflight_max": 1
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_frame_s16_f2",
+     "sessions": 16,
+     "fps": 2.0,
+     "shape": "frame",
+     "max_concurrency": 1,
+     "ticks": 1920,
+     "sent": 475,
+     "dropped": 1445,
+     "drop_ratio": 0.7526041666666666,
+     "late_ratio": 1.0,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.604493107,
+      "p95": 2.215869691,
+      "p99": 2.591792111,
+      "n": 475
+     },
+     "completion_s": {
+      "p50": 1.724597955,
+      "p95": 2.27945538,
+      "n": 475
+     },
+     "answer_correct_share": 0.96,
+     "prompt_tokens_p50": 236,
+     "gpu_busy_mean": 90.44983818770227,
+     "gpu_power_mean_w": 288.68284789644014,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.6295593220338984,
+     "server": {
+      "requests_with_events": 475,
+      "preprocessing_wait_ms_p50": 0.134388,
+      "preprocessing_wait_ms_p95": 0.439027,
+      "preprocessing_service_ms_p50": 49.304283,
+      "image_encoder_service_ms_p50": 1322.339209,
+      "thinker_queue_ms_p50": 6.196476,
+      "thinker_prefill_ms_p50": 108.176385,
+      "server_first_terminal_ms_p50": 1721.749111,
+      "preprocessing_share_of_server_time": 0.028714213170864242,
+      "preprocessing_slot_utilisation": 0.3884350401048664,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.002505,
+       "cache_key": 0.522212,
+       "video_frames": 0.001412,
+       "processor": 10.922585,
+       "inline_media_load": 3.092665,
+       "total": 15.188009
+      },
+      "preprocess_inflight_max": 1
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_clip_s16_f2",
+     "sessions": 16,
+     "fps": 2.0,
+     "shape": "clip",
+     "max_concurrency": 1,
+     "ticks": 1920,
+     "sent": 682,
+     "dropped": 1238,
+     "drop_ratio": 0.6447916666666667,
+     "late_ratio": 1.0,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.053296286,
+      "p95": 1.297959517,
+      "p99": 1.442888359,
+      "n": 682
+     },
+     "completion_s": {
+      "p50": 1.148022918,
+      "p95": 1.397217977,
+      "n": 682
+     },
+     "answer_correct_share": 0.9120234604105572,
+     "prompt_tokens_p50": 168,
+     "gpu_busy_mean": 87.47019867549669,
+     "gpu_power_mean_w": 292.2673509933775,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.8529827586206897,
+     "server": {
+      "requests_with_events": 682,
+      "preprocessing_wait_ms_p50": 0.06241,
+      "preprocessing_wait_ms_p95": 0.271254,
+      "preprocessing_service_ms_p50": 117.917489,
+      "image_encoder_service_ms_p50": 721.319944,
+      "thinker_queue_ms_p50": 5.115508,
+      "thinker_prefill_ms_p50": 79.083094,
+      "server_first_terminal_ms_p50": 1145.051438,
+      "preprocessing_share_of_server_time": 0.10303458437296859,
+      "preprocessing_slot_utilisation": 1.4637403702415384,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.00155,
+       "cache_key": 0.498404,
+       "video_frames": 0.000856,
+       "processor": 31.30701,
+       "inline_media_load": 14.607942,
+       "total": 48.660643
+      },
+      "preprocess_inflight_max": 1
+     },
+     "class": "saturated_other"
+    },
+    {
+     "phase": "cam_frame_s16_f1",
+     "sessions": 16,
+     "fps": 1.0,
+     "shape": "frame",
+     "max_concurrency": 1,
+     "ticks": 960,
+     "sent": 488,
+     "dropped": 472,
+     "drop_ratio": 0.49166666666666664,
+     "late_ratio": 0.9549180327868853,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.305404543,
+      "p95": 1.78481244,
+      "p99": 2.062957851,
+      "n": 488
+     },
+     "completion_s": {
+      "p50": 1.426858333,
+      "p95": 1.902345315,
+      "n": 488
+     },
+     "answer_correct_share": 0.9836065573770492,
+     "prompt_tokens_p50": 235,
+     "gpu_busy_mean": 89.1344262295082,
+     "gpu_power_mean_w": 290.69026229508194,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.6643559322033898,
+     "server": {
+      "requests_with_events": 488,
+      "preprocessing_wait_ms_p50": 0.120962,
+      "preprocessing_wait_ms_p95": 0.255836,
+      "preprocessing_service_ms_p50": 40.610377,
+      "image_encoder_service_ms_p50": 1019.361685,
+      "thinker_queue_ms_p50": 6.234543,
+      "thinker_prefill_ms_p50": 108.099327,
+      "server_first_terminal_ms_p50": 1418.588805,
+      "preprocessing_share_of_server_time": 0.028712576087191098,
+      "preprocessing_slot_utilisation": 0.36508827951649625,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.002399,
+       "cache_key": 0.472861,
+       "video_frames": 0.001333,
+       "processor": 11.395357,
+       "inline_media_load": 2.902278,
+       "total": 15.475013
+      },
+      "preprocess_inflight_max": 1
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_clip_s16_f1",
+     "sessions": 16,
+     "fps": 1.0,
+     "shape": "clip",
+     "max_concurrency": 1,
+     "ticks": 960,
+     "sent": 663,
+     "dropped": 297,
+     "drop_ratio": 0.309375,
+     "late_ratio": 0.4374057315233786,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 0.852471968,
+      "p95": 1.304976504,
+      "p99": 1.927692969,
+      "n": 663
+     },
+     "completion_s": {
+      "p50": 0.947289393,
+      "p95": 1.380841857,
+      "n": 663
+     },
+     "answer_correct_share": 0.77526395173454,
+     "prompt_tokens_p50": 167,
+     "gpu_busy_mean": 88.61716171617162,
+     "gpu_power_mean_w": 292.0906270627063,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.8533275862068965,
+     "server": {
+      "requests_with_events": 663,
+      "preprocessing_wait_ms_p50": 0.070007,
+      "preprocessing_wait_ms_p95": 0.432662,
+      "preprocessing_service_ms_p50": 108.203469,
+      "image_encoder_service_ms_p50": 532.522076,
+      "thinker_queue_ms_p50": 5.008375,
+      "thinker_prefill_ms_p50": 78.567849,
+      "server_first_terminal_ms_p50": 944.137913,
+      "preprocessing_share_of_server_time": 0.11467972476177853,
+      "preprocessing_slot_utilisation": 1.3679226708725918,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.00161,
+       "cache_key": 0.526884,
+       "video_frames": 0.00087,
+       "processor": 33.604968,
+       "inline_media_load": 15.716117,
+       "total": 51.428505
+      },
+      "preprocess_inflight_max": 1
+     },
+     "class": "saturated_other"
+    }
+   ]
+  },
+  {
+   "run": "20261119_ppv_r3_confirm_seq_c4_block1_run01",
+   "experiment_id": "ppv_r3_confirm_seq_c4_block1",
+   "cells": [
+    {
+     "phase": "cam_frame_s4_f2",
+     "sessions": 4,
+     "fps": 2.0,
+     "shape": "frame",
+     "max_concurrency": 4,
+     "ticks": 480,
+     "sent": 356,
+     "dropped": 124,
+     "drop_ratio": 0.25833333333333336,
+     "late_ratio": 0.3398876404494382,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 0.40270112,
+      "p95": 0.615169726,
+      "p99": 0.660945732,
+      "n": 356
+     },
+     "completion_s": {
+      "p50": 0.447016237,
+      "p95": 0.66514947,
+      "n": 356
+     },
+     "answer_correct_share": 0.9803370786516854,
+     "prompt_tokens_p50": 235,
+     "gpu_busy_mean": 92.20333333333333,
+     "gpu_power_mean_w": 290.17223333333334,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": null,
+     "server": {
+      "requests_with_events": 356,
+      "preprocessing_wait_ms_p50": 0.147989,
+      "preprocessing_wait_ms_p95": 0.453759,
+      "preprocessing_service_ms_p50": 32.100149,
+      "image_encoder_service_ms_p50": 219.63357,
+      "thinker_queue_ms_p50": 3.036035,
+      "thinker_prefill_ms_p50": 103.072754,
+      "server_first_terminal_ms_p50": 441.914554,
+      "preprocessing_share_of_server_time": 0.07297369527232181,
+      "preprocessing_slot_utilisation": 0.05779463315693259,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.0048,
+       "cache_key": 0.757827,
+       "video_frames": 0.002531,
+       "processor": 22.106826,
+       "inline_media_load": 4.07048,
+       "total": 27.83507
+      },
+      "preprocess_inflight_max": 3
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_frame_s16_f2",
+     "sessions": 16,
+     "fps": 2.0,
+     "shape": "frame",
+     "max_concurrency": 4,
+     "ticks": 1920,
+     "sent": 472,
+     "dropped": 1448,
+     "drop_ratio": 0.7541666666666667,
+     "late_ratio": 1.0,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.672601174,
+      "p95": 1.936059113,
+      "p99": 2.226735568,
+      "n": 472
+     },
+     "completion_s": {
+      "p50": 1.790080165,
+      "p95": 2.081984653,
+      "n": 472
+     },
+     "answer_correct_share": 0.9703389830508474,
+     "prompt_tokens_p50": 236,
+     "gpu_busy_mean": 88.85064935064935,
+     "gpu_power_mean_w": 289.04129870129873,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.6765517241379309,
+     "server": {
+      "requests_with_events": 472,
+      "preprocessing_wait_ms_p50": 0.158756,
+      "preprocessing_wait_ms_p95": 0.638892,
+      "preprocessing_service_ms_p50": 37.019055,
+      "image_encoder_service_ms_p50": 1379.250527,
+      "thinker_queue_ms_p50": 5.773405,
+      "thinker_prefill_ms_p50": 110.182369,
+      "server_first_terminal_ms_p50": 1786.410635,
+      "preprocessing_share_of_server_time": 0.020811458615168848,
+      "preprocessing_slot_utilisation": 0.08241069425432414,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.004809,
+       "cache_key": 0.767178,
+       "video_frames": 0.002486,
+       "processor": 24.224013,
+       "inline_media_load": 4.357027,
+       "total": 30.990158
+      },
+      "preprocess_inflight_max": 4
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_clip_s16_f2",
+     "sessions": 16,
+     "fps": 2.0,
+     "shape": "clip",
+     "max_concurrency": 4,
+     "ticks": 1920,
+     "sent": 558,
+     "dropped": 1362,
+     "drop_ratio": 0.709375,
+     "late_ratio": 1.0,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.321884958,
+      "p95": 1.821255315,
+      "p99": 1.996269368,
+      "n": 558
+     },
+     "completion_s": {
+      "p50": 1.396544497,
+      "p95": 1.894334869,
+      "n": 558
+     },
+     "answer_correct_share": 0.9086021505376344,
+     "prompt_tokens_p50": 168,
+     "gpu_busy_mean": 81.0957095709571,
+     "gpu_power_mean_w": 286.1471287128713,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.8147758620689656,
+     "server": {
+      "requests_with_events": 558,
+      "preprocessing_wait_ms_p50": 0.144595,
+      "preprocessing_wait_ms_p95": 0.656474,
+      "preprocessing_service_ms_p50": 41.698397,
+      "image_encoder_service_ms_p50": 1113.678709,
+      "thinker_queue_ms_p50": 4.981455,
+      "thinker_prefill_ms_p50": 78.519981,
+      "server_first_terminal_ms_p50": 1392.893764,
+      "preprocessing_share_of_server_time": 0.030040332638031686,
+      "preprocessing_slot_utilisation": 0.10599292558151814,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.003017,
+       "cache_key": 1.127674,
+       "video_frames": 0.001631,
+       "processor": 15.723479,
+       "inline_media_load": 19.13971,
+       "total": 37.572888
+      },
+      "preprocess_inflight_max": 4
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_frame_s16_f1",
+     "sessions": 16,
+     "fps": 1.0,
+     "shape": "frame",
+     "max_concurrency": 4,
+     "ticks": 960,
+     "sent": 437,
+     "dropped": 523,
+     "drop_ratio": 0.5447916666666667,
+     "late_ratio": 0.9610983981693364,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.451768686,
+      "p95": 2.304759418,
+      "p99": 2.529374749,
+      "n": 437
+     },
+     "completion_s": {
+      "p50": 1.568295254,
+      "p95": 2.404774798,
+      "n": 437
+     },
+     "answer_correct_share": 0.9816933638443935,
+     "prompt_tokens_p50": 235,
+     "gpu_busy_mean": 89.97,
+     "gpu_power_mean_w": 289.92929999999996,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.6385344827586206,
+     "server": {
+      "requests_with_events": 437,
+      "preprocessing_wait_ms_p50": 0.150403,
+      "preprocessing_wait_ms_p95": 0.370504,
+      "preprocessing_service_ms_p50": 34.099295,
+      "image_encoder_service_ms_p50": 1136.672247,
+      "thinker_queue_ms_p50": 5.331251,
+      "thinker_prefill_ms_p50": 109.138359,
+      "server_first_terminal_ms_p50": 1557.669699,
+      "preprocessing_share_of_server_time": 0.021987779579963437,
+      "preprocessing_slot_utilisation": 0.07701799356553433,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.004726,
+       "cache_key": 0.725042,
+       "video_frames": 0.002344,
+       "processor": 23.969928,
+       "inline_media_load": 4.117369,
+       "total": 29.398213
+      },
+      "preprocess_inflight_max": 4
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_clip_s16_f1",
+     "sessions": 16,
+     "fps": 1.0,
+     "shape": "clip",
+     "max_concurrency": 4,
+     "ticks": 960,
+     "sent": 556,
+     "dropped": 404,
+     "drop_ratio": 0.42083333333333334,
+     "late_ratio": 0.7212230215827338,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.138208468,
+      "p95": 1.694973232,
+      "p99": 1.862075932,
+      "n": 556
+     },
+     "completion_s": {
+      "p50": 1.218425455,
+      "p95": 1.769767152,
+      "n": 556
+     },
+     "answer_correct_share": 0.7805755395683454,
+     "prompt_tokens_p50": 167,
+     "gpu_busy_mean": 82.66558441558442,
+     "gpu_power_mean_w": 286.8074025974026,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.8302542372881356,
+     "server": {
+      "requests_with_events": 556,
+      "preprocessing_wait_ms_p50": 0.154508,
+      "preprocessing_wait_ms_p95": 0.513467,
+      "preprocessing_service_ms_p50": 39.666052,
+      "image_encoder_service_ms_p50": 930.663801,
+      "thinker_queue_ms_p50": 5.218321,
+      "thinker_prefill_ms_p50": 80.387642,
+      "server_first_terminal_ms_p50": 1214.250207,
+      "preprocessing_share_of_server_time": 0.032794361302505425,
+      "preprocessing_slot_utilisation": 0.10052902282252289,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.003418,
+       "cache_key": 1.142162,
+       "video_frames": 0.001726,
+       "processor": 13.918299,
+       "inline_media_load": 19.524332,
+       "total": 35.82799
+      },
+      "preprocess_inflight_max": 4
+     },
+     "class": "gpu_bound"
+    }
+   ]
+  },
+  {
+   "run": "20261119_ppv_r3_confirm_seq_c1_block2_run01",
+   "experiment_id": "ppv_r3_confirm_seq_c1_block2",
+   "cells": [
+    {
+     "phase": "cam_clip_s16_f2",
+     "sessions": 16,
+     "fps": 2.0,
+     "shape": "clip",
+     "max_concurrency": 1,
+     "ticks": 1920,
+     "sent": 586,
+     "dropped": 1334,
+     "drop_ratio": 0.6947916666666667,
+     "late_ratio": 1.0,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.249384919,
+      "p95": 1.626153252,
+      "p99": 1.691903726,
+      "n": 586
+     },
+     "completion_s": {
+      "p50": 1.343158887,
+      "p95": 1.719082594,
+      "n": 586
+     },
+     "answer_correct_share": 0.9061433447098977,
+     "prompt_tokens_p50": 168,
+     "gpu_busy_mean": 79.40983606557377,
+     "gpu_power_mean_w": 283.76318032786884,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": null,
+     "server": {
+      "requests_with_events": 586,
+      "preprocessing_wait_ms_p50": 0.187103,
+      "preprocessing_wait_ms_p95": 0.717921,
+      "preprocessing_service_ms_p50": 71.346761,
+      "image_encoder_service_ms_p50": 990.963396,
+      "thinker_queue_ms_p50": 5.858656,
+      "thinker_prefill_ms_p50": 82.560752,
+      "server_first_terminal_ms_p50": 1339.461526,
+      "preprocessing_share_of_server_time": 0.05340494117335326,
+      "preprocessing_slot_utilisation": 0.7585389308390943,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.004152,
+       "cache_key": 1.345059,
+       "video_frames": 0.002301,
+       "processor": 12.30202,
+       "inline_media_load": 22.180176,
+       "total": 37.263984
+      },
+      "preprocess_inflight_max": 1
+     },
+     "class": "saturated_other"
+    },
+    {
+     "phase": "cam_frame_s16_f2",
+     "sessions": 16,
+     "fps": 2.0,
+     "shape": "frame",
+     "max_concurrency": 1,
+     "ticks": 1920,
+     "sent": 468,
+     "dropped": 1452,
+     "drop_ratio": 0.75625,
+     "late_ratio": 1.0,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.693500729,
+      "p95": 1.946051399,
+      "p99": 2.453690935,
+      "n": 468
+     },
+     "completion_s": {
+      "p50": 1.81693933,
+      "p95": 2.095146202,
+      "n": 468
+     },
+     "answer_correct_share": 0.967948717948718,
+     "prompt_tokens_p50": 236,
+     "gpu_busy_mean": 83.2258064516129,
+     "gpu_power_mean_w": 290.342064516129,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.6515084745762714,
+     "server": {
+      "requests_with_events": 468,
+      "preprocessing_wait_ms_p50": 0.148545,
+      "preprocessing_wait_ms_p95": 0.531483,
+      "preprocessing_service_ms_p50": 44.948419,
+      "image_encoder_service_ms_p50": 1390.576961,
+      "thinker_queue_ms_p50": 5.75994,
+      "thinker_prefill_ms_p50": 110.057109,
+      "server_first_terminal_ms_p50": 1813.136894,
+      "preprocessing_share_of_server_time": 0.024872343698500683,
+      "preprocessing_slot_utilisation": 0.3680999735863384,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.004667,
+       "cache_key": 0.771044,
+       "video_frames": 0.002448,
+       "processor": 14.318041,
+       "inline_media_load": 4.522405,
+       "total": 20.688967
+      },
+      "preprocess_inflight_max": 1
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_frame_s4_f2",
+     "sessions": 4,
+     "fps": 2.0,
+     "shape": "frame",
+     "max_concurrency": 1,
+     "ticks": 480,
+     "sent": 355,
+     "dropped": 125,
+     "drop_ratio": 0.2604166666666667,
+     "late_ratio": 0.35774647887323946,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 0.403605449,
+      "p95": 0.615620647,
+      "p99": 0.649494618,
+      "n": 355
+     },
+     "completion_s": {
+      "p50": 0.456879613,
+      "p95": 0.677911426,
+      "n": 355
+     },
+     "answer_correct_share": 0.9746478873239437,
+     "prompt_tokens_p50": 235,
+     "gpu_busy_mean": 89.85714285714286,
+     "gpu_power_mean_w": 289.18003322259136,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.5423333333333333,
+     "server": {
+      "requests_with_events": 355,
+      "preprocessing_wait_ms_p50": 0.145768,
+      "preprocessing_wait_ms_p95": 0.366504,
+      "preprocessing_service_ms_p50": 33.082909,
+      "image_encoder_service_ms_p50": 223.439623,
+      "thinker_queue_ms_p50": 3.541924,
+      "thinker_prefill_ms_p50": 104.415646,
+      "server_first_terminal_ms_p50": 452.49154,
+      "preprocessing_share_of_server_time": 0.07343491328036762,
+      "preprocessing_slot_utilisation": 0.24353800691721653,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.004908,
+       "cache_key": 0.770726,
+       "video_frames": 0.002611,
+       "processor": 23.901858,
+       "inline_media_load": 4.271527,
+       "total": 30.043858
+      },
+      "preprocess_inflight_max": 1
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_clip_s16_f1",
+     "sessions": 16,
+     "fps": 1.0,
+     "shape": "clip",
+     "max_concurrency": 1,
+     "ticks": 960,
+     "sent": 550,
+     "dropped": 410,
+     "drop_ratio": 0.4270833333333333,
+     "late_ratio": 0.7454545454545455,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.08981663,
+      "p95": 1.662852459,
+      "p99": 1.82534786,
+      "n": 550
+     },
+     "completion_s": {
+      "p50": 1.175664911,
+      "p95": 1.770234495,
+      "n": 550
+     },
+     "answer_correct_share": 0.7618181818181818,
+     "prompt_tokens_p50": 167,
+     "gpu_busy_mean": 79.02622950819672,
+     "gpu_power_mean_w": 286.0754426229508,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.8464482758620688,
+     "server": {
+      "requests_with_events": 550,
+      "preprocessing_wait_ms_p50": 0.174871,
+      "preprocessing_wait_ms_p95": 0.612532,
+      "preprocessing_service_ms_p50": 54.228661,
+      "image_encoder_service_ms_p50": 848.839936,
+      "thinker_queue_ms_p50": 6.067184,
+      "thinker_prefill_ms_p50": 83.124668,
+      "server_first_terminal_ms_p50": 1170.841133,
+      "preprocessing_share_of_server_time": 0.04646534057152911,
+      "preprocessing_slot_utilisation": 0.5351167608439888,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.004372,
+       "cache_key": 1.353212,
+       "video_frames": 0.002306,
+       "processor": 12.997381,
+       "inline_media_load": 22.409018,
+       "total": 38.267754
+      },
+      "preprocess_inflight_max": 1
+     },
+     "class": "saturated_other"
+    },
+    {
+     "phase": "cam_frame_s16_f1",
+     "sessions": 16,
+     "fps": 1.0,
+     "shape": "frame",
+     "max_concurrency": 1,
+     "ticks": 960,
+     "sent": 468,
+     "dropped": 492,
+     "drop_ratio": 0.5125,
+     "late_ratio": 1.0,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.503078318,
+      "p95": 1.905743645,
+      "p99": 2.377270625,
+      "n": 468
+     },
+     "completion_s": {
+      "p50": 1.623210011,
+      "p95": 2.026986822,
+      "n": 468
+     },
+     "answer_correct_share": 0.9764957264957265,
+     "prompt_tokens_p50": 235,
+     "gpu_busy_mean": 83.63192182410424,
+     "gpu_power_mean_w": 291.3814983713355,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.6557241379310343,
+     "server": {
+      "requests_with_events": 468,
+      "preprocessing_wait_ms_p50": 0.15436,
+      "preprocessing_wait_ms_p95": 0.447327,
+      "preprocessing_service_ms_p50": 35.147785,
+      "image_encoder_service_ms_p50": 1215.693382,
+      "thinker_queue_ms_p50": 6.331886,
+      "thinker_prefill_ms_p50": 110.96882,
+      "server_first_terminal_ms_p50": 1618.727982,
+      "preprocessing_share_of_server_time": 0.02180857154046528,
+      "preprocessing_slot_utilisation": 0.3403400803941777,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.004872,
+       "cache_key": 0.766634,
+       "video_frames": 0.00254,
+       "processor": 15.564202,
+       "inline_media_load": 4.388025,
+       "total": 21.872603
+      },
+      "preprocess_inflight_max": 1
+     },
+     "class": "gpu_bound"
+    }
+   ]
+  },
+  {
+   "run": "20261119_ppv_r3_confirm_seq_c4_block2_run01",
+   "experiment_id": "ppv_r3_confirm_seq_c4_block2",
+   "cells": [
+    {
+     "phase": "cam_clip_s16_f2",
+     "sessions": 16,
+     "fps": 2.0,
+     "shape": "clip",
+     "max_concurrency": 4,
+     "ticks": 1920,
+     "sent": 572,
+     "dropped": 1348,
+     "drop_ratio": 0.7020833333333333,
+     "late_ratio": 1.0,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.277266861,
+      "p95": 1.662184704,
+      "p99": 1.805508773,
+      "n": 572
+     },
+     "completion_s": {
+      "p50": 1.370606642,
+      "p95": 1.746287777,
+      "n": 572
+     },
+     "answer_correct_share": 0.9125874125874126,
+     "prompt_tokens_p50": 168,
+     "gpu_busy_mean": 71.94098360655738,
+     "gpu_power_mean_w": 279.96452459016393,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.8196271186440678,
+     "server": {
+      "requests_with_events": 572,
+      "preprocessing_wait_ms_p50": 0.180875,
+      "preprocessing_wait_ms_p95": 0.649869,
+      "preprocessing_service_ms_p50": 47.834833,
+      "image_encoder_service_ms_p50": 1053.326798,
+      "thinker_queue_ms_p50": 5.557057,
+      "thinker_prefill_ms_p50": 82.109956,
+      "server_first_terminal_ms_p50": 1366.419694,
+      "preprocessing_share_of_server_time": 0.03513979505040712,
+      "preprocessing_slot_utilisation": 0.1158774262555717,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.003131,
+       "cache_key": 1.351959,
+       "video_frames": 0.001884,
+       "processor": 16.856257,
+       "inline_media_load": 22.901115,
+       "total": 42.261603
+      },
+      "preprocess_inflight_max": 4
+     },
+     "class": "saturated_other"
+    },
+    {
+     "phase": "cam_frame_s16_f2",
+     "sessions": 16,
+     "fps": 2.0,
+     "shape": "frame",
+     "max_concurrency": 4,
+     "ticks": 1920,
+     "sent": 453,
+     "dropped": 1467,
+     "drop_ratio": 0.7640625,
+     "late_ratio": 1.0,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.718136811,
+      "p95": 2.157281029,
+      "p99": 2.4175288,
+      "n": 453
+     },
+     "completion_s": {
+      "p50": 1.830576865,
+      "p95": 2.274000494,
+      "n": 453
+     },
+     "answer_correct_share": 0.9690949227373068,
+     "prompt_tokens_p50": 236,
+     "gpu_busy_mean": 86.8157894736842,
+     "gpu_power_mean_w": 288.31052631578945,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.6689827586206898,
+     "server": {
+      "requests_with_events": 453,
+      "preprocessing_wait_ms_p50": 0.154225,
+      "preprocessing_wait_ms_p95": 0.629479,
+      "preprocessing_service_ms_p50": 36.948511,
+      "image_encoder_service_ms_p50": 1433.070134,
+      "thinker_queue_ms_p50": 5.813868,
+      "thinker_prefill_ms_p50": 110.121482,
+      "server_first_terminal_ms_p50": 1826.795579,
+      "preprocessing_share_of_server_time": 0.020310283441954836,
+      "preprocessing_slot_utilisation": 0.07998740148269617,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.004592,
+       "cache_key": 0.768555,
+       "video_frames": 0.002749,
+       "processor": 24.762218,
+       "inline_media_load": 4.308069,
+       "total": 30.800079
+      },
+      "preprocess_inflight_max": 4
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_frame_s4_f2",
+     "sessions": 4,
+     "fps": 2.0,
+     "shape": "frame",
+     "max_concurrency": 4,
+     "ticks": 480,
+     "sent": 353,
+     "dropped": 127,
+     "drop_ratio": 0.26458333333333334,
+     "late_ratio": 0.35694050991501414,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 0.400285658,
+      "p95": 0.62577183,
+      "p99": 0.660133794,
+      "n": 353
+     },
+     "completion_s": {
+      "p50": 0.448023549,
+      "p95": 0.682756593,
+      "n": 353
+     },
+     "answer_correct_share": 0.9801699716713881,
+     "prompt_tokens_p50": 235,
+     "gpu_busy_mean": 87.72093023255815,
+     "gpu_power_mean_w": 288.4365780730897,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.5192280701754386,
+     "server": {
+      "requests_with_events": 353,
+      "preprocessing_wait_ms_p50": 0.145648,
+      "preprocessing_wait_ms_p95": 0.547611,
+      "preprocessing_service_ms_p50": 29.61083,
+      "image_encoder_service_ms_p50": 220.683519,
+      "thinker_queue_ms_p50": 3.692334,
+      "thinker_prefill_ms_p50": 103.960596,
+      "server_first_terminal_ms_p50": 443.76891,
+      "preprocessing_share_of_server_time": 0.0670539943864026,
+      "preprocessing_slot_utilisation": 0.05379421671014893,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.004638,
+       "cache_key": 0.766512,
+       "video_frames": 0.002818,
+       "processor": 19.464701,
+       "inline_media_load": 4.220827,
+       "total": 25.130879
+      },
+      "preprocess_inflight_max": 3
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_clip_s16_f1",
+     "sessions": 16,
+     "fps": 1.0,
+     "shape": "clip",
+     "max_concurrency": 4,
+     "ticks": 960,
+     "sent": 552,
+     "dropped": 408,
+     "drop_ratio": 0.425,
+     "late_ratio": 0.7318840579710145,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.079185952,
+      "p95": 1.545198191,
+      "p99": 1.783646579,
+      "n": 552
+     },
+     "completion_s": {
+      "p50": 1.178568581,
+      "p95": 1.641215102,
+      "n": 552
+     },
+     "answer_correct_share": 0.769927536231884,
+     "prompt_tokens_p50": 167,
+     "gpu_busy_mean": 85.13201320132013,
+     "gpu_power_mean_w": 280.42214521452144,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.8488421052631578,
+     "server": {
+      "requests_with_events": 552,
+      "preprocessing_wait_ms_p50": 0.172176,
+      "preprocessing_wait_ms_p95": 0.584946,
+      "preprocessing_service_ms_p50": 45.269588,
+      "image_encoder_service_ms_p50": 842.511272,
+      "thinker_queue_ms_p50": 5.906593,
+      "thinker_prefill_ms_p50": 83.345829,
+      "server_first_terminal_ms_p50": 1174.285989,
+      "preprocessing_share_of_server_time": 0.03869735688381785,
+      "preprocessing_slot_utilisation": 0.10930209670067166,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.00348,
+       "cache_key": 1.263015,
+       "video_frames": 0.002088,
+       "processor": 15.216818,
+       "inline_media_load": 22.501667,
+       "total": 40.254145
+      },
+      "preprocess_inflight_max": 4
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_frame_s16_f1",
+     "sessions": 16,
+     "fps": 1.0,
+     "shape": "frame",
+     "max_concurrency": 4,
+     "ticks": 960,
+     "sent": 457,
+     "dropped": 503,
+     "drop_ratio": 0.5239583333333333,
+     "late_ratio": 1.0,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.502093988,
+      "p95": 2.081854359,
+      "p99": 2.412339005,
+      "n": 457
+     },
+     "completion_s": {
+      "p50": 1.626942824,
+      "p95": 2.160871505,
+      "n": 457
+     },
+     "answer_correct_share": 0.9715536105032823,
+     "prompt_tokens_p50": 235,
+     "gpu_busy_mean": 88.40460526315789,
+     "gpu_power_mean_w": 291.019375,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.6802241379310345,
+     "server": {
+      "requests_with_events": 457,
+      "preprocessing_wait_ms_p50": 0.150609,
+      "preprocessing_wait_ms_p95": 0.453864,
+      "preprocessing_service_ms_p50": 35.498063,
+      "image_encoder_service_ms_p50": 1223.513418,
+      "thinker_queue_ms_p50": 6.1428,
+      "thinker_prefill_ms_p50": 110.090738,
+      "server_first_terminal_ms_p50": 1621.738249,
+      "preprocessing_share_of_server_time": 0.02198176679990237,
+      "preprocessing_slot_utilisation": 0.08132732765184594,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.004642,
+       "cache_key": 0.767546,
+       "video_frames": 0.002779,
+       "processor": 24.75182,
+       "inline_media_load": 4.205813,
+       "total": 30.671507
+      },
+      "preprocess_inflight_max": 4
+     },
+     "class": "gpu_bound"
+    }
+   ]
+  },
+  {
+   "run": "20261119_ppv_r3_confirm_seq_c1_block3_run01",
+   "experiment_id": "ppv_r3_confirm_seq_c1_block3",
+   "cells": [
+    {
+     "phase": "cam_frame_s16_f2",
+     "sessions": 16,
+     "fps": 2.0,
+     "shape": "frame",
+     "max_concurrency": 1,
+     "ticks": 1920,
+     "sent": 464,
+     "dropped": 1456,
+     "drop_ratio": 0.7583333333333333,
+     "late_ratio": 1.0,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.698461797,
+      "p95": 2.074501908,
+      "p99": 2.348582058,
+      "n": 464
+     },
+     "completion_s": {
+      "p50": 1.817274251,
+      "p95": 2.176331506,
+      "n": 464
+     },
+     "answer_correct_share": 0.9612068965517241,
+     "prompt_tokens_p50": 236,
+     "gpu_busy_mean": 89.01628664495114,
+     "gpu_power_mean_w": 291.11781758957653,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": null,
+     "server": {
+      "requests_with_events": 464,
+      "preprocessing_wait_ms_p50": 0.150464,
+      "preprocessing_wait_ms_p95": 0.504394,
+      "preprocessing_service_ms_p50": 48.929218,
+      "image_encoder_service_ms_p50": 1394.849581,
+      "thinker_queue_ms_p50": 5.603632,
+      "thinker_prefill_ms_p50": 110.837791,
+      "server_first_terminal_ms_p50": 1812.585855,
+      "preprocessing_share_of_server_time": 0.02707716264286968,
+      "preprocessing_slot_utilisation": 0.3821690823458154,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.004599,
+       "cache_key": 0.769903,
+       "video_frames": 0.00244,
+       "processor": 14.241371,
+       "inline_media_load": 4.578934,
+       "total": 20.442859
+      },
+      "preprocess_inflight_max": 1
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_frame_s16_f1",
+     "sessions": 16,
+     "fps": 1.0,
+     "shape": "frame",
+     "max_concurrency": 1,
+     "ticks": 960,
+     "sent": 447,
+     "dropped": 513,
+     "drop_ratio": 0.534375,
+     "late_ratio": 0.9932885906040269,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.498349775,
+      "p95": 2.123958038,
+      "p99": 2.427837333,
+      "n": 447
+     },
+     "completion_s": {
+      "p50": 1.621148007,
+      "p95": 2.233446067,
+      "n": 447
+     },
+     "answer_correct_share": 0.9821029082774049,
+     "prompt_tokens_p50": 235,
+     "gpu_busy_mean": 80.72549019607843,
+     "gpu_power_mean_w": 290.5064052287581,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.636551724137931,
+     "server": {
+      "requests_with_events": 447,
+      "preprocessing_wait_ms_p50": 0.159899,
+      "preprocessing_wait_ms_p95": 0.5345,
+      "preprocessing_service_ms_p50": 33.141544,
+      "image_encoder_service_ms_p50": 1217.694703,
+      "thinker_queue_ms_p50": 5.798855,
+      "thinker_prefill_ms_p50": 110.494125,
+      "server_first_terminal_ms_p50": 1616.743981,
+      "preprocessing_share_of_server_time": 0.020597845664718145,
+      "preprocessing_slot_utilisation": 0.31103502913242476,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.004627,
+       "cache_key": 0.751033,
+       "video_frames": 0.002465,
+       "processor": 14.312302,
+       "inline_media_load": 4.47511,
+       "total": 20.62803
+      },
+      "preprocess_inflight_max": 1
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_clip_s16_f2",
+     "sessions": 16,
+     "fps": 2.0,
+     "shape": "clip",
+     "max_concurrency": 1,
+     "ticks": 1920,
+     "sent": 557,
+     "dropped": 1363,
+     "drop_ratio": 0.7098958333333333,
+     "late_ratio": 1.0,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.311065794,
+      "p95": 1.726985469,
+      "p99": 1.918758902,
+      "n": 557
+     },
+     "completion_s": {
+      "p50": 1.408607963,
+      "p95": 1.796065236,
+      "n": 557
+     },
+     "answer_correct_share": 0.9102333931777379,
+     "prompt_tokens_p50": 168,
+     "gpu_busy_mean": 72.70297029702971,
+     "gpu_power_mean_w": 282.6195379537954,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.8338620689655174,
+     "server": {
+      "requests_with_events": 557,
+      "preprocessing_wait_ms_p50": 0.186024,
+      "preprocessing_wait_ms_p95": 0.680836,
+      "preprocessing_service_ms_p50": 73.927959,
+      "image_encoder_service_ms_p50": 1049.438367,
+      "thinker_queue_ms_p50": 6.359125,
+      "thinker_prefill_ms_p50": 82.010171,
+      "server_first_terminal_ms_p50": 1404.380931,
+      "preprocessing_share_of_server_time": 0.052773418781203896,
+      "preprocessing_slot_utilisation": 0.7258687282168658,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.004152,
+       "cache_key": 1.33922,
+       "video_frames": 0.002262,
+       "processor": 12.362455,
+       "inline_media_load": 22.442289,
+       "total": 37.497214
+      },
+      "preprocess_inflight_max": 1
+     },
+     "class": "saturated_other"
+    },
+    {
+     "phase": "cam_frame_s4_f2",
+     "sessions": 4,
+     "fps": 2.0,
+     "shape": "frame",
+     "max_concurrency": 1,
+     "ticks": 480,
+     "sent": 354,
+     "dropped": 126,
+     "drop_ratio": 0.2625,
+     "late_ratio": 0.3615819209039548,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 0.409363201,
+      "p95": 0.606066442,
+      "p99": 0.649896726,
+      "n": 354
+     },
+     "completion_s": {
+      "p50": 0.457626997,
+      "p95": 0.666064143,
+      "n": 354
+     },
+     "answer_correct_share": 0.980225988700565,
+     "prompt_tokens_p50": 235,
+     "gpu_busy_mean": 84.07333333333334,
+     "gpu_power_mean_w": 289.0892666666667,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.536362068965517,
+     "server": {
+      "requests_with_events": 354,
+      "preprocessing_wait_ms_p50": 0.152893,
+      "preprocessing_wait_ms_p95": 0.327952,
+      "preprocessing_service_ms_p50": 31.307912,
+      "image_encoder_service_ms_p50": 218.559575,
+      "thinker_queue_ms_p50": 3.623747,
+      "thinker_prefill_ms_p50": 104.072122,
+      "server_first_terminal_ms_p50": 454.859494,
+      "preprocessing_share_of_server_time": 0.06916598513386202,
+      "preprocessing_slot_utilisation": 0.24726949717162458,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.004694,
+       "cache_key": 0.753479,
+       "video_frames": 0.002518,
+       "processor": 21.100021,
+       "inline_media_load": 4.321605,
+       "total": 27.232347
+      },
+      "preprocess_inflight_max": 1
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_clip_s16_f1",
+     "sessions": 16,
+     "fps": 1.0,
+     "shape": "clip",
+     "max_concurrency": 1,
+     "ticks": 960,
+     "sent": 552,
+     "dropped": 408,
+     "drop_ratio": 0.425,
+     "late_ratio": 0.7318840579710145,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.025709968,
+      "p95": 1.581319457,
+      "p99": 1.866408382,
+      "n": 552
+     },
+     "completion_s": {
+      "p50": 1.120637394,
+      "p95": 1.644500878,
+      "n": 552
+     },
+     "answer_correct_share": 0.7898550724637681,
+     "prompt_tokens_p50": 167,
+     "gpu_busy_mean": 75.75083056478405,
+     "gpu_power_mean_w": 282.8794684385382,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.8496140350877193,
+     "server": {
+      "requests_with_events": 552,
+      "preprocessing_wait_ms_p50": 0.183461,
+      "preprocessing_wait_ms_p95": 0.594566,
+      "preprocessing_service_ms_p50": 59.192367,
+      "image_encoder_service_ms_p50": 768.258349,
+      "thinker_queue_ms_p50": 6.084222,
+      "thinker_prefill_ms_p50": 84.398371,
+      "server_first_terminal_ms_p50": 1116.272902,
+      "preprocessing_share_of_server_time": 0.05319113981322822,
+      "preprocessing_slot_utilisation": 0.570016283161826,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.004261,
+       "cache_key": 1.381514,
+       "video_frames": 0.00234,
+       "processor": 12.923036,
+       "inline_media_load": 23.020032,
+       "total": 38.547652
+      },
+      "preprocess_inflight_max": 1
+     },
+     "class": "saturated_other"
+    }
+   ]
+  },
+  {
+   "run": "20261119_ppv_r3_confirm_seq_c4_block3_run01",
+   "experiment_id": "ppv_r3_confirm_seq_c4_block3",
+   "cells": [
+    {
+     "phase": "cam_frame_s16_f2",
+     "sessions": 16,
+     "fps": 2.0,
+     "shape": "frame",
+     "max_concurrency": 4,
+     "ticks": 1920,
+     "sent": 464,
+     "dropped": 1456,
+     "drop_ratio": 0.7583333333333333,
+     "late_ratio": 1.0,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.716458237,
+      "p95": 2.076491753,
+      "p99": 2.398964384,
+      "n": 464
+     },
+     "completion_s": {
+      "p50": 1.835422889,
+      "p95": 2.187238094,
+      "n": 464
+     },
+     "answer_correct_share": 0.9633620689655172,
+     "prompt_tokens_p50": 236,
+     "gpu_busy_mean": 86.13071895424837,
+     "gpu_power_mean_w": 287.76218954248367,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": null,
+     "server": {
+      "requests_with_events": 464,
+      "preprocessing_wait_ms_p50": 0.163472,
+      "preprocessing_wait_ms_p95": 0.556052,
+      "preprocessing_service_ms_p50": 35.424614,
+      "image_encoder_service_ms_p50": 1419.970108,
+      "thinker_queue_ms_p50": 5.424453,
+      "thinker_prefill_ms_p50": 110.169938,
+      "server_first_terminal_ms_p50": 1828.434282,
+      "preprocessing_share_of_server_time": 0.01946369434786172,
+      "preprocessing_slot_utilisation": 0.08242904280657859,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.004461,
+       "cache_key": 0.772228,
+       "video_frames": 0.002693,
+       "processor": 22.628383,
+       "inline_media_load": 4.407284,
+       "total": 29.137581
+      },
+      "preprocess_inflight_max": 4
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_frame_s16_f1",
+     "sessions": 16,
+     "fps": 1.0,
+     "shape": "frame",
+     "max_concurrency": 4,
+     "ticks": 960,
+     "sent": 433,
+     "dropped": 527,
+     "drop_ratio": 0.5489583333333333,
+     "late_ratio": 0.9930715935334873,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.598906295,
+      "p95": 2.354434822,
+      "p99": 2.579301165,
+      "n": 433
+     },
+     "completion_s": {
+      "p50": 1.728935227,
+      "p95": 2.406484003,
+      "n": 433
+     },
+     "answer_correct_share": 0.9792147806004619,
+     "prompt_tokens_p50": 235,
+     "gpu_busy_mean": 86.95409836065573,
+     "gpu_power_mean_w": 289.17498360655736,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.6512068965517241,
+     "server": {
+      "requests_with_events": 433,
+      "preprocessing_wait_ms_p50": 0.15731,
+      "preprocessing_wait_ms_p95": 0.589297,
+      "preprocessing_service_ms_p50": 33.096206,
+      "image_encoder_service_ms_p50": 1320.616818,
+      "thinker_queue_ms_p50": 5.429139,
+      "thinker_prefill_ms_p50": 109.25041,
+      "server_first_terminal_ms_p50": 1725.281886,
+      "preprocessing_share_of_server_time": 0.019274250932464727,
+      "preprocessing_slot_utilisation": 0.07266408236407329,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.004496,
+       "cache_key": 0.7675,
+       "video_frames": 0.002723,
+       "processor": 22.71209,
+       "inline_media_load": 4.321432,
+       "total": 28.358568
+      },
+      "preprocess_inflight_max": 4
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_clip_s16_f2",
+     "sessions": 16,
+     "fps": 2.0,
+     "shape": "clip",
+     "max_concurrency": 4,
+     "ticks": 1920,
+     "sent": 550,
+     "dropped": 1370,
+     "drop_ratio": 0.7135416666666666,
+     "late_ratio": 1.0,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.3208915,
+      "p95": 1.786451024,
+      "p99": 2.036816351,
+      "n": 550
+     },
+     "completion_s": {
+      "p50": 1.44940834,
+      "p95": 1.844049506,
+      "n": 550
+     },
+     "answer_correct_share": 0.9090909090909091,
+     "prompt_tokens_p50": 168,
+     "gpu_busy_mean": 83.89144736842105,
+     "gpu_power_mean_w": 280.5996052631579,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.8060689655172413,
+     "server": {
+      "requests_with_events": 550,
+      "preprocessing_wait_ms_p50": 0.180565,
+      "preprocessing_wait_ms_p95": 0.771561,
+      "preprocessing_service_ms_p50": 47.613023,
+      "image_encoder_service_ms_p50": 1096.217125,
+      "thinker_queue_ms_p50": 5.620632,
+      "thinker_prefill_ms_p50": 80.623615,
+      "server_first_terminal_ms_p50": 1444.970448,
+      "preprocessing_share_of_server_time": 0.033075823845499154,
+      "preprocessing_slot_utilisation": 0.11248132092920285,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.003198,
+       "cache_key": 1.292853,
+       "video_frames": 0.001935,
+       "processor": 17.036292,
+       "inline_media_load": 22.716041,
+       "total": 42.381072
+      },
+      "preprocess_inflight_max": 4
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_frame_s4_f2",
+     "sessions": 4,
+     "fps": 2.0,
+     "shape": "frame",
+     "max_concurrency": 4,
+     "ticks": 480,
+     "sent": 354,
+     "dropped": 126,
+     "drop_ratio": 0.2625,
+     "late_ratio": 0.3587570621468927,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 0.409227435,
+      "p95": 0.612840625,
+      "p99": 0.645774439,
+      "n": 354
+     },
+     "completion_s": {
+      "p50": 0.449213658,
+      "p95": 0.664002623,
+      "n": 354
+     },
+     "answer_correct_share": 0.9830508474576272,
+     "prompt_tokens_p50": 235,
+     "gpu_busy_mean": 87.84333333333333,
+     "gpu_power_mean_w": 289.0193,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.5574736842105263,
+     "server": {
+      "requests_with_events": 354,
+      "preprocessing_wait_ms_p50": 0.147906,
+      "preprocessing_wait_ms_p95": 0.477021,
+      "preprocessing_service_ms_p50": 31.609495,
+      "image_encoder_service_ms_p50": 225.442287,
+      "thinker_queue_ms_p50": 3.84764,
+      "thinker_prefill_ms_p50": 103.504952,
+      "server_first_terminal_ms_p50": 445.75521,
+      "preprocessing_share_of_server_time": 0.07124403773093309,
+      "preprocessing_slot_utilisation": 0.05635220257181071,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.004555,
+       "cache_key": 0.769077,
+       "video_frames": 0.00272,
+       "processor": 22.600561,
+       "inline_media_load": 4.303764,
+       "total": 28.051812
+      },
+      "preprocess_inflight_max": 3
+     },
+     "class": "gpu_bound"
+    },
+    {
+     "phase": "cam_clip_s16_f1",
+     "sessions": 16,
+     "fps": 1.0,
+     "shape": "clip",
+     "max_concurrency": 4,
+     "ticks": 960,
+     "sent": 563,
+     "dropped": 397,
+     "drop_ratio": 0.41354166666666664,
+     "late_ratio": 0.6962699822380106,
+     "errors": 0,
+     "first_response_s": {
+      "p50": 1.049676686,
+      "p95": 1.497533793,
+      "p99": 1.943567196,
+      "n": 563
+     },
+     "completion_s": {
+      "p50": 1.13891368,
+      "p95": 1.601258448,
+      "n": 563
+     },
+     "answer_correct_share": 0.7761989342806395,
+     "prompt_tokens_p50": 167,
+     "gpu_busy_mean": 84.67549668874172,
+     "gpu_power_mean_w": 280.29811258278147,
+     "gpu_util_zero_share": 0.0,
+     "gpu_util_suspect": false,
+     "preprocessing_process_cores_mean": 1.8583793103448276,
+     "server": {
+      "requests_with_events": 563,
+      "preprocessing_wait_ms_p50": 0.188636,
+      "preprocessing_wait_ms_p95": 0.663796,
+      "preprocessing_service_ms_p50": 46.818977,
+      "image_encoder_service_ms_p50": 790.657496,
+      "thinker_queue_ms_p50": 6.422604,
+      "thinker_prefill_ms_p50": 83.261463,
+      "server_first_terminal_ms_p50": 1134.006363,
+      "preprocessing_share_of_server_time": 0.04145268892111146,
+      "preprocessing_slot_utilisation": 0.11513630569017473,
+      "preprocess_split_ms_p50": {
+       "media_load": 0.003652,
+       "cache_key": 1.303167,
+       "video_frames": 0.002269,
+       "processor": 16.170275,
+       "inline_media_load": 23.316792,
+       "total": 41.692042
+      },
+      "preprocess_inflight_max": 4
+     },
+     "class": "gpu_bound"
+    }
+   ]
+  }
+ ],
+ "confirmation": {
+  "clip_s16_f1": {
+   "verdict": "不支持",
+   "improved_by_block": {
+    "1": false,
+    "2": false,
+    "3": false
+   },
+   "class_c1_by_block": {
+    "1": "saturated_other",
+    "2": "saturated_other",
+    "3": "saturated_other"
+   },
+   "drop_ratio": {
+    "c1": {
+     "1": 0.309375,
+     "2": 0.4270833333333333,
+     "3": 0.425
+    },
+    "c4": {
+     "1": 0.42083333333333334,
+     "2": 0.425,
+     "3": 0.41354166666666664
+    }
+   },
+   "first_response_p95_s": {
+    "c1": {
+     "1": 1.304976504,
+     "2": 1.662852459,
+     "3": 1.581319457
+    },
+    "c4": {
+     "1": 1.694973232,
+     "2": 1.545198191,
+     "3": 1.497533793
+    }
+   },
+   "sent_per_s": {
+    "c1": {
+     "1": 11.05,
+     "2": 9.166666666666666,
+     "3": 9.2
+    },
+    "c4": {
+     "1": 9.266666666666667,
+     "2": 9.2,
+     "3": 9.383333333333333
+    }
+   },
+   "offered_per_s": 16.0,
+   "gpu_power_mean_w_c1": {
+    "1": 292.0906270627063,
+    "2": 286.0754426229508,
+    "3": 282.8794684385382
+   }
+  },
+  "clip_s16_f2": {
+   "verdict": "不支持",
+   "improved_by_block": {
+    "1": false,
+    "2": false,
+    "3": false
+   },
+   "class_c1_by_block": {
+    "1": "saturated_other",
+    "2": "saturated_other",
+    "3": "saturated_other"
+   },
+   "drop_ratio": {
+    "c1": {
+     "1": 0.6447916666666667,
+     "2": 0.6947916666666667,
+     "3": 0.7098958333333333
+    },
+    "c4": {
+     "1": 0.709375,
+     "2": 0.7020833333333333,
+     "3": 0.7135416666666666
+    }
+   },
+   "first_response_p95_s": {
+    "c1": {
+     "1": 1.297959517,
+     "2": 1.626153252,
+     "3": 1.726985469
+    },
+    "c4": {
+     "1": 1.821255315,
+     "2": 1.662184704,
+     "3": 1.786451024
+    }
+   },
+   "sent_per_s": {
+    "c1": {
+     "1": 11.366666666666667,
+     "2": 9.766666666666667,
+     "3": 9.283333333333333
+    },
+    "c4": {
+     "1": 9.3,
+     "2": 9.533333333333333,
+     "3": 9.166666666666666
+    }
+   },
+   "offered_per_s": 32.0,
+   "gpu_power_mean_w_c1": {
+    "1": 292.2673509933775,
+    "2": 283.76318032786884,
+    "3": 282.6195379537954
+   }
+  },
+  "frame_s16_f1": {
+   "verdict": "不支持",
+   "improved_by_block": {
+    "1": false,
+    "2": false,
+    "3": false
+   },
+   "class_c1_by_block": {
+    "1": "gpu_bound",
+    "2": "gpu_bound",
+    "3": "gpu_bound"
+   },
+   "drop_ratio": {
+    "c1": {
+     "1": 0.49166666666666664,
+     "2": 0.5125,
+     "3": 0.534375
+    },
+    "c4": {
+     "1": 0.5447916666666667,
+     "2": 0.5239583333333333,
+     "3": 0.5489583333333333
+    }
+   },
+   "first_response_p95_s": {
+    "c1": {
+     "1": 1.78481244,
+     "2": 1.905743645,
+     "3": 2.123958038
+    },
+    "c4": {
+     "1": 2.304759418,
+     "2": 2.081854359,
+     "3": 2.354434822
+    }
+   },
+   "sent_per_s": {
+    "c1": {
+     "1": 8.133333333333333,
+     "2": 7.8,
+     "3": 7.45
+    },
+    "c4": {
+     "1": 7.283333333333333,
+     "2": 7.616666666666666,
+     "3": 7.216666666666667
+    }
+   },
+   "offered_per_s": 16.0,
+   "gpu_power_mean_w_c1": {
+    "1": 290.69026229508194,
+    "2": 291.3814983713355,
+    "3": 290.5064052287581
+   }
+  },
+  "frame_s16_f2": {
+   "verdict": "不支持",
+   "improved_by_block": {
+    "1": false,
+    "2": false,
+    "3": false
+   },
+   "class_c1_by_block": {
+    "1": "gpu_bound",
+    "2": "gpu_bound",
+    "3": "gpu_bound"
+   },
+   "drop_ratio": {
+    "c1": {
+     "1": 0.7526041666666666,
+     "2": 0.75625,
+     "3": 0.7583333333333333
+    },
+    "c4": {
+     "1": 0.7541666666666667,
+     "2": 0.7640625,
+     "3": 0.7583333333333333
+    }
+   },
+   "first_response_p95_s": {
+    "c1": {
+     "1": 2.215869691,
+     "2": 1.946051399,
+     "3": 2.074501908
+    },
+    "c4": {
+     "1": 1.936059113,
+     "2": 2.157281029,
+     "3": 2.076491753
+    }
+   },
+   "sent_per_s": {
+    "c1": {
+     "1": 7.916666666666667,
+     "2": 7.8,
+     "3": 7.733333333333333
+    },
+    "c4": {
+     "1": 7.866666666666666,
+     "2": 7.55,
+     "3": 7.733333333333333
+    }
+   },
+   "offered_per_s": 32.0,
+   "gpu_power_mean_w_c1": {
+    "1": 288.68284789644014,
+    "2": 290.342064516129,
+    "3": 291.11781758957653
+   }
+  },
+  "frame_s4_f2": {
+   "verdict": "不支持",
+   "improved_by_block": {
+    "1": false,
+    "2": false,
+    "3": false
+   },
+   "class_c1_by_block": {
+    "1": "gpu_bound",
+    "2": "gpu_bound",
+    "3": "gpu_bound"
+   },
+   "drop_ratio": {
+    "c1": {
+     "1": 0.25,
+     "2": 0.2604166666666667,
+     "3": 0.2625
+    },
+    "c4": {
+     "1": 0.25833333333333336,
+     "2": 0.26458333333333334,
+     "3": 0.2625
+    }
+   },
+   "first_response_p95_s": {
+    "c1": {
+     "1": 0.601773426,
+     "2": 0.615620647,
+     "3": 0.606066442
+    },
+    "c4": {
+     "1": 0.615169726,
+     "2": 0.62577183,
+     "3": 0.612840625
+    }
+   },
+   "sent_per_s": {
+    "c1": {
+     "1": 6.0,
+     "2": 5.916666666666667,
+     "3": 5.9
+    },
+    "c4": {
+     "1": 5.933333333333334,
+     "2": 5.883333333333334,
+     "3": 5.9
+    }
+   },
+   "offered_per_s": 8.0,
+   "gpu_power_mean_w_c1": {
+    "1": 285.0782392026578,
+    "2": 289.18003322259136,
+    "3": 289.0892666666667
+   }
+  }
+ }
+}
