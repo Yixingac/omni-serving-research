@@ -4,7 +4,9 @@
 
 > Source material for a group-meeting talk (audience: PhD students and faculty in AI/GPU/ML systems and robotics). Written 2026-11-18. Sections 1–10 are in English; section 11 is a Chinese companion.
 > Every number below is tied to an experiment in this repository. Evidence levels: **Measured**, **Derived** (computed from measurements), **Estimated**, **Hypothesis**, **Proposed**, **Unknown**.
-> **Scope disclaimer.** No robot was deployed and no robot was tested. All measurements come from synthetic workloads replayed against a serving system. The measured execution path is the request–response `/v1/chat/completions` path; the full-duplex `/v1/realtime` path has **not** been measured on our hardware.
+> **Scope disclaimer.** No robot was deployed and no robot was tested. All measurements come from synthetic workloads replayed against a serving system. The measured execution path is the request–response `/v1/chat/completions` path; the full-duplex `/v1/realtime` path had **not** been measured on our hardware when this was written (2026-11-18; see the update below).
+>
+> **Update 2026-11-19 (pre-presentation validation, branch `research/pre-presentation-validation`).** The full-duplex `/v1/realtime` path was measured in R0–R2 on one A6000 with synthetic speech (§2.6, Finding F); the request–response results of experiments 1–19 are unchanged and are kept separate from the duplex results. New numbers trace to `presentation_validation/final_experiment_results.md` and `presentation_validation/presentation_evidence.md`. Still no robot, no real camera, no real users.
 
 **Common conditions for all measurements below** (not repeated per finding): MiniCPM-o 4.5 served by SGLang-Omni at commit `520b49ee` (SGLang 0.5.21, torch 2.13) plus our measurement or prototype patches; one node with 8× NVIDIA RTX A6000 48 GB (NVLink only between GPU pairs 0-3, 1-2, 4-5, 6-7); synthetic workloads (W3b: six short text questions answered in text + speech, ~44 text tokens and ~13 s of speech; W3L: ~100-word answers, ~30 s of speech; MIX: half and half). Unless noted, comparisons use 3 independently restarted blocks with paired 95% t-intervals (df = 2); we do not claim statistical significance.
 
@@ -70,13 +72,13 @@ A robot assistant is deployed on a fixed GPU budget (an on-board or edge server)
 
 | | Request–response (`/v1/chat/completions`) | Native full duplex (`/v1/realtime`, `--variant session`) |
 |---|---|---|
-| Status in this project | **Measured** (experiments 1–19) | **Not run.** Source code and upstream reports only |
+| Status in this project | **Measured** (experiments 1–19) | **Measured in R0–R2** (2026-11-19; one A6000, stock `520b49ee`, synthetic speech). Before that: source code and upstream reports only |
 | Input | Whole turn (text/audio/images/video) per request | Continuous 1 s audio units at 16 kHz; images can be appended (`sglang.input_image.append`) |
 | Output | Text stream; audio in one chunk at the end | Audio deltas per unit (24 kHz) |
 | Who decides to speak | The client sends a request | The model decides listen/speak every unit |
-| Interruption | Client abort → abort broadcast to all stages; an in-flight Code2Wav batch runs to completion and its result is discarded | Model-driven; `response.cancel` is **not supported** at `520b49ee` (added upstream later) |
+| Interruption | Client abort → abort broadcast to all stages; an in-flight Code2Wav batch runs to completion and its result is discarded | Model-driven; `response.cancel` is **not supported** at `520b49ee` (added upstream later). Measured (R1): an interrupted reply kept playing 5.1 s at the median (max 11.6 s) |
 | Session state | Client-side history; server-side prefix cache only | Server-side streaming sessions for Thinker and Talker; history bounded at 8,192 tokens per session |
-| Default capacity | Limited by stage capacity (Finding A) | `max_sessions = 2` by default; all four stages on one GPU (fractions 0.12/0.52/0.15/0.15) |
+| Default capacity | Limited by stage capacity (Finding A) | `max_sessions = 2` by default; all four stages on one GPU (fractions 0.12/0.52/0.15/0.15). Measured (R2, `max_sessions 8`, one A6000): 1-s units stay real-time up to 4 sessions; 8 sessions run out of GPU memory |
 | Upstream measurements (not ours, different GPU) | — | 1×H200: unit lag p50 180→282 ms and p99 271→604 ms for 1→8 sessions (SGLang-Omni PR #2843); 8 concurrent sessions meet the real-time target (SGLang-Omni interactive-runtime blog) |
 
 **Results measured on the request–response path must not be read as properties of the full-duplex path.** The duplex path uses a different pipeline configuration (all stages on one GPU, per-unit vocoding, streaming sessions), so its bottlenecks may differ.
@@ -133,16 +135,36 @@ sequenceDiagram
   participant K as Talker (GPU 2-7)
   participant C as Code2Wav (GPU 2-7)
   U->>T: request (text prompt, ~26 tokens)
-  Note over T: prefill ~30 ms; first text token at 0.05-0.11 s (Measured)
+  Note over T: prefill ~30 ms, first text token at 0.05-0.11 s (Measured)
   T-->>U: text tokens streamed
   Note over T: ~44 tokens x 25-35 ms per token = 1.1-1.5 s (Derived)
   T->>K: full text + 4096-d hidden state per token (hop 3.4-4.5 ms, Measured)
   Note over K: all speech codes, ~0.4-0.7 s at this load (Derived residual)
   K->>C: all codes (~25 per second of speech)
   Note over C: flow DiT ~105 ms + HiFT ~36 ms GPU, 155 ms stage time (Measured)
-  C-->>U: one audio chunk (~13 s of speech); TTFA = end-to-end, P50 2.00 s (Measured)
+  C-->>U: one audio chunk (~13 s of speech), TTFA = end-to-end, P50 2.00 s (Measured)
   Note over U,C: at concurrency 256: end-to-end P50 8.85 s, of which 5.25 s inside Code2Wav (42% queueing)
 ```
+
+### 2.6 Full-duplex path as measured (R0–R2, added 2026-11-19)
+
+One user turn on the full-duplex path, one session on one A6000 (R1, 3 blocks; medians; Measured unless marked). Audio is cut into 1-s units; each unit is processed by perception → thinker → (talker → speech only if the model decides to speak) and its output is released at the end of the unit's processing.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as Robot client (mic stream, 80 ms packets)
+  participant S as Duplex server (one A6000: perception, thinker, talker, speech)
+  U->>S: last packet of the user's utterance (t = 0)
+  Note over U,S: (a) wait until the 1-s unit holding that packet is complete: mean 0.32 s
+  Note over S: model decides to keep listening for k more units (k = 0 in 17 turns, k = 1 in 20, +~1 s each)
+  S->>S: speaking unit: thinker 142 ms, talker 88 ms, speech 82 ms, perception 17 ms (queue + service, P50)
+  S-->>U: first audio delta: (c) 0.35 s after the unit is complete, TTFA P50 1.36 s (0.86 s when k = 0)
+  S-->>U: further audio deltas once per unit (spacing ≈ 1 s), a 250 ms start-up buffer avoids stalls
+  Note over U,S: interruption: no cancel at 520b49ee, the interrupted reply continued 5.1 s (P50)
+```
+
+Under load (R2, `max_sessions 8`, one A6000): the speaking unit's processing grows from 353 ms (1 session) to 707 ms (8 sessions, P99 1.48 s), about equally in thinker, talker and speech; at 8 sessions 46 % of units miss their second and sessions fail with CUDA out-of-memory, because the speech stage's state outgrows its nominal 15 % of the card.
 
 ---
 
@@ -207,6 +229,7 @@ Five findings, ordered by how strongly they support a research question. Each fo
 - **Root cause.** Pipeline configuration, not hardware: the Thinker streams only to the text decoder; the Talker request is built from the complete Thinker output; Code2Wav is a non-streaming batch stage. MiniCPM-o's native duplex variant and Qwen3-Omni's chat pipeline do stream, with different configurations.
 - **Why it matters for the application.** Conversational turn-taking needs the robot to start speaking within a few hundred milliseconds; at 2 s even at low load, the request–response path is unsuitable for interactive speech without streaming.
 - **What still needs validation (Unknown).** TTFA and barge-in latency on the duplex path on A6000s; how they scale with concurrent sessions (default `max_sessions = 2`); whether streaming reduces throughput.
+- **Update 2026-11-19.** The duplex path has now been measured (Finding F); it streams audio per 1-s unit, so this finding remains a property of the request–response path only.
 
 ### Finding E — Video preprocessing and agent dependencies change which resource is critical
 
@@ -216,6 +239,14 @@ Five findings, ordered by how strongly they support a research question. Each fo
 - **Files:** `实验14_视频请求加副本/README.md`, `实验19_负载类型和最佳分工/README.md`, `实验12_回放能不能代替真实负载/README.md`.
 
 ---
+
+### Finding F — On the full-duplex path, turn-taking and the unit structure gate the first spoken response; memory gates concurrency (added 2026-11-19)
+
+- **Observation.** With one session, every 1-s unit is processed within its second (0 of 900 units missed; unit lag P99 0.43 s), yet the first spoken response arrives 1.36 s (median) after the user stops talking. Of that, ~0.32 s is waiting for the current unit to fill, ~1 s is an extra listening unit in 54 % of answered turns, and only ~0.35 s is processing. With up to 4 sessions the units stay real-time; at 8 sessions on one GPU 46 % of units miss and sessions fail with CUDA out-of-memory. Interrupted replies keep playing for 5.1 s at the median.
+- **Evidence.** R0 (functional, 1–2 sessions × 300 s), R1 (3 blocks × 1 session, stage timing from server events), R2 (3 blocks × 1/2/4/8 sessions, `max_sessions 8`); experiment IDs `ppv_r0_*`, `ppv_r1_*`, `ppv_r2_*`; MiniCPM-o 4.5, stock SGLang-Omni `520b49ee`, one RTX A6000, synthetic spoken questions; `presentation_validation/results/r{0,1,2}_summary.json`. Evidence level: Measured (TTFA parts Derived from client timestamps; stage shares from server events).
+- **Root cause.** (1) The model listens in fixed 1-s units and decides per unit whether to speak; when the utterance ends late in a unit, the unit holds little trailing silence and the model tends to wait one more unit (Hypothesis, consistent with the k = 1 turns having a shorter wait (a)). (2) Within a speaking unit the thinker is the largest stage (41 %), talker and vocoder 24 % each. (3) At 8 sessions the speech stage's per-session state grows past its nominal memory share (13.6 GiB vs ≈ 7.1 GiB) — memory, not a single compute stage, fails first.
+- **Why it matters for the application.** For a robot, the turn-taking policy and unit size dominate perceived responsiveness at low load; kernel speedups on the vocoder can shorten at most ~24 % of a 0.35 s speaking unit. Concurrency on a shared card is limited by memory partitioning between stages, so placement and memory budgets, not only compute, decide how many robots one GPU can serve. Interruption needs a cancel path that the pinned version lacks.
+- **Limitations.** Synthetic TTS questions with fixed pauses; one GPU type; demo sampling (temperature 0.7) makes turn-taking stochastic; the registered R2 capacity verdicts are "below the lowest level" because of a first-reply warm-up and a client I/O stall (descriptive capacity: 4 sessions); nvidia-smi utilization is unusable under the 1 Hz duplex load (power is reported instead); the request–response reference (TTFA 0.72 s for one-sentence answers at concurrency 1) has different semantics and is not a speed comparison.
 
 ## 4. Research Gap and Motivation
 
