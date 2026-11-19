@@ -37,6 +37,11 @@ RUNTIME = "unicorn_instr"  # the runtime of 实验 9, so arm A repeats 实验 9'
 # The research checkout the job runs this plan from (a worktree of this branch on the cluster, next to the
 # orchestrator's own checkout); the runner takes its repository from the script's location.
 CODE_DIR = "~/workspace/omni-ppv"
+# Attempt 1 (IDs without a suffix, plan files plan_ppv_p0_block{1,2,3}.json) failed at start on 11-18 22:31: the
+# orchestrator exports OMNI_REPO=<its own checkout>, which run_experiment.sh prefers over the script's location, so
+# the configs of this branch were not found. Those four failed records stay in the orchestrator state; attempt 2 sets
+# OMNI_REPO to the worktree and uses new IDs (the orchestrator never re-runs an experiment_id).
+ATTEMPT_SUFFIX = "_a2"
 W3B_RATES = [15.5, 18.0, 21.0, 23.5, 26.0, 28.5, 31.0]  # registered {18 ... 31} + 15.5 (addendum: brackets A's capacity)
 W3L_RATES = [8.0, 9.5, 10.5, 12.0]  # registered
 CLOSED_W3B = [64, 128, 256]
@@ -125,7 +130,7 @@ def server(arm: str) -> list[dict]:
 
 
 def experiment_id(arm: str, block: int) -> str:
-    return f"ppv_p0_{ARM_NAMES[arm]}_block{block}"
+    return f"ppv_p0_{ARM_NAMES[arm]}_block{block}{ATTEMPT_SUFFIX}"
 
 
 def entries(arms: dict = ARMS) -> list[tuple[dict, dict]]:
@@ -149,7 +154,7 @@ def entries(arms: dict = ARMS) -> list[tuple[dict, dict]]:
 
 
 def command(eid: str) -> str:
-    return f"cd {CODE_DIR} && bash scripts/slurm/run_experiment.sh {EXP_DIR}/{eid}.json"
+    return f"cd {CODE_DIR} && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh {EXP_DIR}/{eid}.json"
 
 
 def render() -> dict[str, str]:
@@ -159,20 +164,20 @@ def render() -> dict[str, str]:
     for cfg, _ in main + cond:
         files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
     for b in (1, 2, 3):
-        chosen = [(c, m) for c, m in main if c["experiment_id"].endswith(f"_block{b}")]
-        plan = {"plan_id": f"ppv_p0_block{b}",
+        chosen = [(c, m) for c, m in main if c["experiment_id"].endswith(f"_block{b}{ATTEMPT_SUFFIX}")]
+        plan = {"plan_id": f"ppv_p0_block{b}{ATTEMPT_SUFFIX}",
                 "_comment": f"P0 第 {b} 个区组（方案 A/B/G/参照，区组内顺序随机）。通过 plan.d 放进 Job 454290；命令从集群上本分支的 "
                             f"worktree（{CODE_DIR}）运行。由 scripts/slurm/make_plan_ppv_p0.py 生成。",
                 "experiments": [plan_entry(c, m) for c, m in chosen]}
         for e in plan["experiments"]:
             e["command"] = command(e["experiment_id"])
-        files[f"configs/experiments/plan_ppv_p0_block{b}.json"] = json.dumps(plan, ensure_ascii=False, indent=1) + "\n"
-    plan_c = {"plan_id": "ppv_p0_armC",
+        files[f"configs/experiments/plan_ppv_p0_block{b}{ATTEMPT_SUFFIX}.json"] = json.dumps(plan, ensure_ascii=False, indent=1) + "\n"
+    plan_c = {"plan_id": f"ppv_p0_armC{ATTEMPT_SUFFIX}",
               "_comment": "P0 方案 C（名额 64 + KV 262144），只在方案 B 触发登记的 KV 条件时放进队列。由 scripts/slurm/make_plan_ppv_p0.py 生成。",
               "experiments": [plan_entry(c, m) for c, m in cond]}
     for e in plan_c["experiments"]:
         e["command"] = command(e["experiment_id"])
-    files["configs/experiments/plan_ppv_p0_armC.json"] = json.dumps(plan_c, ensure_ascii=False, indent=1) + "\n"
+    files[f"configs/experiments/plan_ppv_p0_armC{ATTEMPT_SUFFIX}.json"] = json.dumps(plan_c, ensure_ascii=False, indent=1) + "\n"
     return files
 
 

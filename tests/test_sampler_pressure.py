@@ -33,3 +33,31 @@ class _Proc:
 def test_process_states_counts_states_and_skips_exited_processes():
     tree = [_Proc("running"), _Proc("sleeping"), _Proc("sleeping"), _Proc("disk-sleep"), _Proc(ProcessLookupError())]
     assert process_states(tree) == {"running": 1, "sleeping": 2, "disk-sleep": 1}
+
+
+def test_plugin_phase_imports_the_module_and_passes_the_context(tmp_path, monkeypatch):
+    import asyncio
+    import sys
+    import types
+
+    from omni_research.orchestration.experiment import ExperimentRunner
+
+    seen = {}
+
+    async def run_phase(ctx, ph):
+        seen.update(ctx=ctx, ph=ph)
+        return {"plugin_ok": True}
+
+    mod = types.ModuleType("omni_research.fake_plugin_phase")
+    mod.run_phase = run_phase
+    monkeypatch.setitem(sys.modules, "omni_research.fake_plugin_phase", mod)
+
+    class _Srv:
+        name, base_url = "s0", "http://127.0.0.1:1234"
+
+    fake = types.SimpleNamespace(out=tmp_path, servers=[_Srv()])
+    ph = {"kind": "plugin", "name": "duplex_1", "module": "fake_plugin_phase", "sessions": 2}
+    out = asyncio.run(ExperimentRunner._phase_plugin(fake, ph, "duplex_1", 7))
+    assert out == {"plugin_ok": True}
+    assert seen["ctx"]["servers"] == {"s0": "http://127.0.0.1:1234"} and seen["ctx"]["seed"] == 7
+    assert seen["ctx"]["raw_dir"] == tmp_path / "raw" and seen["ph"]["sessions"] == 2

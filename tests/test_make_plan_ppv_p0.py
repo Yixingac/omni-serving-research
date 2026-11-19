@@ -30,11 +30,12 @@ def test_blocks_hold_each_arm_once_in_a_seeded_order_and_conditional_arm_is_sepa
     assert len(entries) == 4 * mp.BLOCKS
     orders = []
     for block in range(1, mp.BLOCKS + 1):
-        ids = [c["experiment_id"] for c, _ in entries if c["experiment_id"].endswith(f"_block{block}")]
+        ids = [c["experiment_id"] for c, _ in entries if c["experiment_id"].endswith(f"_block{block}_a2")]
         assert sorted(ids) == sorted(mp.experiment_id(a, block) for a in mp.ARMS)
         orders.append(ids)
     assert entries == mp.entries()  # deterministic
     assert len({tuple(x.split("_block")[0] for x in o) for o in orders}) > 1  # the order changes between blocks
+    assert all(i.startswith("ppv_p0_") for o in orders for i in o)
     prios = [m["priority"] for _, m in entries]
     assert prios == sorted(prios, reverse=True)  # blocks and positions run in the listed order
     assert all("_cap64_kv262k_" not in c["experiment_id"] for c, _ in entries)
@@ -61,10 +62,12 @@ def test_phases_per_level_rates_and_runtime():
 def test_rendered_plans_run_from_the_worktree_and_need_all_eight_gpus():
     files = mp.render()
     for b in (1, 2, 3):
-        plan = json.loads(files[f"configs/experiments/plan_ppv_p0_block{b}.json"])
+        plan = json.loads(files[f"configs/experiments/plan_ppv_p0_block{b}_a2.json"])
         assert len(plan["experiments"]) == 4
         for e in plan["experiments"]:
-            assert e["command"] == f"cd ~/workspace/omni-ppv && bash scripts/slurm/run_experiment.sh configs/experiments/ppv/{e['experiment_id']}.json"
+            # the orchestrator exports OMNI_REPO=<its checkout>; the command must point it at this worktree
+            assert e["command"] == ("cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh "
+                                    f"configs/experiments/ppv/{e['experiment_id']}.json")
             assert e["required_gpus"] == 8 and e["timeout_s"] == 5400
             assert f"configs/experiments/ppv/{e['experiment_id']}.json" in files
-    assert len(json.loads(files["configs/experiments/plan_ppv_p0_armC.json"])["experiments"]) == 3
+    assert len(json.loads(files["configs/experiments/plan_ppv_p0_armC_a2.json"])["experiments"]) == 3

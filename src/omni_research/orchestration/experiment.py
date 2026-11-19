@@ -672,6 +672,8 @@ class ExperimentRunner:
                 summary.update(await self._phase_assets(ph, name, seed))
             elif kind == "idle":
                 await asyncio.sleep(float(ph.get("seconds", 10)))
+            elif kind == "plugin":
+                summary.update(await self._phase_plugin(ph, name, seed))
             elif kind == "control":
                 # Rewrite a JSON file the server polls (atomically), then give it time to pick the change up.
                 path = Path(str(ph["path"]).replace("{exp_dir}", str(self.out)))
@@ -694,6 +696,18 @@ class ExperimentRunner:
             summary["ended"] = time.time()
         _ = raw
         return summary
+
+    async def _phase_plugin(self, ph: dict[str, Any], name: str, seed: int) -> dict[str, Any]:
+        """A phase driven by a module of omni_research (``"module": "duplex.phase"`` -> omni_research.duplex.phase),
+        whose ``async def run_phase(ctx, ph)`` returns the phase summary. ``ctx`` gives the server URLs, the raw
+        directory, the phase name and seed, so drivers that the generic load generators do not cover (full-duplex
+        WebSocket sessions, camera frame replay, multi-turn sessions) live in their own modules."""
+        import importlib
+
+        mod = importlib.import_module(f"{__package__.rsplit('.', 1)[0]}.{ph['module']}")
+        ctx = {"phase": name, "seed": seed, "raw_dir": self.out / "raw", "exp_dir": self.out,
+               "servers": {s.name: s.base_url for s in self.servers}, "runner": self}
+        return await mod.run_phase(ctx, ph)
 
     async def _profile_window(self, phase: str, start_after_s: float, duration_s: float, summary: dict[str, Any]) -> None:
         """Torch profiler + request events from start_after_s to start_after_s + duration_s into the phase.

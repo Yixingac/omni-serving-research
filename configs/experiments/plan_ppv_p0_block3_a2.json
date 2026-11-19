@@ -1,0 +1,58 @@
+{
+ "plan_id": "ppv_p0_block3_a2",
+ "_comment": "P0 第 3 个区组（方案 A/B/G/参照，区组内顺序随机）。通过 plan.d 放进 Job 454290；命令从集群上本分支的 worktree（~/workspace/omni-ppv）运行。由 scripts/slurm/make_plan_ppv_p0.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "ppv_p0_cap32_block3_a2",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p0_cap32_block3_a2.json",
+   "priority": -531,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1700,
+   "timeout_s": 5400,
+   "max_retries": 1,
+   "description": "P0 第 3 个区组第 1 个（区组内顺序随机，种子 20261119）：方案 A（cap32），放置 t2_k1_c5，talker 引擎 不改。打点版 sglang-omni（与实验 9 相同）。W3b 闭环 64/128/256（每档一段）+ 256 带事件，开环 15.5/18/21/23.5/26/28.5/31 请求/秒各 60 秒；W3L 闭环 128，开环 8/9.5/10.5/1"
+  },
+  {
+   "experiment_id": "ppv_p0_cap64_graph32_block3_a2",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p0_cap64_graph32_block3_a2.json",
+   "priority": -532,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 950,
+   "timeout_s": 5400,
+   "max_retries": 1,
+   "description": "P0 第 3 个区组第 2 个（区组内顺序随机，种子 20261119）：方案 G（cap64_graph32），放置 t2_k1_c5，talker 引擎 max_running_requests=64、cuda_graph_max_bs=32。打点版 sglang-omni（与实验 9 相同）。W3b 闭环 64/128/256（每档一段）+ 256 带事件，开环 15.5/18/21/23."
+  },
+  {
+   "experiment_id": "ppv_p0_ref_t2_k2_c4_block3_a2",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p0_ref_t2_k2_c4_block3_a2.json",
+   "priority": -533,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 950,
+   "timeout_s": 5400,
+   "max_retries": 1,
+   "description": "P0 第 3 个区组第 3 个（区组内顺序随机，种子 20261119）：方案 R（ref_t2_k2_c4），放置 t2_k2_c4，talker 引擎 不改。打点版 sglang-omni（与实验 9 相同）。W3b 闭环 64/128/256（每档一段）+ 256 带事件，开环 15.5/18/21/23.5/26/28.5/31 请求/秒各 60 秒。"
+  },
+  {
+   "experiment_id": "ppv_p0_cap64_block3_a2",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p0_cap64_block3_a2.json",
+   "priority": -534,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1700,
+   "timeout_s": 5400,
+   "max_retries": 1,
+   "description": "P0 第 3 个区组第 4 个（区组内顺序随机，种子 20261119）：方案 B（cap64），放置 t2_k1_c5，talker 引擎 max_running_requests=64。打点版 sglang-omni（与实验 9 相同）。W3b 闭环 64/128/256（每档一段）+ 256 带事件，开环 15.5/18/21/23.5/26/28.5/31 请求/秒各 60 秒；W3L 闭"
+  }
+ ]
+}
