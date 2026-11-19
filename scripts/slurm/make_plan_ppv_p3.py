@@ -64,6 +64,7 @@ def entries() -> list[tuple[dict, dict]]:
                    f"P3 停顿对照第 {position} 个（顺序 NFS/本地盘/本地盘/NFS）：日志、事件、客户端记录写{'节点本地盘 /scratch' if arm == 'scratch' else ' NFS'}。"
                    "放置 t2_k2_c4，默认组批（没有控制文件），gc 日志、调用栈注册和停顿检测开。W3b 开环 21 请求/秒，6 段各 300 秒，开事件。")
         cfg["runtime_profile"] = RUNTIME
+        cfg["stall_watch"] = True  # the point of P3
         out.append((cfg, {"priority": -(800 + position), "est": 2100, "timeout": 5400, "arm": arm}))
     return out
 

@@ -150,5 +150,6 @@
    "server_events": true,
    "content_key": "r4_smoke_n4"
   }
- ]
+ ],
+ "stall_watch": true
 }

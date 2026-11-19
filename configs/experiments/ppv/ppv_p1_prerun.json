@@ -91,5 +91,6 @@
     }
    ]
   }
- ]
+ ],
+ "stall_watch": true
 }

@@ -96,3 +96,11 @@ def test_interaction_variant_pairs_dense_and_packed_on_the_same_cells():
         assert len(names) == 8 and all(n.split("_", 1)[1].rsplit("_", 1)[0] in ("fifo16", "length8_w1000") for n in names)
     for block, v in by_block.items():
         assert v["dense"] == v["packed"]
+
+
+def test_p1_configs_turn_the_stall_watcher_on():
+    import json as _json
+
+    files = mp.render()
+    cfgs = [_json.loads(t) for p, t in files.items() if p.startswith("configs/experiments/ppv/")]
+    assert cfgs and all(c.get("stall_watch") is True for c in cfgs)

@@ -54,7 +54,7 @@ def command(eid: str) -> str:
 def base(eid: str, gpus: int, servers: list[dict], phases: list[dict], desc: str) -> dict:
     return {"runtime_profile": RUNTIME, "hardware_label": f"a6000x{gpus}", "seed": SEED, "assets": "synthetic-v1",
             "experiment_id": eid, "description": desc, "restart_dead_servers": True, "max_server_restarts": 2,
-            "servers": servers, "phases": phases}
+            "servers": servers, "phases": phases, "stall_watch": True}  # P3 observations ride along (runner default is off)
 
 
 # ---------------------------------------------------------------- R3

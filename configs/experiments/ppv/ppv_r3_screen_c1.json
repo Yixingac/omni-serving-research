@@ -316,5 +316,6 @@
    "server_events": true
   }
  ],
+ "stall_watch": true,
  "ppv_preprocessing_concurrency": 1
 }

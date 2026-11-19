@@ -117,5 +117,6 @@
    "server_events": true,
    "seed": 20261125
   }
- ]
+ ],
+ "stall_watch": true
 }

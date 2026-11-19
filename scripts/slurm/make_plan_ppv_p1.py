@@ -99,6 +99,7 @@ def prerun_entry() -> tuple[dict, dict]:
                "P1 预跑：放置 t2_k2_c4，flow CUDA graph 开，FIFO16（控制文件写明）。闭环 W3b 256、W3L 128、MIX 192，各预热一波再测，"
                "不开事件。按登记的规则用满额时段吞吐定每种负载的 X，正式运行取 0.9X/1.0X/1.1X。")
     cfg["runtime_profile"] = RUNTIME
+    cfg["stall_watch"] = True  # P3: log-gap watcher (runner default is off)
     return cfg, {"priority": -600, "est": 1500, "timeout": 3600}
 
 
@@ -128,6 +129,7 @@ def main_entries(x: dict[str, float]) -> list[tuple[dict, dict]]:
                    "（FIFO16、Length8、Length8+最长等待 0.5/1/2 秒）× 3 档速率（0.9X/1.0X/1.1X），顺序随机（种子 20261119），"
                    "控制文件切换，每格一个开环段（先预热再测登记的时长），开事件。")
         cfg["runtime_profile"] = RUNTIME
+        cfg["stall_watch"] = True  # P3: log-gap watcher (runner default is off)
         out.append((cfg, {"priority": -(610 + block), "est": 6000, "timeout": 14400}))
     return out
 
@@ -163,6 +165,7 @@ def interaction_entries(x: dict[str, float]) -> list[tuple[dict, dict]]:
                        f"P1 四组变体第 {block} 个区组第 {position} 个（只在 C1 通过时运行）：flow {'变长打包 + 编译' if variant == 'packed' else '默认稠密'}；"
                        "MIX 和 W3b，FIFO16 与 Length8+1 秒，1.0X 与 1.1X，顺序随机且两种 flow 相同。")
             cfg["runtime_profile"] = RUNTIME
+            cfg["stall_watch"] = True  # P3: log-gap watcher (runner default is off)
             out.append((cfg, {"priority": -(650 + 10 * block + position), "est": 1500, "timeout": 5400}))
     return out
 

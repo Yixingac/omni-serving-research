@@ -70,3 +70,11 @@ def test_rendered_plans_run_from_the_worktree():
             assert e["required_gpus"] == gpus
             assert f"configs/experiments/ppv/{e['experiment_id']}.json" in files
     assert "configs/experiments/plan_ppv_r3_confirm.json" not in mp.render()
+
+
+def test_r3_r4_configs_turn_the_stall_watcher_on():
+    import json as _json
+
+    files = mp.render()
+    cfgs = [_json.loads(t) for p, t in files.items() if p.startswith("configs/experiments/ppv/")]
+    assert cfgs and all(c.get("stall_watch") is True for c in cfgs)

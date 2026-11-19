@@ -263,5 +263,6 @@
    "request_timeout_s": 300.0,
    "server_events": true
   }
- ]
+ ],
+ "stall_watch": true
 }
