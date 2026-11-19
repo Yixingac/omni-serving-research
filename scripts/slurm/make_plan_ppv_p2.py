@@ -43,7 +43,8 @@ def verify_entry() -> tuple[dict, dict]:
                "实验 11 的检查段落（贪心负载并发 1/8/32/64，文字/语音、短/长、带/不带 seed 混合，客户端超时中止段及之后的段，W3XL），"
                "开事件和 digest。")
     cfg["runtime_profile"] = RUNTIME
-    return cfg, {"priority": -700, "est": 1200, "timeout": 3600}
+    # after the three R4 blocks (-711..-713): the task ranks R4 above P2, and this lets the plan be queued early
+    return cfg, {"priority": -714, "est": 1200, "timeout": 3600}
 
 
 def perf_entries() -> list[tuple[dict, dict]]:

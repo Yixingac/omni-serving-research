@@ -44,3 +44,4 @@ def test_rendered_plans_are_separate_and_run_from_the_worktree():
         assert e["command"].startswith("cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh ")
         assert f"configs/experiments/ppv/{e['experiment_id']}.json" in files
     assert verify[0]["priority"] > max(e["priority"] for e in perf)
+    assert verify[0]["priority"] < -713  # queued behind the R4 blocks

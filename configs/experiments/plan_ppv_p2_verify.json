@@ -5,7 +5,7 @@
   {
    "experiment_id": "ppv_p2_verify",
    "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p2_verify.json",
-   "priority": -700,
+   "priority": -714,
    "required_gpus": 8,
    "required_cpus": 54,
    "required_memory_gb": 780,
