@@ -72,15 +72,18 @@ def test_r4_figure_draws_blocks_from_a_summary(tmp_path, monkeypatch):
                 "pool": {"a": {"resident_peak_ratio": 0.02 * n / 8}},
                 "attribution": {"lost_share_of_prefill": {"eviction": 0.0, "routing": 0.02 + k * 0.01}}}
 
+    status = lambda n: "yes" if n < 32 else "undetermined" if n > 32 else "no"  # noqa: E731
     runs = {f"20261119_ppv_r4_block{k}_run01": {"levels": [level(n, k) for n in (8, 16, 32, 64, 128)] + [
-        {"phase": "r4_n32_media2", "sessions": 32}], "verdict": {"conclusion": "x"}} for k in (1, 2, 3)}
+        {"phase": "r4_n32_media2", "sessions": 32}], "verdict": {"conclusion": "x", "levels": [
+            {"sessions": n, "routing_cost": status(n)} for n in (8, 16, 32, 64, 128)]}} for k in (1, 2, 3)}
     runs["20261119_ppv_r4_smoke_run01"] = {"smoke": {}}
     p = tmp_path / "r4.json"
     p.write_text(json.dumps({"runs": runs, "combined": {"conclusion": "x"}}))
     monkeypatch.setattr(pf, "R4_SUMMARY", p)
     paths = pf.fig_r4_working_set(tmp_path / "out")
     assert [q.suffix for q in paths] == [".png", ".svg"] and all(q.stat().st_size > 1000 for q in paths)
-    assert "block 3" in svg_text(paths[1])
+    text = svg_text(paths[1])
+    assert "block 3" in text and "TTFT cost 3/3 blocks" in text and "TTFT not comparable" in text and "no TTFT cost 3/3" in text
 
 
 def test_duplex_sessions_figure_overlays_r2b_only_when_it_exists(tmp_path, monkeypatch):

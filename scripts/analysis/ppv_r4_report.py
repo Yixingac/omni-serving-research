@@ -25,6 +25,12 @@ Definitions (registered in r3_r4_design.md):
 - lost reuse of a pair = max(0, reference x previous input_tokens - cached_tokens), attributed to routing (other
   replica) or eviction (same replica, evictions in between); the shared floor is the median cached_tokens of
   session-opening requests (the system prompt every session shares).
+
+Erratum E-R4-REF (preregistration.md, 2026-11-19 08:39, after block 1 only): once the pool stays full every same-replica
+pair has an eviction in between, so a level can have no clean pair. The registered code then scored zero loss. The
+reported verdict now uses a run-level reference below MIN_CLEAN clean pairs and calls a cause 'undetermined' when its
+loss share is high but first-token time cannot be compared at that level; the registered code's verdict is kept as
+verdict_v1_registered_code.
 """
 
 from __future__ import annotations
@@ -53,6 +59,8 @@ POOL = re.compile(STAMP + r".*exp_kv_pool pid=(?P<pid>\d+) gpu=(?P<gpu>\S+) stag
 PRESSURE_RATIO = 0.8  # registered (robotics_experiment_plan.md R4), reported but not decisive on its own
 LOSS_SHARE = 0.10  # lost reuse >= 10 % of the prefill tokens of the level
 SLOWER = 1.2  # first-token time of the affected requests >= 1.2 x that of clean pairs
+MIN_CLEAN = 10  # Erratum E-R4-REF: fewer clean pairs than this -> run-level reference; TTFT criterion not evaluable
+MAIN = "_media"  # phases whose name contains this are the media-history control, never part of the verdict
 
 
 def _ts(m: re.Match, utc_offset_s: float) -> float:
@@ -93,8 +101,13 @@ def transition(prev: dict[str, Any], cur: dict[str, Any]) -> str:
     return "within_turn" if prev["turn"] == cur["turn"] else "next_turn"
 
 
-def attribute(requests: list[dict[str, Any]], prefills: list[dict[str, Any]], pools: list[dict[str, Any]]) -> dict[str, Any]:
-    """Per request: replica, cached/input, previous-request relation; then the reference reuse and lost reuse."""
+def attribute(requests: list[dict[str, Any]], prefills: list[dict[str, Any]], pools: list[dict[str, Any]],
+              run_ref: dict[str, float | None] | None = None) -> dict[str, Any]:
+    """Per request: replica, cached/input, previous-request relation; then the reference reuse and lost reuse.
+
+    run_ref=None is the code as registered (per-level reference from any number of clean pairs). With run_ref
+    (Erratum E-R4-REF) a transition with fewer than MIN_CLEAN clean pairs in this level uses the run-level median.
+    """
     by_rid = {}
     for p in prefills:
         by_rid.setdefault(p["rid"], p)
@@ -130,7 +143,13 @@ def attribute(requests: list[dict[str, Any]], prefills: list[dict[str, Any]], po
     for kind in ("within_turn", "next_turn"):
         clean = [p["reuse_ratio"] for p in pairs if p["transition"] == kind and p["same_replica"]
                  and p["evicted_between"] == 0 and p["reuse_ratio"] is not None]
-        ref[kind] = {"median": statistics.median(clean) if clean else None, "n": len(clean)}
+        if run_ref is None:
+            ref[kind] = {"median": statistics.median(clean) if clean else None, "n": len(clean), "source": "level"}
+        elif len(clean) >= MIN_CLEAN:
+            ref[kind] = {"median": statistics.median(clean), "n": len(clean), "source": "level"}
+        else:
+            ref[kind] = {"median": run_ref.get(kind), "n": len(clean), "source": "run" if run_ref.get(kind) is not None else "none"}
+        ref[kind]["_clean_ratios"] = clean
     lost = {"routing": 0, "eviction": 0, "unexplained_same_replica": 0}
     counts = {"pairs": len(pairs), "cross_replica": 0, "same_replica_evicted": 0, "clean": 0, "unknown_eviction": 0}
     for p in pairs:
@@ -159,7 +178,10 @@ def attribute(requests: list[dict[str, Any]], prefills: list[dict[str, Any]], po
             ttft_by_cause[p["cause"]].append(p["cur"]["ttft_s"])
     # tokens each request had to compute (input - cached), independent of how SGLang chunked the prefill
     prefill_tokens = sum(x["input_tokens"] - x["cached_tokens"] for x in rows)
+    every = {kind: [p["reuse_ratio"] for p in pairs if p["transition"] == kind and p["reuse_ratio"] is not None]
+             for kind in ("within_turn", "next_turn")}
     return {"requests_joined": len(rows), "shared_floor_tokens": floor, "reference_reuse": ref, "counts": counts,
+            "reuse_all_pairs": {k: {"median": statistics.median(v) if v else None, "n": len(v)} for k, v in every.items()},
             "lost_reuse_tokens": {k: round(v) for k, v in lost.items()},
             "prefill_tokens": prefill_tokens, "cached_tokens": sum(x["cached_tokens"] for x in rows),
             "lost_share_of_prefill": {k: (v / prefill_tokens if prefill_tokens else None) for k, v in lost.items()},
@@ -217,7 +239,8 @@ def pool_summary(pools: list[dict[str, Any]], t0: float, t1: float) -> dict[str,
     return out
 
 
-def phase_report(exp: Path, phase: str, prefills: list[dict[str, Any]], pools: list[dict[str, Any]]) -> dict[str, Any]:
+def phase_report(exp: Path, phase: str, prefills: list[dict[str, Any]], pools: list[dict[str, Any]],
+                 run_ref: dict[str, float | None] | None = None) -> dict[str, Any]:
     from omni_research.analysis.experiment_analysis import clock_anchor, read_jsonl
 
     reqs = read_jsonl(exp / "raw" / f"requests_{phase}.jsonl")
@@ -239,7 +262,8 @@ def phase_report(exp: Path, phase: str, prefills: list[dict[str, Any]], pools: l
             "window_s": round(t1 - t0, 1), "pool": pool,
             "logical_working_set_peak": ws_peak,
             "logical_ratio_peak": {rep: ws_peak[rep] / pool[rep]["capacity_tokens"] for rep in ws_peak if rep in pool},
-            "attribution": attribute(reqs, pf, pools),
+            "attribution": attribute(reqs, pf, pools, run_ref=run_ref),
+            **({"attribution_v1_registered_code": attribute(reqs, pf, pools)} if run_ref is not None else {}),
             "ttft_s": {"p50": statistics.median(ttft) if ttft else None,
                        "p95": sorted(ttft)[int(0.95 * len(ttft))] if len(ttft) >= 20 else None, "n": len(ttft)},
             "session_s_p50": statistics.median([(s["ended_ns"] - s["started_ns"]) / 1e9 for s in sess]) if sess else None}
@@ -301,6 +325,77 @@ def verdict(levels: list[dict[str, Any]]) -> dict[str, Any]:
     return {"levels": pressure, "conclusion": text}
 
 
+UNDETERMINED_EVICTION = "不确定（驱逐压力无法评估）"
+UNDETERMINED_ROUTING = "不确定（路由代价无法评估）"
+
+
+def verdict_corrected(levels: list[dict[str, Any]]) -> dict[str, Any]:
+    """Erratum E-R4-REF: the registered thresholds and order, but a cause is 'undetermined' (not 'no') when its loss
+    share reaches LOSS_SHARE and the level has fewer than MIN_CLEAN clean pairs to compare first-token time with."""
+    rows = []
+    for lv in levels:
+        ratio = max((lv.get("logical_ratio_peak") or {}).values(), default=0.0)
+        resident = max((p.get("resident_peak_ratio") or 0.0 for p in (lv.get("pool") or {}).values()), default=0.0)
+        att = lv.get("attribution") or {}
+        share = att.get("lost_share_of_prefill") or {}
+        by = att.get("ttft_s_by_cause") or {}
+        clean = by.get("clean") or {}
+        evaluable = (clean.get("n") or 0) >= MIN_CLEAN and clean.get("p50") is not None
+        status = {}
+        for cause in ("eviction", "routing"):
+            loss = share.get(cause) or 0.0
+            if loss < LOSS_SHARE:
+                status[cause] = "no"
+            elif not evaluable:
+                status[cause] = "undetermined"
+            else:
+                slow = (by.get(cause) or {}).get("p50")
+                status[cause] = "yes" if slow is not None and slow >= SLOWER * clean["p50"] else "no"
+        refs = {k: (v.get("source"), v.get("n")) for k, v in (att.get("reference_reuse") or {}).items()}
+        rows.append({"phase": lv["phase"], "sessions": lv.get("sessions"), "logical_ratio_peak": ratio,
+                     "resident_ratio_peak": resident, "over_registered_ratio": ratio >= PRESSURE_RATIO,
+                     "eviction_loss_share": share.get("eviction"), "routing_loss_share": share.get("routing"),
+                     "clean_pairs": clean.get("n") or 0, "ttft_comparable": evaluable, "reference": refs,
+                     "eviction_pressure": status["eviction"], "routing_cost": status["routing"]})
+    ev = [r["eviction_pressure"] for r in rows]
+    rt = [r["routing_cost"] for r in rows]
+    if "yes" in ev:
+        text = "eviction pressure observed: design the session-affinity / cost-aware eviction A/B"
+    elif "undetermined" in ev:
+        text = UNDETERMINED_EVICTION
+    elif "yes" in rt:
+        text = "no eviction pressure, but cross-replica routing loses reuse that costs TTFT: next is a session-affinity A/B"
+    elif "undetermined" in rt:
+        text = UNDETERMINED_ROUTING
+    else:
+        text = "当前实验条件下，尚无证据支持引入更复杂的 Agent-aware Cache Management。"
+    out = {"levels": rows, "conclusion": text}
+    if text in (UNDETERMINED_EVICTION, UNDETERMINED_ROUTING) and "yes" in rt:
+        out["routing_note"] = "cross-replica routing costs TTFT at " + ", ".join(
+            f"{r['sessions']} sessions" for r in rows if r["routing_cost"] == "yes")
+    return out
+
+
+def run_reference(levels: list[dict[str, Any]]) -> dict[str, float | None]:
+    """Erratum E-R4-REF: median reuse of all clean pairs of the run's main levels (no media control), per transition."""
+    pooled: dict[str, list[float]] = defaultdict(list)
+    for lv in levels:
+        if MAIN in lv["phase"]:
+            continue
+        for kind, v in ((lv.get("attribution") or {}).get("reference_reuse") or {}).items():
+            pooled[kind] += v.get("_clean_ratios") or []
+    return {kind: (statistics.median(pooled[kind]) if pooled[kind] else None) for kind in ("within_turn", "next_turn")}
+
+
+def strip_private(obj: Any) -> Any:
+    """Drop the per-pair clean ratios (kept only to pool the run-level reference) before writing the JSON."""
+    if isinstance(obj, dict):
+        return {k: strip_private(v) for k, v in obj.items() if not k.startswith("_")}
+    if isinstance(obj, list):
+        return [strip_private(v) for v in obj]
+    return obj
+
+
 def combined_verdict(per_block: dict[str, dict[str, Any]], blocks: int = 3) -> dict[str, Any]:
     """Registered (r3_r4_design.md 3.5): the conclusion is stable only when all three blocks give the same one;
     otherwise 不确定 with every block's conclusion listed. Fewer than three blocks is 数据不足."""
@@ -321,7 +416,10 @@ def structural_gap(levels: list[dict[str, Any]]) -> dict[str, Any]:
         if twin is None:
             continue
         ref = lambda x: ((x.get("attribution") or {}).get("reference_reuse") or {}).get("next_turn", {}).get("median")  # noqa: E731
+        every = lambda x: ((x.get("attribution") or {}).get("reuse_all_pairs") or {}).get("next_turn", {}).get("median")  # noqa: E731
         out[lv["phase"]] = {"vs": twin["phase"], "next_turn_reuse_text": ref(twin), "next_turn_reuse_media": ref(lv),
+                            # descriptive (E-R4-REF): all next-turn pairs whatever their cause, for when a phase has no clean pair
+                            "next_turn_reuse_all_pairs_text": every(twin), "next_turn_reuse_all_pairs_media": every(lv),
                             "ttft_p50_text": (twin.get("ttft_s") or {}).get("p50"), "ttft_p50_media": (lv.get("ttft_s") or {}).get("p50")}
     return out
 
@@ -349,15 +447,22 @@ def main() -> int:
                                                      prefills), "replicas": sorted({p["replica"] for p in pools})}
             print(run, json.dumps(out["runs"][run], ensure_ascii=False)[:2000])
             continue
-        levels = [phase_report(exp, ph, prefills, pools) for ph in phases]
-        out["runs"][run] = {"levels": levels, "verdict": verdict([lv for lv in levels if "_media" not in lv["phase"]]),
-                            "structural": structural_gap(levels), "utc_offset_known": off is not None,
+        registered = [phase_report(exp, ph, prefills, pools) for ph in phases]
+        ref = run_reference(registered)
+        levels = [phase_report(exp, ph, prefills, pools, run_ref=ref) for ph in phases]
+        out["runs"][run] = {"levels": levels, "run_reference_reuse": ref,
+                            "verdict": verdict_corrected([lv for lv in levels if MAIN not in lv["phase"]]),
+                            "verdict_v1_registered_code": verdict([lv for lv in registered if MAIN not in lv["phase"]]),
+                            "structural": structural_gap(registered), "utc_offset_known": off is not None,
                             "replicas": sorted({p["replica"] for p in pools})}
-        print(run, json.dumps(out["runs"][run]["verdict"], ensure_ascii=False))
+        print(run, json.dumps(out["runs"][run]["verdict"]["conclusion"], ensure_ascii=False))
     mains = {run: r["verdict"] for run, r in out["runs"].items() if "verdict" in r}
     if mains:
         out["combined"] = combined_verdict(mains)
+        out["combined_v1_registered_code"] = combined_verdict({run: r["verdict_v1_registered_code"]
+                                                               for run, r in out["runs"].items() if "verdict" in r})
         print("combined", json.dumps(out["combined"], ensure_ascii=False))
+    out = strip_private(out)
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     Path(a.out).write_text(json.dumps(out, ensure_ascii=False, indent=1))
     return 0

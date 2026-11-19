@@ -654,6 +654,14 @@ def fig_p1_batching(out: Path) -> list[Path]:
 R4_SUMMARY = PV / "results/r4_working_set.json"
 
 
+R4_CONCLUSION_EN = {
+    "当前实验条件下，尚无证据支持引入更复杂的 Agent-aware Cache Management。":
+        "no evidence under these conditions for more complex agent-aware cache management",
+    "不确定（驱逐压力无法评估）": "inconclusive (eviction pressure could not be evaluated)",
+    "不确定（路由代价无法评估）": "inconclusive (routing cost could not be evaluated)",
+    "不确定": "inconclusive (the blocks disagree)", "数据不足": "insufficient data (fewer than 3 blocks)"}
+
+
 def fig_r4_working_set(out: Path) -> list[Path]:
     """R4: KV working set vs capacity per session count, and reuse lost to eviction or routing (registered thresholds)."""
     d = json.loads(R4_SUMMARY.read_text())
@@ -673,11 +681,13 @@ def fig_r4_working_set(out: Path) -> list[Path]:
         tag = f"block {block.group(1)}" if block else run
         a1.plot(xs, logical, marker="o", color=color, label=f"logical working set / capacity ({tag})")
         a1.plot(xs, resident, marker="s", ls="--", color=color, mfc="white", label=f"resident KV / capacity ({tag})")
+        status = {v["sessions"]: v for v in ((r.get("verdict") or {}).get("levels") or [])}
         for x in lv:
             share = ((x.get("attribution") or {}).get("lost_share_of_prefill") or {})
-            slot = by_level.setdefault(x["sessions"], {"eviction": [], "routing": []})
+            slot = by_level.setdefault(x["sessions"], {"eviction": [], "routing": [], "routing_cost": []})
             for cause in ("eviction", "routing"):
                 slot[cause].append((share.get(cause) or 0.0) * 100)
+            slot["routing_cost"].append((status.get(x["sessions"]) or {}).get("routing_cost"))
     a1.axhline(0.8, color="#D55E00", ls=":", lw=1)
     a1.text(8, 0.82, "0.8: flagged, does not decide", color="#D55E00", fontsize=8)
     a1.set_xscale("log", base=2)
@@ -694,8 +704,19 @@ def fig_r4_working_set(out: Path) -> list[Path]:
         a2.bar(xs, means, width=w, color=color, label=f"lost to {cause} (mean over blocks)")
         for x, v in zip(xs, levels):
             a2.scatter([x] * len(by_level[v][cause]), by_level[v][cause], color="black", s=8, zorder=3)
+    for k, v in enumerate(levels):  # the corrected verdict per block: does the routing loss also cost first-token time?
+        st = [x for x in by_level[v]["routing_cost"] if x is not None]
+        if not st:
+            continue
+        top = max(by_level[v]["routing"], default=0.0)
+        yes, undet = sum(x in ("yes", True) for x in st), sum(x == "undetermined" for x in st)
+        label = (f"TTFT cost\n{yes}/{len(st)} blocks" if yes else "TTFT not\ncomparable" if undet == len(st)
+                 else f"no TTFT cost\n{len(st) - undet}/{len(st)}" if not undet else f"no cost {len(st) - undet}, n/c {undet}")
+        a2.text(k + 0.5 * w, top + 0.8, label, ha="center", va="bottom", fontsize=7, color="#555555")
     a2.axhline(10, color="#D55E00", ls=":", lw=1)
     a2.text(-0.4, 10.4, "registered threshold: 10 % of prefill tokens (and TTFT ≥ 1.2× clean)", color="#D55E00", fontsize=8)
+    peak = max((y for v in levels for y in by_level[v]["routing"] + by_level[v]["eviction"]), default=10.0)
+    a2.set_ylim(0, max(peak, 12.0) * 1.3)  # room for the labels above the bars
     a2.set_xticks(range(len(levels)), [str(v) for v in levels])
     a2.set_xlabel("concurrent robot sessions")
     a2.set_ylabel("lost reuse (% of the level's prefill tokens)")
@@ -706,8 +727,11 @@ def fig_r4_working_set(out: Path) -> list[Path]:
                  "sessions (one new camera frame and a unique spoken request per turn, half the turns with a tool call; earlier turns "
                  "sent back as text), 8 → 128 sessions in one run per block, " + f"{len(runs)} block(s). "
                  "Logical working set = the latest prompt + completion of every live session on a replica; resident = cached + running "
-                 "KV. Dots = blocks. The media-history contrast (32 sessions) is reported in the text, not here. "
-            + ("Registered conclusion across blocks: see the results." if comb else ""))
+                 "KV. Dots = blocks. Lost reuse uses each level's clean pairs as reference, or the run's when a level has fewer than 10 "
+                 "(Erratum E-R4-REF: once the pool stays full, few or no same-replica pairs are free of evictions); a cause counts only "
+                 "if its loss is ≥ 10 % and those requests' TTFT median is ≥ 1.2× that of the level's clean pairs (labels; 'not "
+                 "comparable' = fewer than 10 clean pairs). The media-history contrast (32 sessions) is reported in the text. "
+            + (f"Conclusion across blocks: {R4_CONCLUSION_EN.get(comb, comb)}." if comb else ""))
     return save(fig, out, "fig12_r4_working_set")
 
 

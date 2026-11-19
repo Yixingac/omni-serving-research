@@ -134,6 +134,7 @@ def test_structural_gap_pairs_the_media_phase_with_the_text_phase_of_the_same_si
                                      "attribution": {"reference_reuse": {"next_turn": {"median": ref}}}}
     out = r4.structural_gap([lv("r4_n32", 32, 0.9, 0.4), lv("r4_n64", 64, 0.85, 0.5), lv("r4_n32_media2", 32, 0.3, 0.7)])
     assert out == {"r4_n32_media2": {"vs": "r4_n32", "next_turn_reuse_text": 0.9, "next_turn_reuse_media": 0.3,
+                                     "next_turn_reuse_all_pairs_text": None, "next_turn_reuse_all_pairs_media": None,
                                      "ttft_p50_text": 0.4, "ttft_p50_media": 0.7}}
 
 
@@ -146,3 +147,53 @@ def test_combined_verdict_needs_the_same_conclusion_in_all_three_blocks():
     v = r4.combined_verdict(mixed)
     assert v["conclusion"] == "不确定" and not v["stable"] and v["by_block"]["b3"] == ev
     assert r4.combined_verdict({"b1": {"conclusion": none}})["conclusion"] == "数据不足"
+
+
+def test_erratum_reference_falls_back_to_the_run_level_below_ten_clean_pairs():
+    reqs, prefills, pools = _scenario()
+    registered = r4.attribute(reqs, prefills, pools)
+    assert registered["reference_reuse"]["next_turn"]["source"] == "level"  # the code as registered: one pair is enough
+    fixed = r4.attribute(reqs, prefills, pools, run_ref={"within_turn": None, "next_turn": 0.5})
+    ref = fixed["reference_reuse"]["next_turn"]
+    assert ref["source"] == "run" and ref["median"] == 0.5 and ref["n"] == 1
+    assert fixed["lost_reuse_tokens"]["routing"] == round(0.5 * 420 - 100)
+    assert fixed["reference_reuse"]["within_turn"]["source"] == "none"
+    assert fixed["reuse_all_pairs"]["next_turn"]["n"] == 3
+
+
+def test_run_reference_pools_the_clean_pairs_of_the_main_levels_only():
+    lv = lambda name, ratios: {"phase": name, "attribution": {"reference_reuse": {  # noqa: E731
+        "next_turn": {"_clean_ratios": ratios}, "within_turn": {"_clean_ratios": []}}}}
+    ref = r4.run_reference([lv("r4_n8", [0.6, 0.62]), lv("r4_n16", [0.64]), lv("r4_n32_media2", [0.1, 0.1, 0.1])])
+    assert ref == {"within_turn": None, "next_turn": 0.62}
+    assert r4.strip_private({"a": {"_clean_ratios": [1], "median": 2}, "b": [{"_x": 1, "y": 2}]}) == {"a": {"median": 2}, "b": [{"y": 2}]}
+
+
+def _lv(name, n, ev, rt, clean_n, clean_p50=0.3, ev_p50=0.6, rt_p50=0.6):
+    return {"phase": name, "sessions": n, "logical_ratio_peak": {"a": 0.2}, "pool": {"a": {"resident_peak_ratio": 1.0}},
+            "attribution": {"lost_share_of_prefill": {"eviction": ev, "routing": rt},
+                            "ttft_s_by_cause": {"clean": {"p50": clean_p50, "n": clean_n}, "eviction": {"p50": ev_p50, "n": 50},
+                                                "routing": {"p50": rt_p50, "n": 50}}}}
+
+
+def test_corrected_verdict_calls_a_high_loss_without_comparable_ttft_undetermined():
+    v = r4.verdict_corrected([_lv("r4_n8", 8, 0.0, 0.25, 40), _lv("r4_n64", 64, 0.30, 0.20, 0)])
+    assert [(x["eviction_pressure"], x["routing_cost"]) for x in v["levels"]] == [("no", "yes"), ("undetermined", "undetermined")]
+    assert v["conclusion"] == r4.UNDETERMINED_EVICTION and "8 sessions" in v["routing_note"]
+    # a low loss share settles "no" even when first-token time cannot be compared
+    low = r4.verdict_corrected([_lv("r4_n8", 8, 0.0, 0.25, 40), _lv("r4_n64", 64, 0.05, 0.02, 0)])
+    assert low["levels"][1]["eviction_pressure"] == "no" and "session-affinity" in low["conclusion"]
+    # what the registered code produced for such a level: no reference -> zero loss and no clean TTFT -> "no evidence"
+    v1_level = {**_lv("r4_n64", 64, 0.0, 0.0, 0), "attribution": {"lost_share_of_prefill": {"eviction": 0.0, "routing": 0.0},
+                                                                  "ttft_s_by_cause": {"eviction": {"p50": 1.1, "n": 305}}}}
+    v1 = r4.verdict([v1_level])
+    assert not v1["levels"][0]["eviction_pressure"] and v1["conclusion"].startswith("当前实验条件下")
+
+
+def test_corrected_verdict_keeps_the_registered_order_and_sentence():
+    calm = r4.verdict_corrected([_lv("r4_n8", 8, 0.01, 0.02, 40), _lv("r4_n16", 16, 0.02, 0.05, 30)])
+    assert calm["conclusion"].startswith("当前实验条件下，尚无证据支持引入更复杂的 Agent-aware Cache Management")
+    hot = r4.verdict_corrected([_lv("r4_n8", 8, 0.2, 0.2, 40), _lv("r4_n64", 64, 0.3, 0.3, 0)])
+    assert hot["conclusion"].startswith("eviction pressure")
+    cheap = r4.verdict_corrected([_lv("r4_n8", 8, 0.0, 0.3, 40, rt_p50=0.32)])  # loss but not slower: no routing cost
+    assert cheap["levels"][0]["routing_cost"] == "no" and cheap["conclusion"].startswith("当前实验条件下")
