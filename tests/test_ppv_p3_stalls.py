@@ -95,3 +95,18 @@ def test_gen2_gc_is_counted_in_measured_phases_and_matched_to_an_overlapping_gap
     gap = next(g for g in r["log_gaps"] if g["gap_s"] > 1.5)
     assert gap["gc_overlap"] == [{"pid": 4242, "stage": "code2wav", "duration_ms": 1500.0}]
     assert ps.summarize([r])["gaps_with_gc_overlap"] == 1
+
+
+def test_live_watcher_records_are_summarised_per_run(tmp_path):
+    exp = _run(tmp_path, [T0 + 0.1 * i for i in range(200)], [_sample(T0 + i, 0.0) for i in range(21)])
+    recs = [{"event": "slow_stat", "t_wall_ns": 1, "stat_s": 0.739}, {"event": "pause_start", "t_wall_ns": 2, "silent_s": 1.05, "pause": 1},
+            {"event": "pause_snapshot", "t_wall_ns": 3, "silent_s": 1.05, "processes": [{"pid": 1, "state": "D"}, {"pid": 2, "state": "S"}]},
+            {"event": "pause_end", "t_wall_ns": 4, "start_wall_ns": 1, "silent_s": 1.62}, {"event": "slow_stat", "t_wall_ns": 5, "stat_s": 0.691}]
+    (exp / "raw" / "stalls_s0.jsonl").write_text("".join(json.dumps(r) + "\n" for r in recs))
+    r = ps.analyze_run(exp)
+    w = r["watcher"]
+    assert (w["pauses"], w["max_pause_s"], w["d_state_in_snapshots"], w["slow_stats"], w["slow_stat_max_s"]) == (1, 1.62, 1, 2, 0.739)
+    s = ps.summarize([r])
+    assert (s["watched_runs"], s["watcher_pauses"], s["watcher_slow_stats"], s["watcher_slow_stat_max_s"]) == (1, 1, 2, 0.739)
+    (exp / "raw" / "stalls_s0.jsonl").unlink()
+    assert ps.analyze_run(exp)["watcher"] is None

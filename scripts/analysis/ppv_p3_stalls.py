@@ -72,6 +72,24 @@ def stage_of_pid(exp: Path) -> dict[int, str]:
     return out
 
 
+def watcher_records(exp: Path) -> dict[str, Any] | None:
+    """The live stall watcher's records (raw/stalls_<server>.jsonl, written only when the run had stall_watch on):
+    pauses of the server log while a load phase ran, the process states captured at each pause, and stats of the
+    log on the network file system that themselves took > 0.2 s."""
+    files = sorted((exp / "raw").glob("stalls_*.jsonl"))
+    if not files:
+        return None
+    recs = [json.loads(x) for f in files for x in f.read_text().splitlines() if x.strip()]
+    ends = [r for r in recs if r.get("event") == "pause_end"]
+    snaps = [r for r in recs if r.get("event") == "pause_snapshot"]
+    slow = [r for r in recs if r.get("event") == "slow_stat"]
+    return {"pauses": sum(1 for r in recs if r.get("event") == "pause_start"),
+            "pause_s": [r["silent_s"] for r in ends], "max_pause_s": max((r["silent_s"] for r in ends), default=None),
+            "snapshots": len(snaps), "d_state_in_snapshots": sum(1 for r in snaps for p in r.get("processes", []) if p.get("state") == "D"),
+            "slow_stats": len(slow), "slow_stat_max_s": max((r["stat_s"] for r in slow), default=None),
+            "slow_stat_s": [r["stat_s"] for r in slow], "errors": sum(1 for r in recs if r.get("event") == "watcher_error")}
+
+
 def gaps_in(times: list[float], lo: float, hi: float, gap_s: float) -> list[tuple[float, float]]:
     inside = [t for t in times if lo <= t <= hi]
     return [(a, b) for a, b in zip(inside, inside[1:]) if b - a > gap_s]
@@ -151,7 +169,7 @@ def analyze_run(exp: Path, gap_s: float = 1.0, dense_s: float = 0.25) -> dict[st
     return {"run": exp.name, "measured_s": round(sum(hi - lo for lo, hi in windows), 1), "duplex": duplex,
             "log_median_spacing_s": spacing, "log_dense": dense,
             "log_gaps": log_gaps if dense else [], "log_gaps_sparse_log": [] if dense else log_gaps,
-            "sampler_gaps": sampler_gaps,
+            "sampler_gaps": sampler_gaps, "watcher": watcher_records(exp),
             "gc_gen2": {"count": len(gcs), "duration_ms_p50": statistics.median([c["duration_ms"] for c in gcs]) if gcs else None,
                         "duration_ms_max": max((c["duration_ms"] for c in gcs), default=None),
                         "by_stage": {st: sum(1 for c in gcs if stages.get(c["pid"]) == st) for st in sorted({stages.get(c["pid"]) or "unknown" for c in gcs})}
@@ -171,6 +189,11 @@ def summarize(runs: list[dict[str, Any]]) -> dict[str, Any]:
             "gaps_with_io_stall": sum(1 for g in gaps if (g["io_full_ms_per_s_max"] or 0) >= 100),
             "gaps_with_d_state": sum(1 for g in gaps if (g["d_state_max"] or 0) > 0),
             "gaps_with_gc_overlap": sum(1 for g in gaps if g.get("gc_overlap")),
+            "watched_runs": sum(1 for r in runs if r.get("watcher")),
+            "watcher_pauses": sum(r["watcher"]["pauses"] for r in runs if r.get("watcher")),
+            "watcher_max_pause_s": max((r["watcher"]["max_pause_s"] or 0 for r in runs if r.get("watcher")), default=None),
+            "watcher_slow_stats": sum(r["watcher"]["slow_stats"] for r in runs if r.get("watcher")),
+            "watcher_slow_stat_max_s": max((r["watcher"]["slow_stat_max_s"] or 0 for r in runs if r.get("watcher")), default=None),
             "gc_gen2_in_measured_phases": sum(r["gc_gen2"]["count"] for r in runs),
             "gc_gen2_max_ms": max((r["gc_gen2"]["duration_ms_max"] or 0 for r in runs), default=None)}
 
