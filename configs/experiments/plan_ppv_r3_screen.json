@@ -1,0 +1,32 @@
+{
+ "plan_id": "ppv_r3_screen",
+ "_comment": "R3 筛选：预处理并发 1 和 4 各一个 1 卡运行，可以同时在两张卡上跑。 由 scripts/slurm/make_plan_ppv_r34.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "ppv_r3_screen_c1",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r3_screen_c1.json",
+   "priority": -601,
+   "required_gpus": 1,
+   "required_cpus": 7,
+   "required_memory_gb": 95,
+   "dependencies": [],
+   "estimated_duration_s": 2100,
+   "timeout_s": 4800,
+   "max_retries": 1,
+   "description": "R3 筛选：1 张卡一个完整副本（--text-only，与实验 14 相同），预处理并发 1（默认）。合成摄像头回放：帧/短片 × 每会话 0.5/1/2 帧每秒 × 1/4/16 个会话，18 格顺序随机（种子 20261119，两种并发相同），每格预热 10 秒 + 计量 60 秒，开请求事件。"
+  },
+  {
+   "experiment_id": "ppv_r3_screen_c4",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r3_screen_c4.json",
+   "priority": -604,
+   "required_gpus": 1,
+   "required_cpus": 7,
+   "required_memory_gb": 95,
+   "dependencies": [],
+   "estimated_duration_s": 2100,
+   "timeout_s": 4800,
+   "max_retries": 1,
+   "description": "R3 筛选：1 张卡一个完整副本（--text-only，与实验 14 相同），预处理并发 4（补丁的工厂参数）。合成摄像头回放：帧/短片 × 每会话 0.5/1/2 帧每秒 × 1/4/16 个会话，18 格顺序随机（种子 20261119，两种并发相同），每格预热 10 秒 + 计量 60 秒，开请求事件。"
+  }
+ ]
+}

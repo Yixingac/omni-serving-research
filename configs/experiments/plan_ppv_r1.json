@@ -1,0 +1,94 @@
+{
+ "plan_id": "ppv_r1",
+ "_comment": "R1 单会话关键路径（全双工 + 请求-响应参照，每个运行 1 张卡），只在 R0 通过后放入。通过 plan.d 放进 Job 454290；命令从集群上本分支的 worktree 运行。由 scripts/slurm/make_plan_ppv_r.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "ppv_r1_duplex_block1",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r1_duplex_block1.json",
+   "priority": 798,
+   "required_gpus": 1,
+   "required_cpus": 7,
+   "required_memory_gb": 95,
+   "dependencies": [],
+   "estimated_duration_s": 1200,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "R1 第 1 个区组：单会话关键路径，全双工 1 个会话 300 秒，每第 3 个提问后 3 秒插入一句打断；A 不开、B 开服务端请求事件（A 先）。固定版本原版，1 张 A6000。"
+  },
+  {
+   "experiment_id": "ppv_r1_chat_ref_block1",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r1_chat_ref_block1.json",
+   "priority": 797,
+   "required_gpus": 1,
+   "required_cpus": 7,
+   "required_memory_gb": 95,
+   "dependencies": [
+    "ppv_r1_duplex_block1"
+   ],
+   "estimated_duration_s": 900,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "R1 第 1 个区组的应用层参照：请求-响应路径（/v1/chat/completions），同一张 A6000 上的单卡语音流水线（code2wav 单独进程，与 plan v2 的 R8 副本相同），同一批合成语音提问（W3 语音进、语音出），并发 1，每段 48 个请求，A 不开、B 开服务端事件。"
+  },
+  {
+   "experiment_id": "ppv_r1_duplex_block2",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r1_duplex_block2.json",
+   "priority": 796,
+   "required_gpus": 1,
+   "required_cpus": 7,
+   "required_memory_gb": 95,
+   "dependencies": [
+    "ppv_r1_chat_ref_block1"
+   ],
+   "estimated_duration_s": 1200,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "R1 第 2 个区组：单会话关键路径，全双工 1 个会话 300 秒，每第 3 个提问后 3 秒插入一句打断；A 不开、B 开服务端请求事件（B 先）。固定版本原版，1 张 A6000。"
+  },
+  {
+   "experiment_id": "ppv_r1_chat_ref_block2",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r1_chat_ref_block2.json",
+   "priority": 795,
+   "required_gpus": 1,
+   "required_cpus": 7,
+   "required_memory_gb": 95,
+   "dependencies": [
+    "ppv_r1_duplex_block2"
+   ],
+   "estimated_duration_s": 900,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "R1 第 2 个区组的应用层参照：请求-响应路径（/v1/chat/completions），同一张 A6000 上的单卡语音流水线（code2wav 单独进程，与 plan v2 的 R8 副本相同），同一批合成语音提问（W3 语音进、语音出），并发 1，每段 48 个请求，A 不开、B 开服务端事件。"
+  },
+  {
+   "experiment_id": "ppv_r1_duplex_block3",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r1_duplex_block3.json",
+   "priority": 794,
+   "required_gpus": 1,
+   "required_cpus": 7,
+   "required_memory_gb": 95,
+   "dependencies": [
+    "ppv_r1_chat_ref_block2"
+   ],
+   "estimated_duration_s": 1200,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "R1 第 3 个区组：单会话关键路径，全双工 1 个会话 300 秒，每第 3 个提问后 3 秒插入一句打断；A 不开、B 开服务端请求事件（A 先）。固定版本原版，1 张 A6000。"
+  },
+  {
+   "experiment_id": "ppv_r1_chat_ref_block3",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r1_chat_ref_block3.json",
+   "priority": 793,
+   "required_gpus": 1,
+   "required_cpus": 7,
+   "required_memory_gb": 95,
+   "dependencies": [
+    "ppv_r1_duplex_block3"
+   ],
+   "estimated_duration_s": 900,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "R1 第 3 个区组的应用层参照：请求-响应路径（/v1/chat/completions），同一张 A6000 上的单卡语音流水线（code2wav 单独进程，与 plan v2 的 R8 副本相同），同一批合成语音提问（W3 语音进、语音出），并发 1，每段 48 个请求，A 不开、B 开服务端事件。"
+  }
+ ]
+}

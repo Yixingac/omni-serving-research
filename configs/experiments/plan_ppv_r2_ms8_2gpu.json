@@ -1,0 +1,49 @@
+{
+ "plan_id": "ppv_r2_ms8_2gpu",
+ "_comment": "R2 并发会话扫描，ms8_2gpu，3 个区组，只在 R0 通过、冒烟决定放置后放入。通过 plan.d 放进 Job 454290；命令从集群上本分支的 worktree 运行。由 scripts/slurm/make_plan_ppv_r.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "ppv_r2_ms8_2gpu_block1",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r2_ms8_2gpu_block1.json",
+   "priority": 689,
+   "required_gpus": 2,
+   "required_cpus": 14,
+   "required_memory_gb": 190,
+   "dependencies": [],
+   "estimated_duration_s": 880,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "R2 第 1 个区组：max_sessions 8、2 张 A6000，并发会话 4/8 依次各 180 秒，开服务端请求事件；上一档有会话失败就不再升档。"
+  },
+  {
+   "experiment_id": "ppv_r2_ms8_2gpu_block2",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r2_ms8_2gpu_block2.json",
+   "priority": 688,
+   "required_gpus": 2,
+   "required_cpus": 14,
+   "required_memory_gb": 190,
+   "dependencies": [
+    "ppv_r2_ms8_2gpu_block1"
+   ],
+   "estimated_duration_s": 880,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "R2 第 2 个区组：max_sessions 8、2 张 A6000，并发会话 4/8 依次各 180 秒，开服务端请求事件；上一档有会话失败就不再升档。"
+  },
+  {
+   "experiment_id": "ppv_r2_ms8_2gpu_block3",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r2_ms8_2gpu_block3.json",
+   "priority": 687,
+   "required_gpus": 2,
+   "required_cpus": 14,
+   "required_memory_gb": 190,
+   "dependencies": [
+    "ppv_r2_ms8_2gpu_block2"
+   ],
+   "estimated_duration_s": 880,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "R2 第 3 个区组：max_sessions 8、2 张 A6000，并发会话 4/8 依次各 180 秒，开服务端请求事件；上一档有会话失败就不再升档。"
+  }
+ ]
+}

@@ -1,0 +1,19 @@
+{
+ "plan_id": "ppv_r4_smoke",
+ "_comment": "R4 冒烟（8 卡）：先核对 token 和多模态统计，再放正式区组。 由 scripts/slurm/make_plan_ppv_r34.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "ppv_r4_smoke",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r4_smoke.json",
+   "priority": -700,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 900,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "R4 冒烟：2+2+4，ppv-kv 运行时（thinker 前缀命中和 KV 池日志）。4 个机器人会话（每轮新图像 + 合成语音，文字历史）、4 个带 2 轮媒体历史的会话和同一批会话的纯文字版（量出每轮图像 + 语音的 token 数），用来核对每个请求的 token 数、多模态内容、exp_kv 日志与请求的对应。"
+  }
+ ]
+}

@@ -1,0 +1,82 @@
+{
+ "runtime_profile": "unicorn",
+ "hardware_label": "a6000x1",
+ "seed": 20261119,
+ "assets": "synthetic-v1",
+ "experiment_id": "ppv_r1_duplex_block2",
+ "description": "R1 第 2 个区组：单会话关键路径，全双工 1 个会话 300 秒，每第 3 个提问后 3 秒插入一句打断；A 不开、B 开服务端请求事件（B 先）。固定版本原版，1 张 A6000。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "s0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0
+   ],
+   "args": [
+    "--variant",
+    "session",
+    "--enable-realtime"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "plugin",
+   "module": "duplex.phase",
+   "name": "duplex_smoke",
+   "sessions": 1,
+   "duration_s": 30.0,
+   "lead_in_s": 2.0,
+   "answer_window_s": 12.0,
+   "barge_in_every": 0,
+   "barge_in_offset_s": 3.0,
+   "stagger_s": 1.0,
+   "session_seed": 20261119,
+   "asset_pool": "duplex-v1",
+   "output_modalities": [
+    "audio"
+   ],
+   "save_audio_sessions": 1
+  },
+  {
+   "kind": "plugin",
+   "module": "duplex.phase",
+   "name": "duplex_r1_B",
+   "sessions": 1,
+   "duration_s": 300.0,
+   "lead_in_s": 2.0,
+   "answer_window_s": 12.0,
+   "barge_in_every": 3,
+   "barge_in_offset_s": 3.0,
+   "stagger_s": 1.0,
+   "session_seed": 20261119,
+   "asset_pool": "duplex-v1",
+   "output_modalities": [
+    "audio"
+   ],
+   "save_audio_sessions": 1,
+   "server_events": true
+  },
+  {
+   "kind": "plugin",
+   "module": "duplex.phase",
+   "name": "duplex_r1_A",
+   "sessions": 1,
+   "duration_s": 300.0,
+   "lead_in_s": 2.0,
+   "answer_window_s": 12.0,
+   "barge_in_every": 3,
+   "barge_in_offset_s": 3.0,
+   "stagger_s": 1.0,
+   "session_seed": 20261119,
+   "asset_pool": "duplex-v1",
+   "output_modalities": [
+    "audio"
+   ],
+   "save_audio_sessions": 1
+  }
+ ]
+}

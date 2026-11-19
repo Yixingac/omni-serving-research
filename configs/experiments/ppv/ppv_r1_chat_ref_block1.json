@@ -1,0 +1,53 @@
+{
+ "runtime_profile": "unicorn",
+ "hardware_label": "a6000x1",
+ "seed": 20261119,
+ "assets": "synthetic-v1",
+ "experiment_id": "ppv_r1_chat_ref_block1",
+ "description": "R1 第 1 个区组的应用层参照：请求-响应路径（/v1/chat/completions），同一张 A6000 上的单卡语音流水线（code2wav 单独进程，与 plan v2 的 R8 副本相同），同一批合成语音提问（W3 语音进、语音出），并发 1，每段 48 个请求，A 不开、B 开服务端事件。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "s0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0
+   ],
+   "args": [
+    "--code2wav.process",
+    "code2wav"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3",
+   "workload": "configs/workloads/w3_audio_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3_c1_A",
+   "workload": "configs/workloads/w3_audio_speech.json",
+   "concurrency": [
+    1
+   ],
+   "requests_per_level": 48,
+   "requests_per_concurrency": 1
+  },
+  {
+   "kind": "closed_loop",
+   "name": "w3_c1_B",
+   "workload": "configs/workloads/w3_audio_speech.json",
+   "concurrency": [
+    1
+   ],
+   "requests_per_level": 48,
+   "requests_per_concurrency": 1,
+   "server_events": true
+  }
+ ]
+}

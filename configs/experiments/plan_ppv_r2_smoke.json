@@ -1,0 +1,34 @@
+{
+ "plan_id": "ppv_r2_smoke",
+ "_comment": "R2 放置冒烟（max_sessions 8 能否单卡启动；双卡拆分能否跑通）。通过 plan.d 放进 Job 454290；命令从集群上本分支的 worktree 运行。由 scripts/slurm/make_plan_ppv_r.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "ppv_r2_smoke_ms8_1gpu",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r2_smoke_ms8_1gpu.json",
+   "priority": 750,
+   "required_gpus": 1,
+   "required_cpus": 7,
+   "required_memory_gb": 95,
+   "dependencies": [],
+   "estimated_duration_s": 900,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "R2 冒烟：max_sessions 8、1 张 A6000能否启动，8 个会话各 30 秒能否跑通。只用来决定 R2 的放置，不进正式结果。"
+  },
+  {
+   "experiment_id": "ppv_r2_smoke_ms8_2gpu",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r2_smoke_ms8_2gpu.json",
+   "priority": 749,
+   "required_gpus": 2,
+   "required_cpus": 14,
+   "required_memory_gb": 190,
+   "dependencies": [
+    "ppv_r2_smoke_ms8_1gpu"
+   ],
+   "estimated_duration_s": 900,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "R2 冒烟：max_sessions 8、2 张 A6000（thinker 单独放第 2 张卡）能否启动，8 个会话各 30 秒能否跑通。只用来决定 R2 的放置，不进正式结果。"
+  }
+ ]
+}

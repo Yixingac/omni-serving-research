@@ -1,0 +1,45 @@
+{
+ "plan_id": "ppv_r4",
+ "_comment": "R4 正式 3 个区组（8 卡），冒烟通过后放。 由 scripts/slurm/make_plan_ppv_r34.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "ppv_r4_block1",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r4_block1.json",
+   "priority": -711,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1500,
+   "timeout_s": 5400,
+   "max_retries": 1,
+   "description": "R4 第 1 个区组：2+2+4，ppv-kv 运行时。机器人会话数 8/16/32/64/128（每档一段，从小到大；文字历史），最后 32 个会话带 2 轮媒体历史作对照。每个会话 4–10 轮，一半的轮先调一次模拟工具，最终回答用语音；种子 20261119（每个区组同一批会话内容）。开请求事件。"
+  },
+  {
+   "experiment_id": "ppv_r4_block2",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r4_block2.json",
+   "priority": -712,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1500,
+   "timeout_s": 5400,
+   "max_retries": 1,
+   "description": "R4 第 2 个区组：2+2+4，ppv-kv 运行时。机器人会话数 8/16/32/64/128（每档一段，从小到大；文字历史），最后 32 个会话带 2 轮媒体历史作对照。每个会话 4–10 轮，一半的轮先调一次模拟工具，最终回答用语音；种子 20261119（每个区组同一批会话内容）。开请求事件。"
+  },
+  {
+   "experiment_id": "ppv_r4_block3",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r4_block3.json",
+   "priority": -713,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1500,
+   "timeout_s": 5400,
+   "max_retries": 1,
+   "description": "R4 第 3 个区组：2+2+4，ppv-kv 运行时。机器人会话数 8/16/32/64/128（每档一段，从小到大；文字历史），最后 32 个会话带 2 轮媒体历史作对照。每个会话 4–10 轮，一半的轮先调一次模拟工具，最终回答用语音；种子 20261119（每个区组同一批会话内容）。开请求事件。"
+  }
+ ]
+}

@@ -1,0 +1,52 @@
+{
+ "runtime_profile": "unicorn",
+ "hardware_label": "a6000x2",
+ "seed": 20261119,
+ "assets": "synthetic-v1",
+ "experiment_id": "ppv_r2_smoke_ms8_2gpu",
+ "description": "R2 冒烟：max_sessions 8、2 张 A6000（thinker 单独放第 2 张卡）能否启动，8 个会话各 30 秒能否跑通。只用来决定 R2 的放置，不进正式结果。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "s0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1
+   ],
+   "args": [
+    "--variant",
+    "session",
+    "--enable-realtime",
+    "--max_sessions",
+    "8",
+    "--thinker.gpu",
+    "1",
+    "--thinker.gpu_memory_fraction",
+    "0.85"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "plugin",
+   "module": "duplex.phase",
+   "name": "duplex_smoke_n8",
+   "sessions": 8,
+   "duration_s": 30.0,
+   "lead_in_s": 2.0,
+   "answer_window_s": 12.0,
+   "barge_in_every": 0,
+   "barge_in_offset_s": 3.0,
+   "stagger_s": 1.0,
+   "session_seed": 20261119,
+   "asset_pool": "duplex-v1",
+   "output_modalities": [
+    "audio"
+   ],
+   "save_audio_sessions": 1
+  }
+ ]
+}

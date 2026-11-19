@@ -1,0 +1,267 @@
+{
+ "runtime_profile": "unicorn_ppv_kv",
+ "hardware_label": "a6000x8",
+ "seed": 20261119,
+ "assets": "synthetic-v1",
+ "experiment_id": "ppv_r4_block3",
+ "description": "R4 第 3 个区组：2+2+4，ppv-kv 运行时。机器人会话数 8/16/32/64/128（每档一段，从小到大；文字历史），最后 32 个会话带 2 轮媒体历史作对照。每个会话 4–10 轮，一半的轮先调一次模拟工具，最终回答用语音；种子 20261119（每个区组同一批会话内容）。开请求事件。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 2,
+ "servers": [
+  {
+   "name": "s0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "args": [
+    "--config",
+    "{research_repo}/configs/models/minicpm_o_4_5_exp_t2_k2_c4.yaml"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "plugin",
+   "module": "sessions.robot_sessions",
+   "name": "r4_n8",
+   "sessions": 8,
+   "turns": [
+    4,
+    10
+   ],
+   "preamble_tokens": [
+    50,
+    300
+   ],
+   "ramp_s": 20.0,
+   "think_s": [
+    2.0,
+    0.5
+   ],
+   "tool": {
+    "p": 0.5,
+    "latency_s": [
+     0.3,
+     0.6
+    ],
+    "result_tokens": [
+     40,
+     200
+    ]
+   },
+   "history_media": 0,
+   "speak_final": true,
+   "image": true,
+   "audio": true,
+   "max_tokens_plan": 32,
+   "max_tokens_answer": 48,
+   "request_timeout_s": 300.0,
+   "server_events": true
+  },
+  {
+   "kind": "plugin",
+   "module": "sessions.robot_sessions",
+   "name": "r4_n16",
+   "sessions": 16,
+   "turns": [
+    4,
+    10
+   ],
+   "preamble_tokens": [
+    50,
+    300
+   ],
+   "ramp_s": 20.0,
+   "think_s": [
+    2.0,
+    0.5
+   ],
+   "tool": {
+    "p": 0.5,
+    "latency_s": [
+     0.3,
+     0.6
+    ],
+    "result_tokens": [
+     40,
+     200
+    ]
+   },
+   "history_media": 0,
+   "speak_final": true,
+   "image": true,
+   "audio": true,
+   "max_tokens_plan": 32,
+   "max_tokens_answer": 48,
+   "request_timeout_s": 300.0,
+   "server_events": true
+  },
+  {
+   "kind": "plugin",
+   "module": "sessions.robot_sessions",
+   "name": "r4_n32",
+   "sessions": 32,
+   "turns": [
+    4,
+    10
+   ],
+   "preamble_tokens": [
+    50,
+    300
+   ],
+   "ramp_s": 20.0,
+   "think_s": [
+    2.0,
+    0.5
+   ],
+   "tool": {
+    "p": 0.5,
+    "latency_s": [
+     0.3,
+     0.6
+    ],
+    "result_tokens": [
+     40,
+     200
+    ]
+   },
+   "history_media": 0,
+   "speak_final": true,
+   "image": true,
+   "audio": true,
+   "max_tokens_plan": 32,
+   "max_tokens_answer": 48,
+   "request_timeout_s": 300.0,
+   "server_events": true
+  },
+  {
+   "kind": "plugin",
+   "module": "sessions.robot_sessions",
+   "name": "r4_n64",
+   "sessions": 64,
+   "turns": [
+    4,
+    10
+   ],
+   "preamble_tokens": [
+    50,
+    300
+   ],
+   "ramp_s": 20.0,
+   "think_s": [
+    2.0,
+    0.5
+   ],
+   "tool": {
+    "p": 0.5,
+    "latency_s": [
+     0.3,
+     0.6
+    ],
+    "result_tokens": [
+     40,
+     200
+    ]
+   },
+   "history_media": 0,
+   "speak_final": true,
+   "image": true,
+   "audio": true,
+   "max_tokens_plan": 32,
+   "max_tokens_answer": 48,
+   "request_timeout_s": 300.0,
+   "server_events": true
+  },
+  {
+   "kind": "plugin",
+   "module": "sessions.robot_sessions",
+   "name": "r4_n128",
+   "sessions": 128,
+   "turns": [
+    4,
+    10
+   ],
+   "preamble_tokens": [
+    50,
+    300
+   ],
+   "ramp_s": 20.0,
+   "think_s": [
+    2.0,
+    0.5
+   ],
+   "tool": {
+    "p": 0.5,
+    "latency_s": [
+     0.3,
+     0.6
+    ],
+    "result_tokens": [
+     40,
+     200
+    ]
+   },
+   "history_media": 0,
+   "speak_final": true,
+   "image": true,
+   "audio": true,
+   "max_tokens_plan": 32,
+   "max_tokens_answer": 48,
+   "request_timeout_s": 300.0,
+   "server_events": true
+  },
+  {
+   "kind": "plugin",
+   "module": "sessions.robot_sessions",
+   "name": "r4_n32_media2",
+   "sessions": 32,
+   "turns": [
+    4,
+    10
+   ],
+   "preamble_tokens": [
+    50,
+    300
+   ],
+   "ramp_s": 20.0,
+   "think_s": [
+    2.0,
+    0.5
+   ],
+   "tool": {
+    "p": 0.5,
+    "latency_s": [
+     0.3,
+     0.6
+    ],
+    "result_tokens": [
+     40,
+     200
+    ]
+   },
+   "history_media": 2,
+   "speak_final": true,
+   "image": true,
+   "audio": true,
+   "max_tokens_plan": 32,
+   "max_tokens_answer": 48,
+   "request_timeout_s": 300.0,
+   "server_events": true
+  }
+ ]
+}

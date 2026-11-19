@@ -1,0 +1,21 @@
+{
+  "_comment": "R3/R4（演示前验证）：从 sglang-omni 的 ppv-kv 副本启动服务：git worktree，同一提交 520b49ee，加 configs/runtime/patches/sglang_omni_ppv_kv.patch（MiniCPM-o 预处理的 max_concurrency 工厂参数，默认 1 与原版相同；预处理分段计时事件 exp_preprocess，只在请求事件开着时写；thinker 的前缀命中和 KV 池日志 exp_kv_*，由 SGLANG_OMNI_EXP_KV=1 打开）。补丁的 CPU 检查：configs/runtime/patches/check_sglang_omni_ppv_kv.py。",
+  "env_script": "~/workspace/sglang-omni-learning/scripts/env-unicorn.sh",
+  "cwd": "~/workspace/sglang-omni-learning/repos/sglang-omni-ppv-kv",
+  "python": "~/workspace/sglang-omni-learning/.venv/bin/python",
+  "ffmpeg": "~/workspace/sglang-omni-learning/.conda-runtime/bin/ffmpeg",
+  "warm_cache_script": "~/workspace/sglang-omni-learning/scripts/warm-cache.sh",
+  "env": {
+    "SGLANG_OMNI_EXP_KV": "1"
+  },
+  "required_imports": [
+    "torch",
+    "sglang",
+    "sglang_omni",
+    "onnx",
+    "onnxruntime",
+    "einops",
+    "aiohttp",
+    "psutil"
+  ]
+}

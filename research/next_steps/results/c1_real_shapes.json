@@ -1,0 +1,2180 @@
+{
+ "generated_by": "scripts/microbench/c1_shapes.py summarize",
+ "source_runs": [
+  "20261117_exp09_t2_k1_c5_block1_run01",
+  "20261117_exp09_t2_k3_c3_block1_run01",
+  "20261118_exp09_t2_k1_c5_block2_run01",
+  "20261118_exp09_t2_k1_c5_block3_run01",
+  "20261118_exp09_t2_k2_c4_block1_run02",
+  "20261118_exp09_t2_k2_c4_block2_run01",
+  "20261118_exp09_t2_k2_c4_block3_run01",
+  "20261118_exp09_t2_k3_c3_block2_run01",
+  "20261118_exp09_t2_k3_c3_block3_run01",
+  "20261118_exp09_t2_k6_shared_block1_run01",
+  "20261118_exp09_t2_k6_shared_block2_run01",
+  "20261118_exp09_t2_k6_shared_block3_run01",
+  "20261118_exp10_graph_block1_run01",
+  "20261118_exp10_graph_block2_run01",
+  "20261118_exp10_graph_block3_run01",
+  "20261118_exp10_nograph_block1_run01",
+  "20261118_exp10_nograph_block2_run01",
+  "20261118_exp10_nograph_block3_run01",
+  "20261118_exp10_validation_t2_k2_c4_length8_block1_run01",
+  "20261118_exp10_validation_t2_k2_c4_length8_block2_run01",
+  "20261118_exp10_validation_t2_k2_c4_length8_block3_run01"
+ ],
+ "prompt_token_lengths_seen": [
+  151
+ ],
+ "groups": {
+  "exp09_t2_k1_c5|w3b|fifo16": {
+   "batches": 4597,
+   "requests": 5376,
+   "batch_size": {
+    "mean": 1.1694583423972156,
+    "p50": 1.0,
+    "p90": 2.0,
+    "max": 8,
+    "hist": {
+     "1": 4000,
+     "2": 469,
+     "3": 100,
+     "4": 17,
+     "5": 4,
+     "6": 2,
+     "7": 2,
+     "8": 3
+    }
+   },
+   "codec_tokens": {
+    "p10": 198.0,
+    "p50": 349.0,
+    "p90": 419.0,
+    "max": 539
+   },
+   "audio_s_per_request_p50": 13.96,
+   "padded_frames": {
+    "p50": 1018.0,
+    "p90": 1146.0,
+    "max": 1380
+   },
+   "padding_ratio_frame_weighted": 0.02172856925199329,
+   "attention_elems_packed_over_dense": 0.959390709744507,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.4166666666666667,
+     "eager": 0.5833333333333334
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.40122767857142855,
+     "eager": 0.34281994047619047,
+     "packed_eager": 0.2533482142857143,
+     "packed_graph": 0.0026041666666666665
+    },
+    "packed_no_graphs": {
+     "eager": 0.7440476190476191,
+     "packed_eager": 0.25595238095238093
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 2190,
+    "eager": 2407
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp09_t2_k1_c5|w3l|fifo16": {
+   "batches": 990,
+   "requests": 1152,
+   "batch_size": {
+    "mean": 1.1636363636363636,
+    "p50": 1.0,
+    "p90": 2.0,
+    "max": 5,
+    "hist": {
+     "1": 871,
+     "2": 91,
+     "3": 17,
+     "4": 7,
+     "5": 4
+    }
+   },
+   "codec_tokens": {
+    "p10": 627.2,
+    "p50": 730.0,
+    "p90": 903.7000000000003,
+    "max": 1074
+   },
+   "audio_s_per_request_p50": 29.2,
+   "padded_frames": {
+    "p50": 1782.0,
+    "p90": 2124.2,
+    "max": 2450
+   },
+   "padding_ratio_frame_weighted": 0.012904990711342434,
+   "attention_elems_packed_over_dense": 0.9741986163231764,
+   "request_share_by_path": {
+    "dense_default": {
+     "eager": 1.0
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "eager": 0.7560763888888888,
+     "packed_eager": 0.2439236111111111
+    },
+    "packed_no_graphs": {
+     "eager": 0.7560763888888888,
+     "packed_eager": 0.2439236111111111
+    }
+   },
+   "recorded_flow_solve_path": {
+    "eager": 990
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp09_t2_k2_c4|w3b|fifo16": {
+   "batches": 1037,
+   "requests": 5376,
+   "batch_size": {
+    "mean": 5.184185149469624,
+    "p50": 3.0,
+    "p90": 16.0,
+    "max": 16,
+    "hist": {
+     "1": 382,
+     "2": 121,
+     "3": 76,
+     "4": 56,
+     "5": 62,
+     "6": 38,
+     "7": 43,
+     "8": 32,
+     "9": 27,
+     "10": 26,
+     "11": 7,
+     "12": 3,
+     "13": 5,
+     "14": 8,
+     "15": 4,
+     "16": 147
+    }
+   },
+   "codec_tokens": {
+    "p10": 202.0,
+    "p50": 349.0,
+    "p90": 418.0,
+    "max": 579
+   },
+   "audio_s_per_request_p50": 13.96,
+   "padded_frames": {
+    "p50": 1094.0,
+    "p90": 1230.0,
+    "max": 1460
+   },
+   "padding_ratio_frame_weighted": 0.14175259778939708,
+   "attention_elems_packed_over_dense": 0.7469380055235074,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.05561755952380952,
+     "eager": 0.9443824404761905
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.043154761904761904,
+     "eager": 0.027901785714285716,
+     "packed_eager": 0.9289434523809523
+    },
+    "packed_no_graphs": {
+     "eager": 0.07105654761904762,
+     "packed_eager": 0.9289434523809523
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 252,
+    "eager": 785
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp09_t2_k2_c4|w3l|fifo16": {
+   "batches": 267,
+   "requests": 1152,
+   "batch_size": {
+    "mean": 4.314606741573034,
+    "p50": 3.0,
+    "p90": 10.0,
+    "max": 16,
+    "hist": {
+     "1": 76,
+     "2": 37,
+     "3": 34,
+     "4": 22,
+     "5": 20,
+     "6": 13,
+     "7": 9,
+     "8": 15,
+     "9": 9,
+     "10": 10,
+     "11": 7,
+     "12": 9,
+     "13": 2,
+     "14": 2,
+     "15": 1,
+     "16": 1
+    }
+   },
+   "codec_tokens": {
+    "p10": 629.0,
+    "p50": 731.0,
+    "p90": 899.9000000000001,
+    "max": 1172
+   },
+   "audio_s_per_request_p50": 29.240000000000002,
+   "padded_frames": {
+    "p50": 1894.0,
+    "p90": 2224.4,
+    "max": 2646
+   },
+   "padding_ratio_frame_weighted": 0.10360433519147216,
+   "attention_elems_packed_over_dense": 0.8040315861158729,
+   "request_share_by_path": {
+    "dense_default": {
+     "eager": 1.0
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "eager": 0.06597222222222222,
+     "packed_eager": 0.9340277777777778
+    },
+    "packed_no_graphs": {
+     "eager": 0.06597222222222222,
+     "packed_eager": 0.9340277777777778
+    }
+   },
+   "recorded_flow_solve_path": {
+    "eager": 267
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp09_t2_k3_c3|w3b|fifo16": {
+   "batches": 643,
+   "requests": 5376,
+   "batch_size": {
+    "mean": 8.360808709175739,
+    "p50": 6.0,
+    "p90": 16.0,
+    "max": 16,
+    "hist": {
+     "1": 141,
+     "2": 67,
+     "3": 51,
+     "4": 31,
+     "5": 23,
+     "6": 18,
+     "7": 13,
+     "8": 8,
+     "9": 9,
+     "10": 3,
+     "11": 8,
+     "12": 11,
+     "13": 5,
+     "14": 11,
+     "15": 8,
+     "16": 236
+    }
+   },
+   "codec_tokens": {
+    "p10": 202.0,
+    "p50": 350.0,
+    "p90": 419.5,
+    "max": 576
+   },
+   "audio_s_per_request_p50": 14.0,
+   "padded_frames": {
+    "p50": 1126.0,
+    "p90": 1276.0,
+    "max": 1454
+   },
+   "padding_ratio_frame_weighted": 0.16907587171223215,
+   "attention_elems_packed_over_dense": 0.7026361138613157,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.031436011904761904,
+     "eager": 0.9685639880952381
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.017857142857142856,
+     "eager": 0.008370535714285714,
+     "packed_eager": 0.9719122023809523,
+     "packed_graph": 0.0018601190476190475
+    },
+    "packed_no_graphs": {
+     "eager": 0.026227678571428572,
+     "packed_eager": 0.9737723214285714
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 118,
+    "eager": 525
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp09_t2_k3_c3|w3l|fifo16": {
+   "batches": 115,
+   "requests": 1152,
+   "batch_size": {
+    "mean": 10.017391304347827,
+    "p50": 13.0,
+    "p90": 16.0,
+    "max": 16,
+    "hist": {
+     "1": 23,
+     "2": 3,
+     "3": 3,
+     "4": 4,
+     "5": 4,
+     "6": 6,
+     "7": 6,
+     "9": 1,
+     "11": 4,
+     "12": 2,
+     "13": 2,
+     "14": 5,
+     "15": 5,
+     "16": 47
+    }
+   },
+   "codec_tokens": {
+    "p10": 580.0,
+    "p50": 730.0,
+    "p90": 926.0,
+    "max": 1089
+   },
+   "audio_s_per_request_p50": 29.2,
+   "padded_frames": {
+    "p50": 2006.0,
+    "p90": 2326.0,
+    "max": 2480
+   },
+   "padding_ratio_frame_weighted": 0.1477850360371613,
+   "attention_elems_packed_over_dense": 0.7282521528040998,
+   "request_share_by_path": {
+    "dense_default": {
+     "eager": 1.0
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "eager": 0.019965277777777776,
+     "packed_eager": 0.9800347222222222
+    },
+    "packed_no_graphs": {
+     "eager": 0.019965277777777776,
+     "packed_eager": 0.9800347222222222
+    }
+   },
+   "recorded_flow_solve_path": {
+    "eager": 115
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp09_t2_k6_shared|w3b|fifo16": {
+   "batches": 1429,
+   "requests": 5376,
+   "batch_size": {
+    "mean": 3.762071378586424,
+    "p50": 2.0,
+    "p90": 11.0,
+    "max": 16,
+    "hist": {
+     "1": 654,
+     "2": 198,
+     "3": 126,
+     "4": 105,
+     "5": 71,
+     "6": 53,
+     "7": 35,
+     "8": 16,
+     "9": 15,
+     "10": 8,
+     "11": 10,
+     "12": 6,
+     "13": 5,
+     "14": 3,
+     "15": 6,
+     "16": 118
+    }
+   },
+   "codec_tokens": {
+    "p10": 203.0,
+    "p50": 348.0,
+    "p90": 416.0,
+    "max": 590
+   },
+   "audio_s_per_request_p50": 13.92,
+   "padded_frames": {
+    "p50": 1072.0,
+    "p90": 1196.4,
+    "max": 1482
+   },
+   "padding_ratio_frame_weighted": 0.1288474729808542,
+   "attention_elems_packed_over_dense": 0.7675689589579718,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.08556547619047619,
+     "eager": 0.9144345238095238
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.07533482142857142,
+     "eager": 0.04631696428571429,
+     "packed_eager": 0.8772321428571429,
+     "packed_graph": 0.0011160714285714285
+    },
+    "packed_no_graphs": {
+     "eager": 0.12165178571428571,
+     "packed_eager": 0.8783482142857143
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 428,
+    "eager": 1001
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp09_t2_k6_shared|w3l|fifo16": {
+   "batches": 430,
+   "requests": 1152,
+   "batch_size": {
+    "mean": 2.6790697674418604,
+    "p50": 2.0,
+    "p90": 5.0,
+    "max": 10,
+    "hist": {
+     "1": 152,
+     "2": 82,
+     "3": 70,
+     "4": 57,
+     "5": 37,
+     "6": 22,
+     "7": 5,
+     "8": 2,
+     "10": 3
+    }
+   },
+   "codec_tokens": {
+    "p10": 617.2,
+    "p50": 725.0,
+    "p90": 925.0,
+    "max": 1104
+   },
+   "audio_s_per_request_p50": 29.0,
+   "padded_frames": {
+    "p50": 1854.0,
+    "p90": 2231.4000000000005,
+    "max": 2510
+   },
+   "padding_ratio_frame_weighted": 0.07140921506483999,
+   "attention_elems_packed_over_dense": 0.8626253559591885,
+   "request_share_by_path": {
+    "dense_default": {
+     "eager": 1.0
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "eager": 0.13194444444444445,
+     "packed_eager": 0.8680555555555556
+    },
+    "packed_no_graphs": {
+     "eager": 0.13194444444444445,
+     "packed_eager": 0.8680555555555556
+    }
+   },
+   "recorded_flow_solve_path": {
+    "eager": 430
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_graph|mix|fifo1": {
+   "batches": 864,
+   "requests": 864,
+   "batch_size": {
+    "mean": 1.0,
+    "p50": 1.0,
+    "p90": 1.0,
+    "max": 1,
+    "hist": {
+     "1": 864
+    }
+   },
+   "codec_tokens": {
+    "p10": 273.3,
+    "p50": 477.0,
+    "p90": 831.4000000000001,
+    "max": 1077
+   },
+   "audio_s_per_request_p50": 19.080000000000002,
+   "padded_frames": {
+    "p50": 1256.0,
+    "p90": 1964.8000000000002,
+    "max": 2456
+   },
+   "padding_ratio_frame_weighted": 0.0,
+   "attention_elems_packed_over_dense": 1.0,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.32523148148148145,
+     "eager": 0.6747685185185185
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.32523148148148145,
+     "eager": 0.6747685185185185
+    },
+    "packed_no_graphs": {
+     "eager": 1.0
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 281,
+    "eager": 583
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_graph|mix|fifo16": {
+   "batches": 98,
+   "requests": 864,
+   "batch_size": {
+    "mean": 8.816326530612244,
+    "p50": 9.0,
+    "p90": 16.0,
+    "max": 16,
+    "hist": {
+     "1": 22,
+     "2": 4,
+     "3": 11,
+     "4": 3,
+     "5": 2,
+     "6": 2,
+     "7": 3,
+     "8": 1,
+     "9": 2,
+     "10": 3,
+     "11": 4,
+     "12": 1,
+     "13": 1,
+     "14": 1,
+     "15": 1,
+     "16": 37
+    }
+   },
+   "codec_tokens": {
+    "p10": 274.6,
+    "p50": 474.0,
+    "p90": 838.4000000000001,
+    "max": 1156
+   },
+   "audio_s_per_request_p50": 18.96,
+   "padded_frames": {
+    "p50": 1509.0,
+    "p90": 2209.2,
+    "max": 2614
+   },
+   "padding_ratio_frame_weighted": 0.28258592180619824,
+   "attention_elems_packed_over_dense": 0.5422302016936744,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.02546296296296296,
+     "eager": 0.9745370370370371
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.018518518518518517,
+     "eager": 0.006944444444444444,
+     "packed_eager": 0.9699074074074074,
+     "packed_graph": 0.004629629629629629
+    },
+    "packed_no_graphs": {
+     "eager": 0.02546296296296296,
+     "packed_eager": 0.9745370370370371
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 19,
+    "eager": 79
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_graph|mix|fifo2": {
+   "batches": 444,
+   "requests": 864,
+   "batch_size": {
+    "mean": 1.945945945945946,
+    "p50": 2.0,
+    "p90": 2.0,
+    "max": 2,
+    "hist": {
+     "1": 24,
+     "2": 420
+    }
+   },
+   "codec_tokens": {
+    "p10": 272.0,
+    "p50": 486.5,
+    "p90": 825.4000000000001,
+    "max": 1014
+   },
+   "audio_s_per_request_p50": 19.46,
+   "padded_frames": {
+    "p50": 1694.0,
+    "p90": 2080.2,
+    "max": 2330
+   },
+   "padding_ratio_frame_weighted": 0.1262614388810357,
+   "attention_elems_packed_over_dense": 0.7878284959704667,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.03935185185185185,
+     "eager": 0.9606481481481481
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.016203703703703703,
+     "eager": 0.011574074074074073,
+     "packed_eager": 0.9629629629629629,
+     "packed_graph": 0.009259259259259259
+    },
+    "packed_no_graphs": {
+     "eager": 0.027777777777777776,
+     "packed_eager": 0.9722222222222222
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 24,
+    "eager": 420
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_graph|mix|fifo4": {
+   "batches": 231,
+   "requests": 864,
+   "batch_size": {
+    "mean": 3.74025974025974,
+    "p50": 4.0,
+    "p90": 4.0,
+    "max": 4,
+    "hist": {
+     "1": 14,
+     "2": 6,
+     "3": 6,
+     "4": 205
+    }
+   },
+   "codec_tokens": {
+    "p10": 271.0,
+    "p50": 491.0,
+    "p90": 836.8000000000002,
+    "max": 1096
+   },
+   "audio_s_per_request_p50": 19.64,
+   "padded_frames": {
+    "p50": 1780.0,
+    "p90": 2156.0,
+    "max": 2494
+   },
+   "padding_ratio_frame_weighted": 0.20024938127505976,
+   "attention_elems_packed_over_dense": 0.6722114172370549,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.016203703703703703,
+     "eager": 0.9837962962962963
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.01273148148148148,
+     "eager": 0.003472222222222222,
+     "packed_eager": 0.9837962962962963
+    },
+    "packed_no_graphs": {
+     "eager": 0.016203703703703703,
+     "packed_eager": 0.9837962962962963
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 12,
+    "eager": 219
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_graph|mix|fifo8": {
+   "batches": 141,
+   "requests": 864,
+   "batch_size": {
+    "mean": 6.127659574468085,
+    "p50": 8.0,
+    "p90": 8.0,
+    "max": 8,
+    "hist": {
+     "1": 24,
+     "2": 3,
+     "3": 4,
+     "4": 7,
+     "5": 6,
+     "6": 4,
+     "7": 4,
+     "8": 89
+    }
+   },
+   "codec_tokens": {
+    "p10": 274.3,
+    "p50": 483.0,
+    "p90": 848.4000000000001,
+    "max": 1082
+   },
+   "audio_s_per_request_p50": 19.32,
+   "padded_frames": {
+    "p50": 1810.0,
+    "p90": 2228.0,
+    "max": 2466
+   },
+   "padding_ratio_frame_weighted": 0.2438307700369764,
+   "attention_elems_packed_over_dense": 0.6019790940582933,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.032407407407407406,
+     "eager": 0.9675925925925926
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.018518518518518517,
+     "eager": 0.009259259259259259,
+     "packed_eager": 0.9722222222222222
+    },
+    "packed_no_graphs": {
+     "eager": 0.027777777777777776,
+     "packed_eager": 0.9722222222222222
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 20,
+    "eager": 121
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_graph|mix|length16": {
+   "batches": 96,
+   "requests": 864,
+   "batch_size": {
+    "mean": 9.0,
+    "p50": 9.0,
+    "p90": 16.0,
+    "max": 16,
+    "hist": {
+     "1": 21,
+     "2": 1,
+     "3": 6,
+     "4": 7,
+     "5": 5,
+     "6": 4,
+     "7": 1,
+     "8": 2,
+     "9": 2,
+     "10": 2,
+     "11": 3,
+     "12": 4,
+     "13": 1,
+     "15": 1,
+     "16": 36
+    }
+   },
+   "codec_tokens": {
+    "p10": 271.0,
+    "p50": 485.0,
+    "p90": 828.9000000000003,
+    "max": 1032
+   },
+   "audio_s_per_request_p50": 19.400000000000002,
+   "padded_frames": {
+    "p50": 1248.0,
+    "p90": 2211.0,
+    "max": 2366
+   },
+   "padding_ratio_frame_weighted": 0.21113032584137315,
+   "attention_elems_packed_over_dense": 0.6401883309857666,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.02546296296296296,
+     "eager": 0.9745370370370371
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.017361111111111112,
+     "eager": 0.006944444444444444,
+     "packed_eager": 0.9756944444444444
+    },
+    "packed_no_graphs": {
+     "eager": 0.024305555555555556,
+     "packed_eager": 0.9756944444444444
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 17,
+    "eager": 79
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_graph|mix|length8": {
+   "batches": 139,
+   "requests": 864,
+   "batch_size": {
+    "mean": 6.215827338129497,
+    "p50": 8.0,
+    "p90": 8.0,
+    "max": 8,
+    "hist": {
+     "1": 21,
+     "2": 2,
+     "3": 5,
+     "4": 10,
+     "5": 4,
+     "6": 5,
+     "7": 2,
+     "8": 90
+    }
+   },
+   "codec_tokens": {
+    "p10": 273.3,
+    "p50": 485.0,
+    "p90": 840.0,
+    "max": 1043
+   },
+   "audio_s_per_request_p50": 19.400000000000002,
+   "padded_frames": {
+    "p50": 1306.0,
+    "p90": 2144.4,
+    "max": 2388
+   },
+   "padding_ratio_frame_weighted": 0.09583383215611163,
+   "attention_elems_packed_over_dense": 0.8265617843201207,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.047453703703703706,
+     "eager": 0.9525462962962963
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.018518518518518517,
+     "eager": 0.005787037037037037,
+     "packed_eager": 0.9756944444444444
+    },
+    "packed_no_graphs": {
+     "eager": 0.024305555555555556,
+     "packed_eager": 0.9756944444444444
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 21,
+    "eager": 118
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_graph|w3b|fifo1": {
+   "batches": 1152,
+   "requests": 1152,
+   "batch_size": {
+    "mean": 1.0,
+    "p50": 1.0,
+    "p90": 1.0,
+    "max": 1,
+    "hist": {
+     "1": 1152
+    }
+   },
+   "codec_tokens": {
+    "p10": 204.0,
+    "p50": 350.0,
+    "p90": 425.0,
+    "max": 548
+   },
+   "audio_s_per_request_p50": 14.0,
+   "padded_frames": {
+    "p50": 1002.0,
+    "p90": 1152.0,
+    "max": 1398
+   },
+   "padding_ratio_frame_weighted": 0.0,
+   "attention_elems_packed_over_dense": 1.0,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.5529513888888888,
+     "eager": 0.4470486111111111
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.5529513888888888,
+     "eager": 0.4470486111111111
+    },
+    "packed_no_graphs": {
+     "eager": 1.0
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 637,
+    "eager": 515
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_graph|w3b|fifo16": {
+   "batches": 95,
+   "requests": 1152,
+   "batch_size": {
+    "mean": 12.126315789473685,
+    "p50": 16.0,
+    "p90": 16.0,
+    "max": 16,
+    "hist": {
+     "1": 12,
+     "2": 6,
+     "3": 3,
+     "4": 1,
+     "5": 2,
+     "7": 1,
+     "8": 1,
+     "11": 2,
+     "14": 1,
+     "15": 2,
+     "16": 64
+    }
+   },
+   "codec_tokens": {
+    "p10": 212.0,
+    "p50": 343.0,
+    "p90": 419.0,
+    "max": 540
+   },
+   "audio_s_per_request_p50": 13.72,
+   "padded_frames": {
+    "p50": 1130.0,
+    "p90": 1303.2,
+    "max": 1382
+   },
+   "padding_ratio_frame_weighted": 0.15657874721941512,
+   "attention_elems_packed_over_dense": 0.7198633604553915,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.027777777777777776,
+     "eager": 0.9722222222222222
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.010416666666666666,
+     "packed_eager": 0.9878472222222222,
+     "packed_graph": 0.001736111111111111
+    },
+    "packed_no_graphs": {
+     "eager": 0.010416666666666666,
+     "packed_eager": 0.9895833333333334
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 19,
+    "eager": 76
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_graph|w3b|fifo2": {
+   "batches": 582,
+   "requests": 1152,
+   "batch_size": {
+    "mean": 1.9793814432989691,
+    "p50": 2.0,
+    "p90": 2.0,
+    "max": 2,
+    "hist": {
+     "1": 12,
+     "2": 570
+    }
+   },
+   "codec_tokens": {
+    "p10": 212.10000000000002,
+    "p50": 349.5,
+    "p90": 421.0,
+    "max": 575
+   },
+   "audio_s_per_request_p50": 13.98,
+   "padded_frames": {
+    "p50": 1078.0,
+    "p90": 1196.0,
+    "max": 1452
+   },
+   "padding_ratio_frame_weighted": 0.06418379822571352,
+   "attention_elems_packed_over_dense": 0.8833671739174481,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.06336805555555555,
+     "eager": 0.9366319444444444
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.006076388888888889,
+     "eager": 0.004340277777777778,
+     "packed_eager": 0.9756944444444444,
+     "packed_graph": 0.013888888888888888
+    },
+    "packed_no_graphs": {
+     "eager": 0.010416666666666666,
+     "packed_eager": 0.9895833333333334
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 40,
+    "eager": 542
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_graph|w3b|fifo4": {
+   "batches": 295,
+   "requests": 1152,
+   "batch_size": {
+    "mean": 3.905084745762712,
+    "p50": 4.0,
+    "p90": 4.0,
+    "max": 4,
+    "hist": {
+     "1": 7,
+     "2": 1,
+     "3": 5,
+     "4": 282
+    }
+   },
+   "codec_tokens": {
+    "p10": 212.20000000000002,
+    "p50": 349.5,
+    "p90": 427.0,
+    "max": 580
+   },
+   "audio_s_per_request_p50": 13.98,
+   "padded_frames": {
+    "p50": 1108.0,
+    "p90": 1251.6000000000001,
+    "max": 1462
+   },
+   "padding_ratio_frame_weighted": 0.10194741393175688,
+   "attention_elems_packed_over_dense": 0.8152753452415085,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.019965277777777776,
+     "eager": 0.9800347222222222
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.006076388888888889,
+     "packed_eager": 0.9939236111111112
+    },
+    "packed_no_graphs": {
+     "eager": 0.006076388888888889,
+     "packed_eager": 0.9939236111111112
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 11,
+    "eager": 284
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_graph|w3b|fifo8": {
+   "batches": 155,
+   "requests": 1152,
+   "batch_size": {
+    "mean": 7.432258064516129,
+    "p50": 8.0,
+    "p90": 8.0,
+    "max": 8,
+    "hist": {
+     "1": 7,
+     "2": 1,
+     "3": 3,
+     "4": 3,
+     "5": 1,
+     "7": 3,
+     "8": 137
+    }
+   },
+   "codec_tokens": {
+    "p10": 212.0,
+    "p50": 345.0,
+    "p90": 419.0,
+    "max": 614
+   },
+   "audio_s_per_request_p50": 13.8,
+   "padded_frames": {
+    "p50": 1128.0,
+    "p90": 1290.0,
+    "max": 1530
+   },
+   "padding_ratio_frame_weighted": 0.1327566422455645,
+   "attention_elems_packed_over_dense": 0.7589789107311805,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.03993055555555555,
+     "eager": 0.9600694444444444
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.006076388888888889,
+     "packed_eager": 0.9921875,
+     "packed_graph": 0.001736111111111111
+    },
+    "packed_no_graphs": {
+     "eager": 0.006076388888888889,
+     "packed_eager": 0.9939236111111112
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 14,
+    "eager": 141
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_graph|w3b|length16": {
+   "batches": 86,
+   "requests": 1152,
+   "batch_size": {
+    "mean": 13.395348837209303,
+    "p50": 16.0,
+    "p90": 16.0,
+    "max": 16,
+    "hist": {
+     "1": 7,
+     "3": 1,
+     "4": 2,
+     "5": 1,
+     "6": 1,
+     "7": 1,
+     "8": 1,
+     "9": 2,
+     "10": 2,
+     "11": 2,
+     "12": 2,
+     "16": 64
+    }
+   },
+   "codec_tokens": {
+    "p10": 212.0,
+    "p50": 347.0,
+    "p90": 426.0,
+    "max": 550
+   },
+   "audio_s_per_request_p50": 13.88,
+   "padded_frames": {
+    "p50": 1038.0,
+    "p90": 1274.0,
+    "max": 1402
+   },
+   "padding_ratio_frame_weighted": 0.08480874815047523,
+   "attention_elems_packed_over_dense": 0.842979022282648,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.0234375,
+     "eager": 0.9765625
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.006076388888888889,
+     "packed_eager": 0.9939236111111112
+    },
+    "packed_no_graphs": {
+     "eager": 0.006076388888888889,
+     "packed_eager": 0.9939236111111112
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 10,
+    "eager": 76
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_graph|w3b|length8": {
+   "batches": 159,
+   "requests": 1152,
+   "batch_size": {
+    "mean": 7.245283018867925,
+    "p50": 8.0,
+    "p90": 8.0,
+    "max": 8,
+    "hist": {
+     "1": 11,
+     "2": 1,
+     "3": 3,
+     "4": 4,
+     "5": 1,
+     "7": 3,
+     "8": 136
+    }
+   },
+   "codec_tokens": {
+    "p10": 212.0,
+    "p50": 349.0,
+    "p90": 426.0,
+    "max": 560
+   },
+   "audio_s_per_request_p50": 13.96,
+   "padded_frames": {
+    "p50": 1026.0,
+    "p90": 1224.0,
+    "max": 1422
+   },
+   "padding_ratio_frame_weighted": 0.050180164563204066,
+   "attention_elems_packed_over_dense": 0.9061496161454691,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.057291666666666664,
+     "eager": 0.9427083333333334
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.009548611111111112,
+     "packed_eager": 0.9904513888888888
+    },
+    "packed_no_graphs": {
+     "eager": 0.009548611111111112,
+     "packed_eager": 0.9904513888888888
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 19,
+    "eager": 140
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_nograph|mix|fifo1": {
+   "batches": 864,
+   "requests": 864,
+   "batch_size": {
+    "mean": 1.0,
+    "p50": 1.0,
+    "p90": 1.0,
+    "max": 1,
+    "hist": {
+     "1": 864
+    }
+   },
+   "codec_tokens": {
+    "p10": 272.3,
+    "p50": 456.5,
+    "p90": 840.7,
+    "max": 1023
+   },
+   "audio_s_per_request_p50": 18.26,
+   "padded_frames": {
+    "p50": 1215.0,
+    "p90": 1983.4,
+    "max": 2348
+   },
+   "padding_ratio_frame_weighted": 0.0,
+   "attention_elems_packed_over_dense": 1.0,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.30787037037037035,
+     "eager": 0.6921296296296297
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.30787037037037035,
+     "eager": 0.6921296296296297
+    },
+    "packed_no_graphs": {
+     "eager": 1.0
+    }
+   },
+   "recorded_flow_solve_path": {
+    "eager": 864
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_nograph|mix|fifo16": {
+   "batches": 91,
+   "requests": 864,
+   "batch_size": {
+    "mean": 9.494505494505495,
+    "p50": 10.0,
+    "p90": 16.0,
+    "max": 16,
+    "hist": {
+     "1": 13,
+     "2": 5,
+     "3": 2,
+     "4": 9,
+     "5": 6,
+     "6": 4,
+     "7": 2,
+     "8": 1,
+     "9": 3,
+     "10": 3,
+     "11": 2,
+     "12": 1,
+     "14": 3,
+     "15": 2,
+     "16": 35
+    }
+   },
+   "codec_tokens": {
+    "p10": 273.0,
+    "p50": 470.5,
+    "p90": 833.0,
+    "max": 1019
+   },
+   "audio_s_per_request_p50": 18.82,
+   "padded_frames": {
+    "p50": 1770.0,
+    "p90": 2254.0,
+    "max": 2340
+   },
+   "padding_ratio_frame_weighted": 0.2794898600231659,
+   "attention_elems_packed_over_dense": 0.5480207639467751,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.02546296296296296,
+     "eager": 0.9745370370370371
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.011574074074074073,
+     "eager": 0.003472222222222222,
+     "packed_eager": 0.9849537037037037
+    },
+    "packed_no_graphs": {
+     "eager": 0.015046296296296295,
+     "packed_eager": 0.9849537037037037
+    }
+   },
+   "recorded_flow_solve_path": {
+    "eager": 91
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_nograph|mix|fifo2": {
+   "batches": 442,
+   "requests": 864,
+   "batch_size": {
+    "mean": 1.9547511312217194,
+    "p50": 2.0,
+    "p90": 2.0,
+    "max": 2,
+    "hist": {
+     "1": 20,
+     "2": 422
+    }
+   },
+   "codec_tokens": {
+    "p10": 271.0,
+    "p50": 466.0,
+    "p90": 844.8000000000002,
+    "max": 1120
+   },
+   "audio_s_per_request_p50": 18.64,
+   "padded_frames": {
+    "p50": 1681.0,
+    "p90": 2121.2000000000003,
+    "max": 2542
+   },
+   "padding_ratio_frame_weighted": 0.12335446123842031,
+   "attention_elems_packed_over_dense": 0.7929697393040058,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.03935185185185185,
+     "eager": 0.9606481481481481
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.013888888888888888,
+     "eager": 0.009259259259259259,
+     "packed_eager": 0.9629629629629629,
+     "packed_graph": 0.013888888888888888
+    },
+    "packed_no_graphs": {
+     "eager": 0.023148148148148147,
+     "packed_eager": 0.9768518518518519
+    }
+   },
+   "recorded_flow_solve_path": {
+    "eager": 442
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_nograph|mix|fifo4": {
+   "batches": 230,
+   "requests": 864,
+   "batch_size": {
+    "mean": 3.756521739130435,
+    "p50": 4.0,
+    "p90": 4.0,
+    "max": 4,
+    "hist": {
+     "1": 12,
+     "2": 7,
+     "3": 6,
+     "4": 205
+    }
+   },
+   "codec_tokens": {
+    "p10": 269.0,
+    "p50": 469.0,
+    "p90": 841.7,
+    "max": 1047
+   },
+   "audio_s_per_request_p50": 18.76,
+   "padded_frames": {
+    "p50": 1784.0,
+    "p90": 2186.2,
+    "max": 2396
+   },
+   "padding_ratio_frame_weighted": 0.20972641928637303,
+   "attention_elems_packed_over_dense": 0.6577891108472028,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.018518518518518517,
+     "eager": 0.9814814814814815
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.011574074074074073,
+     "eager": 0.0023148148148148147,
+     "packed_eager": 0.9861111111111112
+    },
+    "packed_no_graphs": {
+     "eager": 0.013888888888888888,
+     "packed_eager": 0.9861111111111112
+    }
+   },
+   "recorded_flow_solve_path": {
+    "eager": 230
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_nograph|mix|fifo8": {
+   "batches": 135,
+   "requests": 864,
+   "batch_size": {
+    "mean": 6.4,
+    "p50": 8.0,
+    "p90": 8.0,
+    "max": 8,
+    "hist": {
+     "1": 15,
+     "2": 4,
+     "3": 5,
+     "4": 8,
+     "5": 5,
+     "6": 5,
+     "7": 5,
+     "8": 88
+    }
+   },
+   "codec_tokens": {
+    "p10": 272.3,
+    "p50": 452.5,
+    "p90": 842.0,
+    "max": 1052
+   },
+   "audio_s_per_request_p50": 18.1,
+   "padded_frames": {
+    "p50": 1848.0,
+    "p90": 2181.2,
+    "max": 2406
+   },
+   "padding_ratio_frame_weighted": 0.24734164800538772,
+   "attention_elems_packed_over_dense": 0.5983408046836208,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.023148148148148147,
+     "eager": 0.9768518518518519
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.011574074074074073,
+     "eager": 0.005787037037037037,
+     "packed_eager": 0.9826388888888888
+    },
+    "packed_no_graphs": {
+     "eager": 0.017361111111111112,
+     "packed_eager": 0.9826388888888888
+    }
+   },
+   "recorded_flow_solve_path": {
+    "eager": 135
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_nograph|mix|length16": {
+   "batches": 96,
+   "requests": 864,
+   "batch_size": {
+    "mean": 9.0,
+    "p50": 7.5,
+    "p90": 16.0,
+    "max": 16,
+    "hist": {
+     "1": 16,
+     "2": 3,
+     "3": 7,
+     "4": 8,
+     "5": 4,
+     "6": 7,
+     "7": 3,
+     "8": 3,
+     "9": 1,
+     "10": 1,
+     "11": 4,
+     "13": 1,
+     "15": 2,
+     "16": 36
+    }
+   },
+   "codec_tokens": {
+    "p10": 269.0,
+    "p50": 434.5,
+    "p90": 837.8000000000002,
+    "max": 1062
+   },
+   "audio_s_per_request_p50": 17.38,
+   "padded_frames": {
+    "p50": 1418.0,
+    "p90": 2177.0,
+    "max": 2426
+   },
+   "padding_ratio_frame_weighted": 0.2040297937873674,
+   "attention_elems_packed_over_dense": 0.6546607516979858,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.02662037037037037,
+     "eager": 0.9733796296296297
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.01273148148148148,
+     "eager": 0.005787037037037037,
+     "packed_eager": 0.9814814814814815
+    },
+    "packed_no_graphs": {
+     "eager": 0.018518518518518517,
+     "packed_eager": 0.9814814814814815
+    }
+   },
+   "recorded_flow_solve_path": {
+    "eager": 96
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_nograph|mix|length8": {
+   "batches": 136,
+   "requests": 864,
+   "batch_size": {
+    "mean": 6.352941176470588,
+    "p50": 8.0,
+    "p90": 8.0,
+    "max": 8,
+    "hist": {
+     "1": 16,
+     "2": 5,
+     "3": 5,
+     "4": 8,
+     "5": 5,
+     "6": 3,
+     "7": 4,
+     "8": 90
+    }
+   },
+   "codec_tokens": {
+    "p10": 273.0,
+    "p50": 472.0,
+    "p90": 835.0,
+    "max": 1064
+   },
+   "audio_s_per_request_p50": 18.88,
+   "padded_frames": {
+    "p50": 1341.0,
+    "p90": 2187.0,
+    "max": 2430
+   },
+   "padding_ratio_frame_weighted": 0.10177139037433158,
+   "attention_elems_packed_over_dense": 0.820316205308988,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.027777777777777776,
+     "eager": 0.9722222222222222
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.015046296296296295,
+     "eager": 0.003472222222222222,
+     "packed_eager": 0.9791666666666666,
+     "packed_graph": 0.0023148148148148147
+    },
+    "packed_no_graphs": {
+     "eager": 0.018518518518518517,
+     "packed_eager": 0.9814814814814815
+    }
+   },
+   "recorded_flow_solve_path": {
+    "eager": 136
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_nograph|w3b|fifo1": {
+   "batches": 1152,
+   "requests": 1152,
+   "batch_size": {
+    "mean": 1.0,
+    "p50": 1.0,
+    "p90": 1.0,
+    "max": 1,
+    "hist": {
+     "1": 1152
+    }
+   },
+   "codec_tokens": {
+    "p10": 211.0,
+    "p50": 349.5,
+    "p90": 420.0,
+    "max": 537
+   },
+   "audio_s_per_request_p50": 13.98,
+   "padded_frames": {
+    "p50": 1001.0,
+    "p90": 1142.0,
+    "max": 1376
+   },
+   "padding_ratio_frame_weighted": 0.0,
+   "attention_elems_packed_over_dense": 1.0,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.5520833333333334,
+     "eager": 0.4479166666666667
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.5520833333333334,
+     "eager": 0.4479166666666667
+    },
+    "packed_no_graphs": {
+     "eager": 1.0
+    }
+   },
+   "recorded_flow_solve_path": {
+    "eager": 1152
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_nograph|w3b|fifo16": {
+   "batches": 84,
+   "requests": 1152,
+   "batch_size": {
+    "mean": 13.714285714285714,
+    "p50": 16.0,
+    "p90": 16.0,
+    "max": 16,
+    "hist": {
+     "1": 8,
+     "5": 2,
+     "8": 2,
+     "10": 4,
+     "12": 1,
+     "13": 1,
+     "14": 1,
+     "15": 1,
+     "16": 64
+    }
+   },
+   "codec_tokens": {
+    "p10": 206.10000000000002,
+    "p50": 347.5,
+    "p90": 422.9000000000001,
+    "max": 549
+   },
+   "audio_s_per_request_p50": 13.9,
+   "padded_frames": {
+    "p50": 1146.0,
+    "p90": 1282.2,
+    "max": 1400
+   },
+   "padding_ratio_frame_weighted": 0.1461296708697689,
+   "attention_elems_packed_over_dense": 0.7372972507678035,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.014756944444444444,
+     "eager": 0.9852430555555556
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.006076388888888889,
+     "eager": 0.0008680555555555555,
+     "packed_eager": 0.9930555555555556
+    },
+    "packed_no_graphs": {
+     "eager": 0.006944444444444444,
+     "packed_eager": 0.9930555555555556
+    }
+   },
+   "recorded_flow_solve_path": {
+    "eager": 84
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_nograph|w3b|fifo2": {
+   "batches": 582,
+   "requests": 1152,
+   "batch_size": {
+    "mean": 1.9793814432989691,
+    "p50": 2.0,
+    "p90": 2.0,
+    "max": 2,
+    "hist": {
+     "1": 12,
+     "2": 570
+    }
+   },
+   "codec_tokens": {
+    "p10": 212.0,
+    "p50": 348.0,
+    "p90": 420.0,
+    "max": 562
+   },
+   "audio_s_per_request_p50": 13.92,
+   "padded_frames": {
+    "p50": 1072.0,
+    "p90": 1198.0,
+    "max": 1426
+   },
+   "padding_ratio_frame_weighted": 0.06151548709688248,
+   "attention_elems_packed_over_dense": 0.8875323839635122,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.0642361111111111,
+     "eager": 0.9357638888888888
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.005208333333333333,
+     "eager": 0.005208333333333333,
+     "packed_eager": 0.9635416666666666,
+     "packed_graph": 0.026041666666666668
+    },
+    "packed_no_graphs": {
+     "eager": 0.010416666666666666,
+     "packed_eager": 0.9895833333333334
+    }
+   },
+   "recorded_flow_solve_path": {
+    "eager": 582
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_nograph|w3b|fifo4": {
+   "batches": 301,
+   "requests": 1152,
+   "batch_size": {
+    "mean": 3.8272425249169437,
+    "p50": 4.0,
+    "p90": 4.0,
+    "max": 4,
+    "hist": {
+     "1": 13,
+     "2": 5,
+     "3": 3,
+     "4": 280
+    }
+   },
+   "codec_tokens": {
+    "p10": 206.0,
+    "p50": 346.5,
+    "p90": 421.0,
+    "max": 532
+   },
+   "audio_s_per_request_p50": 13.86,
+   "padded_frames": {
+    "p50": 1102.0,
+    "p90": 1250.0,
+    "max": 1366
+   },
+   "padding_ratio_frame_weighted": 0.10257470938748448,
+   "attention_elems_packed_over_dense": 0.813687914908669,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.029513888888888888,
+     "eager": 0.9704861111111112
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.008680555555555556,
+     "eager": 0.0026041666666666665,
+     "packed_eager": 0.9852430555555556,
+     "packed_graph": 0.003472222222222222
+    },
+    "packed_no_graphs": {
+     "eager": 0.011284722222222222,
+     "packed_eager": 0.9887152777777778
+    }
+   },
+   "recorded_flow_solve_path": {
+    "eager": 301
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_nograph|w3b|fifo8": {
+   "batches": 156,
+   "requests": 1152,
+   "batch_size": {
+    "mean": 7.384615384615385,
+    "p50": 8.0,
+    "p90": 8.0,
+    "max": 8,
+    "hist": {
+     "1": 8,
+     "2": 2,
+     "3": 2,
+     "4": 3,
+     "5": 1,
+     "7": 3,
+     "8": 137
+    }
+   },
+   "codec_tokens": {
+    "p10": 204.0,
+    "p50": 346.0,
+    "p90": 420.0,
+    "max": 517
+   },
+   "audio_s_per_request_p50": 13.84,
+   "padded_frames": {
+    "p50": 1128.0,
+    "p90": 1283.0,
+    "max": 1336
+   },
+   "padding_ratio_frame_weighted": 0.1329778150373372,
+   "attention_elems_packed_over_dense": 0.7602288018820007,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.043402777777777776,
+     "eager": 0.9565972222222222
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.006076388888888889,
+     "eager": 0.0008680555555555555,
+     "packed_eager": 0.9895833333333334,
+     "packed_graph": 0.003472222222222222
+    },
+    "packed_no_graphs": {
+     "eager": 0.006944444444444444,
+     "packed_eager": 0.9930555555555556
+    }
+   },
+   "recorded_flow_solve_path": {
+    "eager": 156
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_nograph|w3b|length16": {
+   "batches": 86,
+   "requests": 1152,
+   "batch_size": {
+    "mean": 13.395348837209303,
+    "p50": 16.0,
+    "p90": 16.0,
+    "max": 16,
+    "hist": {
+     "1": 9,
+     "4": 1,
+     "5": 1,
+     "6": 1,
+     "7": 1,
+     "8": 2,
+     "10": 3,
+     "12": 2,
+     "13": 1,
+     "15": 2,
+     "16": 63
+    }
+   },
+   "codec_tokens": {
+    "p10": 208.0,
+    "p50": 348.5,
+    "p90": 419.0,
+    "max": 539
+   },
+   "audio_s_per_request_p50": 13.94,
+   "padded_frames": {
+    "p50": 1038.0,
+    "p90": 1280.0,
+    "max": 1380
+   },
+   "padding_ratio_frame_weighted": 0.08950691163946467,
+   "attention_elems_packed_over_dense": 0.8353645162455332,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.015625,
+     "eager": 0.984375
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.006944444444444444,
+     "eager": 0.0008680555555555555,
+     "packed_eager": 0.9921875
+    },
+    "packed_no_graphs": {
+     "eager": 0.0078125,
+     "packed_eager": 0.9921875
+    }
+   },
+   "recorded_flow_solve_path": {
+    "eager": 86
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10_t2_k4_c2_nograph|w3b|length8": {
+   "batches": 153,
+   "requests": 1152,
+   "batch_size": {
+    "mean": 7.529411764705882,
+    "p50": 8.0,
+    "p90": 8.0,
+    "max": 8,
+    "hist": {
+     "1": 7,
+     "2": 1,
+     "3": 1,
+     "4": 2,
+     "7": 4,
+     "8": 138
+    }
+   },
+   "codec_tokens": {
+    "p10": 206.0,
+    "p50": 346.5,
+    "p90": 420.0,
+    "max": 555
+   },
+   "audio_s_per_request_p50": 13.86,
+   "padded_frames": {
+    "p50": 1014.0,
+    "p90": 1177.6000000000001,
+    "max": 1412
+   },
+   "padding_ratio_frame_weighted": 0.04066805155076014,
+   "attention_elems_packed_over_dense": 0.9246434195693094,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.07291666666666667,
+     "eager": 0.9270833333333334
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.006076388888888889,
+     "packed_eager": 0.9921875,
+     "packed_graph": 0.001736111111111111
+    },
+    "packed_no_graphs": {
+     "eager": 0.006076388888888889,
+     "packed_eager": 0.9939236111111112
+    }
+   },
+   "recorded_flow_solve_path": {
+    "eager": 153
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10val_t2_k2_c4|w3b|fifo16": {
+   "batches": 14503,
+   "requests": 17550,
+   "batch_size": {
+    "mean": 1.2100944632145074,
+    "p50": 1.0,
+    "p90": 2.0,
+    "max": 8,
+    "hist": {
+     "1": 12346,
+     "2": 1536,
+     "3": 433,
+     "4": 135,
+     "5": 34,
+     "6": 11,
+     "7": 7,
+     "8": 1
+    }
+   },
+   "codec_tokens": {
+    "p10": 198.0,
+    "p50": 342.0,
+    "p90": 421.0,
+    "max": 591
+   },
+   "audio_s_per_request_p50": 13.68,
+   "padded_frames": {
+    "p50": 1020.0,
+    "p90": 1154.0,
+    "max": 1484
+   },
+   "padding_ratio_frame_weighted": 0.03587183815736905,
+   "attention_elems_packed_over_dense": 0.9334160274693679,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.394017094017094,
+     "eager": 0.6059829059829059
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.3880911680911681,
+     "eager": 0.3153846153846154,
+     "packed_eager": 0.2947008547008547,
+     "packed_graph": 0.0018233618233618233
+    },
+    "packed_no_graphs": {
+     "eager": 0.7034757834757834,
+     "packed_eager": 0.2965242165242165
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 6862,
+    "eager": 7641
+   },
+   "recorded_dense_path_reproduced": 1.0
+  },
+  "exp10val_t2_k2_c4|w3b|length8": {
+   "batches": 14428,
+   "requests": 17550,
+   "batch_size": {
+    "mean": 1.2163848073191017,
+    "p50": 1.0,
+    "p90": 2.0,
+    "max": 8,
+    "hist": {
+     "1": 12260,
+     "2": 1503,
+     "3": 464,
+     "4": 144,
+     "5": 37,
+     "6": 12,
+     "7": 5,
+     "8": 3
+    }
+   },
+   "codec_tokens": {
+    "p10": 198.0,
+    "p50": 344.0,
+    "p90": 421.0,
+    "max": 621
+   },
+   "audio_s_per_request_p50": 13.76,
+   "padded_frames": {
+    "p50": 1022.0,
+    "p90": 1154.0,
+    "max": 1544
+   },
+   "padding_ratio_frame_weighted": 0.03710948690036753,
+   "attention_elems_packed_over_dense": 0.9308890130315888,
+   "request_share_by_path": {
+    "dense_default": {
+     "dense_graph": 0.3943589743589744,
+     "eager": 0.6056410256410256
+    },
+    "dense_no_graphs": {
+     "eager": 1.0
+    },
+    "packed_with_default_graphs": {
+     "dense_graph": 0.3891737891737892,
+     "eager": 0.3094017094017094,
+     "packed_eager": 0.3005128205128205,
+     "packed_graph": 0.0009116809116809116
+    },
+    "packed_no_graphs": {
+     "eager": 0.6985754985754986,
+     "packed_eager": 0.30142450142450145
+    }
+   },
+   "recorded_flow_solve_path": {
+    "dense_graph": 6875,
+    "eager": 7553
+   },
+   "recorded_dense_path_reproduced": 1.0
+  }
+ },
+ "notes": [
+  "frames = 2 x (prompt + codec tokens); padding ratio is frame-weighted (\u5b9e\u9a8c 10's registered definition)",
+  "request_share_by_path: share of requests whose batch would take each flow path at 520b49ee",
+  "recorded_dense_path_reproduced: share of dense-run batches whose recorded path the rules reproduce"
+ ]
+}

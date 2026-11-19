@@ -1,0 +1,19 @@
+{
+ "plan_id": "ppv_r0",
+ "_comment": "R0 全双工功能验证（1 张卡）。通过 plan.d 放进 Job 454290；命令从集群上本分支的 worktree 运行。由 scripts/slurm/make_plan_ppv_r.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "ppv_r0_duplex_functional",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r0_duplex_functional.json",
+   "priority": 900,
+   "required_gpus": 1,
+   "required_cpus": 7,
+   "required_memory_gb": 95,
+   "dependencies": [],
+   "estimated_duration_s": 1500,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "R0 全双工功能验证：固定版本 sglang-omni 520b49ee（原版），--variant session --enable-realtime，默认 max_sessions 2，1 张 A6000。30 秒冒烟，然后 1 个会话 300 秒、2 个会话 300 秒，输入是种子固定的合成语音提问（duplex-v1）。"
+  }
+ ]
+}

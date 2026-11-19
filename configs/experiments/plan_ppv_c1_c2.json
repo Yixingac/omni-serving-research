@@ -1,0 +1,19 @@
+{
+ "plan_id": "ppv_c1_c2",
+ "_comment": "C1（flow 稠密 vs 打包）和 C2（HiFT 折叠 / 布局 / 半精度）微基准，2 张卡：第 1 张跑 C1 的各方案（依次），第 2 张同时跑 C2，之后在第 2 张卡上起 Qwen3-ASR 做质量检查。GPU 编号取 Slurm 给这个 step 的 CUDA_VISIBLE_DEVICES。设计和登记：research/next_steps/presentation_validation/c1_c2_design.md。手写的计划文件。",
+ "experiments": [
+  {
+   "experiment_id": "ppv_c1_c2_microbench",
+   "command": "cd ~/workspace/omni-ppv && IFS=, read -r G1 G2 _ <<< \"$CUDA_VISIBLE_DEVICES\" && OMNI_REPO=\"$PWD\" bash scripts/microbench/run_c1_c2.sh --gpu-c1 \"$G1\" --gpu-c2 \"$G2\" --out \"$OMNI_EXP_DIR\" --optional-arms",
+   "priority": 850,
+   "required_gpus": 2,
+   "required_cpus": 14,
+   "required_memory_gb": 190,
+   "dependencies": [],
+   "estimated_duration_s": 6000,
+   "timeout_s": 12600,
+   "max_retries": 0,
+   "description": "C1/C2 微基准：C1 方案 REF、D、P0、P1、D_ng、P2、P1h（一张卡依次跑），C2 方案 A、B、C、D（另一张卡），然后 ASR 质量检查。真实批形状来自实验 9/10 的 code2wav 批事件。"
+  }
+ ]
+}

@@ -1,0 +1,87 @@
+{
+ "runtime_profile": "unicorn",
+ "hardware_label": "a6000x1",
+ "seed": 20261119,
+ "assets": "synthetic-v1",
+ "experiment_id": "ppv_r0_duplex_functional",
+ "description": "R0 全双工功能验证：固定版本 sglang-omni 520b49ee（原版），--variant session --enable-realtime，默认 max_sessions 2，1 张 A6000。30 秒冒烟，然后 1 个会话 300 秒、2 个会话 300 秒，输入是种子固定的合成语音提问（duplex-v1）。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "s0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0
+   ],
+   "args": [
+    "--variant",
+    "session",
+    "--enable-realtime"
+   ],
+   "ready_timeout_s": 2400
+  }
+ ],
+ "phases": [
+  {
+   "kind": "plugin",
+   "module": "duplex.phase",
+   "name": "duplex_smoke",
+   "sessions": 1,
+   "duration_s": 30.0,
+   "lead_in_s": 2.0,
+   "answer_window_s": 12.0,
+   "barge_in_every": 0,
+   "barge_in_offset_s": 3.0,
+   "stagger_s": 1.0,
+   "session_seed": 20261119,
+   "asset_pool": "duplex-v1",
+   "output_modalities": [
+    "audio"
+   ],
+   "save_audio_sessions": 1
+  },
+  {
+   "kind": "plugin",
+   "module": "duplex.phase",
+   "name": "duplex_s1",
+   "sessions": 1,
+   "duration_s": 300.0,
+   "lead_in_s": 2.0,
+   "answer_window_s": 12.0,
+   "barge_in_every": 0,
+   "barge_in_offset_s": 3.0,
+   "stagger_s": 1.0,
+   "session_seed": 20261119,
+   "asset_pool": "duplex-v1",
+   "output_modalities": [
+    "audio"
+   ],
+   "save_audio_sessions": 1,
+   "skip_if_failed": [
+    "duplex_smoke"
+   ]
+  },
+  {
+   "kind": "plugin",
+   "module": "duplex.phase",
+   "name": "duplex_s2",
+   "sessions": 2,
+   "duration_s": 300.0,
+   "lead_in_s": 2.0,
+   "answer_window_s": 12.0,
+   "barge_in_every": 0,
+   "barge_in_offset_s": 3.0,
+   "stagger_s": 1.0,
+   "session_seed": 20261119,
+   "asset_pool": "duplex-v1",
+   "output_modalities": [
+    "audio"
+   ],
+   "save_audio_sessions": 2,
+   "skip_if_failed": [
+    "duplex_smoke"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,6 @@
+{
+ "ppv_p0_cap32_block1": {"included": false, "reason": "attempt 1 failed at start (OMNI_REPO pointed at the orchestrator's checkout, configs not found); no measurement"},
+ "ppv_p0_cap64_block1": {"included": false, "reason": "attempt 1 failed at start (same cause); no measurement"},
+ "ppv_p0_ref_t2_k2_c4_block1": {"included": false, "reason": "attempt 1 failed at start (same cause); no measurement"},
+ "ppv_p0_cap64_graph32_block1": {"included": false, "reason": "attempt 1 failed at start (same cause); no measurement"}
+}
