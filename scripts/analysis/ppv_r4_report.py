@@ -14,6 +14,8 @@ Inputs per run (sessions.robot_sessions plugin phases, runtime unicorn_ppv_kv wi
 
 Definitions (registered in r3_r4_design.md):
 - resident KV of a replica = total - available (running requests plus evictable cached prefixes);
+- prefill tokens of a request = input_tokens - cached_tokens (the patch logs extend_tokens = the first chunk's new
+  tokens from Req.extend_range, -1 if unset; it is kept for reference only);
 - logical working set of a replica at time t = sum over live sessions whose latest request went to that replica of
   that request's prompt + completion tokens (what the session would need resident to continue without recompute);
 - a request's reuse ratio = cached_tokens / input_tokens of the session's previous request;
@@ -42,7 +44,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 STAMP = r"^(?P<date>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(?P<ms>\d{3}) "
 PREFILL = re.compile(STAMP + r".*exp_kv_prefill pid=(?P<pid>\d+) gpu=(?P<gpu>\S+) stage=(?P<stage>\S+) rid=(?P<rid>\S+) "
-                     r"input_tokens=(?P<input>\d+) cached_tokens=(?P<cached>\d+) extend_tokens=(?P<extend>\d+)"
+                     r"input_tokens=(?P<input>\d+) cached_tokens=(?P<cached>\d+) extend_tokens=(?P<extend>-?\d+)"
                      r"(?: evicted_tokens_total=(?P<evicted>\d+))?")
 POOL = re.compile(STAMP + r".*exp_kv_pool pid=(?P<pid>\d+) gpu=(?P<gpu>\S+) stage=(?P<stage>\S+) total_tokens=(?P<total>\d+) "
                   r"available_tokens=(?P<available>\d+) evictable_tokens=(?P<evictable>\d+) protected_tokens=(?P<protected>\d+) "
@@ -155,7 +157,8 @@ def attribute(requests: list[dict[str, Any]], prefills: list[dict[str, Any]], po
     for p in pairs:
         if p["cur"]["ttft_s"] is not None:
             ttft_by_cause[p["cause"]].append(p["cur"]["ttft_s"])
-    prefill_tokens = sum(x["extend_tokens"] for x in rows)
+    # tokens each request had to compute (input - cached), independent of how SGLang chunked the prefill
+    prefill_tokens = sum(x["input_tokens"] - x["cached_tokens"] for x in rows)
     return {"requests_joined": len(rows), "shared_floor_tokens": floor, "reference_reuse": ref, "counts": counts,
             "lost_reuse_tokens": {k: round(v) for k, v in lost.items()},
             "prefill_tokens": prefill_tokens, "cached_tokens": sum(x["cached_tokens"] for x in rows),

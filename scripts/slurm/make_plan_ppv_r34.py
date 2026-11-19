@@ -44,6 +44,10 @@ R3_WARMUP_S, R3_MEASURE_S = 10.0, 60.0
 R4_LEVELS = (8, 16, 32, 64, 128)
 R4_CONTRAST = {"sessions": 32, "history_media": 2}
 BLOCKS = 3
+# The first R3 screening runs (ppv_r3_screen_c1, _c4) crashed at the first request on the first version of the ppv-kv
+# patch (Req.extend_input_len does not exist in SGLang 0.5.21); their records stay. The rerun gets new ids; the phase
+# names, and with them the content seeds, are unchanged, so the rerun sends the same frames.
+R3_SCREEN_ATTEMPT = "_a2"
 
 
 def command(eid: str) -> str:
@@ -96,7 +100,7 @@ def r3_screen_entries() -> list[tuple[dict, dict]]:
         desc = (f"R3 筛选：1 张卡一个完整副本（--text-only，与实验 14 相同），预处理并发 {c}"
                 f"{'（默认）' if c == 1 else '（补丁的工厂参数）'}。合成摄像头回放：帧/短片 × 每会话 0.5/1/2 帧每秒 × 1/4/16 个会话，"
                 f"18 格顺序随机（种子 {SEED}，两种并发相同），每格预热 {R3_WARMUP_S:g} 秒 + 计量 {R3_MEASURE_S:g} 秒，开请求事件。")
-        out.append((r3_config(f"ppv_r3_screen_c{c}", c, cells, desc),
+        out.append((r3_config(f"ppv_r3_screen_c{c}{R3_SCREEN_ATTEMPT}", c, cells, desc),
                     {"priority": -600 - c, "est": 2100, "timeout": 4800}))
     return out
 

@@ -16,7 +16,7 @@ spec.loader.exec_module(mp)
 
 def test_r3_screening_runs_share_one_seeded_cell_order_and_differ_only_in_concurrency():
     (c1, m1), (c4, m4) = mp.r3_screen_entries()
-    assert c1["experiment_id"] == "ppv_r3_screen_c1" and c4["experiment_id"] == "ppv_r3_screen_c4"
+    assert c1["experiment_id"] == "ppv_r3_screen_c1_a2" and c4["experiment_id"] == "ppv_r3_screen_c4_a2"
     cams1 = [p for p in c1["phases"] if p["kind"] == "plugin"]
     cams4 = [p for p in c4["phases"] if p["kind"] == "plugin"]
     assert cams1 == cams4 and len(cams1) == 18

@@ -9,10 +9,16 @@ Checks, without a GPU:
    flight; phases add up across nested calls of add_preprocess_time; a failing call still decrements the counter.
 3. OmniScheduler.exp_kv_log: one exp_kv_prefill line per new request (first chunk only), with cached/extend tokens and
    the eviction counter; one exp_kv_pool line per second at most; nothing for a non-thinker stage.
-4. exp_kv_count_evictions counts the tokens and calls of tree_cache.evict and returns its result unchanged.
-5. With --model-path: the real MiniCPM-o preprocessor (CPU device) gives identical input_ids and pixel values for
+4. The same through the real call site (get_next_batch_to_run) with a real SGLang Req in the state the prefill adder
+   leaves it (prefix_indices matched, extend_range set) and the real ForwardMode; the batch fields read exist on the
+   real ScheduleBatch. (The first GPU run crashed on Req.extend_input_len, which SGLang 0.5.21 does not have.)
+5. Instrumentation never raises into the scheduler or the request: a raising logger or an unexpected object is
+   reported once (logger.exception) and switches exp_kv off; a raising event emitter does the same for
+   exp_preprocess while the request still returns; the eviction wrapper always returns evict's result.
+6. exp_kv_count_evictions counts the tokens and calls of tree_cache.evict and returns its result unchanged.
+7. With --model-path: the real MiniCPM-o preprocessor (CPU device) gives identical input_ids and pixel values for
    eight distinct inline images whether the calls run one at a time or four at a time in threads (re-entrancy).
-On a checkout without the patch, check 1 fails first.
+On a checkout without the patch, check 1 fails first; on the first version of the patch, check 4 fails.
 """
 
 from __future__ import annotations
@@ -98,8 +104,7 @@ def check_kv_log() -> None:
     sched.tree_cache = SimpleNamespace(evictable_size=lambda: 2000, protected_size=lambda: 500)
     sched.running_batch = SimpleNamespace(reqs=[1, 2])
     sched.waiting_queue = [3]
-    req = lambda rid, n, c: SimpleNamespace(rid=rid, origin_input_ids=list(range(n)), prefix_indices=list(range(c)),  # noqa: E731
-                                             extend_input_len=n - c)
+    req = real_req
     batch = SimpleNamespace(forward_mode=SimpleNamespace(is_extend=lambda: True), reqs=[req("a", 400, 120), req("b", 300, 0)])
     cap = _Capture()
     omni_scheduler.logger.addHandler(cap)
@@ -121,8 +126,117 @@ def check_kv_log() -> None:
            "running_reqs=2 waiting_reqs=1 evicted_tokens_total=120 evict_calls_total=2" in pool_lines[0]
 
 
+def kv_scheduler() -> OmniScheduler:
+    sched = object.__new__(OmniScheduler)
+    sched.exp_kv_enabled = True
+    sched.exp_kv_evicted_tokens = 0
+    sched.exp_kv_evict_calls = 0
+    sched.exp_kv_seen_rids = {}
+    sched.exp_kv_last_pool_log_s = 0.0
+    sched.gpu_id = 0
+    sched.max_total_num_tokens = 127039
+    sched.token_to_kv_pool_allocator = SimpleNamespace(available_size=lambda: 90000)
+    sched.tree_cache = SimpleNamespace(evictable_size=lambda: 3000, protected_size=lambda: 400)
+    sched.waiting_queue = []
+    sched.chunked_req = None
+    sched.last_batch = None
+    sched.running_batch = SimpleNamespace(reqs=[], batch_is_full=False, is_empty=lambda: True)
+    return sched
+
+
+def real_req(rid: str, n_tokens: int, cached: int):  # noqa: ANN201
+    """A real SGLang Req in the state the prefill adder leaves it: matched prefix and this chunk's extend range."""
+    from array import array
+
+    import torch
+    from sglang.srt.managers.schedule_batch import Req
+    from sglang.srt.sampling.sampling_params import SamplingParams
+
+    req = Req(rid=rid, origin_input_text="", origin_input_ids=array("q", range(n_tokens)),
+              sampling_params=SamplingParams(max_new_tokens=8), vocab_size=151000)
+    req.prefix_indices = torch.arange(cached, dtype=torch.int64)
+    req.set_extend_range(cached, n_tokens)
+    return req
+
+
+def check_kv_log_real_req_through_call_site() -> None:
+    import dataclasses
+
+    from sglang.srt.managers.schedule_batch import ScheduleBatch
+    from sglang.srt.model_executor.forward_batch_info import ForwardMode
+
+    fields = {f.name for f in dataclasses.fields(ScheduleBatch)} if dataclasses.is_dataclass(ScheduleBatch) else set(vars(ScheduleBatch))
+    assert {"reqs", "forward_mode"} <= fields | set(dir(ScheduleBatch)), "ScheduleBatch fields read by exp_kv_log"
+    sched = kv_scheduler()
+    batch = SimpleNamespace(forward_mode=ForwardMode.EXTEND, reqs=[real_req("r-0", 400, 120), real_req("r-1", 64, 0)])
+    plan = SimpleNamespace(batch_to_run=batch, running_batch=sched.running_batch)
+    cap = _Capture()
+    omni_scheduler.logger.addHandler(cap)
+    omni_scheduler.logger.setLevel(logging.INFO)
+    try:
+        with mock.patch.object(omni_scheduler, "_get_active_stage", lambda: "thinker"), \
+                mock.patch.object(omni_scheduler._Upstream, "get_next_batch_to_run", lambda self, rb, lb: plan):
+            assert OmniScheduler.get_next_batch_to_run(sched) is batch
+    finally:
+        omni_scheduler.logger.removeHandler(cap)
+    assert sched.exp_kv_enabled, f"exp_kv switched itself off: {cap.lines}"
+    lines = [x for x in cap.lines if x.startswith("exp_kv_prefill")]
+    assert "rid=r-0 input_tokens=400 cached_tokens=120 extend_tokens=280 evicted_tokens_total=0" in lines[0], lines
+    assert "rid=r-1 input_tokens=64 cached_tokens=0 extend_tokens=64" in lines[1], lines
+
+
+def check_instrumentation_never_raises() -> None:
+    from sglang.srt.model_executor.forward_batch_info import ForwardMode
+
+    sched = kv_scheduler()
+    batch = SimpleNamespace(forward_mode=ForwardMode.EXTEND, reqs=[real_req("r-2", 10, 0)])
+    cap = _Capture()
+    omni_scheduler.logger.addHandler(cap)
+    try:
+        with mock.patch.object(omni_scheduler, "_get_active_stage", lambda: "thinker"), \
+                mock.patch.object(omni_scheduler.logger, "info", side_effect=RuntimeError("logger down")):
+            for _ in range(3):  # the call-site pattern: only while enabled
+                if sched.exp_kv_enabled:
+                    sched.exp_kv_log(batch)
+        sched2 = kv_scheduler()
+        with mock.patch.object(omni_scheduler, "_get_active_stage", lambda: "thinker"):
+            sched2.exp_kv_log(SimpleNamespace(forward_mode=ForwardMode.EXTEND, reqs=[object()]))  # no rid at all
+    finally:
+        omni_scheduler.logger.removeHandler(cap)
+    assert not sched.exp_kv_enabled and not sched2.exp_kv_enabled
+    assert sum("disabled" in x for x in cap.lines) == 2, cap.lines  # one report per scheduler
+    sched3 = kv_scheduler()
+    odd = object()
+    cache = SimpleNamespace(evict=lambda params: odd)  # a result without num_tokens_evicted
+    sched3.exp_kv_count_evictions(cache)
+    assert cache.evict("p") is odd and not sched3.exp_kv_enabled
+
+    obj = object.__new__(pre.MiniCPMOPreprocessor)
+    calls = []
+
+    async def fake_preprocess(payload):
+        return payload
+
+    obj.preprocess = fake_preprocess
+
+    def broken_emit(**kw):
+        calls.append(kw)
+        raise RuntimeError("emitter down")
+
+    pre.PREPROCESS_TIMING_ON[0] = True
+    try:
+        with mock.patch.object(pre, "emit_request_event", broken_emit):
+            out = [asyncio.run(obj(SimpleNamespace(request_id=f"q{i}"))) for i in range(3)]
+        assert [o.request_id for o in out] == ["q0", "q1", "q2"]  # requests still return
+        assert len(calls) == 1 and pre.PREPROCESS_TIMING_ON[0] is False  # switched off after the first failure
+        assert pre.PREPROCESS_INFLIGHT[0] == 0
+    finally:
+        pre.PREPROCESS_TIMING_ON[0] = True
+
+
 def check_eviction_counter() -> None:
     sched = object.__new__(OmniScheduler)
+    sched.exp_kv_enabled = True
     sched.exp_kv_evicted_tokens = 0
     sched.exp_kv_evict_calls = 0
     result = SimpleNamespace(num_tokens_evicted=17)
@@ -182,6 +296,8 @@ def main() -> int:
     check_factory()
     check_timing_event()
     check_kv_log()
+    check_kv_log_real_req_through_call_site()
+    check_instrumentation_never_raises()
     check_eviction_counter()
     if a.model_path:
         check_reentrant_preprocessor(a.model_path)

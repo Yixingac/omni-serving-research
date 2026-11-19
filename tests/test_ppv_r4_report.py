@@ -25,6 +25,19 @@ def prefill(sec, ms, rep, rid, inp, cached, evicted=None):
             f"cached_tokens={cached} extend_tokens={inp - cached}" + tail)
 
 
+def test_parse_log_accepts_the_unset_extend_range_sentinel():
+    line = (T.format(s=1, ms=0) + "exp_kv_prefill pid=1 gpu=0 stage=thinker rid=x input_tokens=50 cached_tokens=10 "
+            "extend_tokens=-1 evicted_tokens_total=0")
+    prefills, _ = r4.parse_log([line])
+    assert len(prefills) == 1 and prefills[0]["extend_tokens"] == -1
+
+
+def test_prefill_tokens_are_input_minus_cached():
+    reqs, prefills, pools = _scenario()
+    att = r4.attribute(reqs, prefills, pools)
+    assert att["prefill_tokens"] == sum(p["input_tokens"] - p["cached_tokens"] for p in prefills)
+
+
 def test_eviction_bracketing_from_pool_lines_without_prefill_counters():
     _, pools = r4.parse_log([pool(0, "11:0", 0), pool(2, "11:0", 0), pool(4, "11:0", 700)])
     t0 = pools[0]["ts"]

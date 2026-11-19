@@ -1,19 +1,20 @@
 diff --git a/sglang_omni/models/minicpm_o/components/preprocessor.py b/sglang_omni/models/minicpm_o/components/preprocessor.py
-index f055f985d..93f47801b 100644
+index f055f985d..04517b05a 100644
 --- a/sglang_omni/models/minicpm_o/components/preprocessor.py
 +++ b/sglang_omni/models/minicpm_o/components/preprocessor.py
-@@ -3,7 +3,10 @@
+@@ -3,7 +3,11 @@
  
  from __future__ import annotations
  
 +import contextvars
++import logging
  import re
 +import threading
 +import time
  from collections.abc import Mapping
  
  import numpy as np
-@@ -48,6 +51,7 @@ from sglang_omni.preprocessing.video import (
+@@ -48,6 +52,7 @@ from sglang_omni.preprocessing.video import (
      compute_video_cache_key,
      ensure_video_list_async,
  )
@@ -21,34 +22,55 @@ index f055f985d..93f47801b 100644
  from sglang_omni.proto import StagePayload
  
  TTS_READ_PROMPT_EN = "Please read the following text out loud in English: "
-@@ -68,6 +72,22 @@ ASR_PROMPT_EN = (
+@@ -68,6 +73,39 @@ ASR_PROMPT_EN = (
  )
  
  
++logger = logging.getLogger(__name__)
++
 +# note (research): preprocessing calls in flight in this process, recorded with the timing event.
 +PREPROCESS_INFLIGHT = [0]
 +PREPROCESS_INFLIGHT_LOCK = threading.Lock()
++PREPROCESS_TIMING_ON = [True]
 +PREPROCESS_TIMINGS: contextvars.ContextVar[dict[str, int] | None] = contextvars.ContextVar(
 +    "minicpmo_preprocess_timings", default=None
 +)
 +
 +
-+def add_preprocess_time(name: str, start_ns: int) -> None:
-+    timings = PREPROCESS_TIMINGS.get()
-+    if timings is not None:
-+        timings[name] = timings.get(name, 0) + time.perf_counter_ns() - start_ns
++def disable_preprocess_timing() -> None:
++    # note (research): measurement must never fail a request; report the first failure and switch off.
++    with PREPROCESS_INFLIGHT_LOCK:
++        first_failure = PREPROCESS_TIMING_ON[0]
++        PREPROCESS_TIMING_ON[0] = False
++    if first_failure:
++        logger.exception("exp_preprocess timing failed; disabled for this process")
 +    else:
 +        pass
++
++
++def add_preprocess_time(name: str, start_ns: int) -> None:
++    try:
++        timings = PREPROCESS_TIMINGS.get()
++        if timings is not None:
++            timings[name] = timings.get(name, 0) + time.perf_counter_ns() - start_ns
++        else:
++            pass
++    except Exception:
++        disable_preprocess_timing()
 +
 +
  def is_chinese(text: str) -> bool:
      return bool(re.search(r"[\u4e00-\u9fff]", text))
  
-@@ -137,6 +157,32 @@ class MiniCPMOPreprocessor:
+@@ -137,6 +175,39 @@ class MiniCPMOPreprocessor:
          return self._processor  # noqa: leading-underscore
  
      async def __call__(self, payload: StagePayload) -> StagePayload:
 +        # note (research): wall-clock phases of one call, written only while request events are on.
++        if not PREPROCESS_TIMING_ON[0]:
++            return await self.preprocess(payload)
++        else:
++            pass
 +        timings: dict[str, int] = {}
 +        token = PREPROCESS_TIMINGS.set(timings)
 +        with PREPROCESS_INFLIGHT_LOCK:
@@ -61,23 +83,26 @@ index f055f985d..93f47801b 100644
 +            with PREPROCESS_INFLIGHT_LOCK:
 +                PREPROCESS_INFLIGHT[0] -= 1
 +            PREPROCESS_TIMINGS.reset(token)
-+            emit_request_event(
-+                request_id=payload.request_id,
-+                stage=None,
-+                event_name="exp_preprocess",
-+                metadata={
-+                    **timings,
-+                    "total_ns": time.perf_counter_ns() - start_ns,
-+                    "inflight_at_start": inflight_at_start,
-+                    "thread": threading.get_ident(),
-+                },
-+            )
++            try:
++                emit_request_event(
++                    request_id=payload.request_id,
++                    stage=None,
++                    event_name="exp_preprocess",
++                    metadata={
++                        **timings,
++                        "total_ns": time.perf_counter_ns() - start_ns,
++                        "inflight_at_start": inflight_at_start,
++                        "thread": threading.get_ident(),
++                    },
++                )
++            except Exception:
++                disable_preprocess_timing()
 +
 +    async def preprocess(self, payload: StagePayload) -> StagePayload:
          inputs = payload.request.inputs
          params = payload.request.params or {}
          metadata = payload.request.metadata or {}
-@@ -256,6 +302,7 @@ class MiniCPMOPreprocessor:
+@@ -256,6 +327,7 @@ class MiniCPMOPreprocessor:
                      "Inline media cannot be combined with top-level images, audios or videos"
                  )
              else:
@@ -85,7 +110,7 @@ index f055f985d..93f47801b 100644
                  rendered_chat = await render_ordered_chat(
                      messages,
                      use_audio_in_video=use_audio_in_video,
-@@ -265,6 +312,7 @@ class MiniCPMOPreprocessor:
+@@ -265,6 +337,7 @@ class MiniCPMOPreprocessor:
                      video_max_pixels=video_options.video_max_pixels,
                      video_total_pixels=video_options.video_total_pixels,
                  )
@@ -93,7 +118,7 @@ index f055f985d..93f47801b 100644
                  messages = rendered_chat.messages
                  raw_images = rendered_chat.images
                  raw_audios = rendered_chat.audios
-@@ -376,6 +424,7 @@ class MiniCPMOPreprocessor:
+@@ -376,6 +449,7 @@ class MiniCPMOPreprocessor:
          has_inline_video: bool = False,
          rendered_chat: RenderedChat | None = None,
      ) -> StagePayload:
@@ -101,7 +126,7 @@ index f055f985d..93f47801b 100644
          images = (
              list(rendered_chat.images)
              if rendered_chat is not None
-@@ -395,6 +444,8 @@ class MiniCPMOPreprocessor:
+@@ -395,6 +469,8 @@ class MiniCPMOPreprocessor:
              )
          else:
              videos = []
@@ -110,7 +135,7 @@ index f055f985d..93f47801b 100644
          # note (Yuhao Chen): image and video cache identities use separate source media.
          image_cache_key = compute_image_cache_key(images)
          video_cache_key = compute_video_cache_key(
-@@ -405,13 +456,19 @@ class MiniCPMOPreprocessor:
+@@ -405,13 +481,19 @@ class MiniCPMOPreprocessor:
              max_pixels=video_options.video_max_pixels,
              total_pixels=video_options.video_total_pixels,
          )
@@ -130,7 +155,7 @@ index f055f985d..93f47801b 100644
          audio_cache_key = compute_audio_cache_key(audios)
          if audio_cache_key is not None and audio_turn_indices is not None:
              audio_cache_key = (
-@@ -420,6 +477,7 @@ class MiniCPMOPreprocessor:
+@@ -420,6 +502,7 @@ class MiniCPMOPreprocessor:
          else:
              pass
  
@@ -138,7 +163,7 @@ index f055f985d..93f47801b 100644
          cache_keys = [
              cache_key for cache_key in (image_cache_key, video_cache_key) if cache_key
          ]
-@@ -453,6 +511,7 @@ class MiniCPMOPreprocessor:
+@@ -453,6 +536,7 @@ class MiniCPMOPreprocessor:
              use_tts_template=bool(audios) or self.should_use_tts_template(payload),
          )
  
@@ -146,21 +171,24 @@ index f055f985d..93f47801b 100644
          # Note (Akazaakane): Independent extraction matches per-segment placeholder rounding.
          processed = self.processor(
              prompt_text,
-@@ -463,6 +522,17 @@ class MiniCPMOPreprocessor:
+@@ -463,6 +547,20 @@ class MiniCPMOPreprocessor:
          )
  
          input_ids = processed["input_ids"][0].to(dtype=torch.long)
 +        add_preprocess_time("processor_ns", processor_start_ns)
-+        timings = PREPROCESS_TIMINGS.get()
-+        if timings is not None:
-+            timings.update(
-+                images=len(images),
-+                video_frames=len(video_images),
-+                audios=len(audios),
-+                input_tokens=int(input_ids.numel()),
-+            )
-+        else:
-+            pass
++        try:
++            timings = PREPROCESS_TIMINGS.get()
++            if timings is not None:
++                timings.update(
++                    images=len(images),
++                    video_frames=len(video_images),
++                    audios=len(audios),
++                    input_tokens=int(input_ids.numel()),
++                )
++            else:
++                pass
++        except Exception:
++            disable_preprocess_timing()
          attention_mask = torch.ones_like(input_ids)
  
          modality_inputs: dict[str, ModalityInputs] = {}
@@ -189,7 +217,7 @@ index 12512fe02..21d6ac3fe 100644
  
  ENCODER_CACHE_MAX_ENTRIES = 64
 diff --git a/sglang_omni/scheduling/omni_scheduler.py b/sglang_omni/scheduling/omni_scheduler.py
-index 88e0de93a..61f41d1e4 100644
+index 88e0de93a..6ef605ff4 100644
 --- a/sglang_omni/scheduling/omni_scheduler.py
 +++ b/sglang_omni/scheduling/omni_scheduler.py
 @@ -14,6 +14,7 @@ inheriting from ``SGLangScheduler``.
@@ -218,11 +246,11 @@ index 88e0de93a..61f41d1e4 100644
  
          # Batch state
          self.waiting_queue: list = []
-@@ -1911,8 +1923,81 @@ class OmniScheduler(Generic[RequestDataT]):
+@@ -1911,8 +1923,98 @@ class OmniScheduler(Generic[RequestDataT]):
              pass
          plan = _Upstream.get_next_batch_to_run(self, running_batch, self.last_batch)
          self.running_batch = plan.running_batch
-+        if self.exp_kv_enabled:
++        if getattr(self, "exp_kv_enabled", False):
 +            self.exp_kv_log(plan.batch_to_run)
 +        else:
 +            pass
@@ -234,16 +262,31 @@ index 88e0de93a..61f41d1e4 100644
 +
 +        def counting_evict(*args, **kwargs):
 +            result = original_evict(*args, **kwargs)
-+            self.exp_kv_evicted_tokens += int(
-+                getattr(result, "num_tokens_evicted", 0) or 0
-+            )
-+            self.exp_kv_evict_calls += 1
++            if self.exp_kv_enabled:
++                try:
++                    self.exp_kv_evicted_tokens += int(result.num_tokens_evicted)
++                    self.exp_kv_evict_calls += 1
++                except Exception:
++                    self.exp_kv_disable("eviction counter")
++            else:
++                pass
 +            return result
 +
 +        tree_cache.evict = counting_evict
 +
++    def exp_kv_disable(self, part: str) -> None:
++        # note (research): measurement must never stop the scheduler; report the first failure and switch off.
++        logger.exception("exp_kv %s failed; exp_kv logging disabled for this scheduler", part)
++        self.exp_kv_enabled = False
++
 +    def exp_kv_log(self, batch) -> None:
 +        """Log the prefix hit of each newly prefilled request and the KV pool once per second (research)."""
++        try:
++            self.exp_kv_write(batch)
++        except Exception:
++            self.exp_kv_disable("logging")
++
++    def exp_kv_write(self, batch) -> None:
 +        stage = _get_active_stage() or ""
 +        if not stage.startswith("thinker"):
 +            return
@@ -257,6 +300,8 @@ index 88e0de93a..61f41d1e4 100644
 +                else:
 +                    pass
 +                self.exp_kv_seen_rids[req.rid] = None
++                # note (research): prefix_indices is the matched device prefix that the prefill adder also
++                # sums into its cached-token count; extend_range is this first chunk's new tokens.
 +                logger.info(
 +                    "exp_kv_prefill pid=%d gpu=%s stage=%s rid=%s input_tokens=%d cached_tokens=%d extend_tokens=%d "
 +                    "evicted_tokens_total=%d",
@@ -266,7 +311,7 @@ index 88e0de93a..61f41d1e4 100644
 +                    req.rid,
 +                    len(req.origin_input_ids),
 +                    len(req.prefix_indices),
-+                    req.extend_input_len,
++                    req.extend_range.length if req.extend_range is not None else -1,
 +                    self.exp_kv_evicted_tokens,
 +                )
 +            if len(self.exp_kv_seen_rids) > 200000:

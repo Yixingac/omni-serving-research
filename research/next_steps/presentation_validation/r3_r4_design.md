@@ -22,9 +22,10 @@
 1. `create_preprocessing_executor(..., max_concurrency=1)`：把参数传给 `SimpleScheduler`。命令行 `--preprocessing.factory.max_concurrency 4`。
 2. 预处理分段计时：每次调用写一个请求事件 `exp_preprocess`（只在请求事件开着时写），字段 `media_load_ns`（解码/读入媒体，含视频抽帧前的解码）、`inline_media_load_ns`、`cache_key_ns`、`video_frames_ns`、`processor_ns`（切片、缩放、tokenize；图像在 GPU 上做，时间是 CPU 墙钟，**没有加 CUDA 同步**）、`total_ns`、`inflight_at_start`（本进程同时在跑几个预处理调用）、`images`、`video_frames`、`audios`、`input_tokens`。
 3. thinker 的 KV 日志（`SGLANG_OMNI_EXP_KV=1`，只在 thinker 阶段写）：
-   - `exp_kv_prefill pid gpu stage rid input_tokens cached_tokens extend_tokens evicted_tokens_total`：每个请求第一次进入 prefill 时一行（分块 prefill 只记第一块），`cached_tokens` = 当时匹配到的前缀长度；
+   - `exp_kv_prefill pid gpu stage rid input_tokens cached_tokens extend_tokens evicted_tokens_total`：每个请求第一次进入 prefill 时一行（分块 prefill 只记第一块）。字段取自 SGLang 0.5.21 的 `Req`（在 `get_next_batch_to_run` 返回时已设置）：`input_tokens = len(req.origin_input_ids)`；`cached_tokens = len(req.prefix_indices)`，即匹配到的设备端前缀，prefill adder 记进自己 `#cached-token` 的正是同一个量（`schedule_policy.py:921`，`prefix_len` 来自 `:1161`/`:1298`）；`extend_tokens = req.extend_range.length`，即第一块的新 token（`Range` 由 prefill adder 的 `set_extend_range` 设置，`scheduler.py:4108` 的 `prepare_for_extend` 之前），没设置时写 −1。分析里每个请求要计算的 token 用 `input_tokens − cached_tokens`，不依赖分块；
    - `exp_kv_pool pid gpu stage total_tokens available_tokens evictable_tokens protected_tokens running_reqs waiting_reqs evicted_tokens_total evict_calls_total`：每秒最多一行；
-   - 驱逐计数：包住 `tree_cache.evict`，累计 `num_tokens_evicted`。
+   - 驱逐计数：包住 `tree_cache.evict`，累计 `num_tokens_evicted`（`EvictResult` 的字段）。
+   - **测量永远不能拖垮服务**：`exp_kv_log`、池子那一行、驱逐计数和 `exp_preprocess` 都包在 try/except 里；第一次失败用 `logger.exception` 记一次（带异常），然后在这个调度器（或这个进程的预处理）里关掉对应的测量，请求照常进行。调用处用 `getattr(self, "exp_kv_enabled", False)`，不调用父类初始化的子类也不会出错。
 
 CPU 检查：`configs/runtime/patches/check_sglang_omni_ppv_kv.py`（工厂参数、计时事件和在跑计数、日志行格式和限速、驱逐计数；`--model-path` 时再用真实预处理器检查 8 张不同图像串行和 4 线程并行的 `input_ids`、像素值逐位相同）。结果见第 6 节。
 
@@ -147,7 +148,7 @@ Do multimodal robot sessions create a working set large enough to cause meaningf
 
 | 文件 | 内容 | 什么时候放 |
 |---|---|---|
-| `configs/experiments/plan_ppv_r3_screen.json` | `ppv_r3_screen_c1`、`ppv_r3_screen_c4`（各 1 卡） | 补丁的 CPU 检查通过、集群 worktree 就绪后 |
+| `configs/experiments/plan_ppv_r3_screen.json` | `ppv_r3_screen_c1_a2`、`ppv_r3_screen_c4_a2`（各 1 卡；第一次的 `ppv_r3_screen_c1`、`_c4` 因补丁崩溃，见 6.0） | 补丁的 CPU 检查通过、集群 worktree 就绪后 |
 | `configs/experiments/plan_ppv_r3_confirm.json` | `--r3-confirm <格子>` 时生成，3 个区组 × 两种并发 | 筛选分析按规则选出格子以后 |
 | `configs/experiments/plan_ppv_r4_smoke.json` | `ppv_r4_smoke`（8 卡） | 补丁检查通过后 |
 | `configs/experiments/plan_ppv_r4.json` | `ppv_r4_block1..3`（8 卡） | 冒烟核对通过后 |
@@ -164,11 +165,19 @@ Do multimodal robot sessions create a working set large enough to cause meaningf
 
 ## 6. 已完成的 CPU 准备（2026-11-18 晚，没有用 GPU）
 
+### 6.0 补丁第一版的事故和修复（2026-11-18 23:30 前后）
+
+- **现象**：R3 筛选的两个 1 卡运行（`ppv_r3_screen_c1`、`ppv_r3_screen_c4`）都在第一个请求时崩溃，没有任何测量。服务日志：`omni_scheduler.py` 的 `exp_kv_log` 里 `req.extend_input_len` → `AttributeError: 'Req' object has no attribute 'extend_input_len'` → “scheduler crashed”，pipeline 进程退出。两次运行的记录保留，不删。
+- **根因**：补丁第一版按旧版 SGLang 的字段名写了 `req.extend_input_len`；SGLang 0.5.21（e00930c5）的 `Req` 没有这个属性，改用 `extend_range: Range(start, end)`。第一版的 CPU 检查用的是自己构造的替身对象，替身上正好有这个属性，所以没发现。
+- **修复**：字段按上面第 1 节逐个对照 0.5.21 的源码；所有测量包进 try/except（失败一次、记录、关掉）；CPU 检查改用**真实的** `Req`（`sglang.srt.managers.schedule_batch.Req`，按 prefill adder 留下的状态设置 `prefix_indices` 和 `extend_range`）、真实的 `ForwardMode`，并经过真实的调用处 `get_next_batch_to_run`；另加“日志器抛错、对象缺字段、事件发送抛错时都不会抛进调度器或请求”的检查。
+- **变异检查**：新检查在第一版补丁上失败，报的正是 GPU 上的同一个错误（`AttributeError: 'Req' object has no attribute 'extend_input_len'`）；在修复后的补丁上通过。
+- 重跑的筛选用新编号 `ppv_r3_screen_c1_a2`、`ppv_r3_screen_c4_a2`；阶段名不变，所以内容种子不变，发出的帧和第一次完全相同。
+
 | 检查 | 结果 |
 |---|---|
-| 补丁 CPU 检查 `check_sglang_omni_ppv_kv.py --model-path openbmb/MiniCPM-o-4_5`（登录节点，集群 worktree） | 通过：工厂参数默认 1、传 4 得到 4 个 worker；计时事件每次调用一个、在跑计数正确、出错也会减回；`exp_kv_prefill` 每个请求一行、`exp_kv_pool` 每秒最多一行、非 thinker 阶段不写；驱逐计数正确；**真实预处理器**（CPU 设备）上 8 张不同图像串行和 4 线程并行的 `input_ids` 与像素值逐位相同 |
+| 补丁 CPU 检查 `check_sglang_omni_ppv_kv.py --model-path openbmb/MiniCPM-o-4_5`（登录节点，集群 worktree；修复后重跑，`PYTHONDONTWRITEBYTECODE=1`，先删掉了 GPU 运行留下的 3 个旧 .pyc） | 通过：真实 `Req` 经过真实调用处，`cached_tokens=120 extend_tokens=280`；抛错的日志器、缺字段的对象、缺字段的驱逐结果、抛错的事件发送都只记一次并关掉测量，请求照常返回；以及工厂参数默认 1、传 4 得到 4 个 worker；计时事件每次调用一个、在跑计数正确、出错也会减回；`exp_kv_prefill` 每个请求一行、`exp_kv_pool` 每秒最多一行、非 thinker 阶段不写；驱逐计数正确；**真实预处理器**（CPU 设备）上 8 张不同图像串行和 4 线程并行的 `input_ids` 与像素值逐位相同 |
 | text 变体（= `--text-only`）是否接受 `--preprocessing.factory.max_concurrency 4` | 打补丁的 worktree：接受，预处理工厂参数为 `{"max_concurrency": 4, "gpu_id": 0}`；**原版 520b49ee**：拒绝，`Stage 'preprocessing' sets factory.max_concurrency but factory ...create_preprocessing_executor does not accept a 'max_concurrency' parameter` |
-| 补丁一致性 | Mac worktree、集群 worktree 的 `git diff` 与 `configs/runtime/patches/sglang_omni_ppv_kv.patch` 的内容相同（只差 git 版本的缩写哈希长度） |
-| 本地测试 | `tests/test_sessions_frames.py`、`test_sessions_camera.py`、`test_sessions_robot.py`、`test_ppv_r3_report.py`、`test_ppv_r4_report.py`、`test_make_plan_ppv_r34.py` 共 31 个，全部通过 |
+| 补丁一致性 | Mac worktree、集群 worktree 三个文件的 blob 哈希（preprocessor.py `04517b05a`、stages.py `21d6ac3fe`、omni_scheduler.py `6ef605ff4`）与补丁文件里的新 blob 相同；补丁文件 sha256 `23f75d8f518585ad0757636cb62b50b79ccdc347d5d90f6bd2d7916024940d1d` |
+| 本地测试 | `tests/test_sessions_frames.py`、`test_sessions_camera.py`、`test_sessions_robot.py`、`test_ppv_r3_report.py`、`test_ppv_r4_report.py`、`test_make_plan_ppv_r34.py` 共 34 个，全部通过 |
 
 没有验证的（只能在 GPU 上看）：视频 data URL 能否被服务端解码；GPU 上的 `CUDAImageProcessor` 在 4 个线程下是否同样逐位一致（CPU 检查走的是 CPU 路径）；`exp_kv_*` 的 `rid` 是否就是客户端的 `request_id`（源码上是 `payload.request_id`，冒烟核对）。
