@@ -478,10 +478,77 @@ def fig_duplex_sessions(out: Path) -> list[Path]:
     return save(fig, out, "fig09_duplex_sessions")
 
 
+R3_SCREEN = PV / "results/r3_screen.json"
+
+
+def fig_r3_camera(out: Path) -> list[Path]:
+    """R3 screening: accepted vs offered camera requests per shape and preprocessing concurrency, and where a request's
+    server time goes at 1 vs 16 sessions."""
+    d = json.loads(R3_SCREEN.read_text())
+    by: dict[tuple, dict[int, dict[str, Any]]] = {}
+    for run in d["runs"]:
+        for c in run["cells"]:
+            by.setdefault((c["shape"], c["sessions"], c["fps"]), {})[c["max_concurrency"]] = c
+    plt = plt_setup()
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(13, 4.8))
+    from matplotlib.lines import Line2D
+
+    colors = {"frame": "#0072B2", "clip": "#E69F00"}
+    styles = {1: ":", 4: "--", 16: "-"}
+    for shape in ("frame", "clip"):
+        for sessions in (1, 4, 16):
+            cells = sorted((k, v) for k, v in by.items() if k[0] == shape and k[1] == sessions)
+            xs = [k[1] * k[2] for k, _ in cells]
+            a1.plot(xs, [v[1]["sent"] / 60.0 for _, v in cells], marker="o", ls=styles[sessions], color=colors[shape])
+            a1.plot(xs, [v[4]["sent"] / 60.0 for _, v in cells], marker="D", ls="none", color=colors[shape], mfc="white", ms=7)
+    lim = [0.4, 40]
+    a1.plot(lim, lim, color="#999999", lw=1, ls=":")
+    a1.text(0.5, 0.62, "accepted = offered", color="#777777", fontsize=8, rotation=37)
+    handles = [Line2D([], [], color=colors["frame"], marker="o", label="frame (one PNG)"),
+               Line2D([], [], color=colors["clip"], marker="o", label="clip (2 s H.264)"),
+               *[Line2D([], [], color="#555555", ls=styles[n], label=f"{n} session{'s' if n > 1 else ''}, fps 0.5 / 1 / 2") for n in (1, 4, 16)],
+               Line2D([], [], color="#555555", marker="D", mfc="white", ls="none", label="preprocessing concurrency 4 (filled: 1)")]
+    a1.legend(handles=handles, fontsize=8, loc="upper left")
+    a1.set_xscale("log", base=2)
+    a1.set_yscale("log", base=2)
+    ticks = [0.5, 1, 2, 4, 8, 16, 32]
+    a1.set_xticks(ticks, [f"{t:g}" for t in ticks])
+    a1.set_yticks(ticks, [f"{t:g}" for t in ticks])
+    a1.set_xlabel("offered requests/s (sessions × fps)")
+    a1.set_ylabel("accepted requests/s (sent, 60 s window)")
+    a1.set_title("Camera requests per A6000: accepted vs offered")
+    stages = [("preprocessing_service_ms_p50", "CPU preprocessing (service)", "#009E73"),
+              ("image_encoder_service_ms_p50", "image encoder (GPU)", "#D55E00"),
+              ("thinker_prefill_ms_p50", "thinker prefill (GPU)", "#56B4E9")]
+    groups = [("frame", 1, 1.0), ("frame", 16, 1.0), ("clip", 1, 1.0), ("clip", 16, 1.0)]
+    w = 0.25
+    for i, (key, label, color) in enumerate(stages):
+        vals = [by[g][1]["server"][key] for g in groups]
+        xs = [j + (i - 1) * w for j in range(len(groups))]
+        a2.bar(xs, vals, width=w, color=color, label=label)
+        for x, v in zip(xs, vals):
+            a2.text(x, v * 1.08, f"{v:.0f}", ha="center", fontsize=7)
+    a2.set_yscale("log")
+    a2.set_xticks(range(len(groups)), [f"{s}\n{n} session{'s' if n > 1 else ''}" for s, n, f in groups])
+    a2.set_ylim(8, 20000)
+    a2.set_ylabel("median per request (ms, log scale)")
+    a2.set_title("Where a request's server time goes (1 fps, concurrency 1)")
+    a2.legend(fontsize=8, loc="upper center", ncol=3)
+    n = {g: by[g][1]["sent"] for g in groups}
+    caption(fig, "R3 screening (this round): one --text-only replica on one RTX A6000 and 7 CPU cores, SGLang-Omni 520b49ee + "
+                 "default-off preprocessing-concurrency patch; synthetic 640×360 camera frames (frame = one PNG, clip = last 2 s at "
+                 "8 fps as H.264), one request in flight per session (late ticks dropped), 60 s per cell, one run per concurrency "
+                 "(no blocks yet). Sessions 1/4/16 × 0.5/1/2 fps. Right: stage medians from request events (not additive); "
+                 "requests per bar group: " + ", ".join(f"{s} {k}×{f:g}: {v}" for (s, k, f), v in n.items())
+            + ". All 5 saturated cells are GPU-bound by the registered rule; concurrency 4 improved no cell.")
+    return save(fig, out, "fig10_r3_camera")
+
+
 FIGURES: dict[str, Callable[[Path], list[Path]]] = {"placement": fig_placement, "p0_admission": fig_p0_admission,
                                                     "p0_capacity": fig_p0_capacity, "c2w_shapes": fig_c2w_shapes,
                                                     "c2w_kernels": fig_c2w_kernels, "duplex_ttfa": fig_duplex_ttfa,
-                                                    "c1": fig_c1, "c2": fig_c2, "duplex_sessions": fig_duplex_sessions}
+                                                    "c1": fig_c1, "c2": fig_c2, "duplex_sessions": fig_duplex_sessions,
+                                                    "r3_camera": fig_r3_camera}
 
 
 def main() -> int:
