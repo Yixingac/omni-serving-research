@@ -31,3 +31,24 @@ def test_main_skips_figures_without_input(tmp_path, monkeypatch, capsys):
     assert pf.main() == 0
     assert "skipped (missing input" in capsys.readouterr().out
     assert not (tmp_path / "f" / "fig02_talker_admission.png").exists()
+
+
+def test_p1_figure_draws_from_a_summary_and_never_draws_unbounded_means(tmp_path, monkeypatch):
+    import json
+
+    def iv(m):
+        return {"runs": [m, m], "n": 2, "mean": m, "ci95": [m * 0.9, m * 1.1]}
+
+    summ = {}
+    for w in ("mix", "w3b"):
+        for st, *_ in pf.P1_SETTINGS:
+            for k, tag in enumerate(("x090", "x100", "x110")):
+                summ[f"{w}|{st}|{tag}"] = {"offered_rps": iv(13.0 + 1.5 * k), "goodput_rps": iv(10.0 - k), "e2e_p95": iv(3.0 + k),
+                                           "short_queue_p99_ms": iv(800.0 + 100 * k), "steady": [True, k < 2, True]}
+    summ["w3b|fifo16|x110"]["e2e_p95"] = {"runs": ["inf"], "n": 1, "mean": "inf", "ci95": None}
+    p = tmp_path / "p1.json"
+    p.write_text(json.dumps({"summary": summ, "verdicts": {"H1a": {"verdict": "不确定"}, "H1b": {"verdict": "支持"}, "H1c": {"verdict": "数据不足"}}}))
+    monkeypatch.setattr(pf, "P1_SUMMARY", p)
+    paths = pf.fig_p1_batching(tmp_path / "out")
+    assert [q.suffix for q in paths] == [".png", ".svg"] and all(q.stat().st_size > 1000 for q in paths)
+    assert "inconclusive" in paths[1].read_text() and "w3b fifo16 x110" in paths[1].read_text()

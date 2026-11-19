@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 from typing import Any, Callable
@@ -544,11 +545,69 @@ def fig_r3_camera(out: Path) -> list[Path]:
     return save(fig, out, "fig10_r3_camera")
 
 
+P1_SUMMARY = PV / "results/p1_summary.json"
+P1_SETTINGS = [("fifo16", "FIFO16", "#999999", "o"), ("length8", "Length8", "#0072B2", "s"),
+               ("length8_w500", "Length8 + max wait 0.5 s", "#56B4E9", "v"),
+               ("length8_w1000", "Length8 + max wait 1 s", "#D55E00", "D"),
+               ("length8_w2000", "Length8 + max wait 2 s", "#CC79A7", "^")]
+VERDICT_EN = {"支持": "supported", "反驳": "refuted", "不确定": "inconclusive", "数据不足": "insufficient data"}
+
+
+def _num(x: Any) -> float | None:
+    return x if isinstance(x, (int, float)) and math.isfinite(x) else None
+
+
+def fig_p1_batching(out: Path) -> list[Path]:
+    """P1: code2wav batching policy on the full 2+2+4 service near saturation -- the three registered contrasts."""
+    d = json.loads(P1_SUMMARY.read_text())
+    summ = d["summary"]
+    plt = plt_setup()
+    fig, axes = plt.subplots(1, 3, figsize=(15.5, 4.8))
+    panels = [("mix", "goodput_rps", 1.0, "MIX: goodput (req/s)", "H1a"),
+              ("mix", "short_queue_p99_ms", 1e-3, "MIX: short requests' code2wav queue P99 (s)", "H1b"),
+              ("w3b", "e2e_p95", 1.0, "W3b: end-to-end P95 (s)", "H1c")]
+    unbounded = []
+    for ax, (w, metric, scale, title, h) in zip(axes, panels):
+        for j, (st, label, color, mk) in enumerate(P1_SETTINGS):
+            pts = []
+            for tag in ("x090", "x100", "x110"):
+                c = summ.get(f"{w}|{st}|{tag}")
+                if not c or not c.get(metric):
+                    continue
+                mean, x = _num(c[metric].get("mean")), _num((c.get("offered_rps") or {}).get("mean"))
+                if x is None:
+                    continue
+                if mean is None:
+                    unbounded.append(f"{w} {st} {tag}")
+                    continue
+                ci = c[metric].get("ci95")
+                steady = all(bool(v) for v in c.get("steady") or [])
+                pts.append((x + (j - 2) * 0.09, mean * scale,
+                            (mean - ci[0]) * scale if ci and _num(ci[0]) is not None else 0.0,
+                            (ci[1] - mean) * scale if ci and _num(ci[1]) is not None else 0.0, steady))
+            if not pts:
+                continue
+            ax.plot([p[0] for p in pts], [p[1] for p in pts], color=color, lw=1.2, label=label)
+            for x, y, lo, hi, steady in pts:
+                ax.errorbar([x], [y], yerr=[[lo], [hi]], marker=mk, color=color, mfc=color if steady else "white", capsize=3, ls="none")
+        verdict = (d.get("verdicts") or {}).get(h) or {}
+        ax.set_title(f"{title}\n{h}: {VERDICT_EN.get(verdict.get('verdict'), verdict.get('verdict') or 'n/a')}", fontsize=10)
+        ax.set_xlabel("offered load (req/s): 0.9X / 1.0X / 1.1X")
+    axes[0].legend(fontsize=8, loc="best")
+    caption(fig, "P1 (this round): full service on 2+2+4, runtime 520b49ee + experiment 10's batching patch + max wait (code2wav only), open loop "
+                 "with Poisson arrivals at 0.9X/1.0X/1.1X where X is the pre-run's busy-window throughput (FIFO16); 75 s measured per cell "
+                 "(W3b, MIX) after warm-up, same arrival sequence for all settings within a block; 3 blocks; mean with 95 % t interval "
+                 "(df 2). Hollow markers: not steady in every block (an unsteady cell's throughput is not a capacity). Goodput = TTFT ≤ 1 s "
+                 "and e2e ≤ 0.5 × audio length; failures count against it. Short = below the cell's median audio length."
+            + (f" Not drawn (unbounded mean): {', '.join(unbounded)}." if unbounded else ""))
+    return save(fig, out, "fig11_p1_batching")
+
+
 FIGURES: dict[str, Callable[[Path], list[Path]]] = {"placement": fig_placement, "p0_admission": fig_p0_admission,
                                                     "p0_capacity": fig_p0_capacity, "c2w_shapes": fig_c2w_shapes,
                                                     "c2w_kernels": fig_c2w_kernels, "duplex_ttfa": fig_duplex_ttfa,
                                                     "c1": fig_c1, "c2": fig_c2, "duplex_sessions": fig_duplex_sessions,
-                                                    "r3_camera": fig_r3_camera}
+                                                    "r3_camera": fig_r3_camera, "p1_batching": fig_p1_batching}
 
 
 def main() -> int:
