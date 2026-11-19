@@ -71,3 +71,18 @@ def test_r4_figure_draws_blocks_from_a_summary(tmp_path, monkeypatch):
     paths = pf.fig_r4_working_set(tmp_path / "out")
     assert [q.suffix for q in paths] == [".png", ".svg"] and all(q.stat().st_size > 1000 for q in paths)
     assert "block 3" in paths[1].read_text()
+
+
+def test_duplex_sessions_figure_overlays_r2b_only_when_it_exists(tmp_path, monkeypatch):
+    import json
+
+    r2 = json.loads(pf.R2_SUMMARY.read_text())
+    lv = [dict(x) for x in r2["arms"]["ms8_1gpu"]["levels"] if x["level"] in (4, 8)]
+    p = tmp_path / "r2b.json"
+    p.write_text(json.dumps({"runs": {"block1": "x", "block2": "y", "block3": "z"}, "verdict_h_r2b": {"verdict": "支持"},
+                             "arms": {"ms8_2gpu": {"levels": lv}}}))
+    monkeypatch.setattr(pf, "R2B_SUMMARY", p)
+    svg = pf.fig_duplex_sessions(tmp_path / "with")[1].read_text()
+    assert "R2b" in svg and "supported" in svg
+    monkeypatch.setattr(pf, "R2B_SUMMARY", tmp_path / "missing.json")
+    assert "R2b" not in pf.fig_duplex_sessions(tmp_path / "without")[1].read_text()

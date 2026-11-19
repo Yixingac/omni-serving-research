@@ -428,6 +428,7 @@ def fig_c2(out: Path) -> list[Path]:
 
 
 R2_SUMMARY = PV / "results/r2_summary.json"
+R2B_SUMMARY = PV / "results/r2b_summary.json"
 
 
 def fig_duplex_sessions(out: Path) -> list[Path]:
@@ -450,6 +451,20 @@ def fig_duplex_sessions(out: Path) -> list[Path]:
         oom = sum((b.get("oom_events") or 0) for b in lv["per_block"].values())
         note = f"miss {miss:.1f}%" + (f"\n{oom} OOM" if oom else "")
         a1.text(x, (lv["descriptive"]["unit_lag_speaking_ms"].get("p99") or 0) + 60, note, ha="center", fontsize=8)
+    r2b_note = ""
+    if R2B_SUMMARY.exists():  # R2b: the registered 2-GPU split (thinker on its own GPU), drawn only when it ran
+        b = json.loads(R2B_SUMMARY.read_text())
+        blv = [lv for lv in b["arms"]["ms8_2gpu"]["levels"] if lv.get("descriptive")]
+        bx = [lv["level"] for lv in blv]
+        a1.plot(bx, [lv["descriptive"]["unit_lag_speaking_ms"].get("p50") for lv in blv], marker="D", ls="none", color="#D55E00",
+                ms=8, label="2 GPUs (R2b), speaking units, P50")
+        a1.plot(bx, [lv["descriptive"]["unit_lag_speaking_ms"].get("p99") for lv in blv], marker="D", ls="none", color="#D55E00",
+                mfc="white", ms=8, label="2 GPUs (R2b), speaking units, P99")
+        verdict = (b.get("verdict_h_r2b") or {}).get("verdict")
+        r2b_note = (" Diamonds: R2b, the registered 2-GPU split (thinker on its own GPU) at 4 and 8 sessions, "
+                    f"{len(b.get('runs') or {})} block(s); registered verdict: {VERDICT_EN.get(verdict, verdict)}; "
+                    + "; ".join(f"{lv['level']} sessions miss {lv['unit_miss_rate'] * 100:.1f}%, "
+                                f"{(lv.get('pooled') or {}).get('oom_events', 0)} OOM" for lv in blv if lv.get("unit_miss_rate") is not None) + ".")
     a1.set_xscale("log", base=2)
     a1.set_xticks(xs, [str(x) for x in xs])
     a1.set_xlabel("concurrent sessions on one A6000")
@@ -477,7 +492,7 @@ def fig_duplex_sessions(out: Path) -> list[Path]:
                  "spoken questions; 180 s per level, levels 1 → 8 within a run. Blocks per level: " + ", ".join(f"{k}: {v}" for k, v in blocks.items())
             + " (block 2 stopped after level 1 under the registered stop rule: a first-reply warm-up missed 1.67 % of units). "
               "Unit lag is bimodal, so speaking and listening units are shown separately. Registered capacity verdicts: "
-              "below the lowest level (see the results). Deadline misses at 1 session are mostly the model's turn-taking.")
+              "below the lowest level (see the results). Deadline misses at 1 session are mostly the model's turn-taking." + r2b_note)
     return save(fig, out, "fig09_duplex_sessions")
 
 
