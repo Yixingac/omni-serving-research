@@ -16,6 +16,7 @@
 | F5 | R2 的放置规则只看 30 秒冒烟，冒烟没碰到 8 个会话时的显存增长，于是选了一个在最高档失败的放置；双卡放置（冒烟也通过）本轮没有跑 | `results/r2_summary.json`（`smoke`、第 8 档 OOM） | 8 个会话的结论只适用于单卡默认显存比例 |
 | E-C1 | C1 原登记的正确性规则在离线微基准里退化成“必须逐位相同”，而固定版本的打包路径设计上就是 BF16；运行之前改成 C1-Q（MCD 增量 ≤ 0.1 dB + ASR 规则），原规则照算照报 | `preregistration.md` Erratum E-C1 | 两种规则的结论都写进结果（都是“不通过”） |
 | E-P1-X | P1 的 X（满额时段吞吐）第一版代码漏掉了窗口里完成的预热请求，X 被低估（W3b 19.33 < 登记容量 21.24，方向不可能）；正式运行之前按实验 9 的算法改正，加了测试 | `preregistration.md` P1 一节 | 改正后 X = 28.96 / 14.52 / 14.67 请求/秒；规则没变 |
+| F6 | P1 第 2 个区组跑完 9 个测量格后，在第 10 格（`w3l_length8_x090`）失败：P3 的停顿监视器发 SIGUSR2 让服务进程打印所有线程调用栈，code2wav@r2 在 faulthandler 里段错误（exit −11），服务死掉。这是观测手段造成的，不是 P1 的组批策略 | 服务日志 `Segfault encountered`（`faulthandler_user → _Py_DumpTracebackThreads → dump_frame`）；`raw/stalls_s0.jsonl` 05:07:30 的快照给 pid 1636646 发了信号；`preregistration.md` 偏离 D3 | 区组 3 运行中停掉栈转储；区组 2 以 `ppv_p1_block2_a2` 重跑（不带栈转储）；约 200 次进程转储里崩了 1 次，这种观测不能当作无风险 |
 | D2 | R3 确认的第一版计划（`ppv_r3_confirm_c*_block*`）没有区组顺序：P1 结束后 6 个运行会同时开始，区组在时间上不再分开。编排器不能单独取消已放入的实验，所以在它们开始之前删掉了配置文件（轮到时几秒内失败，记为撤回），换成区组串行的 `ppv_r3_confirm_seq_*` | `preregistration.md` 执行偏离 D2；编排器 `state.json` | 撤回的 6 个 ID 不产生数据；清单里照实列出 |
 
 ## 2. 测量方法本身的限制

@@ -1,5 +1,6 @@
 """P1 plan generator (length-aware batching + max wait on the full service): settings, cells, seeds (no GPU, no network)."""
 
+import pytest
 import importlib.util
 import json
 import sys
@@ -105,3 +106,15 @@ def test_p1_configs_turn_the_stall_watcher_on():
     files = mp.render()
     cfgs = [_json.loads(t) for p, t in files.items() if p.startswith("configs/experiments/ppv/")]
     assert cfgs and all(c.get("stall_watch") is True for c in cfgs)
+
+
+def test_block2_rerun_is_block2_without_the_stack_hook():
+    if mp.P1_X is None:
+        pytest.skip("X not filled in")
+    (cfg, meta), = mp.rerun_entries(mp.P1_X)
+    orig = next(c for c, _ in mp.main_entries(mp.P1_X) if c["experiment_id"] == "ppv_p1_block2")
+    assert cfg["experiment_id"] == "ppv_p1_block2_a2" and cfg["phases"] == orig["phases"]
+    assert -631 < meta["priority"] < -613  # right after block 3, before the R3 confirmation runs
+    env = cfg["servers"][0]["env"]
+    parts = env["SGLANG_OMNI_EXP_TRACE"].split(",")
+    assert "stack" not in parts and "gc" in parts and "SGLANG_OMNI_EXP_STACK_DIR" not in env

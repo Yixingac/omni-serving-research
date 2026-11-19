@@ -134,6 +134,23 @@ def main_entries(x: dict[str, float]) -> list[tuple[dict, dict]]:
     return out
 
 
+def rerun_entries(x: dict[str, float]) -> list[tuple[dict, dict]]:
+    """Deviation D3 (preregistration.md): ppv_p1_block2 died when P3's SIGUSR2 stack dump segfaulted a code2wav process.
+    Block 2 again under a new ID with the same phases, order and seeds, but without the stack hook (the server's
+    SGLANG_OMNI_EXP_TRACE drops "stack", so nothing registers SIGUSR2 and the watcher never signals); queued right
+    after block 3."""
+    runtime = json.loads((REPO / "configs/models" / f"runtime_{RUNTIME}.json").read_text())
+    trace = ",".join(p for p in runtime["env"]["SGLANG_OMNI_EXP_TRACE"].split(",") if p != "stack")
+    cfg, meta = next((c, m) for c, m in main_entries(x) if c["experiment_id"] == "ppv_p1_block2")
+    cfg = json.loads(json.dumps(cfg))
+    cfg["experiment_id"] = "ppv_p1_block2_a2"
+    cfg["description"] = ("P1 第 2 个区组重跑（偏离 D3：原运行被 P3 的 SIGUSR2 栈转储弄崩），格子、顺序、种子与 ppv_p1_block2 相同，"
+                          "不带栈转储：") + cfg["description"]
+    for srv in cfg["servers"]:
+        srv["env"] = {k: v for k, v in srv["env"].items() if k != "SGLANG_OMNI_EXP_STACK_DIR"} | {"SGLANG_OMNI_EXP_TRACE": trace}
+    return [(cfg, {**meta, "priority": -614})]
+
+
 def packed_yaml() -> str:
     text = (REPO / PLACEMENT_YAML).read_text()
     first, rest = text.split("\n", 1)
@@ -189,7 +206,10 @@ def render(x: dict[str, float] | None = None) -> dict[str, str]:
         files["configs/experiments/plan_ppv_p1.json"] = plan_file("ppv_p1", "P1 正式运行：3 个区组，排在预跑之后。", main)
         files["configs/experiments/plan_ppv_p1_interaction.json"] = plan_file(
             "ppv_p1_interaction", "P1 四组变体（稠密/打包 flow × FIFO16/Length8+1 秒），只在 C1 通过时放进队列。", inter)
-        entries += main + inter
+        rerun = rerun_entries(x)
+        files["configs/experiments/plan_ppv_p1_block2_a2.json"] = plan_file(
+            "ppv_p1_block2_a2", "P1 第 2 个区组重跑（偏离 D3），不带栈转储，排在区组 3 之后。", rerun)
+        entries += main + inter + rerun
     for cfg, _ in entries:
         files[f"{EXP_DIR}/{cfg['experiment_id']}.json"] = json.dumps(cfg, ensure_ascii=False, indent=1) + "\n"
     return files
