@@ -52,3 +52,16 @@ def test_markdown_adds_manual_rows_to_the_total():
     rows = [{"experiment_id": "ppv_p0_x", "orchestrator_status": "SUCCEEDED", "gpu_hours_allocated": 1.5}]
     md = pm.to_markdown(rows, [{"experiment_id": "ppv_r0_manual", "orchestrator_status": "MANUAL", "gpu_hours_allocated": 0.5}])
     assert "ppv_r0_manual" in md and "2.00 (MANUAL 0.50, SUCCEEDED 1.50)" in md
+
+
+def test_microbenchmark_run_log_gives_the_commits(tmp_path):
+    root = tmp_path / "results"
+    run = root / "experiments" / "20261118_ppv_c1_c2_microbench_run01"
+    run.mkdir(parents=True)
+    (run / "run.log").write_text("2026-11-18T23:40:52-05:00 repo 99e044240c4974f27c0a38f044e59d05b65d0fb5 sglang-omni "
+                                 "520b49ee69385d4a58912b9ce7a4712e181bf38a gpus c1=0 c2=1\n")
+    state = {"experiments": {"ppv_c1_c2_microbench": {"status": "SUCCEEDED", "started_at": 1.0, "ended_at": 2.0,
+                                                       "assigned": {"gpus": 2}, "output_dir": str(run), "gpu_seconds": 7200.0}}}
+    row = pm.build(state, root, {})[0]
+    assert row["research_repo_commit"] == "99e044240c" and row["sglang_omni_commit"] == "520b49ee69"
+    assert row["gpu_hours_allocated"] == 2.0 and row["family"] == "C1"

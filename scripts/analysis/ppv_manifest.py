@@ -46,6 +46,10 @@ def run_facts(run_dir: Path | None) -> dict[str, Any]:
     man = read_json(run_dir / "manifest.json") or {}
     res = read_json(run_dir / "result.json") or {}
     cfg = read_json(run_dir / "config.json") or {}
+    if not man and (run_dir / "run.log").exists():  # microbenchmarks write their own log: "<time> repo <sha> sglang-omni <sha> ..."
+        m = re.search(r"repo ([0-9a-f]{7,40}) sglang-omni ([0-9a-f]{7,40})", (run_dir / "run.log").read_text(errors="ignore"))
+        if m:
+            man = {"environment": {"research_repo_commit": m.group(1), "sglang_omni_commit": m.group(2)}}
     env = man.get("environment") or {}
     models = env.get("models") or {}
     slurm = env.get("slurm") or {}
