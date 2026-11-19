@@ -141,9 +141,9 @@ def fig_p0_admission(out: Path) -> list[Path]:
     a1.axhline(32, color="#888888", ls=":", lw=1)
     a1.axhline(64, color="#888888", ls=":", lw=1)
     a1.set_xticks(range(len(P0_ARMS)), [x[0] if x[0] != "R" else "Ref" for x in P0_ARMS])
-    a1.set_ylabel("requests per talker (median over decode-log lines)")
-    a1.set_title("Talker at W3b, 256 in flight: running (filled) vs queued (×)")
-    a1.legend(loc="upper left", fontsize=9)
+    a1.set_ylabel("requests per talker (median)")
+    a1.set_title("Talker at W3b, 256 in flight:\nrunning (filled) vs queued (×)")
+    a1.legend(loc="center right", fontsize=9)
     for arm, label, color, marker in P0_ARMS:
         pooled: dict[int, list[float]] = {}
         for r in runs:

@@ -1,0 +1,19 @@
+{
+ "plan_id": "ppv_p2_verify",
+ "_comment": "P2 逐位正确性检查（1 个运行）。 通过 plan.d 放进 Job 454290；命令从集群上本分支的 worktree 运行。由 scripts/slurm/make_plan_ppv_p2.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "ppv_p2_verify",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p2_verify.json",
+   "priority": -700,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1200,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "P2 逐位正确性检查：SGLANG_OMNI_SPEECH_LOOKAHEAD=sidecopy_verify（旁路复制 + 启动流上的参照拷贝，逐位比较），2+6，实验 11 的检查段落（贪心负载并发 1/8/32/64，文字/语音、短/长、带/不带 seed 混合，客户端超时中止段及之后的段，W3XL），开事件和 digest。"
+  }
+ ]
+}

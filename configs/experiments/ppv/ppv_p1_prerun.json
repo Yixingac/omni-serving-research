@@ -1,0 +1,95 @@
+{
+ "runtime_profile": "unicorn_ppv_maxwait",
+ "hardware_label": "a6000x8",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "ppv_p1_prerun",
+ "description": "P1 预跑：放置 t2_k2_c4，flow CUDA graph 开，FIFO16（控制文件写明）。闭环 W3b 256、W3L 128、MIX 192，各预热一波再测，不开事件。按登记的规则用满额时段吞吐定每种负载的 X，正式运行取 0.9X/1.0X/1.1X。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "s0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "args": [
+    "--config",
+    "{research_repo}/configs/models/minicpm_o_4_5_exp_t2_k2_c4.yaml"
+   ],
+   "ready_timeout_s": 2400,
+   "env": {
+    "SGLANG_OMNI_C2W_CONTROL": "{exp_dir}/c2w_control.json",
+    "SGLANG_OMNI_PORT_CLAIM_DIR": "{exp_dir}/port_claims",
+    "SGLANG_OMNI_EXP_STACK_DIR": "{exp_dir}/stacks"
+   }
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "control",
+   "name": "ctl_prerun",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 16,
+    "policy": "fifo",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "closed_loop",
+   "name": "pre_w3b_c256",
+   "concurrency": [
+    256
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 3,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  },
+  {
+   "kind": "closed_loop",
+   "name": "pre_w3l_c128",
+   "concurrency": [
+    128
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "workload": "configs/workloads/w3l_long_speech.json"
+  },
+  {
+   "kind": "closed_loop",
+   "name": "pre_mix_c192",
+   "concurrency": [
+    192
+   ],
+   "requests_per_level": 96,
+   "requests_per_concurrency": 2,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,123 @@
+{
+ "plan_id": "ppv_p2_perf",
+ "_comment": "P2 的性能对比（实验 11 登记的 9 个运行）。只在逐位检查通过后放进队列。 通过 plan.d 放进 Job 454290；命令从集群上本分支的 worktree 运行。由 scripts/slurm/make_plan_ppv_p2.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "ppv_p2_perf_block1_A",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p2_perf_block1_A.json",
+   "priority": -721,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1000,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "P2 通过后才运行的性能对比（实验 11 登记的 9 个运行，只换 ID）：实验 11 性能对比第 1 个区组、组 A（SGLANG_OMNI_SPEECH_LOOKAHEAD=0）。2+6，seed null。W3b 并发顺序 64、32、8，每档 ABC 三段；W3L、W3XL 并发 32 各 A、B 段。C 段只给 thinker 所在的进程开 torch profiler。"
+  },
+  {
+   "experiment_id": "ppv_p2_perf_block1_B",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p2_perf_block1_B.json",
+   "priority": -722,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1000,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "P2 通过后才运行的性能对比（实验 11 登记的 9 个运行，只换 ID）：实验 11 性能对比第 1 个区组、组 B（SGLANG_OMNI_SPEECH_LOOKAHEAD=1）。2+6，seed null。W3b 并发顺序 64、32、8，每档 ABC 三段；W3L、W3XL 并发 32 各 A、B 段。C 段只给 thinker 所在的进程开 torch profiler。"
+  },
+  {
+   "experiment_id": "ppv_p2_perf_block1_C",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p2_perf_block1_C.json",
+   "priority": -723,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1000,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "P2 通过后才运行的性能对比（实验 11 登记的 9 个运行，只换 ID）：实验 11 性能对比第 1 个区组、组 C（SGLANG_OMNI_SPEECH_LOOKAHEAD=sidecopy）。2+6，seed null。W3b 并发顺序 64、32、8，每档 ABC 三段；W3L、W3XL 并发 32 各 A、B 段。C 段只给 thinker 所在的进程开 torch profiler。"
+  },
+  {
+   "experiment_id": "ppv_p2_perf_block2_B",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p2_perf_block2_B.json",
+   "priority": -731,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1000,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "P2 通过后才运行的性能对比（实验 11 登记的 9 个运行，只换 ID）：实验 11 性能对比第 2 个区组、组 B（SGLANG_OMNI_SPEECH_LOOKAHEAD=1）。2+6，seed null。W3b 并发顺序 32、8、64，每档 BCA 三段；W3L、W3XL 并发 32 各 A、B 段。C 段只给 thinker 所在的进程开 torch profiler。"
+  },
+  {
+   "experiment_id": "ppv_p2_perf_block2_C",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p2_perf_block2_C.json",
+   "priority": -732,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1000,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "P2 通过后才运行的性能对比（实验 11 登记的 9 个运行，只换 ID）：实验 11 性能对比第 2 个区组、组 C（SGLANG_OMNI_SPEECH_LOOKAHEAD=sidecopy）。2+6，seed null。W3b 并发顺序 32、8、64，每档 BCA 三段；W3L、W3XL 并发 32 各 A、B 段。C 段只给 thinker 所在的进程开 torch profiler。"
+  },
+  {
+   "experiment_id": "ppv_p2_perf_block2_A",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p2_perf_block2_A.json",
+   "priority": -733,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1000,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "P2 通过后才运行的性能对比（实验 11 登记的 9 个运行，只换 ID）：实验 11 性能对比第 2 个区组、组 A（SGLANG_OMNI_SPEECH_LOOKAHEAD=0）。2+6，seed null。W3b 并发顺序 32、8、64，每档 BCA 三段；W3L、W3XL 并发 32 各 A、B 段。C 段只给 thinker 所在的进程开 torch profiler。"
+  },
+  {
+   "experiment_id": "ppv_p2_perf_block3_C",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p2_perf_block3_C.json",
+   "priority": -741,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1000,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "P2 通过后才运行的性能对比（实验 11 登记的 9 个运行，只换 ID）：实验 11 性能对比第 3 个区组、组 C（SGLANG_OMNI_SPEECH_LOOKAHEAD=sidecopy）。2+6，seed null。W3b 并发顺序 64、32、8，每档 CAB 三段；W3L、W3XL 并发 32 各 A、B 段。C 段只给 thinker 所在的进程开 torch profiler。"
+  },
+  {
+   "experiment_id": "ppv_p2_perf_block3_A",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p2_perf_block3_A.json",
+   "priority": -742,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1000,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "P2 通过后才运行的性能对比（实验 11 登记的 9 个运行，只换 ID）：实验 11 性能对比第 3 个区组、组 A（SGLANG_OMNI_SPEECH_LOOKAHEAD=0）。2+6，seed null。W3b 并发顺序 64、32、8，每档 CAB 三段；W3L、W3XL 并发 32 各 A、B 段。C 段只给 thinker 所在的进程开 torch profiler。"
+  },
+  {
+   "experiment_id": "ppv_p2_perf_block3_B",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p2_perf_block3_B.json",
+   "priority": -743,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 1000,
+   "timeout_s": 3600,
+   "max_retries": 1,
+   "description": "P2 通过后才运行的性能对比（实验 11 登记的 9 个运行，只换 ID）：实验 11 性能对比第 3 个区组、组 B（SGLANG_OMNI_SPEECH_LOOKAHEAD=1）。2+6，seed null。W3b 并发顺序 64、32、8，每档 CAB 三段；W3L、W3XL 并发 32 各 A、B 段。C 段只给 thinker 所在的进程开 torch profiler。"
+  }
+ ]
+}

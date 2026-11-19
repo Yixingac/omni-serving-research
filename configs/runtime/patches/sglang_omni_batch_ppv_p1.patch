@@ -1,0 +1,1007 @@
+diff --git a/sglang_omni/model_runner/base.py b/sglang_omni/model_runner/base.py
+index 454be8d4d..1aca1b12a 100644
+--- a/sglang_omni/model_runner/base.py
++++ b/sglang_omni/model_runner/base.py
+@@ -894,6 +894,20 @@ class ModelRunner(Generic[RequestDataInput]):
+ 
+         return all(_history_free(req) for req in batch.reqs)
+ 
++    def lookahead_blockers(self, batch: ScheduleBatch) -> dict[str, int]:
++        """How many requests of a batch each lookahead_eligible condition rejects."""
++        return {
++            "sampling": sum(
++                1
++                for req in batch.reqs
++                if req.sampling_params.repetition_penalty != 1.0
++                or req.sampling_params.frequency_penalty != 0.0
++                or req.sampling_params.presence_penalty != 0.0
++                or req.sampling_params.min_new_tokens != 0
++                or req.custom_logit_processor is not None
++            )
++        }
++
+     def post_process_outputs(
+         self,
+         result: GenerationBatchResult,
+diff --git a/sglang_omni/model_runner/thinker_model_runner.py b/sglang_omni/model_runner/thinker_model_runner.py
+index ea97a6bee..71311b666 100644
+--- a/sglang_omni/model_runner/thinker_model_runner.py
++++ b/sglang_omni/model_runner/thinker_model_runner.py
+@@ -539,6 +539,41 @@ class ThinkerModelRunner(ModelRunner):
+                 pass
+         return True
+ 
++    def lookahead_blockers(self, batch: ScheduleBatch) -> dict[str, int]:
++        """How many requests of a batch each lookahead_eligible condition rejects."""
++        from sglang_omni.models.qwen3_omni.request_builders import (
++            should_generate_audio_output,
++        )
++
++        counts = {"no_request_data": 0, "speech": 0, "logprob": 0, "sampling": 0}
++        for req in batch.reqs:
++            try:
++                data = req.omni_data  # noqa: leading-underscore  # upstream spelling
++            except AttributeError:
++                data = None
++            if data is None:
++                counts["no_request_data"] += 1
++            elif should_generate_audio_output(data.stage_payload):
++                counts["speech"] += 1
++            elif getattr(data, "return_logprob", False):
++                counts["logprob"] += 1
++            else:
++                pass
++            sp = req.sampling_params
++            if (
++                sp.repetition_penalty != 1.0
++                or sp.presence_penalty != 0.0
++                or sp.frequency_penalty != 0.0
++                or sp.min_new_tokens > 0
++                or sp.sampling_seed is not None
++                or sp.logit_bias is not None
++                or sp.custom_params
++            ):
++                counts["sampling"] += 1
++            else:
++                pass
++        return counts
++
+     def async_host_buf(self, like: torch.Tensor, n: int) -> torch.Tensor:
+         # note (jiaxin deng): two pinned buffers ping-ponged so resolve(N) reads
+         # one while launch(N+1) writes the other.
+diff --git a/sglang_omni/models/minicpm_o/components/code2wav.py b/sglang_omni/models/minicpm_o/components/code2wav.py
+index 648cd690a..cc049f125 100644
+--- a/sglang_omni/models/minicpm_o/components/code2wav.py
++++ b/sglang_omni/models/minicpm_o/components/code2wav.py
+@@ -21,6 +21,7 @@ from sglang_omni.models.minicpm_o.components.token2wav.vocoder import (
+     Token2Wav,
+ )
+ from sglang_omni.models.weight_loader import resolve_dtype, resolve_model_path
++from sglang_omni.profiler import exp_trace
+ from sglang_omni.preprocessing.cache_key import hash_bytes, reference_path_cache_key
+ from sglang_omni.utils.channels_last_conv import is_channels_last_conv_device
+ 
+@@ -426,7 +427,18 @@ class MiniCPMOCode2Wav(nn.Module):
+         else:
+             pass
+ 
++        is_tracing = exp_trace.active("c2w")
++        references_start_ns = exp_trace.now_ns()
+         speaker_prompts = self.prepare_references(references)
++        if is_tracing:
++            exp_trace.set_vocode_record(
++                {
++                    "references_start_ns": references_start_ns,
++                    "references_end_ns": exp_trace.now_ns(),
++                }
++            )
++        else:
++            pass
+         device_module = torch.get_device_module(self.token2wav.device)
+         with device_module.stream(self.decode_stream):
+             return self.decode_waveforms(token_sequences, speaker_prompts)
+@@ -437,6 +449,10 @@ class MiniCPMOCode2Wav(nn.Module):
+         speaker_prompts: Sequence[SpeakerPrompt],
+     ) -> list[np.ndarray]:
+         """Run flow and HiFT. The caller selects the decode stream."""
++        record = exp_trace.vocode_record() if exp_trace.active("c2w") else None
++        is_tracing = record is not None
++        gpu_spans = exp_trace.GpuSpans(is_tracing)
++        upload_start_ns = exp_trace.now_ns()
+         token2wav_device = self.token2wav.device
+         token_lengths = [len(tokens) for tokens in token_sequences]
+         speech_tokens = pad_sequence(
+@@ -446,7 +462,12 @@ class MiniCPMOCode2Wav(nn.Module):
+         speech_token_lengths = torch.tensor(
+             token_lengths, dtype=torch.int32, device=token2wav_device
+         )
+-        mel = self.flow_mel(speech_tokens, speech_token_lengths, speaker_prompts)
++        gpu_spans.mark("flow_start")
++        flow_issue_start_ns = exp_trace.now_ns()
++        with exp_trace.annotate("c2w.flow", exp_trace.configured("c2w")):
++            mel = self.flow_mel(speech_tokens, speech_token_lengths, speaker_prompts)
++        flow_issue_end_ns = exp_trace.now_ns()
++        gpu_spans.mark("flow_end")
+ 
+         mel_upsample_rate = self.token2wav.flow.up_rate
+         rows_by_token_length: defaultdict[int, list[int]] = defaultdict(list)
+@@ -454,19 +475,49 @@ class MiniCPMOCode2Wav(nn.Module):
+             rows_by_token_length[token_length].append(row)
+         waveforms_by_row: dict[int, torch.Tensor] = {}
+         # note (MayDomine): padding changes HiFT's noncausal convolution boundaries.
+-        for token_length, row_indices in rows_by_token_length.items():
+-            speech_mel = (
+-                mel[row_indices, :, : token_length * mel_upsample_rate]
+-                .float()
+-                .contiguous()
+-            )
+-            group_waveforms, _ = self.token2wav.hift(speech_feat=speech_mel)
+-            for group_row, row in enumerate(row_indices):
+-                waveforms_by_row[row] = group_waveforms[group_row].reshape(-1)[
+-                    : token_length * SAMPLES_PER_CODEC_TOKEN
+-                ]
+-        host_waveforms = torch.cat(
+-            [waveforms_by_row[row] for row in range(len(token_lengths))]
+-        ).cpu()
++        with exp_trace.annotate("c2w.hift", exp_trace.configured("c2w")):
++            for token_length, row_indices in rows_by_token_length.items():
++                speech_mel = (
++                    mel[row_indices, :, : token_length * mel_upsample_rate]
++                    .float()
++                    .contiguous()
++                )
++                group_waveforms, _ = self.token2wav.hift(speech_feat=speech_mel)
++                for group_row, row in enumerate(row_indices):
++                    waveforms_by_row[row] = group_waveforms[group_row].reshape(-1)[
++                        : token_length * SAMPLES_PER_CODEC_TOKEN
++                    ]
++        hift_issue_end_ns = exp_trace.now_ns()
++        gpu_spans.mark("hift_end")
++        with exp_trace.annotate("c2w.download", exp_trace.configured("c2w")):
++            host_waveforms = torch.cat(
++                [waveforms_by_row[row] for row in range(len(token_lengths))]
++            ).cpu()
++        download_end_ns = exp_trace.now_ns()
+         sample_counts = [length * SAMPLES_PER_CODEC_TOKEN for length in token_lengths]
+-        return [waveform.numpy() for waveform in host_waveforms.split(sample_counts)]
++        waveforms = [waveform.numpy() for waveform in host_waveforms.split(sample_counts)]
++        if is_tracing:
++            flow_decoder = self.token2wav.flow.decoder
++            record.update(
++                {
++                    "upload_start_ns": upload_start_ns,
++                    "flow_issue_start_ns": flow_issue_start_ns,
++                    "flow_issue_end_ns": flow_issue_end_ns,
++                    "hift_issue_end_ns": hift_issue_end_ns,
++                    "download_end_ns": download_end_ns,
++                    "split_end_ns": exp_trace.now_ns(),
++                    "rows": len(token_lengths),
++                    "token_lengths": token_lengths,
++                    # note (research): prompt tokens are stored unpadded, so the shape gives the length without a device sync
++                    "prompt_token_lengths": [int(prompt.prompt_tokens.shape[-1]) for prompt in speaker_prompts],
++                    "mel_upsample_rate": int(self.token2wav.flow.up_rate),
++                    "hift_groups": len(rows_by_token_length),
++                    "flow_solve_path": flow_decoder.last_solve_path,
++                    "flow_solve_rows": flow_decoder.last_solve_rows,
++                    "flow_solve_frames": flow_decoder.last_solve_frames,
++                    **{f"gpu_{name}_ms": value for name, value in gpu_spans.spans_ms().items()},
++                }
++            )
++        else:
++            pass
++        return waveforms
+diff --git a/sglang_omni/models/minicpm_o/components/token2wav/flow.py b/sglang_omni/models/minicpm_o/components/token2wav/flow.py
+index 85aca4e18..fc8e6a1b7 100644
+--- a/sglang_omni/models/minicpm_o/components/token2wav/flow.py
++++ b/sglang_omni/models/minicpm_o/components/token2wav/flow.py
+@@ -100,6 +100,10 @@ class CausalConditionalCFM(torch.nn.Module):
+         self.inference_cfg_rate = inference_cfg_rate
+         self.out_channels = estimator.out_channels
+         self.graph_runner: FlowCudaGraphRunner | None = None
++        # note (research): how the last solve ran, read by the code2wav measurement.
++        self.last_solve_path = "none"
++        self.last_solve_rows = 0
++        self.last_solve_frames = 0
+         self.register_buffer(
+             "rand_noise",
+             torch.randn([1, self.out_channels, 50 * 600]),
+@@ -156,6 +160,16 @@ class CausalConditionalCFM(torch.nn.Module):
+             if packed_capacity is not None
+             else None
+         )
++        if graph_shape is not None and packed_layout is not None:
++            self.last_solve_path = "packed_graph"
++        elif graph_shape is not None:
++            self.last_solve_path = "dense_graph"
++        elif packed_layout is not None:
++            self.last_solve_path = "packed_eager"
++        else:
++            self.last_solve_path = "eager"
++        self.last_solve_rows = int(x.shape[0])
++        self.last_solve_frames = int(x.shape[2])
+         with (
+             graph_runner.lock if graph_shape is not None else nullcontext(),
+             packed_runner.lock if packed_layout is not None else nullcontext(),
+diff --git a/sglang_omni/models/minicpm_o/stages.py b/sglang_omni/models/minicpm_o/stages.py
+index 12512fe02..d468263c3 100644
+--- a/sglang_omni/models/minicpm_o/stages.py
++++ b/sglang_omni/models/minicpm_o/stages.py
+@@ -27,6 +27,7 @@ from sglang_omni.models.minicpm_o.native_config import TALKER_CONTEXT_LENGTH
+ from sglang_omni.models.minicpm_o.payload_types import MiniCPMOPipelineState
+ from sglang_omni.models.minicpm_o.request_builders import build_encoder_request
+ from sglang_omni.models.minicpm_o.routing import TALKER_STAGE, code2wav_reference_audio
++from sglang_omni.profiler import exp_trace
+ from sglang_omni.proto import StagePayload
+ from sglang_omni.scheduling.generation_batch_policy import (
+     build_generation_batch_overrides,
+@@ -216,6 +217,7 @@ def vocode_code2wav_payloads(
+     model: MiniCPMOCode2Wav, payloads: list[StagePayload]
+ ) -> list[StagePayload]:
+     """Vocode talker payloads in one batch, one speaker reference per row."""
++    prepare_start_ns = exp_trace.now_ns()
+     codec_tokens: list[list[int]] = []
+     references: list[bytes | None] = []
+     for payload in payloads:
+@@ -232,10 +234,12 @@ def vocode_code2wav_payloads(
+     )
+     # note (Junnan Li): model.vocode rejects empty rows, which turns without speech produce.
+     voiced = [index for index, tokens in enumerate(codec_tokens) if tokens]
++    prepare_end_ns = exp_trace.now_ns()
+     voiced_waveforms = model.vocode(
+         [codec_tokens[index] for index in voiced],
+         [references[index] for index in voiced],
+     )
++    postprocess_start_ns = exp_trace.now_ns()
+     waveforms = [np.zeros(0, dtype=np.float32) for _ in codec_tokens]
+     for index, waveform in zip(voiced, voiced_waveforms, strict=True):
+         waveforms[index] = waveform
+@@ -251,6 +255,31 @@ def vocode_code2wav_payloads(
+             )
+         )
+         outputs.append(payload)
++    record = exp_trace.vocode_record()
++    if exp_trace.active("c2w") and record is not None:
++        metadata = {
++            **record,
++            "batch_id": exp_trace.current_batch_id() or -1,
++            "prepare_start_ns": prepare_start_ns,
++            "prepare_end_ns": prepare_end_ns,
++            "postprocess_start_ns": postprocess_start_ns,
++            "request_codec_tokens": [len(tokens) for tokens in codec_tokens],
++            "request_ids": [payload.request_id for payload in payloads],
++        }
++        if exp_trace.configured("digest"):
++            # note (research, 实验 10): pair the same codec tokens across batching policies and compare waveforms.
++            metadata["request_codec_sha256"] = [exp_trace.digest(tokens) for tokens in codec_tokens]
++            metadata["request_wave_stats"] = [exp_trace.wave_stats(waveform) for waveform in waveforms]
++        else:
++            pass
++        exp_trace.emit_for_requests(
++            [payload.request_id for payload in payloads],
++            "exp_vocode",
++            metadata,
++            exp_trace.now_ns(),
++        )
++    else:
++        pass
+     return outputs
+ 
+ 
+@@ -320,6 +349,8 @@ def create_code2wav_executor(
+         abort_callback=model.release_reference,
+         shutdown_callback=model.close_reference_pool,
+         request_arrival_hook=prefetch_reference,
++        trace_part="c2w" if exp_trace.configured("c2w") else None,
++        control_path=os.environ.get("SGLANG_OMNI_C2W_CONTROL") or None,
+     )
+ 
+ 
+diff --git a/sglang_omni/profiler/exp_trace.py b/sglang_omni/profiler/exp_trace.py
+new file mode 100644
+index 000000000..7437572c6
+--- /dev/null
++++ b/sglang_omni/profiler/exp_trace.py
+@@ -0,0 +1,221 @@
++# SPDX-License-Identifier: Apache-2.0
++"""Opt-in measurement points for research experiments on code2wav batching and thinker lookahead.
++
++Nothing here runs unless SGLANG_OMNI_EXP_TRACE names the part (comma list of c2w, thinker, digest, gc and stack;
++gc logs every generation-2 garbage collection of the process with its duration, stack lets an outside watcher get
++every thread's Python stack with SIGUSR2, written to SGLANG_OMNI_EXP_STACK_DIR/stack_<pid>.txt; both for locating
++pauses).
++Events go through the request event recorder, so they are written only while request events are
++switched on, land in the same per-process JSONL files and use the same wall clock (time.time_ns).
++No call here synchronizes a CUDA stream: GPU spans come from CUDA events that are read after a
++synchronization the instrumented code already performs.
++"""
++
++from __future__ import annotations
++
++import collections
++import contextlib
++import faulthandler
++import gc
++import logging
++import os
++import signal
++import threading
++import time
++from collections.abc import Iterator
++
++import hashlib
++
++import numpy as np
++import torch
++
++from sglang_omni.profiler.event_recorder import emit, get_active_stage, get_recorder
++
++PARTS = frozenset(
++    part.strip()
++    for part in os.environ.get("SGLANG_OMNI_EXP_TRACE", "").split(",")
++    if part.strip()
++)
++THINKER_STEP_REQUEST_ID = "__thinker_step__"
++
++EventMetadata = dict[str, int | float | str | bool | list[int] | list[str]]
++
++thread_state = threading.local()
++logger = logging.getLogger(__name__)
++GC_REQUEST_ID = "__gc__"
++# (start wall ns, duration ms, objects collected, stage of the thread that triggered it); appended inside the gc
++# callback, which may run at any allocation, so logging and event writes happen later on a flush thread.
++gc_records: collections.deque[tuple[int, float, int, str]] = collections.deque(maxlen=4096)
++gc_started: list[tuple[float, int]] = []
++
++
++def configured(part: str) -> bool:
++    """The part is switched on for this process, whether or not events are being recorded."""
++    return part in PARTS
++
++
++def active(part: str) -> bool:
++    """The part is switched on and request events are being recorded right now."""
++    return part in PARTS and get_recorder().is_active()
++
++
++def now_ns() -> int:
++    return time.time_ns()
++
++
++def stage_starts_with(prefix: str) -> bool:
++    return (get_active_stage() or "").startswith(prefix)
++
++
++def set_batch_id(batch_id: int | None) -> None:
++    """Bind the code2wav batch the scheduler thread is computing, for the vocode measurement."""
++    thread_state.batch_id = batch_id
++    thread_state.vocode_record = None
++
++
++def current_batch_id() -> int | None:
++    return getattr(thread_state, "batch_id", None)
++
++
++def set_vocode_record(record: EventMetadata | None) -> None:
++    thread_state.vocode_record = record
++
++
++def vocode_record() -> EventMetadata | None:
++    return getattr(thread_state, "vocode_record", None)
++
++
++def emit_for_requests(
++    request_ids: list[str],
++    event_name: str,
++    metadata: EventMetadata,
++    timestamp_ns: int,
++) -> None:
++    """One event per request, sharing the timestamp and metadata of their batch."""
++    for request_id in request_ids:
++        emit(
++            request_id=request_id,
++            stage=None,
++            event_name=event_name,
++            metadata=metadata,
++            timestamp_ns=timestamp_ns,
++        )
++
++
++@contextlib.contextmanager
++def annotate(range_name: str, is_enabled: bool) -> Iterator[None]:
++    """A torch profiler range and an NVTX range around a block when is_enabled."""
++    if is_enabled:
++        with torch.profiler.record_function(range_name):
++            torch.cuda.nvtx.range_push(range_name)
++            try:
++                yield
++            finally:
++                torch.cuda.nvtx.range_pop()
++    else:
++        yield
++
++
++class GpuSpans:
++    """CUDA events recorded on the current stream; read only after the caller's own sync."""
++
++    def __init__(self, is_enabled: bool) -> None:
++        self.is_enabled = is_enabled
++        self.marks: list[tuple[str, torch.cuda.Event]] = []
++
++    def mark(self, point_name: str) -> None:
++        if self.is_enabled:
++            event = torch.cuda.Event(enable_timing=True)
++            event.record()
++            self.marks.append((point_name, event))
++        else:
++            pass
++
++    def spans_ms(self) -> dict[str, float]:
++        """Milliseconds between consecutive marks, keyed first_to_second."""
++        return {
++            f"{first_name}_to_{second_name}": float(first.elapsed_time(second))
++            for (first_name, first), (second_name, second) in zip(
++                self.marks, self.marks[1:]
++            )
++        }
++
++
++def digest(values: torch.Tensor | list[int]) -> str:
++    """Short sha256 of a tensor's or an int list's bytes and dtype (same as the 实验 8 prototype)."""
++    tensor = values if isinstance(values, torch.Tensor) else torch.tensor(values, dtype=torch.int64)
++    tensor = tensor.detach().contiguous().cpu()
++    raw = tensor.view(torch.int16) if tensor.dtype == torch.bfloat16 else tensor
++    return hashlib.sha256(str(tensor.dtype).encode() + raw.numpy().tobytes()).hexdigest()[:16]
++
++
++def wave_stats(waveform: np.ndarray) -> list[float]:
++    """[samples, sum, sum of squares, max |x|] in float64: compares waveforms within a tolerance (实验 10)."""
++    x = np.asarray(waveform, dtype=np.float64).reshape(-1)
++    return [float(x.size), float(x.sum()), float((x * x).sum()), float(np.abs(x).max()) if x.size else 0.0]
++
++
++def on_gc(phase: str, info: dict[str, int]) -> None:
++    """gc.callbacks hook: time generation-2 collections, the ones long enough to pause a stage."""
++    if info.get("generation") != 2:
++        return
++    else:
++        pass
++    if phase == "start":
++        gc_started[:] = [(time.perf_counter(), time.time_ns())]
++    elif gc_started:
++        start_perf, start_ns = gc_started.pop()
++        gc_records.append(
++            (start_ns, (time.perf_counter() - start_perf) * 1000.0, int(info.get("collected", 0)), get_active_stage() or "")
++        )
++    else:
++        pass
++
++
++def flush_gc_records(interval_s: float = 1.0) -> None:
++    """Log the collections recorded since the last flush, and emit them while request events are on."""
++    while True:
++        time.sleep(interval_s)
++        while gc_records:
++            start_ns, duration_ms, collected, stage_name = gc_records.popleft()
++            logger.info(
++                "exp_gc generation=2 pid=%d stage=%s start_ns=%d duration_ms=%.2f collected=%d",
++                os.getpid(), stage_name, start_ns, duration_ms, collected,
++            )
++            if get_recorder().is_active():
++                emit(
++                    request_id=GC_REQUEST_ID,
++                    stage=None,
++                    event_name="exp_gc",
++                    metadata={"generation": 2, "pid": os.getpid(), "stage_name": stage_name,
++                              "duration_ms": duration_ms, "collected": collected},
++                    timestamp_ns=start_ns,
++                )
++            else:
++                pass
++
++
++if configured("gc") and on_gc not in gc.callbacks:
++    gc.callbacks.append(on_gc)
++    threading.Thread(target=flush_gc_records, name="exp-gc-flush", daemon=True).start()
++else:
++    pass
++
++
++def register_stack_dump(stack_dir: str) -> str:
++    """faulthandler on SIGUSR2 into a per-process file whose first line names the pid and its start time, so a
++    watcher signals only processes that registered (SIGUSR2 would end any other process)."""
++    os.makedirs(stack_dir, exist_ok=True)
++    path = os.path.join(stack_dir, f"stack_{os.getpid()}.txt")
++    with open(f"/proc/{os.getpid()}/stat") as stat_file:
++        start_ticks = stat_file.read().rsplit(")", 1)[1].split()[19]
++    stack_file = open(path, "a", buffering=1)  # noqa: SIM115  kept open for the process lifetime
++    stack_file.write(f"registered pid={os.getpid()} starttime={start_ticks}\n")
++    faulthandler.register(signal.SIGUSR2, file=stack_file, all_threads=True, chain=False)
++    return path
++
++
++if configured("stack") and os.environ.get("SGLANG_OMNI_EXP_STACK_DIR") and os.path.exists(f"/proc/{os.getpid()}/stat"):
++    register_stack_dump(os.environ["SGLANG_OMNI_EXP_STACK_DIR"])
++else:
++    pass
+diff --git a/sglang_omni/scheduling/omni_scheduler.py b/sglang_omni/scheduling/omni_scheduler.py
+index 88e0de93a..de585c1e5 100644
+--- a/sglang_omni/scheduling/omni_scheduler.py
++++ b/sglang_omni/scheduling/omni_scheduler.py
+@@ -67,6 +67,8 @@ from sglang_omni.model_runner.base import ModelRunner, PendingStep
+ from sglang_omni.model_runner.mlx_model_worker import MlxSchedulerPendingStep
+ from sglang_omni.model_runner.model_worker import ModelWorker
+ from sglang_omni.model_runner.weight_checker import WeightCheckResult
++from sglang_omni.profiler import exp_trace
++from sglang_omni.profiler.event_recorder import emit as emit_request_event
+ from sglang_omni.pipeline.stage.stream_queue import StreamItem
+ from sglang_omni.platforms import current_platform
+ from sglang_omni.profiler.duplex_events import emit_session_stage_bypassed
+@@ -3638,7 +3640,14 @@ class OmniScheduler(Generic[RequestDataT]):
+         D1 in design.md section 1.3). Prefill / empty batches flush any in-flight
+         decode first and run synchronously (the in-flight step is never stranded).
+         """
++        # note (research): per-iteration thinker measurement, off unless SGLANG_OMNI_EXP_TRACE has thinker.
++        is_tracing_stage = exp_trace.configured("thinker") and exp_trace.stage_starts_with(
++            "thinker"
++        )
+         while self.running:
++            is_tracing_step = is_tracing_stage and exp_trace.active("thinker")
++            step_start_ns = exp_trace.now_ns()
++            flush_reason = "none"
+             self.process_admin_requests()
+             recv_reqs = self.recv_requests()
+             recv_reqs.extend(self.take_deferred_request_payloads())
+@@ -3659,6 +3668,7 @@ class OmniScheduler(Generic[RequestDataT]):
+                     or (self.waiting_queue and not self.running_batch.batch_is_full)
+                 )
+             ):
++                flush_reason = "mixed_chunk"
+                 self.resolve_pending_async()
+             elif (
+                 self.async_decode_resolve_before_prefill
+@@ -3669,6 +3679,7 @@ class OmniScheduler(Generic[RequestDataT]):
+                 continue
+             else:
+                 pass
++            top_flush_ns = exp_trace.now_ns() - step_start_ns
+ 
+             batch = self.get_next_batch_to_run()
+             self.cur_batch = batch
+@@ -3682,8 +3693,37 @@ class OmniScheduler(Generic[RequestDataT]):
+                 and self.batch_is_decode(batch)
+                 and (runner is None or runner.lookahead_eligible(batch))
+             )
++            step_record: exp_trace.EventMetadata = {}
++            if is_tracing_step and batch is not None:
++                if use_lookahead:
++                    blocked_by = "none"
++                elif len(batch.reqs) < self.async_decode_min_batch_size:
++                    blocked_by = "below_min_batch"
++                elif not self.batch_is_decode(batch):
++                    blocked_by = "not_decode"
++                else:
++                    blocked_by = "runner_ineligible"
++                step_record = {
++                    "batch_size": len(batch.reqs),
++                    "forward_mode": batch.forward_mode.name,
++                    "use_lookahead": use_lookahead,
++                    "blocked_by": blocked_by,
++                    "waiting_requests": len(self.waiting_queue),
++                    "has_chunked_request": self.chunked_req is not None,
++                    **(
++                        {
++                            f"blocker_{name}": count
++                            for name, count in runner.lookahead_blockers(batch).items()
++                        }
++                        if runner is not None and blocked_by == "runner_ineligible"
++                        else {}
++                    ),
++                }
++            else:
++                pass
+ 
+             if use_lookahead:
++                launch_start_ns = exp_trace.now_ns()
+                 try:
+                     sched_output, pending_step = self.run_batch_launch(batch)
+                 except Exception as exc:
+@@ -3695,6 +3735,8 @@ class OmniScheduler(Generic[RequestDataT]):
+                         scheduler_output=sched_output,
+                         device_step=pending_step,
+                     )
++                    step_record["launch_ns"] = exp_trace.now_ns() - launch_start_ns
++                    resolve_start_ns = exp_trace.now_ns()
+                     if prev_pending is not None:
+                         if self.session_bridge is not None:
+                             self.previous_pending_decode = prev_pending
+@@ -3714,6 +3756,7 @@ class OmniScheduler(Generic[RequestDataT]):
+                                 self.handle_batch_failure(prev_pending.batch, exc)
+                     else:
+                         pass
++                    step_record["resolve_ns"] = exp_trace.now_ns() - resolve_start_ns
+             else:
+                 # Prefill, empty batches, decode batches below the configured
+                 # threshold and batches the runner marks ineligible for the
+@@ -3722,7 +3765,10 @@ class OmniScheduler(Generic[RequestDataT]):
+                 # leaves the lookahead, then run this batch synchronously. Skip
+                 # the drain call when nothing is pending, since it would no-op.
+                 if self.async_pending is not None:
++                    flush_reason = "sync_batch" if flush_reason == "none" else flush_reason
++                    drain_start_ns = exp_trace.now_ns()
+                     self.resolve_pending_async()
++                    step_record["drain_ns"] = exp_trace.now_ns() - drain_start_ns
+                     # Stale-batch overrun: `batch` was built (get_next_batch_to_run,
+                     # top of loop) BEFORE this drain, which can finish OR retract reqs
+                     # still present in it. Drop them before run_batch so they are not
+@@ -3733,17 +3779,36 @@ class OmniScheduler(Generic[RequestDataT]):
+                 else:
+                     pass
+                 if batch:
++                    run_start_ns = exp_trace.now_ns()
+                     result = self.run_batch(batch)
++                    run_end_ns = exp_trace.now_ns()
+                     if result is not _FAILED_BATCH_RESULT:
+                         self.process_batch_result(batch, result)
+                     else:
+                         pass
++                    step_record["run_ns"] = run_end_ns - run_start_ns
++                    step_record["process_ns"] = exp_trace.now_ns() - run_end_ns
+                 else:
+                     self._sched_idled = True  # noqa: leading-underscore
+                     self.self_check_during_idle()
+                     self.sleep_during_idle()
+ 
+             self.last_batch = batch
++            if is_tracing_step and (step_record or flush_reason != "none"):
++                emit_request_event(
++                    request_id=exp_trace.THINKER_STEP_REQUEST_ID,
++                    stage=None,
++                    event_name="exp_thinker_step",
++                    metadata={
++                        **step_record,
++                        "flush_reason": flush_reason,
++                        "top_flush_ns": top_flush_ns,
++                        "step_start_ns": step_start_ns,
++                    },
++                    timestamp_ns=exp_trace.now_ns(),
++                )
++            else:
++                pass
+             if envs.SGLANG_ENABLE_STRICT_MEM_CHECK_DURING_BUSY.get():
+                 self.self_check_during_busy()
+             else:
+diff --git a/sglang_omni/scheduling/simple_scheduler.py b/sglang_omni/scheduling/simple_scheduler.py
+index 9eec6bab7..8bcd8ed25 100644
+--- a/sglang_omni/scheduling/simple_scheduler.py
++++ b/sglang_omni/scheduling/simple_scheduler.py
+@@ -15,10 +15,13 @@ import inspect
+ import logging
+ import queue as _queue_mod
+ import threading
++import json
++import os
+ import time
+ from collections.abc import Coroutine, Sequence
+ from typing import Awaitable, Callable, Generic, Protocol
+ 
++from sglang_omni.profiler import exp_trace
+ from sglang_omni.proto.request import StagePayload
+ from sglang_omni.scheduling.message import IncomingMessage, OutgoingMessage
+ from sglang_omni.scheduling.threaded_simple_scheduler import ComputeInput, ComputeResult
+@@ -63,6 +66,8 @@ class SimpleScheduler(Generic[ComputeInput, ComputeResult]):
+         abort_callback: Callable[[str], None] | None = None,
+         shutdown_callback: Callable[[], None] | None = None,
+         request_arrival_hook: RequestArrivalHook | None = None,
++        trace_part: str | None = None,
++        control_path: str | None = None,
+     ):
+         self.inbox: _queue_mod.Queue[IncomingMessage] = _queue_mod.Queue()
+         self.outbox: _queue_mod.Queue[OutgoingMessage] = _queue_mod.Queue()
+@@ -96,6 +101,29 @@ class SimpleScheduler(Generic[ComputeInput, ComputeResult]):
+         self.abort_lock = threading.Lock()
+         self.running = False
+         self.pending_messages: collections.deque[IncomingMessage] = collections.deque()
++        # note (research): trace_part names the exp_trace part that measures this scheduler's batches.
++        self.trace_part = trace_part
++        self.trace_dequeue: dict[str, tuple[int, int]] = {}
++        self.trace_batch_count = 0
++        # note (research, 实验 10): a JSON file the scheduler re-reads when it changes, so batching can be switched
++        # between measurement phases without a restart: {"max_batch_size": int, "policy": "fifo" | "length",
++        # "window": int}. Without the file nothing changes (FIFO, the configured max_batch_size).
++        self.control_path = control_path
++        self.control_mtime_ns: int | None = None
++        self.batch_policy = "fifo"
++        self.length_window = 64
++        self.last_window_size = 0
++        # note (research, P1): max-wait aging on the length-aware batches. The scheduler notes when each request
++        # entered it (monotonic for the decision, wall clock for the events); under policy "length", a request that
++        # has waited max_wait_s or longer is taken in arrival order before any length-matched pick, so no aged
++        # request is overtaken by a younger one. None means no aging (the 实验 10 length policy). Control key
++        # max_wait_ms: a number >= 0, or null for none; a missing key keeps the current value.
++        self.max_wait_s: float | None = None
++        self.clock: Callable[[], float] = time.monotonic
++        self.enqueue_times: dict[str, tuple[float, int]] = {}
++        self.trace_wait: dict[str, tuple[int, float, bool]] = {}
++        self.last_forced = 0
++        self.last_anchor_aged = False
+ 
+     def cleanup_aborted_request(self, request_id: str) -> None:
+         if self.abort_callback is None:
+@@ -123,6 +151,15 @@ class SimpleScheduler(Generic[ComputeInput, ComputeResult]):
+ 
+     def enqueue(self, message: IncomingMessage) -> None:
+         """Runs on the stage event loop, so the arrival hook must not block."""
++        if message.type == "new_request":
++            # note (research, P1): recorded before the message becomes visible to the scheduler thread.
++            self.enqueue_times[message.request_id] = (self.clock(), time.time_ns())
++            if len(self.enqueue_times) > 100000:  # entries of requests that never left through a batch
++                self.enqueue_times.pop(next(iter(self.enqueue_times)))
++            else:
++                pass
++        else:
++            pass
+         if message.type == "new_request" and self.request_arrival_hook is not None:
+             self.request_arrival_hook(message.data)
+         else:
+@@ -146,8 +183,171 @@ class SimpleScheduler(Generic[ComputeInput, ComputeResult]):
+         except _queue_mod.Empty:
+             return None
+ 
++    def is_tracing(self) -> bool:
++        return self.trace_part is not None and exp_trace.active(self.trace_part)
++
++    def waited_s(self, message: IncomingMessage, now: float) -> float:
++        """Seconds since the request entered this scheduler; 0 for a message that did not come through enqueue."""
++        entered = self.enqueue_times.get(message.request_id)
++        return now - entered[0] if entered is not None else 0.0
++
++    def record_dequeue(self, message: IncomingMessage, forced: bool = False) -> None:
++        """When a request left the inbox for a batch, and how many messages were still waiting."""
++        entered = self.enqueue_times.pop(message.request_id, None)
++        if self.is_tracing():
++            self.trace_dequeue[message.request_id] = (
++                exp_trace.now_ns(),
++                self.inbox.qsize() + len(self.pending_messages),
++            )
++            self.trace_wait[message.request_id] = (
++                entered[1] if entered is not None else -1,
++                (self.clock() - entered[0]) * 1000.0 if entered is not None else -1.0,
++                forced,
++            )
++        else:
++            pass
++
++    def refresh_control(self) -> None:
++        """Apply the control file when its modification time changed; a missing or unreadable file changes nothing."""
++        if not self.control_path:
++            return
++        else:
++            pass
++        try:
++            mtime_ns = os.stat(self.control_path).st_mtime_ns
++            if mtime_ns == self.control_mtime_ns:
++                return
++            else:
++                pass
++            with open(self.control_path) as fh:
++                control = json.load(fh)
++        except (OSError, ValueError):
++            return
++        self.control_mtime_ns = mtime_ns
++        if "max_batch_size" in control:
++            self.max_batch_size = max(int(control["max_batch_size"]), 1)
++        else:
++            pass
++        if control.get("policy") in ("fifo", "length"):
++            self.batch_policy = control["policy"]
++        else:
++            pass
++        self.length_window = max(int(control.get("window", self.length_window)), self.max_batch_size)
++        if "max_wait_ms" in control:
++            value = control["max_wait_ms"]
++            if value is None:
++                self.max_wait_s = None
++            else:
++                try:
++                    max_wait_ms = float(value)
++                except (TypeError, ValueError):
++                    max_wait_ms = -1.0
++                if 0.0 <= max_wait_ms < float("inf"):
++                    self.max_wait_s = max_wait_ms / 1000.0
++                else:
++                    pass  # an invalid value changes nothing
++        else:
++            pass
++        logger.info(
++            "SimpleScheduler control: max_batch_size=%d policy=%s window=%d max_wait_ms=%s",
++            self.max_batch_size,
++            self.batch_policy,
++            self.length_window,
++            "none" if self.max_wait_s is None else f"{self.max_wait_s * 1000.0:g}",
++        )
++
++    def collect_length_aware(self, first_msg: IncomingMessage) -> list[IncomingMessage]:
++        """The oldest request, then the waiting requests whose cost (code2wav: codec tokens) is closest to it.
++
++        Looks at no more than length_window waiting requests and never waits for more. Requests not chosen go
++        back to the front of the queue in arrival order, so the oldest of them anchors the next batch: a long
++        request is never skipped more than once it is the oldest. max_batch_cost still applies. With max_wait_s
++        set, requests that have waited that long are taken first, in arrival order; an aged request that does not
++        fit max_batch_cost closes the batch, so no younger request takes its place.
++        """
++        now = self.clock()
++        self.last_anchor_aged = self.max_wait_s is not None and self.waited_s(first_msg, now) >= self.max_wait_s
++        batch = [first_msg]
++        self.record_dequeue(first_msg)
++        anchor = self.message_cost(first_msg)
++        candidates: list[IncomingMessage] = []
++        others: list[IncomingMessage] = []
++        while self.pending_messages and len(candidates) < self.length_window:
++            msg = self.pending_messages.popleft()
++            (candidates if msg.type == "new_request" else others).append(msg)
++        while len(candidates) < self.length_window:
++            try:
++                msg = self.inbox.get_nowait()
++            except _queue_mod.Empty:
++                break
++            (candidates if msg.type == "new_request" else others).append(msg)
++        self.last_window_size = len(candidates)
++        costs = [self.message_cost(msg) for msg in candidates]
++        chosen: set[int] = set()
++        forced: set[int] = set()
++        batch_cost = anchor
++        is_closed = False
++        if self.max_wait_s is not None:
++            for i in range(len(candidates)):  # candidates are in arrival order
++                if len(batch) + len(chosen) >= self.max_batch_size:
++                    break
++                else:
++                    pass
++                if self.waited_s(candidates[i], now) < self.max_wait_s:
++                    continue
++                else:
++                    pass
++                if self.max_batch_cost is not None and batch_cost + costs[i] > self.max_batch_cost:
++                    is_closed = True
++                    break
++                else:
++                    pass
++                chosen.add(i)
++                forced.add(i)
++                batch_cost += costs[i]
++        else:
++            pass
++        order = sorted(range(len(candidates)), key=lambda i: (abs(costs[i] - anchor), i))
++        for i in order:
++            if is_closed or len(batch) + len(chosen) >= self.max_batch_size:
++                break
++            else:
++                pass
++            if i in chosen:
++                continue
++            else:
++                pass
++            if self.max_batch_cost is not None and batch_cost + costs[i] > self.max_batch_cost:
++                continue
++            else:
++                pass
++            chosen.add(i)
++            batch_cost += costs[i]
++        self.last_forced = len(forced)
++        for i in sorted(chosen):
++            batch.append(candidates[i])
++            self.record_dequeue(candidates[i], forced=i in forced)
++        rest = [candidates[i] for i in range(len(candidates)) if i not in chosen]
++        self.pending_messages.extendleft(reversed(rest))
++        self.pending_messages.extend(others)
++        return batch
++
+     def collect_batch(self, first_msg: IncomingMessage) -> list[IncomingMessage]:
++        self.refresh_control()
++        if (
++            self.batch_policy == "length"
++            and self.batch_fn is not None
++            and self.max_batch_size > 1
++            and self.request_cost_fn is not None
++        ):
++            return self.collect_length_aware(first_msg)
++        else:
++            pass
++        self.last_window_size = 0
++        self.last_forced = 0
++        self.last_anchor_aged = False
+         batch = [first_msg]
++        self.record_dequeue(first_msg)
+         if self.batch_fn is None or self.max_batch_size <= 1:
+             return batch
+         else:
+@@ -189,6 +389,7 @@ class SimpleScheduler(Generic[ComputeInput, ComputeResult]):
+                 else:
+                     pass
+                 batch.append(msg)
++                self.record_dequeue(msg)
+                 if deadline is None:
+                     deadline = time.monotonic() + self.max_batch_wait_s
+                 else:
+@@ -280,6 +481,62 @@ class SimpleScheduler(Generic[ComputeInput, ComputeResult]):
+             else:
+                 self.emit_result(msg.request_id, result, self.outbox)
+ 
++    def run_traced_batch(
++        self, batch: list[IncomingMessage], loop: asyncio.AbstractEventLoop
++    ) -> None:
++        """run_batch with batch formation and compute boundaries recorded per request."""
++        self.trace_batch_count += 1
++        batch_id = self.trace_batch_count
++        request_ids = [message.request_id for message in batch]
++        formed_ns = exp_trace.now_ns()
++        batch_cost = sum(self.message_cost(message) for message in batch)
++        queue_depth = self.inbox.qsize() + len(self.pending_messages)
++        for message in batch:
++            dequeue_ns, depth_at_dequeue = self.trace_dequeue.pop(
++                message.request_id, (formed_ns, -1)
++            )
++            enqueue_ns, waited_ms, is_forced = self.trace_wait.pop(
++                message.request_id, (-1, -1.0, False)
++            )
++            exp_trace.emit_for_requests(
++                [message.request_id],
++                "exp_batch_formed",
++                {
++                    "batch_id": batch_id,
++                    "batch_size": len(batch),
++                    "batch_cost": batch_cost,
++                    "dequeue_ns": dequeue_ns,
++                    "queue_depth_at_dequeue": depth_at_dequeue,
++                    "queue_depth_at_formed": queue_depth,
++                    "batch_cap": self.max_batch_size,
++                    "batch_policy": self.batch_policy,
++                    "window_size": self.last_window_size,
++                    "enqueue_ns": enqueue_ns,
++                    "waited_ms": waited_ms,
++                    "is_forced": is_forced,
++                    "forced_count": self.last_forced,
++                    "anchor_aged": self.last_anchor_aged,
++                    "max_wait_ms": -1.0 if self.max_wait_s is None else self.max_wait_s * 1000.0,
++                },
++                formed_ns,
++            )
++        exp_trace.set_batch_id(batch_id)
++        compute_start_ns = exp_trace.now_ns()
++        try:
++            self.run_batch(batch, loop)
++        finally:
++            exp_trace.set_batch_id(None)
++            exp_trace.emit_for_requests(
++                request_ids,
++                "exp_batch_done",
++                {
++                    "batch_id": batch_id,
++                    "batch_size": len(batch),
++                    "compute_start_ns": compute_start_ns,
++                },
++                exp_trace.now_ns(),
++            )
++
+     @staticmethod
+     async def await_result(result: Awaitable[ComputeResult]) -> ComputeResult:
+         return await result
+@@ -315,13 +572,17 @@ class SimpleScheduler(Generic[ComputeInput, ComputeResult]):
+ 
+                 if msg.type == "new_request":
+                     if self.consume_if_aborted(msg.request_id):
++                        self.enqueue_times.pop(msg.request_id, None)
+                         continue
+                     else:
+                         pass
+                     batch = [msg]
+                     try:
+                         batch = self.collect_batch(msg)
+-                        self.run_batch(batch, loop)
++                        if self.is_tracing():
++                            self.run_traced_batch(batch, loop)
++                        else:
++                            self.run_batch(batch, loop)
+                     except Exception as exc:
+                         logger.exception(
+                             "SimpleScheduler: compute_fn failed for %s", msg.request_id

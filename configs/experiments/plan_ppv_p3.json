@@ -1,0 +1,58 @@
+{
+ "plan_id": "ppv_p3_scratch_vs_nfs",
+ "_comment": "P3 停顿对照（本地盘对 NFS，ABBA），只在预算有剩余时放进 Job 454290。由 scripts/slurm/make_plan_ppv_p3.py 生成。",
+ "experiments": [
+  {
+   "experiment_id": "ppv_p3_nfs_1",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p3_nfs_1.json",
+   "priority": -801,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 2100,
+   "timeout_s": 5400,
+   "max_retries": 1,
+   "description": "P3 停顿对照第 1 个（顺序 NFS/本地盘/本地盘/NFS）：日志、事件、客户端记录写 NFS。放置 t2_k2_c4，默认组批（没有控制文件），gc 日志、调用栈注册和停顿检测开。W3b 开环 21 请求/秒，6 段各 300 秒，开事件。"
+  },
+  {
+   "experiment_id": "ppv_p3_scratch_2",
+   "command": "cd ~/workspace/omni-ppv && SCR=/scratch/$USER/omni_ppv/$OMNI_EXP_ID && mkdir -p \"$SCR\" && OMNI_REPO=\"$PWD\" OMNI_EXP_DIR=\"$SCR\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p3_scratch_2.json; rc=$?; rsync -a \"$SCR\"/ \"$OMNI_EXP_DIR\"/ && rm -rf \"$SCR\"; exit $rc",
+   "priority": -802,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 2100,
+   "timeout_s": 5400,
+   "max_retries": 1,
+   "description": "P3 停顿对照第 2 个（顺序 NFS/本地盘/本地盘/NFS）：日志、事件、客户端记录写节点本地盘 /scratch。放置 t2_k2_c4，默认组批（没有控制文件），gc 日志、调用栈注册和停顿检测开。W3b 开环 21 请求/秒，6 段各 300 秒，开事件。"
+  },
+  {
+   "experiment_id": "ppv_p3_scratch_3",
+   "command": "cd ~/workspace/omni-ppv && SCR=/scratch/$USER/omni_ppv/$OMNI_EXP_ID && mkdir -p \"$SCR\" && OMNI_REPO=\"$PWD\" OMNI_EXP_DIR=\"$SCR\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p3_scratch_3.json; rc=$?; rsync -a \"$SCR\"/ \"$OMNI_EXP_DIR\"/ && rm -rf \"$SCR\"; exit $rc",
+   "priority": -803,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 2100,
+   "timeout_s": 5400,
+   "max_retries": 1,
+   "description": "P3 停顿对照第 3 个（顺序 NFS/本地盘/本地盘/NFS）：日志、事件、客户端记录写节点本地盘 /scratch。放置 t2_k2_c4，默认组批（没有控制文件），gc 日志、调用栈注册和停顿检测开。W3b 开环 21 请求/秒，6 段各 300 秒，开事件。"
+  },
+  {
+   "experiment_id": "ppv_p3_nfs_4",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_p3_nfs_4.json",
+   "priority": -804,
+   "required_gpus": 8,
+   "required_cpus": 54,
+   "required_memory_gb": 780,
+   "dependencies": [],
+   "estimated_duration_s": 2100,
+   "timeout_s": 5400,
+   "max_retries": 1,
+   "description": "P3 停顿对照第 4 个（顺序 NFS/本地盘/本地盘/NFS）：日志、事件、客户端记录写 NFS。放置 t2_k2_c4，默认组批（没有控制文件），gc 日志、调用栈注册和停顿检测开。W3b 开环 21 请求/秒，6 段各 300 秒，开事件。"
+  }
+ ]
+}

@@ -456,6 +456,7 @@ class ExperimentRunner:
         self.step_gpus = [g for g in vis.split(",") if g.strip()] if vis else []
         self.servers: list[Server] = []
         self.phase_summaries: list[dict[str, Any]] = []
+        self.stall_watchers: list[Any] = []  # P3: log-gap watchers, only when the config sets "stall_watch": true
         self.restarts: list[dict[str, Any]] = []  # servers restarted after exiting mid-experiment
         self._torch_started: dict[str, int] = {}
         self.stop_requested = False
@@ -657,6 +658,10 @@ class ExperimentRunner:
         window_task = None
         if window:
             window_task = asyncio.create_task(self._profile_window(name, float(window["start_after_s"]), float(window["duration_s"]), summary))
+        watched = kind in ("closed_loop", "open_loop", "agent", "replay", "plugin")
+        if watched:
+            for w in self.stall_watchers:
+                w.arm()  # a log gap counts as a pause only while load is offered
         try:
             if kind == "smoke":
                 summary.update(await self._phase_smoke(ph, name, seed, bench_trace))
@@ -685,6 +690,9 @@ class ExperimentRunner:
             else:
                 raise ExperimentFailure("config_error", f"unknown phase kind {kind!r}")
         finally:
+            if watched:
+                for w in self.stall_watchers:
+                    w.disarm()
             if window_task is not None:
                 window_task.cancel()  # a window still waiting to start is dropped; one in progress stops now
                 try:
@@ -696,6 +704,23 @@ class ExperimentRunner:
             summary["ended"] = time.time()
         _ = raw
         return summary
+
+    def _start_stall_watchers(self) -> None:
+        """P3: one watcher per server tails its log and records process states (and stack dumps of processes that
+        registered for them) when no line appears for a while during a measured phase. Off unless the config sets
+        "stall_watch": true, so runs that are compared with earlier ones keep the same measurement."""
+        if not self.cfg.get("stall_watch", False):
+            return
+        from .stall_watch import StallWatcher, tree_pids
+
+        def pids_of(srv: Server):  # noqa: ANN202 - the server may be restarted, so look its process up each time
+            return lambda: tree_pids([srv.proc.pid] if srv.proc and srv.proc.poll() is None else [])
+
+        self.stall_watchers = [StallWatcher(s.log_path, pids_of(s), self.out / "raw" / f"stalls_{s.name}.jsonl",
+                                            stack_dir=self.out / "stacks") for s in self.servers]
+        for w in self.stall_watchers:
+            w.disarm()
+            w.start()
 
     async def _phase_plugin(self, ph: dict[str, Any], name: str, seed: int) -> dict[str, Any]:
         """A phase driven by a module of omni_research (``"module": "duplex.phase"`` -> omni_research.duplex.phase),
@@ -1025,6 +1050,7 @@ class ExperimentRunner:
             if self.cfg.get("servers"):
                 self.start_servers()
                 result["server_ready_s"] = {s.name: s.ready_after_s for s in self.servers}
+                self._start_stall_watchers()
             bench_trace = TraceCollector(self.out / "raw" / "bench_trace.jsonl", source_kind=SourceKind.OBSERVED,
                                          generator="omni_research.replay.drivers", seed=self.cfg.get("seed", 0),
                                          workload={"experiment_id": self.cfg["experiment_id"]},
@@ -1074,6 +1100,8 @@ class ExperimentRunner:
             result["server_restarts"] = [{k: v for k, v in ev.items() if k != "log_tail"} for ev in self.restarts]
             gpu.stop()
             cpu.stop()
+            for w in self.stall_watchers:
+                w.stop()
             result["phases"] = self.phase_summaries
             result["gpu"] = summarize_gpu_samples(self.out / "raw" / "gpu_samples.csv")
             result["wall_s"] = time.time() - self.t_start

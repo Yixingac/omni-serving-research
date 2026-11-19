@@ -1,0 +1,22 @@
+{
+  "_comment": "P2（隐藏状态旁路复制的逐位检查）：从 sglang-omni 的副本启动服务：git worktree，同一提交 520b49ee，加 configs/runtime/patches/sglang_omni_async_ppv_p2.patch（实验 11 的补丁，加 SGLANG_OMNI_SPEECH_LOOKAHEAD=sidecopy_verify：每个结束的请求在启动流上另拷一份同样的快照行，和旁路流的拷贝逐位比较）。与实验 11 的补丁相比只多了 verify 模式；sidecopy 的代码相同。SGLANG_OMNI_EXP_TORCH_SKIP 与实验 11 相同。",
+  "env_script": "~/workspace/sglang-omni-learning/scripts/env-unicorn.sh",
+  "cwd": "~/workspace/sglang-omni-learning/repos/sglang-omni-ppv-verify",
+  "python": "~/workspace/sglang-omni-learning/.venv/bin/python",
+  "ffmpeg": "~/workspace/sglang-omni-learning/.conda-runtime/bin/ffmpeg",
+  "warm_cache_script": "~/workspace/sglang-omni-learning/scripts/warm-cache.sh",
+  "env": {
+    "SGLANG_OMNI_EXP_TRACE": "thinker",
+    "SGLANG_OMNI_EXP_TORCH_SKIP": "code2wav,talker"
+  },
+  "required_imports": [
+    "torch",
+    "sglang",
+    "sglang_omni",
+    "onnx",
+    "onnxruntime",
+    "einops",
+    "aiohttp",
+    "psutil"
+  ]
+}
