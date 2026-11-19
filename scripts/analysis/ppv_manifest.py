@@ -87,7 +87,7 @@ def build(state: dict[str, Any], data_root: Path | None, inclusion: dict[str, An
             "config": f"configs/experiments/ppv/{eid}.json",
             "orchestrator_status": st.get("status"),
             "attempts": st.get("attempts"),
-            "failure": (st.get("failures") or [{}])[-1].get("detail") if st.get("failures") else None,
+            "failure": scrub((st.get("failures") or [{}])[-1].get("detail")) if st.get("failures") else None,
             "started": iso(st.get("started_at")),
             "ended": iso(st.get("ended_at")),
             "gpus": gpus,
@@ -113,6 +113,15 @@ def to_markdown(rows: list[dict[str, Any]], extra: list[dict[str, Any]] | None =
     lines += ["", f"Allocated GPU-hours, all attempts: {total:.2f} ("
               + ", ".join(f"{k} {v:.2f}" for k, v in sorted(by_status.items())) + ")."]
     return "\n".join(lines) + "\n"
+
+
+def scrub(text: str | None) -> str | None:
+    """Failure tracebacks carry home directories, host names and addresses; the repository is public."""
+    if text is None:
+        return None
+    text = re.sub(r"/home/[^/\s\"']+/", "~/", text)
+    text = re.sub(r"\b[a-z]+-compute-\d+\b", "<node>", text)
+    return re.sub(r"\b\d{1,3}(?:\.\d{1,3}){3}\b", "<ip>", text)
 
 
 def main() -> int:

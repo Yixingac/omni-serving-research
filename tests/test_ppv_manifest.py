@@ -65,3 +65,9 @@ def test_microbenchmark_run_log_gives_the_commits(tmp_path):
     row = pm.build(state, root, {})[0]
     assert row["research_repo_commit"] == "99e044240c" and row["sglang_omni_commit"] == "520b49ee69"
     assert row["gpu_hours_allocated"] == 2.0 and row["family"] == "C1"
+
+
+def test_failure_text_is_scrubbed_for_the_public_repo():
+    raw = 'File "/home/someone/workspace/x.py", line 3 on abdelfattah-compute-03 from 10.1.2.3'
+    assert pm.scrub(raw) == 'File "~/workspace/x.py", line 3 on <node> from <ip>'
+    assert pm.scrub(None) is None
