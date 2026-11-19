@@ -11,7 +11,7 @@
 | 本轮代码在集群上从哪里跑 | 新建 worktree `~/workspace/omni-ppv`（本分支）；编排器的命令先 `cd` 到这里再运行，所以运行器、配置都来自本分支，原检出不动 | `git worktree list`；每个运行的 `manifest.json` 记录仓库提交 |
 | sglang-omni 运行时 | 仍是 `520b49ee` 的各个 worktree（stock、instr、batch、async 等），本轮没有改动已有 worktree；新补丁一律放在新的 `ppv-*` worktree | — |
 | 集群上原检出里有一个未跟踪文件 `4d9fb37` | 不是本轮产生的，没有动 | `git status --short` |
-| Job 454290 | RUNNING，UNLIMITED，compute-03，8×A6000，属于本人；22:02 时 8 张卡 0%、1 MiB、无进程；登录节点上的编排器（`--keep-alive`）还在轮询 plan.d，115 个实验全部 SUCCEEDED，没有排队或运行中的实验 | `squeue --me`、`scontrol show job`、`nvidia-smi`、编排器 `state.json` |
+| Job 454290 | RUNNING，UNLIMITED，the 8-GPU node，8×A6000，属于本人；22:02 时 8 张卡 0%、1 MiB、无进程；登录节点上的编排器（`--keep-alive`）还在轮询 plan.d，115 个实验全部 SUCCEEDED，没有排队或运行中的实验 | `squeue --me`、`scontrol show job`、`nvidia-smi`、编排器 `state.json` |
 | 资源余量 | 节点内存可用约 786 GB；`/scratch` 97% 满（剩 219 GB）；`/tmp` 剩 2.8 GB；NFS home 剩 5.7 TB | `free -g`、`df -h` |
 | 驱动 / CUDA / torch | 580.126.18 / CUDA 13.0 / torch 2.13.0+cu130（与实验 6–11 相同） | `nvidia-smi`；运行时 venv |
 

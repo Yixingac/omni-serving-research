@@ -107,7 +107,7 @@
 | 服务日志断档 > 1 s 时：每个进程的状态和 wchan、所有线程的 Python 调用栈 | `src/omni_research/orchestration/stall_watch.py` + P1 补丁的 `stack` 部分 | 每 0.1 s stat 一次日志；断档时才读 `/proc`、发 SIGUSR2；每 30 s 最多一次、每个运行最多 20 次 |
 | 日志 stat 本身慢（> 0.2 s） | 同上 | — |
 
-- **py-spy**：运行时 venv 里有，但集群的 `ptrace_scope = 1`（登录节点和 compute-03 都是），py-spy 作为 runner 的子进程不能附着到兄弟进程，所以默认不用，改用进程自己注册的 SIGUSR2 调用栈转储（标准库 `faulthandler`）。SIGUSR2 会结束没注册的进程，所以只发给“注册文件里的启动时间和当前进程一致”的 pid。
+- **py-spy**：运行时 venv 里有，但集群的 `ptrace_scope = 1`（登录节点和 the 8-GPU node 都是），py-spy 作为 runner 的子进程不能附着到兄弟进程，所以默认不用，改用进程自己注册的 SIGUSR2 调用栈转储（标准库 `faulthandler`）。SIGUSR2 会结束没注册的进程，所以只发给“注册文件里的启动时间和当前进程一致”的 pid。
 - 停顿检测只在负载段“上膛”（`arm()`）：控制段、事件开关、段间空闲时日志安静是正常的，不算停顿。
 
 ### 3.2 条件对照（本地盘对 NFS）

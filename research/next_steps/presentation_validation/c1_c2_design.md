@@ -114,7 +114,7 @@ ASR：用集群上已缓存的 **Qwen3-ASR-1.7B**，经 sglang-omni 自己的 `/
 
 ## 6. GPU 运行命令和时间
 
-在 compute-03 上、Job 454290 内（ssh 进入作业的 cgroup），只在父会话分配的空闲卡上运行；脚本不申请资源、不碰其他卡：
+在 the 8-GPU node 上、Job 454290 内（ssh 进入作业的 cgroup），只在父会话分配的空闲卡上运行；脚本不申请资源、不碰其他卡：
 
 ```bash
 cd ~/workspace/omni-ppv   # 本分支在集群上的 worktree（这些文件提交并拉取之后）
