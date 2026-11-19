@@ -364,14 +364,14 @@ Design rules (as in experiments 6–11): one primary question per experiment, hy
 | Code2Wav costs ~0.2 s GPU per request; queueing dominates at load | CUDA events, server events | Measured | 2+6 placement | Exp. 6 |
 | FIFO batching wastes up to 28% on padding; length-aware batching +30% when the vocoder saturates | Controlled batching, 3 blocks | Measured / Derived | Local result; unsaturated full service shows no gain | Exp. 10 |
 | Masked memory-efficient attention is the largest single Code2Wav kernel (19%) | Kernel census of profiler traces | Measured | 3 s windows; shapes inferred from grids | `results/c2w_kernel_census_exclusive_c128.json` |
-| Packed variable-length flow attention reduces Code2Wav GPU time | — | Hypothesis | Upstream comment says the *eager* packed path is slower than the compiled dense path | `compiler_runtime_opportunities.md` |
-| HiFT half precision keeps audio quality | — | Unknown | Needs objective quality gate | same |
+| Packed variable-length flow attention reduces Code2Wav GPU time | C1 microbenchmark on 47,484 real batch shapes (updated 2026-11-19) | **Measured (microbenchmark):** packed + compile −13..−42 % GPU time per audio second on batched shapes, −1 % at ~1.2 requests per batch; eager packed is slower (+21..+58 %) | The pinned packed path is BF16 and fails the audio-quality gate (MCD +1.01 dB); FP16 packing passes (+0.06 dB, exploratory); no end-to-end run | `presentation_validation/final_experiment_results.md` C1 |
+| HiFT half precision keeps audio quality | C2 microbenchmark (updated 2026-11-19) | **Measured: no** — FP16 HiFT body MCD 0.83 dB vs FP32 (gate 0.1 dB) and +31..+50 % slower; weight-norm folding exact but no measurable gain; channels-last fails the numerical gate | Microbenchmark; three shape groups | `presentation_validation/final_experiment_results.md` C2 |
 | Thinker idle per step is 3–15 ms; lookahead removes it but speech end-to-end improves only 2–5% | 3 blocks, CIs include 0 | Measured | W3b; short answers | Exp. 8 |
 | Side-stream hidden-state copy is correct | Gate failed | Unknown (not demonstrated) | Fingerprint check too coarse | Exp. 11 |
 | Video requests are bound by serial CPU preprocessing | Single runs | Measured (preliminary) | Synthetic videos | Exp. 14 |
 | Session-affinity routing does not help current synthetic agents | Single runs | Measured (preliminary) | Short sessions | Exp. 19 |
 | Robot sessions exceed Thinker KV capacity and need session-level cache management | — | Hypothesis | Not measured | `thunderagent_flashstates_related_work.md` §5 |
-| Duplex TTFA/barge-in on A6000 and the session limit | — | Unknown | Never run | `robotics_experiment_plan.md` |
+| Duplex TTFA/barge-in on A6000 and the session limit | R0–R2 (updated 2026-11-19) | **Measured:** 1-s units real-time up to 4 sessions on one A6000 (unit miss ≤ 0.6 %); TTFA P50 1.36 s with one session (0.86 s when the model does not wait an extra unit); interrupted replies continue 5.1 s; 8 sessions fail on GPU memory | Synthetic speech; registered capacity verdicts "below the lowest level" (first-reply warm-up, client I/O stall); request–response numbers are not comparable | `presentation_validation/final_experiment_results.md` R0–R2 |
 | A downstream-aware admission gate improves goodput | — | Proposed | — | same |
 
 ---
