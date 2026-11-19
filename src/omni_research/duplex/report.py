@@ -20,6 +20,73 @@ from typing import Any
 from ..analysis.experiment_analysis import gpu_by_phase, load_gpu_samples, phase_level_table, read_jsonl
 from .metrics import dist, pool, session_metrics
 
+T975 = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776}
+
+
+def t_interval(values: list[float | None]) -> dict[str, Any]:
+    """Mean of per-block statistics with a two-sided 95 % t interval (df = n - 1)."""
+    import math
+    import statistics
+
+    v = [x for x in values if x is not None and math.isfinite(x)]
+    if len(v) < 2:
+        return {"n": len(v), "mean": v[0] if v else None, "lo": None, "hi": None, "values": v}
+    m, sd = statistics.mean(v), statistics.stdev(v)
+    h = T975.get(len(v) - 1, 2.0) * sd / math.sqrt(len(v))
+    return {"n": len(v), "mean": m, "lo": m - h, "hi": m + h, "values": v}
+
+
+def run_experiment_id(exp: Path) -> str | None:
+    for name in ("result.json", "config.json"):
+        p = exp / name
+        if p.exists():
+            try:
+                return json.loads(p.read_text()).get("experiment_id")
+            except ValueError:
+                continue
+    return None
+
+
+def run_status(exp: Path) -> str | None:
+    p = exp / "result.json"
+    try:
+        return json.loads(p.read_text()).get("status") if p.exists() else "no result.json"
+    except ValueError:
+        return "unreadable result.json"
+
+
+def discover_runs(data_root: Path | None, exps: list[str]) -> list[Path]:
+    """Explicit run directories plus every directory under <data root>/experiments."""
+    paths = [Path(e).expanduser() for e in exps]
+    if data_root is not None:
+        root = Path(data_root).expanduser() / "experiments"
+        paths += [p for p in sorted(root.iterdir()) if p.is_dir()] if root.exists() else []
+    return paths
+
+
+def choose_runs(exps: list[Path], pattern: Any, key: Any, require_ok: bool = True) -> tuple[dict[tuple, Path], list[dict[str, Any]]]:
+    """Latest run per key(match) (run directories sort by date and run number) -- with ``require_ok`` the latest
+    whose status is ok; the others are returned as excluded with the reason, never dropped silently."""
+    by: dict[tuple, list[Path]] = defaultdict(list)
+    for e in exps:
+        m = pattern.match(run_experiment_id(e) or "")
+        if m:
+            by[key(m)].append(e)
+    chosen: dict[tuple, Path] = {}
+    excluded = []
+    for k, runs in sorted(by.items(), key=lambda kv: str(kv[0])):
+        runs = sorted(set(runs), key=lambda p: p.name)
+        ok = [r for r in runs if run_status(r) == "ok"] if require_ok else runs
+        if ok:
+            chosen[k] = ok[-1]
+        for r in runs:
+            if chosen.get(k) != r:
+                st = run_status(r)
+                later = "a later ok run of the same key exists" if require_ok else "a later run of the same key exists"
+                excluded.append({"run": r.name, "key": list(k), "status": st,
+                                 "reason": later if (st == "ok" or not require_ok) else f"status {st}"})
+    return chosen, excluded
+
 
 def duplex_phase_metrics(phase_dir: Path) -> dict[str, Any]:
     scripts = json.loads((phase_dir / "scripts.json").read_text())["sessions"]
@@ -32,28 +99,161 @@ def duplex_phase_metrics(phase_dir: Path) -> dict[str, Any]:
     return {"pooled": pool(sessions), "sessions": sessions}
 
 
-def server_unit_metrics(events_dir: Path) -> dict[str, Any]:
+def load_server_units(events_dir: Path) -> tuple[list[dict[str, Any]] | None, dict[str, Any] | None, str | None]:
+    """(units, summary, reason): build_duplex_session_metrics over the phase's request events; units is None with
+    a reason when there are no events or sglang_omni cannot be imported here (never an empty list for "unknown")."""
     files = sorted(events_dir.rglob("*.jsonl")) if events_dir.exists() else []
     if not files:
-        return {"available": False, "reason": "no request events for this phase"}
+        return None, None, "no request events for this phase"
     try:
         from sglang_omni.profiler.duplex_metrics import build_duplex_session_metrics
     except ImportError as exc:
-        return {"available": False, "reason": f"sglang_omni not importable here ({exc.__class__.__name__})"}
-    events = [e for f in files for e in read_jsonl(f)]
-    m = build_duplex_session_metrics(events)
-    return {"available": True, "files": len(files), "events": len(events), "summary": m["summary"],
-            "units": len(m["units"]), "sessions": len(m["sessions"]),
-            "bypassed": dict(sorted(_bypass_counts(m["units"]).items()))}
+        return None, None, f"sglang_omni not importable here ({exc.__class__.__name__}); use the runtime's python"
+    m = build_duplex_session_metrics([e for f in files for e in read_jsonl(f)])
+    return m["units"], m["summary"], None
+
+
+def server_unit_metrics(events_dir: Path) -> dict[str, Any]:
+    units, summary, reason = load_server_units(events_dir)
+    if units is None:
+        return {"available": False, "reason": reason}
+    files = sorted(events_dir.rglob("*.jsonl"))
+    return {"available": True, "files": len(files), "summary": summary, "units": len(units),
+            "sessions": len({(u.get("session_id"), u.get("session_open_index")) for u in units}),
+            "bypassed": dict(sorted(_bypass_counts(units).items())), "stage_table_all_units": stage_table(units)}
 
 
 def _bypass_counts(units: list[dict[str, Any]]) -> dict[str, int]:
     c: dict[str, int] = defaultdict(int)
     for u in units:
         for st in u.get("stages", []):
-            if st.get("status") == "bypassed":
+            if st.get("timing_status") == "bypassed":
                 c[f"{st.get('stage')}:{st.get('bypass_reason')}"] += 1
     return c
+
+
+def _num(x: Any) -> bool:
+    return isinstance(x, (int, float)) and not isinstance(x, bool)
+
+
+def stage_table(units: list[dict[str, Any]], select: Any = None) -> dict[str, Any]:
+    """Per stage over the selected units (upstream unit reports): observed / bypassed / incomplete counts, queue,
+    service, handoff and queue + service distributions, and each stage's share of the summed unit processing time
+    (ready_to_finished_ms): share_s = sum(queue_s + service_s) / sum(ready_to_finished); handoff and "other"
+    (ready_to_finished - covered) are their own categories (preregistration.md, R1/R2 分析口径补充 item 5)."""
+    chosen = [u for u in units if (select is None or select(u)) and _num(u.get("ready_to_finished_ms"))]
+    total = sum(float(u["ready_to_finished_ms"]) for u in chosen)
+    stats: dict[str, dict[str, list[float]]] = defaultdict(lambda: {"queue_ms": [], "service_ms": [], "handoff_ms": [],
+                                                                    "queue_plus_service_ms": []})
+    counts: dict[str, dict[str, int]] = defaultdict(lambda: {"observed": 0, "bypassed": 0, "incomplete": 0})
+    stage_time: dict[str, float] = defaultdict(float)
+    handoff_total = other_total = 0.0
+    for u in chosen:
+        covered = 0.0
+        for st in u.get("stages", []):
+            name = st.get("stage")
+            status = st.get("timing_status")
+            if status not in ("observed", "bypassed"):
+                counts[name]["incomplete"] += 1
+                continue
+            counts[name][status] += 1
+            if status == "bypassed":
+                continue
+            q, sv, h = st.get("queue_ms"), st.get("service_ms"), st.get("handoff_from_previous_ms")
+            if _num(q) and _num(sv):
+                stats[name]["queue_ms"].append(float(q))
+                stats[name]["service_ms"].append(float(sv))
+                stats[name]["queue_plus_service_ms"].append(float(q) + float(sv))
+                stage_time[name] += float(q) + float(sv)
+                covered += float(q) + float(sv)
+            if _num(h):
+                stats[name]["handoff_ms"].append(float(h))
+                handoff_total += float(h)
+                covered += float(h)
+        other_total += float(u["ready_to_finished_ms"]) - covered
+    shares = {name: (t / total if total else None) for name, t in sorted(stage_time.items())}
+    top = max(stage_time, key=stage_time.get) if stage_time else None
+    return {"units": len(chosen), "unit_time_ms": dist([float(u["ready_to_finished_ms"]) for u in chosen]),
+            "stages": {name: {**counts[name], **{k: dist(v) for k, v in stats[name].items()}} for name in sorted(counts)},
+            "shares": {**shares, "handoff": handoff_total / total if total else None,
+                       "other": other_total / total if total else None},
+            "top_stage": top}
+
+
+def speaking_selector(units: list[dict[str, Any]], client_sessions: list[dict[str, Any]]) -> tuple[Any, str]:
+    """Selector of the server units that spoke: the client saw audio with that unit id (joined on session id and
+    unit index); if no server unit joins a client session, a unit that emitted outputs (preregistration item 5)."""
+    speak = {(s.get("session_id"), int(i)) for s in client_sessions for i in s.get("speak_units", [])}
+    ids = {s.get("session_id") for s in client_sessions if s.get("session_id")}
+    if any(u.get("session_id") in ids for u in units):
+        return (lambda u: (u.get("session_id"), int(u.get("input_seq", -1))) in speak), "client audio deltas (joined)"
+    return (lambda u: bool(u.get("outputs"))), "server outputs (no session id joined)"
+
+
+def pid_stages(event_dirs: list[Path]) -> dict[str, str]:
+    """pid -> stage from the recorder's file names events_<stage>_<pid>.jsonl (one file per process)."""
+    out: dict[str, str] = {}
+    for d in event_dirs:
+        for f in d.rglob("events_*_*.jsonl") if d.exists() else []:
+            stage, _, pid = f.stem.removeprefix("events_").rpartition("_")
+            if stage and pid.isdigit():
+                out[pid] = stage
+    return out
+
+
+def stage_cpu(samples: list[dict[str, Any]], t0: float, t1: float, pids: dict[str, str], raw: bool = False) -> dict[str, Any]:
+    """Per stage process CPU % (one core = 100) over [t0, t1]; a 1 s sample below 1 % is absent from by_pid and
+    counts as 0. ``raw`` returns the per-sample values instead of their distribution (for pooling)."""
+    rows = [s for s in samples if t0 <= s["t_wall_ns"] / 1e9 <= t1]
+    per: dict[str, list[float]] = defaultdict(list)
+    for s in rows:
+        by = {}
+        for name, g in (s.get("groups") or {}).items():
+            if name != "client":
+                by.update(g.get("by_pid") or {})
+        for pid, stage in pids.items():
+            per[stage].append(float(by.get(pid, 0.0)))
+    if raw:
+        return {stage: v for stage, v in sorted(per.items())}
+    return {stage: dist(v) for stage, v in sorted(per.items())}
+
+
+def gpu_window(samples: list[dict[str, Any]], t0: float, t1: float) -> dict[str, Any]:
+    per: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for s in samples:
+        if t0 <= s["t"] <= t1:
+            per[str(s["gpu"])].append(s)
+    return {g: {"samples": len(v), "util_mean": sum(x["util"] for x in v) / len(v),
+                "mem_max_mib": max((x["mem_mib"] for x in v if x["mem_mib"] is not None), default=None)}
+            for g, v in sorted(per.items(), key=lambda kv: int(kv[0]) if kv[0].isdigit() else kv[0])}
+
+
+def stage_gpu_position(server_args: list[str], stage: str) -> int:
+    """Position of the stage's GPU in the server's GPU list: the thinker moves with ``--thinker.gpu N``."""
+    flag = f"--{stage}.gpu"
+    if flag in server_args:
+        return int(server_args[server_args.index(flag) + 1])
+    return 0
+
+
+FAILURE_PATTERNS = (  # (class, regex) checked in this order on the server log tail and error text
+    ("memory", r"CUDA out of memory|OutOfMemoryError|out of memory|max_sessions needs|not enough memory|KV cache"),
+    ("model_load", r"ModuleNotFoundError|ImportError|safetensors|weights|No such file or directory"),
+    ("missing_feature", r"not_supported|NotImplementedError|not implemented"),
+    ("model_behaviour", r"context_exhausted|context_limit"),
+    ("protocol", r"buffer_overflow|invalid_state|invalid_request|not_applicable|protocol"),
+)
+
+
+def classify_failure(text: str) -> dict[str, Any]:
+    """First matching failure class and the matching line (heuristic; read the log)."""
+    import re
+
+    for cls, pat in FAILURE_PATTERNS:
+        for line in text.splitlines():
+            if re.search(pat, line):
+                return {"class": cls, "evidence": line.strip()[:300]}
+    return {"class": "unclassified", "evidence": None}
 
 
 def cpu_by_phase(samples: list[dict[str, Any]], phases: list[dict[str, Any]]) -> list[dict[str, Any]]:

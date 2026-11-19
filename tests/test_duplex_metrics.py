@@ -91,3 +91,45 @@ def test_pool_counts_failed_sessions_units_as_missed():
     assert p["sessions"] == 2 and p["sessions_failed"] == 1 and p["fatal_errors"] == 1
     assert p["units_planned"] == 12 and p["units_missed"] == 6
     assert p["ttfa_ms"]["n"] == 2 and p["turns"] == 2
+
+
+def _reply_trace(unit, arrival_ms):
+    """6 s of packets, one reply whose first (only) audio delta is carried by ``unit`` and arrives at arrival_ms."""
+    recs = [{"d": "send", "type": "input_audio_buffer.append", "seq": k, "t_start_ms": 80.0 * k,
+             "t_mono_ns": int(80 * k * MS), "t_done_mono_ns": int((80 * k + 1) * MS), "t_wall_ns": 0, "lateness_ms": 0.0}
+            for k in range(75)]
+    meta = {"unit_id": f"unit_{unit}", "media_time": {"t_start_ms": 1000.0 * unit, "duration_ms": 1000.0}}
+    recs += [{"d": "recv", "type": "session.created", "t_mono_ns": 0, "t_wall_ns": 0,
+              "ev": {"type": "session.created", "session": {"id": "sess_x"}}},
+             {"d": "recv", "type": "response.created", "t_mono_ns": int(arrival_ms * MS), "t_wall_ns": 0,
+              "ev": {"type": "response.created", "response": {"id": "r1"}, "sglang": meta}},
+             {"d": "recv", "type": "response.output_audio.delta", "t_mono_ns": int(arrival_ms * MS), "t_wall_ns": 0,
+              "ev": {"type": "response.output_audio.delta", "response_id": "r1", "delta_bytes": 24000, "delta_dbfs": -20.0,
+                     "sglang": meta}}]
+    return recs
+
+
+TURN_2_5S = {"duration_s": 6.0, "turns": [{"index": 0, "kind": "question", "asset_id": "q0", "start_sample": 16000,
+                                           "end_sample": 40000, "first_packet": 12, "last_packet": 31}]}
+
+
+def test_ttfa_parts_add_up_and_count_the_extra_listening_units():
+    m = session_metrics(_reply_trace(3, 4100.0), TURN_2_5S)
+    row = m["turn_rows"][0]
+    p = row["parts"]
+    t_end = 31 * 80 + 1  # the packet holding sample 39999
+    assert abs(row["ttfa_ms"] - (4100 - t_end)) < 1e-6
+    assert p["u0"] == 2 and p["u1"] == 3 and p["k"] == 1 and not p["early_start"]
+    assert abs(p["a_wait_unit_end_ms"] - (2961 - t_end)) < 1e-6  # unit 2 complete with packet 36
+    assert abs(p["b_listen_ms"] - (3921 - 2961)) < 1e-6 and abs(p["c_service_ms"] - (4100 - 3921)) < 1e-6
+    assert abs(p["a_wait_unit_end_ms"] + p["b_listen_ms"] + p["c_service_ms"] - row["ttfa_ms"]) < 1e-6
+    assert p["units_before_speech"] == {"listen": 1, "text_only": 0, "speak": 0}
+    assert m["session_id"] == "sess_x" and m["ttfa_parts"]["k_counts"] == {"1": 1}
+
+
+def test_a_reply_from_a_unit_cut_before_the_utterance_ended_is_an_early_start():
+    m = session_metrics(_reply_trace(1, 2600.0), TURN_2_5S)
+    p = m["turn_rows"][0]["parts"]
+    assert p["k"] == -1 and p["early_start"]
+    assert abs(p["a_wait_unit_end_ms"] + p["b_listen_ms"] + p["c_service_ms"] - m["turn_rows"][0]["ttfa_ms"]) < 1e-6
+    assert m["ttfa_parts"]["early_start"] == 1 and m["ttfa_parts"]["a_wait_unit_end_ms"]["n"] == 0

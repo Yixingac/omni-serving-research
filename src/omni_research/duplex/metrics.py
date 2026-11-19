@@ -31,6 +31,7 @@ from collections.abc import Iterable
 from typing import Any
 
 UNIT_MS = 1000.0
+SAMPLE_RATE = 16000
 OUTPUT_RATE = 24000
 PACKET_MS = 80
 MIN_N = {50: 1, 90: 10, 95: 20, 99: 100}
@@ -74,6 +75,7 @@ def parse_trace(records: list[dict[str, Any]]) -> dict[str, Any]:
     order: list[str] = []
     result = None
     errors = []
+    session_id = None
     for r in records:
         d = r.get("d")
         if d == "send":
@@ -86,6 +88,8 @@ def parse_trace(records: list[dict[str, Any]]) -> dict[str, Any]:
             ev, t = r.get("ev", {}), _ms(r["t_mono_ns"])
             typ = r.get("type")
             meta = ev.get("sglang") or {}
+            if typ in ("session.created", "session.updated") and session_id is None:
+                session_id = (ev.get("session") or {}).get("id")
             if typ == "sglang.unit.done":
                 uid = ev.get("unit_id") or meta.get("unit_id")
                 units[uid] = {"t": t, "media_time": meta.get("media_time")}
@@ -127,7 +131,8 @@ def parse_trace(records: list[dict[str, Any]]) -> dict[str, Any]:
         elif d == "meta" and r.get("what") == "result":
             result = {k: v for k, v in r.items() if k not in ("d", "what")}
     return {"packets": packets, "input_end_ms": input_end_ms, "units": units, "unit_audio_s": dict(unit_audio),
-            "unit_text": dict(unit_text), "replies": {k: replies[k] for k in order}, "result": result, "errors": errors}
+            "unit_text": dict(unit_text), "replies": {k: replies[k] for k in order}, "result": result, "errors": errors,
+            "session_id": session_id}
 
 
 def unit_ready_ms(media_time: dict[str, float] | None, packets: dict[int, dict[str, float]],
@@ -161,6 +166,34 @@ def playback(chunks: list[tuple[float, float, float]], reserve_ms: float) -> dic
         need = max(need, arrival - unbuffered)
         unbuffered += audio_s * 1000.0
     return {"underrun_ms": under, "stalls": stalls, "buffer_needed_ms": need}
+
+
+def unit_decision(uid: str, tr: dict[str, Any]) -> str:
+    if tr["unit_audio_s"].get(uid, 0.0) > 0:
+        return "speak"
+    return "text_only" if tr["unit_text"].get(uid, 0) else "listen"
+
+
+def ttfa_parts(turn: dict[str, Any], t_end: float, reply: dict[str, Any], tr: dict[str, Any]) -> dict[str, Any]:
+    """TTFA of an answered turn split into (a) the wait until the unit holding the utterance's last sample is
+    complete, (b) the k = u1 - u0 further units until the unit that carried the first audio (and their time),
+    (c) that unit's service time; (a) + (b) + (c) = TTFA exactly (registered: preregistration.md, R1/R2
+    分析口径补充 item 4). k < 0 means the first audio came from a unit cut before the utterance ended."""
+    u1 = reply.get("first_audio_unit")
+    ready_u1 = reply.get("first_audio_ready_ms")
+    if u1 is None or ready_u1 is None:
+        return {"parts": None}
+    u0 = (int(turn["end_sample"]) - 1) // int(SAMPLE_RATE * UNIT_MS / 1000)
+    media = (tr["units"].get(f"unit_{u0}") or {}).get("media_time") or {"t_start_ms": u0 * UNIT_MS, "duration_ms": UNIT_MS}
+    ready_u0 = unit_ready_ms(media, tr["packets"], tr["input_end_ms"])
+    if ready_u0 is None:
+        return {"parts": None}
+    k = u1 - u0
+    between = [unit_decision(f"unit_{u}", tr) for u in range(u0, u1)]
+    return {"parts": {"u0": u0, "u1": u1, "k": k, "early_start": k < 0,
+                      "a_wait_unit_end_ms": ready_u0 - t_end, "b_listen_ms": ready_u1 - ready_u0,
+                      "c_service_ms": reply["first_audio_ms"] - ready_u1,
+                      "units_before_speech": {d: between.count(d) for d in ("listen", "text_only", "speak")}}}
 
 
 def session_metrics(records: list[dict[str, Any]], script: dict[str, Any], *, silent_dbfs: float = -60.0) -> dict[str, Any]:
@@ -200,6 +233,9 @@ def session_metrics(records: list[dict[str, Any]], script: dict[str, Any], *, si
             row["last_audio_ms"] = chunks[-1][0]
             ready = unit_ready_ms(rep["first_audio_media_time"], packets, tr["input_end_ms"])
             row["first_audio_latency_ms"] = chunks[0][0] - ready if ready is not None else None
+            row["first_audio_ready_ms"] = ready
+            if rep["first_audio_media_time"]:
+                row["first_audio_unit"] = round(float(rep["first_audio_media_time"]["t_start_ms"]) / UNIT_MS)
             row["delta_gaps_ms"] = [b[0] - a[0] for a, b in itertools.pairwise(chunks)]
             row["silent_chunks"] = sum(1 for c in chunks if c[2] <= silent_dbfs)
             row["playback"] = {f"{int(r)}ms": playback(chunks, r) for r in RESERVES_MS}
@@ -227,6 +263,7 @@ def session_metrics(records: list[dict[str, Any]], script: dict[str, Any], *, si
             first = min(cand, key=lambda r: r["first_audio_ms"])
             row.update(status="answered", ttfa_ms=first["first_audio_ms"] - t_end, response_id=first["response_id"],
                        reply_audio_s=first["audio_s"])
+            row.update(ttfa_parts(t, t_end, first, tr))
         else:
             row["status"] = "no_response"
         if t["kind"] == "barge_in":
@@ -255,9 +292,17 @@ def session_metrics(records: list[dict[str, Any]], script: dict[str, Any], *, si
                      "stall_count": sum(x["stalls"] for x in rows), "underrun_ms_total": sum(x["underrun_ms"] for x in rows),
                      "buffer_needed_ms": dist([x["buffer_needed_ms"] for x in rows])}
     barge = [r for r in turn_rows if r["kind"] == "barge_in"]
+    parts = [r["parts"] for r in turn_rows if r.get("parts")]
+    regular = [p for p in parts if not p["early_start"]]
     return {
+        "session_id": tr["session_id"],
         "result": tr["result"],
         "errors": tr["errors"],
+        "ttfa_parts": {"n": len(parts), "early_start": len(parts) - len(regular),
+                       "a_wait_unit_end_ms": dist([p["a_wait_unit_end_ms"] for p in regular]),
+                       "b_listen_ms": dist([p["b_listen_ms"] for p in regular]),
+                       "c_service_ms": dist([p["c_service_ms"] for p in regular]),
+                       "k_counts": {str(k): sum(1 for p in regular if p["k"] == k) for k in sorted({p["k"] for p in regular})}},
         "units": {"planned": planned, "done": len(units) - len(empty), "empty_end_units": len(empty), "missed": missed,
                   "miss_rate": missed / planned if planned else None, "lag_ms": dist(lags), "decisions": decisions},
         "replies": {"n": len(rep_rows), "with_audio": len(audio_reps),
@@ -278,6 +323,8 @@ def session_metrics(records: list[dict[str, Any]], script: dict[str, Any], *, si
         "reply_rows": [{k: v for k, v in r.items() if k != "delta_gaps_ms"} for r in rep_rows],
         "unit_lags_ms": lags,
         "delta_gaps_ms_list": gaps,
+        "speak_units": sorted(int(uid.split("_")[1]) for uid in units if uid not in empty
+                              and unit_decision(uid, tr) == "speak" and uid.startswith("unit_")),
     }
 
 
