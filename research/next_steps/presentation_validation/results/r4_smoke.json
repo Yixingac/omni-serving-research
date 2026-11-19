@@ -1,0 +1,52 @@
+{
+ "generated_by": "scripts/analysis/ppv_r4_report.py",
+ "runs": {
+  "20261119_ppv_r4_smoke_run01": {
+   "smoke": {
+    "r4_smoke_n4": {
+     "requests": 15,
+     "joined_share": 1.0,
+     "input_tokens_p50_by_turn": {
+      "0": 561,
+      "1": 689.0,
+      "2": 763.0
+     },
+     "max_input_tokens": 887
+    },
+    "r4_smoke_n4_media2": {
+     "requests": 20,
+     "joined_share": 1.0,
+     "input_tokens_p50_by_turn": {
+      "0": 655.5,
+      "1": 1130,
+      "2": 1546
+     },
+     "max_input_tokens": 1836
+    },
+    "r4_smoke_n4_textonly": {
+     "requests": 15,
+     "joined_share": 1.0,
+     "input_tokens_p50_by_turn": {
+      "0": 255,
+      "1": 396.0,
+      "2": 387.0
+     },
+     "max_input_tokens": 630
+    },
+    "media_tokens_per_turn": {
+     "p50": 308.5,
+     "values": [
+      314,
+      278,
+      303,
+      325
+     ]
+    }
+   },
+   "replicas": [
+    "1596860:0",
+    "1596861:1"
+   ]
+  }
+ }
+}

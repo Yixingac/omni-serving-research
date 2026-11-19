@@ -146,5 +146,13 @@
  "ppv_r3_screen_c4_a2": {
   "included": true,
   "reason": "R3 screening (registered; used to pick the confirmation cells)"
+ },
+ "ppv_r4_smoke": {
+  "included": true,
+  "reason": "R4 smoke: registered checks (request-to-log join 100 %, token growth, media tokens, both replicas) passed; not part of the R4 statistics"
+ },
+ "ppv_p1_prerun": {
+  "included": true,
+  "reason": "P1 pre-run that sets X (Erratum E-P1-X applied); not part of the P1 statistics"
  }
 }
