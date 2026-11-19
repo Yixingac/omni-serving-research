@@ -154,5 +154,73 @@
  "ppv_p1_prerun": {
   "included": true,
   "reason": "P1 pre-run that sets X (Erratum E-P1-X applied); not part of the P1 statistics"
+ },
+ "ppv_p1_block1": {
+  "included": true,
+  "reason": "P1 block 1 (stack dumps in its drains, D3)"
+ },
+ "ppv_p1_block2": {
+  "included": false,
+  "reason": "failed in its 10th cell: the P3 stall watcher's SIGUSR2 stack dump segfaulted code2wav@r2 (F6, D3); re-run as ppv_p1_block2_a2"
+ },
+ "ppv_p1_block2_a2": {
+  "included": true,
+  "reason": "P1 block 2 re-run without the stack hook (D3); verdicts use blocks 1, 2_a2, 3"
+ },
+ "ppv_p1_block3": {
+  "included": true,
+  "reason": "P1 block 3 (stack files moved aside before any pause, D3)"
+ },
+ "ppv_r3_confirm_seq_c1_block1": {
+  "included": true,
+  "reason": "R3 confirmation, block 1, concurrency 1"
+ },
+ "ppv_r3_confirm_seq_c4_block1": {
+  "included": true,
+  "reason": "R3 confirmation, block 1, concurrency 4"
+ },
+ "ppv_r3_confirm_seq_c1_block2": {
+  "included": true,
+  "reason": "R3 confirmation, block 2, concurrency 1"
+ },
+ "ppv_r3_confirm_seq_c4_block2": {
+  "included": true,
+  "reason": "R3 confirmation, block 2, concurrency 4"
+ },
+ "ppv_r3_confirm_seq_c1_block3": {
+  "included": true,
+  "reason": "R3 confirmation, block 3, concurrency 1"
+ },
+ "ppv_r3_confirm_seq_c4_block3": {
+  "included": true,
+  "reason": "R3 confirmation, block 3, concurrency 4"
+ },
+ "ppv_r4_block1": {
+  "included": true,
+  "reason": "R4 block 1 (analysis per Erratum E-R4-REF)"
+ },
+ "ppv_r4_block2": {
+  "included": true,
+  "reason": "R4 block 2"
+ },
+ "ppv_r4_block3": {
+  "included": true,
+  "reason": "R4 block 3"
+ },
+ "ppv_p2_verify": {
+  "included": true,
+  "reason": "P2 correctness gate: passed (885 requests, 0 mismatches)"
+ },
+ "ppv_r2b_ms8_2gpu_block1": {
+  "included": true,
+  "reason": "R2b block 1 (4 sessions all late; 8 skipped by the stop rule)"
+ },
+ "ppv_r2b_ms8_2gpu_block2": {
+  "included": true,
+  "reason": "R2b block 2"
+ },
+ "ppv_r2b_ms8_2gpu_block3": {
+  "included": true,
+  "reason": "R2b block 3"
  }
 }
