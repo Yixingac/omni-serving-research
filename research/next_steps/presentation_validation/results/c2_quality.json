@@ -1,0 +1,538 @@
+{
+ "floor_seed": {
+  "summary": {
+   "rel_rms": 0.034240535410960955,
+   "energy_rel_diff": 0.0003376457410427001,
+   "max_abs": 0.0901632994825307,
+   "mcd_db": 0.8283587883088475,
+   "n": 26,
+   "shape_mismatches": 0,
+   "all_finite": true,
+   "bit_identical_all": false,
+   "length_ok_all": true,
+   "max_rel_rms": 0.09443332462447047
+  },
+  "rows": [
+   {
+    "asset_id": "passage-00",
+    "rel_rms": 0.013676362156806345,
+    "max_abs": 0.048359546810388565,
+    "energy_rel_diff": 0.00010851905686136093,
+    "snr_db": 37.28058814782752,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.6323896997511104,
+    "length_ok": true
+   },
+   {
+    "asset_id": "passage-01",
+    "rel_rms": 0.058896384021569055,
+    "max_abs": 0.27996011078357697,
+    "energy_rel_diff": 4.243996986344095e-05,
+    "snr_db": 24.59822736323456,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.6897473781260884,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0000",
+    "rel_rms": 0.03838511561597505,
+    "max_abs": 0.17828436568379402,
+    "energy_rel_diff": 0.0002886450935351326,
+    "snr_db": 28.316742939202136,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.7369387470286444,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0001",
+    "rel_rms": 0.015862162008825526,
+    "max_abs": 0.03650636272504926,
+    "energy_rel_diff": 0.00018078945329089486,
+    "snr_db": 35.99275237503334,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 1.0765907415641767,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0002",
+    "rel_rms": 0.08691911139182976,
+    "max_abs": 0.1416073627769947,
+    "energy_rel_diff": 6.315233550732932e-05,
+    "snr_db": 21.21769444583321,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 1.2470251964334693,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0003",
+    "rel_rms": 0.023244815340259992,
+    "max_abs": 0.06725714728236198,
+    "energy_rel_diff": 0.0002623286920956335,
+    "snr_db": 32.6734779911448,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.7278883286264074,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0004",
+    "rel_rms": 0.08143241559057567,
+    "max_abs": 0.14735045284032822,
+    "energy_rel_diff": 0.0017015934828229432,
+    "snr_db": 21.784053644288758,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.9594099453977598,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0005",
+    "rel_rms": 0.022586504223546914,
+    "max_abs": 0.054129019379615784,
+    "energy_rel_diff": 0.00016077074844750243,
+    "snr_db": 32.92301961701127,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.7171735742795984,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0006",
+    "rel_rms": 0.01112872644889231,
+    "max_abs": 0.015011411160230637,
+    "energy_rel_diff": 0.00015411464615387082,
+    "snr_db": 39.07109065376395,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.6779676468552178,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0007",
+    "rel_rms": 0.05251043418656586,
+    "max_abs": 0.11436919122934341,
+    "energy_rel_diff": 0.0011990512978501367,
+    "snr_db": 25.595087814015063,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 1.2277806048072821,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0008",
+    "rel_rms": 0.009467557309062286,
+    "max_abs": 0.021946333348751068,
+    "energy_rel_diff": 0.00030979147347371316,
+    "snr_db": 40.47524114651572,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.6410553399626835,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0009",
+    "rel_rms": 0.05552376096899289,
+    "max_abs": 0.1461346996948123,
+    "energy_rel_diff": 0.00032901168897610727,
+    "snr_db": 25.110422481914213,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.7914131954061421,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0010",
+    "rel_rms": 0.018523890623137876,
+    "max_abs": 0.038664584048092365,
+    "energy_rel_diff": 0.00012088906281344185,
+    "snr_db": 34.645355840442505,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 1.204008016272873,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0011-trimmed",
+    "rel_rms": 0.00996957696384445,
+    "max_abs": 0.012330695986747742,
+    "energy_rel_diff": 0.0002039998157161732,
+    "snr_db": 40.02646539177263,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.8904424706685161,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0012",
+    "rel_rms": 0.013780570835035331,
+    "max_abs": 0.020161173306405544,
+    "energy_rel_diff": 7.315047209138328e-05,
+    "snr_db": 37.214655843965204,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.40556622261251984,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0013",
+    "rel_rms": 0.014284351504227438,
+    "max_abs": 0.025587372481822968,
+    "energy_rel_diff": 0.00015756611418118492,
+    "snr_db": 36.90278942768079,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 1.1692726629906762,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0014",
+    "rel_rms": 0.019908686198666627,
+    "max_abs": 0.06409443658776581,
+    "energy_rel_diff": 0.0006338734219748072,
+    "snr_db": 34.01914797423388,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.7324438336910147,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0015",
+    "rel_rms": 0.07501812638552414,
+    "max_abs": 0.21298154443502426,
+    "energy_rel_diff": 0.0012132696719744367,
+    "snr_db": 22.496675735347957,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.9996875035866549,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0016",
+    "rel_rms": 0.013180227036672919,
+    "max_abs": 0.03167858999222517,
+    "energy_rel_diff": 1.7797154366323864e-05,
+    "snr_db": 37.60154217431665,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.5815566934701,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0017",
+    "rel_rms": 0.019372724998157526,
+    "max_abs": 0.057599459774792194,
+    "energy_rel_diff": 0.00019095871928446448,
+    "snr_db": 34.25618572869882,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.7875640105608944,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0018",
+    "rel_rms": 0.09443332462447047,
+    "max_abs": 0.3145764470100403,
+    "energy_rel_diff": 0.0006017814704694373,
+    "snr_db": 20.497494405017598,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 1.134511517537152,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0019",
+    "rel_rms": 0.014209332138243424,
+    "max_abs": 0.021789759397506714,
+    "energy_rel_diff": 3.735642639073388e-06,
+    "snr_db": 36.94852668281841,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.7828938736123612,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0020",
+    "rel_rms": 0.02080730593330121,
+    "max_abs": 0.06639290601015091,
+    "energy_rel_diff": 4.326995752602345e-05,
+    "snr_db": 33.63568294554459,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.46348366733861945,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0021",
+    "rel_rms": 0.0835058392765899,
+    "max_abs": 0.17629487067461014,
+    "energy_rel_diff": 0.000531583159914071,
+    "snr_db": 21.56566309465525,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.6991319302507191,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0022",
+    "rel_rms": 0.009089103571997027,
+    "max_abs": 0.011832892894744873,
+    "energy_rel_diff": 0.00014519438508144882,
+    "snr_db": 40.82957895367471,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 1.1495192633738742,
+    "length_ok": true
+   },
+   {
+    "asset_id": "q-task-11-0023",
+    "rel_rms": 0.014537511332214814,
+    "max_abs": 0.03934505023062229,
+    "energy_rel_diff": 4.151228019986777e-05,
+    "snr_db": 36.75019867448202,
+    "bit_identical": false,
+    "finite": true,
+    "mcd_db": 0.41186643182547816,
+    "length_ok": true
+   }
+  ]
+ },
+ "arms": {
+  "B": {
+   "vs_A": {
+    "rel_rms": 0.0007363149266653407,
+    "energy_rel_diff": 1.7275895691878373e-05,
+    "max_abs": 0.0007898686565637875,
+    "mcd_db": 0.06643262955059438,
+    "n": 26,
+    "shape_mismatches": 0,
+    "all_finite": true,
+    "bit_identical_all": false,
+    "length_ok_all": true,
+    "max_rel_rms": 0.0009115343496364016
+   },
+   "eager_vs_A_eager": {
+    "rel_rms": 0.0,
+    "energy_rel_diff": 0.0,
+    "max_abs": 0.0,
+    "mcd_db": 0.0,
+    "n": 26,
+    "shape_mismatches": 0,
+    "all_finite": true,
+    "bit_identical_all": true,
+    "length_ok_all": true,
+    "max_rel_rms": 0.0
+   },
+   "gate": {
+    "finite": true,
+    "kind": "fold",
+    "weights_max_ulp": 0,
+    "eager_bit_identical": true,
+    "eager_rel_rms": 0.0,
+    "pass": true
+   }
+  },
+  "C": {
+   "vs_A": {
+    "rel_rms": 0.0009123970394372698,
+    "energy_rel_diff": 3.2878918399942236e-05,
+    "max_abs": 0.0009827235335251316,
+    "mcd_db": 0.1802715404319986,
+    "n": 26,
+    "shape_mismatches": 0,
+    "all_finite": true,
+    "bit_identical_all": false,
+    "length_ok_all": true,
+    "max_rel_rms": 0.0014941433869428392
+   },
+   "eager_vs_A_eager": {
+    "rel_rms": 0.0009127547530951693,
+    "energy_rel_diff": 3.3405886058087595e-05,
+    "max_abs": 0.0010768332017155795,
+    "mcd_db": 0.18010819349399346,
+    "n": 26,
+    "shape_mismatches": 0,
+    "all_finite": true,
+    "bit_identical_all": false,
+    "length_ok_all": true,
+    "max_rel_rms": 0.0015747972019758405
+   },
+   "gate": {
+    "finite": true,
+    "kind": "layout",
+    "eager_rel_rms": 0.0009127547530951693,
+    "eager_mcd_db": 0.18010819349399346,
+    "pass": false
+   }
+  },
+  "D": {
+   "vs_A": {
+    "rel_rms": 0.0041360434564398805,
+    "energy_rel_diff": 0.00034389972461388414,
+    "max_abs": 0.004984781253509796,
+    "mcd_db": 0.8342821872718855,
+    "n": 26,
+    "shape_mismatches": 0,
+    "all_finite": true,
+    "bit_identical_all": false,
+    "length_ok_all": true,
+    "max_rel_rms": 0.006048460901104132
+   },
+   "gate": {
+    "finite": true,
+    "kind": "half",
+    "mcd_db": 0.8342821872718855,
+    "mcd_ok": false,
+    "asr_ok": true,
+    "pass": false
+   }
+  }
+ },
+ "asr": {
+  "A": {
+   "n": 26,
+   "wer": 0.1479028697571744,
+   "exact_matches": 9,
+   "exact_share": 0.34615384615384615,
+   "texts": {
+    "passage-00": "Please listen to this note and answer briefly at the end. Careful talker, compare clear schedule request process packet channel decoder useful explain simple frame transfer decoder policy accurate useful kernel packet token sample token compare video agent review process useful question. What is the main topic of this note?",
+    "passage-01": "Here is a short message from a colleague. Matrix report review session. Accurate stream frame video measure model. Accurate careful. Question encoder transfer tensor video decoder replica window agent tool useful kernel tensor transfer device brief vector process stage review useful tensor useful system audio measure simple vocoder report details. Explain answer to system agent channel detail brief encoder thread measure window report brief model batch useful cache. Please summarize the message in one sentence.",
+    "q-task-11-0000": "A crate holds sixty-eight boxes, and each box holds eighty-two parts. After twenty-nine parts are removed, how many parts remain?",
+    "q-task-11-0001": "Convert two hundred forty-one kilograms to lb. Give the number.",
+    "q-task-11-0002": "How many rubber seals are stored in the East and North warehouses combined?",
+    "q-task-11-0003": "A crate holds 34 boxes, and each box holds 76 parts. After 17 parts are removed, how many parts remain?",
+    "q-task-11-0004": "Convert one sixty-six inches to feet. Me, give the number.",
+    "q-task-11-0005": "How many glass panels are stored in the North and South warehouses combined?",
+    "q-task-11-0006": "Her crate holds forty-nine boxes, and each box holds twenty-nine parts. After four parts are removed, how many parts remain?",
+    "q-task-11-0007": "Convert one forty-two inches to slinch. Give the number.",
+    "q-task-11-0008": "How many steel bolts are stored in the North and South warehouses combined?",
+    "q-task-11-0009": "A crate holds sixty-eight boxes, and each box holds ninety-four parts. After twenty-five parts are removed, how many parts remain?",
+    "q-task-11-0010": "Convert one hundred sixty-two inches to cm. Give the number.",
+    "q-task-11-0011-trimmed": "How many glass panels are stored in the east and north warehouses combined?",
+    "q-task-11-0012": "A crate holds seventy-eight boxes, and each box holds nineteen parts. After three parts are removed, how many parts remain?",
+    "q-task-11-0013": "Convert fourteen miles to km. Give the number.",
+    "q-task-11-0014": "How many glass panels are stored in the East and North warehouses combined?",
+    "q-task-11-0015": "A crate holds seventy boxes, and each box holds fifty-two parts. After sixteen parts are removed, how many parts remain?",
+    "q-task-11-0016": "Convert one hundred fifty-six miles to kilometers. Give the number.",
+    "q-task-11-0017": "How many solar cells are stored in the North and South warehouses combined?",
+    "q-task-11-0018": "A crate holds seventy-four boxes, and each box holds eleven parts. After twenty-three parts are removed, how many parts remain?",
+    "q-task-11-0019": "Convert 26 kilograms to lb. Give the number.",
+    "q-task-11-0020": "How many steel bolts are stored in the South and East warehouses combined?",
+    "q-task-11-0021": "A crate holds eighty-one boxes, and each box holds twenty-one parts. After twenty-four parts are removed, how many parts remain?",
+    "q-task-11-0022": "Convert seventy kilograms to lb. Give the number.",
+    "q-task-11-0023": "How many glass panels are stored in the east and south warehouses combined?"
+   }
+  },
+  "A_s2": {
+   "n": 26,
+   "wer": 0.15894039735099338,
+   "exact_matches": 8,
+   "exact_share": 0.3076923076923077,
+   "texts": {
+    "passage-00": "Please listen to this note and answer briefly at the end. Careful talker, compare clear schedule request process packet channel decoder useful explain simple frame transfer decoder policy accurate useful kernel packet token sample token compare video agent review process useful question. What is the main topic of this note?",
+    "passage-01": "Here is a short message from a colleague. Matrix report review session. Accurate stream frame video measure model. Accurate careful. Question encoder transfer tensor video decoder replica window agent tool useful kernel tensor transfer device brief vector process stage review useful tensor useful system audio measure simple vocoder report details. Explain answer to system agent channel detail brief encoder thread measure window report brief model batch useful cache. Please summarize the message in one sentence.",
+    "q-task-11-0000": "A crate holds sixty-eight boxes, and each box holds eighty-two parts. After twenty-nine parts are removed, how many parts remain?",
+    "q-task-11-0001": "Convert two hundred forty-one kilograms to lb. Give the number.",
+    "q-task-11-0002": "How many rubber seals are stored in the East and North warehouses combined?",
+    "q-task-11-0003": "A crate holds thirty-four boxes, and each box holds seventy-six parts. After seventeen parts are removed, how many parts remain?",
+    "q-task-11-0004": "Convert one sixty-six inches to feet. Me, give the number.",
+    "q-task-11-0005": "How many glass panels are stored in the North and South warehouses combined?",
+    "q-task-11-0006": "Her crate holds forty-nine boxes, and each box holds twenty-nine parts. After four parts are removed, how many parts remain?",
+    "q-task-11-0007": "Convert one forty-two inches to slinch. Give the number.",
+    "q-task-11-0008": "How many steel bolts are stored in the North and South warehouses combined?",
+    "q-task-11-0009": "A crate holds sixty-eight boxes, and each box holds ninety-four parts. After twenty-five parts are removed, how many parts remain?",
+    "q-task-11-0010": "Convert one hundred sixty-two inches to cm. Give the number.",
+    "q-task-11-0011-trimmed": "How many glass panels are stored in the east and north warehouses combined?",
+    "q-task-11-0012": "A crate holds seventy-eight boxes, and each box holds nineteen parts. After three parts are removed, how many parts remain?",
+    "q-task-11-0013": "Convert fourteen miles to km. Give the number.",
+    "q-task-11-0014": "How many glass panels are stored in the East and North warehouses combined?",
+    "q-task-11-0015": "A crate holds seventy boxes, and each box holds fifty-two parts. After sixteen parts are removed, how many parts remain?",
+    "q-task-11-0016": "Convert one hundred fifty-six miles to kilometers. Give the number.",
+    "q-task-11-0017": "How many solar cells are stored in the North and South warehouses combined?",
+    "q-task-11-0018": "A crate holds seventy-four boxes, and each box holds eleven parts. After twenty-three parts are removed, how many parts remain?",
+    "q-task-11-0019": "Convert 26 kilograms to lb. Give the number.",
+    "q-task-11-0020": "How many steel bolts are stored in the South and East warehouses combined?",
+    "q-task-11-0021": "A crate holds eighty-one boxes, and each box holds twenty-one parts. After twenty-four parts are removed, how many parts remain?",
+    "q-task-11-0022": "Convert seventy kilograms to lb. Give the number.",
+    "q-task-11-0023": "How many glass panels are stored in the east and south warehouses combined?"
+   }
+  },
+  "D": {
+   "n": 26,
+   "wer": 0.1390728476821192,
+   "exact_matches": 10,
+   "exact_share": 0.38461538461538464,
+   "texts": {
+    "passage-00": "Please listen to this note and answer briefly at the end. Careful talker, compare clear schedule request process packet channel decoder useful explain simple frame transfer decoder policy accurate useful kernel packet token sample token compare video agent review process useful question. What is the main topic of this note?",
+    "passage-01": "Here is a short message from a colleague. Matrix report review session. Accurate stream frame video measure model. Accurate careful. Question encoder transfer tensor video decoder replica window agent tool useful kernel tensor transfer device brief vector process stage review useful tensor useful system audio measure simple vocoder report details. Explain answer to system agent channel detail brief encoder thread measure window report brief model batch useful cache. Please summarize the message in one sentence.",
+    "q-task-11-0000": "A crate holds sixty-eight boxes, and each box holds eighty-two parts. After twenty-nine parts are removed, how many parts remain?",
+    "q-task-11-0001": "Convert two hundred forty-one kilograms to lb. Give the number.",
+    "q-task-11-0002": "How many rubber seals are stored in the East and North warehouses combined?",
+    "q-task-11-0003": "A crate holds 34 boxes, and each box holds 76 parts. After 17 parts are removed, how many parts remain?",
+    "q-task-11-0004": "Convert one sixty-six inches to feet. Me, give the number.",
+    "q-task-11-0005": "How many glass panels are stored in the North and South warehouses combined?",
+    "q-task-11-0006": "Her crate holds forty-nine boxes, and each box holds twenty-nine parts. After four parts are removed, how many parts remain?",
+    "q-task-11-0007": "Convert one forty-two inches to slinch. Give the number.",
+    "q-task-11-0008": "How many steel bolts are stored in the North and South warehouses combined?",
+    "q-task-11-0009": "A crate holds sixty-eight boxes, and each box holds ninety-four parts. After twenty-five parts are removed, how many parts remain?",
+    "q-task-11-0010": "Convert 162 inches to cm. Give the number.",
+    "q-task-11-0011-trimmed": "How many glass panels are stored in the East and North warehouses combined?",
+    "q-task-11-0012": "A crate holds seventy-eight boxes, and each box holds nineteen parts. After three parts are removed, how many parts remain?",
+    "q-task-11-0013": "Convert fourteen miles to km. Give the number.",
+    "q-task-11-0014": "How many glass panels are stored in the east and north warehouses combined?",
+    "q-task-11-0015": "A crate holds seventy boxes, and each box holds fifty-two parts. After sixteen parts are removed, how many parts remain?",
+    "q-task-11-0016": "Convert one hundred fifty-six miles to kilometers. Give the number.",
+    "q-task-11-0017": "How many solar cells are stored in the North and South warehouses combined?",
+    "q-task-11-0018": "A crate holds seventy-four boxes, and each box holds eleven parts. After twenty-three parts are removed, how many parts remain?",
+    "q-task-11-0019": "Convert 26 kilograms to lb. Give the number.",
+    "q-task-11-0020": "How many steel bolts are stored in the South and East warehouses combined?",
+    "q-task-11-0021": "A crate holds eighty-one boxes, and each box holds twenty-one parts. After twenty-four parts are removed, how many parts remain?",
+    "q-task-11-0022": "Convert seventy kilograms to lb. Give the number.",
+    "q-task-11-0023": "How many glass panels are stored in the east and south warehouses combined?"
+   }
+  }
+ },
+ "gates": {
+  "B": {
+   "finite": true,
+   "kind": "fold",
+   "weights_max_ulp": 0,
+   "eager_bit_identical": true,
+   "eager_rel_rms": 0.0,
+   "pass": true
+  },
+  "C": {
+   "finite": true,
+   "kind": "layout",
+   "eager_rel_rms": 0.0009127547530951693,
+   "eager_mcd_db": 0.18010819349399346,
+   "pass": false
+  },
+  "D": {
+   "finite": true,
+   "kind": "half",
+   "mcd_db": 0.8342821872718855,
+   "mcd_ok": false,
+   "asr_ok": true,
+   "pass": false
+  }
+ },
+ "rules": {
+  "mcd_margin_db": 0.1,
+  "wer_margin": 0.005,
+  "exact_margin": 1,
+  "c2_layout": [
+   0.0001,
+   0.01
+  ],
+  "c2_fold_rel_rms": 1e-06,
+  "asr": {
+   "url_given": true,
+   "model": "Qwen/Qwen3-ASR-1.7B"
+  }
+ }
+}

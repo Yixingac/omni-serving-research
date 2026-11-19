@@ -42,5 +42,41 @@
  "ppv_r3_screen_c4": {
   "included": false,
   "reason": "FAILED at the smoke phase: the ppv-kv research patch read Req.extend_input_len, which does not exist at that call site in SGLang 0.5.21, and crashed the thinker scheduler; no measurement (patch fixed before any re-run)"
+ },
+ "ppv_c1_c2_microbench": {
+  "included": true,
+  "reason": "C1 and C2 microbenchmarks with registered gates (C1: performance met, quality not met; C2: no gain, layout and FP16 fail numerical gates); microbenchmark only, overlapped R1 block 1 (D1)"
+ },
+ "ppv_r1_duplex_block1": {
+  "included": true,
+  "reason": "R1 block 1 (full duplex, 1 session), overlapped C1/C2 and R3 screening (D1)"
+ },
+ "ppv_r1_chat_ref_block1": {
+  "included": true,
+  "reason": "R1 request-response reference, block 1"
+ },
+ "ppv_r1_duplex_block2": {
+  "included": true,
+  "reason": "R1 block 2 (full duplex, 1 session)"
+ },
+ "ppv_r1_chat_ref_block2": {
+  "included": true,
+  "reason": "R1 request-response reference, block 2"
+ },
+ "ppv_r1_duplex_block3": {
+  "included": true,
+  "reason": "R1 block 3 (full duplex, 1 session)"
+ },
+ "ppv_r1_chat_ref_block3": {
+  "included": true,
+  "reason": "R1 request-response reference, block 3"
+ },
+ "ppv_r2_smoke_ms8_1gpu": {
+  "included": true,
+  "reason": "R2 placement smoke (decides the arm by the registered rule); not part of the R2 statistics"
+ },
+ "ppv_r2_smoke_ms8_2gpu": {
+  "included": true,
+  "reason": "R2 placement smoke for the 2-GPU arm; not needed after the 1-GPU smoke passed"
  }
 }

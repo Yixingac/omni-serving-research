@@ -85,3 +85,74 @@ Server-side stage shares of a speaking unit's processing time (phase B, 381 spea
 **Limitations.** One session; synthetic questions with fixed pauses; temperature 0.7 makes k stochastic; interruptions are scripted at fixed offsets; stage timing only in phase B (with request events); TTFA P99 is N/A (N = 37); the reference differs in pipeline (FP16 flow + compile vs FP32 flow without compile in the duplex speech stage), answer length, sampling and the starting point of TTFA.
 
 **中文小结。** 一个会话时，全双工从“话说完”到“开口”的中位数是 1.36 秒，单元处理始终跟得上（900 个单元 0 个错过）。拆开看：等当前 1 秒单元凑满约 0.32 秒，一半以上的回合模型还要再多听一个单元（约 1 秒），真正的计算只要约 0.35 秒（其中 thinker 占 41%，talker、语音合成各约 24%）。模型不多听的回合 TTFA 只有 0.86 秒。所以首段语音延迟的主要杠杆是单元大小和轮次决策，不是 kernel。打断处理是明显的短板：固定版本没有取消接口，被打断的回答中位数还要继续说 5 秒。请求-响应路径一次一个请求时 TTFA 0.72 秒，但回答只有一半长、也没算端点检测，不能说它“更快”。
+
+---
+
+## C1 — Is packed variable-length flow attention faster on our real batch shapes?
+
+**Research question.** Does the flow DiT's packed variable-length path (with and without block compilation) reduce code2wav GPU time per useful audio second (E) on the batch shapes our serving runs actually produced, without degrading audio?
+
+**Hypothesis and gates (registered in `compiler_runtime_opportunities.md` §4 and `c1_c2_design.md` §5 before the run; Erratum E-C1 registered before the run).** Performance: P1 (packed + `enable_flow_block_compile`) lowers E by ≥ 5 % on W3b or MIX representative shapes in every one of 3 timed passes. Quality first: waveform lengths correct and finite; mean MCD against an FP32 reference no more than 0.1 dB above the dense path's; ASR exact matches at most 1 fewer and pooled WER at most +0.5 points. Prediction (Estimated): P0 5–25 % slower than D; P1 −5..−12 % on W3b and −10..−20 % on MIX; P1 likely to fail the MCD rule because the packed path is BF16 by design.
+
+**Setup.** Run `ppv_c1_c2_microbench`, 23:40–00:53, 2 GPUs (C1 arms one after another on one GPU, C2 on the other, then the ASR quality pass); it overlapped R1 block 1 on a third GPU (deviation D1). Only the code2wav flow (+ HiFT for E) is loaded, as the component does, from the pinned stock checkout. Inputs: 47,484 real batches exported from the code2wav batch events of 实验 9 and 10 (`research/next_steps/results/c1_real_shapes.json`), replayed group by group with the same token inputs in every arm. Arms: REF (FP32 dense, quality reference only), D (default: FP16 dense masked SDPA, compiled DiT, dense CUDA graphs), D_ng (D without graphs), P0 (packed varlen, no compile), P1 (packed + block compile), P2 (P0 + packed graphs), P1h (P1 with the packed path in FP16 instead of BF16; exploratory, not the registered candidate). Timing: CUDA events, 3 timed passes after a warm-up (compile and capture time reported separately), recompiles counted; a separate short profiler pass for kernel families. Capability probe on sm_86: `varlen_attn` (FlashAttention-2) runs in BF16 and FP16; SDPA with a boolean mask cannot use the flash backend (falls back to mem-efficient).
+
+**Evidence** (`results/c1_microbench.json`, `results/c1_quality.json`). E = code2wav GPU ms per useful audio second (flow + HiFT); mean of 3 passes (pass-to-pass spread ≤ 0.3 %):
+
+| Real batch-shape group (source) | D | P0 | P1 | P1h | P1 vs D |
+|---|---|---|---|---|---|
+| W3b, fifo16, code2wav saturated (实验 10) | 8.52 | 11.73 | 6.47 | 6.47 | **−24.1 %** (−24.1, −24.1, −24.0 per pass) |
+| MIX, fifo16, code2wav saturated (实验 10) | 11.21 | 11.13 | 6.55 | 6.58 | **−41.5 %** |
+| W3b, length8 (实验 10) | 7.50 | 11.86 | 6.52 | — | −13.0 % |
+| MIX, length8 (实验 10) | 8.40 | 10.98 | 6.30 | — | −25.0 % |
+| W3L, 2+2+4 closed loop (实验 9) | 8.76 | 10.58 | 6.36 | — | −27.4 % |
+| W3b, 2+2+4 open loop, ~1.2 requests per batch (实验 10 validation) | 8.62 | 8.81 | 8.56 | — | −0.8 % |
+
+D_ng (no CUDA graphs) is only +3.3–3.6 % above D. Kernel families (ms per audio second): attention 1.43 → 0.59 (−59 %), mask preparation 0.60 → 0, GEMM 1.94 → 1.69, Inductor-fused +0.22. Requests on a CUDA graph: ≤ 3 % in batched groups for every arm. No recompilation in timed passes; peak memory unchanged (5.5 vs 5.1 GiB on W3b fifo16).
+
+Quality against the FP32 reference (26 segments; MCD on MFCC-style cepstra, `src/omni_research/analysis/audio_quality.py`; ASR Qwen3-ASR-1.7B):
+
+| Arm | MCD vs REF (dB) | Δ vs D | ASR rule | Registered quality gate |
+|---|---|---|---|---|
+| D | 4.06 | — | — | — |
+| D_ng (same math as D, no graphs) | 4.06 | +0.00 | **fails** | fails (ASR) |
+| P1 (registered candidate, BF16) | 5.07 | **+1.01** | passes | **fails (MCD)** |
+| P0 / P2 (BF16) | 5.00 / 5.01 | +0.94 / +0.95 | passes | fails (MCD) |
+| P1h (FP16, exploratory) | 4.12 | +0.06 | passes | passes |
+
+The noise floor of these comparisons is high: two numerically equivalent dense runs (D vs D_ng) already differ by 4.09 dB MCD and relative RMS ≈ 1.2, because the sampled excitation differs between runs; only differences relative to D against the same reference are interpreted. At the mel level the packed BF16 path deviates 0.36 % (relative RMS) from REF versus 0.06 % for D. The original literal rule (P1 within D's own repeat difference) is computed as registered: D repeats bit-identically, so the literal bound is 0 and P1 fails it too.
+
+**Result.** Performance gate: met (P1 −24 % on W3b and −42 % on MIX real shapes, identical in all three passes). Quality gate: **not met** for the registered candidate P1 (MCD +1.01 dB from the BF16 packed path). Per the registered "correctness first" rule, no performance conclusion is drawn for P1 and no end-to-end run was made (the conditional dense/packed × FIFO/length P1 variant was not placed). The exploratory FP16 packed arm P1h kept quality within every registered margin (MCD +0.06 dB) at the same speed (−24 % / −41 %).
+
+**Interpretation.** Packing removes the masked attention and its mask-preparation kernels — the two largest flow-specific costs found by the kernel census — and cuts E by 13–42 % on batched real shapes, more when FIFO batching mixes lengths (MIX fifo16, the most padded case). Length-aware batching already recovers part of this (D: 11.21 → 8.40 on MIX), so the two optimizations overlap: the packed gain is −25 % on length8 batches versus −42 % on fifo16 batches. Without compilation the packed path is slower (P0 +21..+58 %), and packed CUDA graphs add nothing (P2 ≈ P0); CUDA graphs matter little anywhere here (D_ng +3 %), because batched shapes rarely match a captured graph. On the open-loop 2+2+4 service below saturation (≈1.2 requests per batch) there is nothing to pack and the gain vanishes (−1 %). The quality failure is a precision choice of the pinned implementation (BF16 in the packed path), not a property of packing: the same packed path in FP16 matches the dense path's quality. A registered follow-up should test P1h end-to-end in the saturated regime.
+
+**Limitations.** Microbenchmark only (no serving-level effect claimed); quality set of 26 TTS-generated segments re-tokenized and re-synthesized (not talker output); MCD here is an MFCC-style variant comparable only between arms; the ASR rule's margin is smaller than run-to-run sampling differences (D_ng fails it), so it is a weak discriminator; P1h is exploratory and was not the registered candidate; C1 shared the node with R1 block 1 (deviation D1), timed with CUDA events.
+
+**中文小结。** 在真实批形状上，打包 + 编译（P1）让 code2wav 每秒语音的 GPU 时间下降 13%–42%（W3b −24%、MIX −42%，3 遍完全一致）：带 mask 的注意力少了 59%，构造 mask 的 kernel 完全消失；不编译的打包反而更慢，CUDA graph 在批处理下几乎没用（关掉只慢 3%）；开环未饱和、每批约 1.2 个请求时没有东西可打包，收益接近 0。但登记的候选 P1 没过音质门槛：打包路径设计上用 BF16，MCD 比稠密路径高 1.0 dB。按“正确性先行”的规则，P1 不下性能结论、不做端到端。探索性的 FP16 打包（P1h）速度相同、音质在门槛内，说明问题出在精度选择而不是打包本身——这是下一轮应该登记的端到端实验。
+
+---
+
+## C2 — Which part of HiFT benefits from weight-norm folding, channels-last layout or half precision?
+
+**Research question.** Do the three compiler-level changes found by the kernel census — folding HiFT's 82 weight-norm reparametrizations, removing NCHW→NHWC layout conversion with channels-last, and running the HiFT body in half precision — reduce HiFT GPU time per useful audio second without changing the waveform?
+
+**Hypothesis and gates (registered before the run; `c1_c2_design.md` §5).** B (fold): weights within 1 ulp and eager output bit-identical. C (layout): eager relative RMS ≤ 1e-4 and MCD ≤ 0.01 dB vs A. D (FP16 body, STFT/iSTFT/F0/SineGen kept FP32): MCD < 0.1 dB vs A and the ASR rule. Performance: B + C saving < 3 % of code2wav E → no end-to-end; D must pass quality and cut HiFT time by ≥ 20 % in every pass. Prediction (Estimated): B −3..−10 %, C −5..−15 %, D −20..−35 % of HiFT time.
+
+**Setup.** Same run as C1, second GPU, 23:40–23:54. Each arm is a fresh `HiFTGenerator` loaded with the same weights (a deep copy would share the parametrization class — a bug caught by the CPU check before the run); fixed input mels from three real shape groups and fixed excitation noise; `decode_body` compiled as in the stock component; 3 timed passes with CUDA events; a separate profiler pass.
+
+**Evidence** (`results/c2_microbench.json`, `results/c2_quality.json`). HiFT GPU ms per audio second, mean of 3 passes:
+
+| Shape group | A default | B fold | C channels-last | D FP16 body |
+|---|---|---|---|---|
+| W3b fifo16 | 2.02 | 2.11 | 2.08 | 2.83 |
+| MIX fifo16 | 1.79 | 1.81 | 1.82 | 2.37 |
+| W3L 2+2+4 | 1.54 | 1.50 | 1.50 | 1.75 |
+
+Per-pass changes vs A: B −5..+7 %, C −5..+7 % (within the ±5 % pass-to-pass spread of A), D +31..+50 % on W3b, +31..+33 % on MIX, −2..+23 % on W3L. Correctness: B folded 82 modules with 0 ulp difference and bit-identical eager output (pass); C eager relative RMS 9.1e-4 and MCD 0.18 dB (fail); D MCD 0.83 dB (fail; ASR rule passes). Kernel families (ms per audio s): C removes layout conversion (0.231 → 0.005) but its TF32 convolutions get slower (0.723 → 0.940); D halves the convolutions (0.723 TF32 → 0.295 FP16) and Snake (0.343 → 0.176). Kernel count per call: A 486, B 404, C 486, D 569. Summed kernel time is 77 % of the event-timed HiFT time for A–C but only 35 % for D (Derived from a separate profiler pass).
+
+**Result.** None of the three changes made HiFT measurably faster; layout and half precision also failed their numerical gates. Folding is exact but saves no measurable time (−17 % kernels, no time change). By the registered stop rule (B + C < 3 % of code2wav E; D neither passes quality nor reaches −20 %), the HiFT direction stops here and no end-to-end run was made.
+
+**Interpretation.** HiFT's cost is not dominated by any one kernel family it can shed: removing layout conversions moved time into slower convolutions, and halving the kernel time with FP16 raised the event-timed time, because HiFT runs once per request at small sizes and the GPU sits idle between its kernels for much of the call (kernel time 35 % of the call in FP16). This points at launch/host overhead and per-request invocation rather than arithmetic — a Hypothesis that batching HiFT across requests or capturing it in a graph would be the lever (not tested).
+
+**Limitations.** Microbenchmark only; three shape groups; HiFT timing has ±5 % pass-to-pass spread; kernel sums and event times come from different passes; the FP16 arm converts the whole body including weight-norm parametrizations and uses dynamic-shape compilation, so part of its overhead may be specific to this implementation; overlapped R1 block 1 (D1).
+
+**中文小结。** HiFT 的三项编译期优化都没有带来可测的加速：weight-norm 折叠逐位正确但时间没变；channels-last 去掉了布局转换，卷积却变慢，而且数值差异超过门槛；FP16 把 kernel 时间减了 42%，音质没过门槛（MCD 0.83 dB），总时间反而多了 30%——因为 HiFT 每个请求单独调用、kernel 很小，GPU 有大量时间在等主机端。按登记的放弃条件，这个方向停止。如果还要优化 HiFT，杠杆更可能是跨请求批量调用或给 HiFT 录 graph（假设，未测）。
