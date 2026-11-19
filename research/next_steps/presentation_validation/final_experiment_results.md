@@ -393,11 +393,11 @@ Why the registered verdicts came out this way (analysis after the fact, rules un
 
 **Evidence** (`results/p2_verify.json`; Measured). 885 verify events, all four checks true in every one; each of the 662 speech requests that finished in a check phase has exactly one (0 unverified, 0 duplicates); the deliberate client-timeout phase has none, as designed; 0 mismatch warnings in the log, no erratum on expected rows, no restart.
 
-**Result.** **Gate passed**: under verify timing the side-stream copy is bit-exact in all 885 verified copies (662 finished speech requests). This does not turn 实验 11's failed check into a pass: that run used a different code path (no reference copy, different timing) and its failure stands. Following the registration, the 9 performance runs (实验 11's design, runtime `unicorn_async`, whose worktree was checked to equal 520b49ee + 实验 11's patch file by file) were queued at 10:19 and finish after the presentation; they are not reported here.
+**Result.** **Gate passed**: under verify timing the side-stream copy is bit-exact in all 885 verified copies (662 finished speech requests). This does not turn 实验 11's failed check into a pass: that run used a different code path (no reference copy, different timing) and its failure stands. Following the registration, the 9 performance runs (实验 11's design, runtime `unicorn_async`, whose worktree was checked to equal 520b49ee + 实验 11's patch file by file) were placed in the queue at 10:19, but the orchestrator had already stopped at 10:16:01 (SIGTERM, source unknown), so they did **not run** (NOT RUN).
 
 **Limitations.** Verify checks the copy path, not the snapshot itself (if the graph buffer were overwritten before the snapshot, both copies would agree on wrong data); verify adds a clone, a blocking copy and a device sync per request, so “bit-exact under verify timing” is not a proof for plain `sidecopy` timing.
 
-**中文小结。** P2 用加了“参照拷贝”的检查模式重跑实验 11 的检查段落：885 次校验全部逐位相等（覆盖检查段落里 662 个完成的语音请求），没有一处不一致，登记的门槛**通过**。这只说明在检查模式的时序下旁路拷贝是对的；实验 11 原来“未通过”的结论不改。按登记，9 个性能运行已在 10:19 放入队列，结果在报告之后才有。
+**中文小结。** P2 用加了“参照拷贝”的检查模式重跑实验 11 的检查段落：885 次校验全部逐位相等（覆盖检查段落里 662 个完成的语音请求），没有一处不一致，登记的门槛**通过**。这只说明在检查模式的时序下旁路拷贝是对的；实验 11 原来“未通过”的结论不改。按登记，9 个性能运行在 10:19 放入了队列，但编排器 10:16 已经停止，没有运行（NOT RUN）。
 
 ---
 
@@ -421,7 +421,7 @@ Why the registered verdicts came out this way (analysis after the fact, rules un
 
 **Research question.** 实验 9 saw two short full-service pauses (one of 3.09 s with no line in the shared server log). Do such pauses recur, and when they do, is the shared network file system (NFS), garbage collection or something else involved?
 
-**Design (registered; no decision rule beyond “report every gap with its evidence”).** Low-overhead observation in every run of this round: Linux pressure-stall information (PSI) and process states in the runner's 1-s sampler; gen-2 GC timing (P1 runtime); a live watcher that stats the server log every 0.1 s and records silences > 1 s during load phases and stats slower than 0.2 s. Stack dumps through SIGUSR2 were switched off after one crashed a code2wav process (F6, D3). A gap counts as *under load* only between a phase's first and last send. The registered NFS-vs-local-disk control was queued at 10:19 after this report (go decision and expected power written before it ran, `preregistration.md`).
+**Design (registered; no decision rule beyond “report every gap with its evidence”).** Low-overhead observation in every run of this round: Linux pressure-stall information (PSI) and process states in the runner's 1-s sampler; gen-2 GC timing (P1 runtime); a live watcher that stats the server log every 0.1 s and records silences > 1 s during load phases and stats slower than 0.2 s. Stack dumps through SIGUSR2 were switched off after one crashed a code2wav process (F6, D3). A gap counts as *under load* only between a phase's first and last send. The registered NFS-vs-local-disk control met its go condition and was placed in the queue at 10:19 (go decision and expected power in `preregistration.md`), but the orchestrator had stopped at 10:16:01, so it did **not run**.
 
 **Evidence** (scan of 36 runs, 19 with dense logs, ≈ 6.5 h of dense-log measurement; `scripts/analysis/ppv_p3_stalls.py`; Measured).
 - 11 under-load log silences > 1 s (1.03–1.26 s). Eight fall in the first 0.4–1.8 s of a closed-loop level, before any of its requests could complete, with no I/O pressure; two are quiet logging while completions continued (W3L open loop). One is a real stall (next bullet).
@@ -431,11 +431,11 @@ Why the registered verdicts came out this way (analysis after the fact, rules un
 
 **Result.** A stall was observed, so the registered no-stall sentence does not apply. **Root cause remains unknown**, but the one full-service stall coincided with a node-wide I/O stall, a server process blocked in I/O and a 1.1-s metadata call on the shared NFS, and the duplex client stalls show the same signature: blocking I/O on the shared file system is now the leading candidate (Hypothesis), GC is not (no overlap). One event shows coincidence, not cause.
 
-**Interpretation.** Every stage process logs synchronously to the shared NFS home; if one write or metadata call blocks for a second, that process blocks, and because the stages wait on each other one blocked process can stop the whole pipeline. The control (NFS vs node-local disk, ABBA) tests this, but at one stall in ~6.5 h its 1 h per arm has about a 14 % chance of catching a stall in the NFS arm.
+**Interpretation.** Every stage process logs synchronously to the shared NFS home; if one write or metadata call blocks for a second, that process blocks, and because the stages wait on each other one blocked process can stop the whole pipeline. The registered control (NFS vs node-local disk, ABBA) would test this, but it did not run; at one stall in ~6.5 h its 1 h per arm would have had only about a 14 % chance of catching a stall in the NFS arm.
 
 **Limitations.** Rare events; 1-s process-state sampling (the blocked process is not identified by name); PSI is node-wide (other users' I/O shows the same way); no stack for the stall (dumps were off after F6).
 
-**中文小结。** 本轮在约 6.5 小时的日志密集测量里，负载期间只出现了 **1 次** 全服务停顿（P1 区组 2_a2，07:37:48，客户端 1.3 秒收不到任何完成），同一秒里整台机器的 I/O 压力有 0.66 秒是“全部卡住”，一个服务进程处于不可中断的 I/O 睡眠，监视器自己在 NFS 上 stat 日志也卡了 1.1 秒；没有 GC 重叠。其他 10 次日志静默都不是停顿（闭环刚开始的正常静默，或者只是日志安静）。全双工的客户端也有两次同样特征的卡顿。所以“没有观察到停顿”那句固定措辞不适用；根本原因仍未确定，共享文件系统上的阻塞 I/O 是目前最可能的候选（假设）。本地盘对 NFS 的对照已放进队列，但按这个频率它很可能什么也看不到（每组约 14% 的机会）。
+**中文小结。** 本轮在约 6.5 小时的日志密集测量里，负载期间只出现了 **1 次** 全服务停顿（P1 区组 2_a2，07:37:48，客户端 1.3 秒收不到任何完成），同一秒里整台机器的 I/O 压力有 0.66 秒是“全部卡住”，一个服务进程处于不可中断的 I/O 睡眠，监视器自己在 NFS 上 stat 日志也卡了 1.1 秒；没有 GC 重叠。其他 10 次日志静默都不是停顿（闭环刚开始的正常静默，或者只是日志安静）。全双工的客户端也有两次同样特征的卡顿。所以“没有观察到停顿”那句固定措辞不适用；根本原因仍未确定，共享文件系统上的阻塞 I/O 是目前最可能的候选（假设）。本地盘对 NFS 的对照满足放行条件、10:19 放进了队列，但编排器 10:16 已停止，没有运行；按这个频率它本来也很可能什么都看不到（每组约 14% 的机会）。
 
 ---
 
@@ -475,9 +475,9 @@ Numbering follows the task brief (system bottleneck / compiler and runtime / rea
 ### RQ2 — Which compiler and runtime techniques reduce the cost of the speech stages?
 
 - **Evidence.** Kernel census (existing); C1 (flow dense vs packed, microbenchmark on 112 real batches per arm); C2 (HiFT); P1 (runtime batching); P2 (side-stream copy correctness).
-- **Main result.** Packed variable-length attention plus compilation cuts code2wav GPU time per audio second by 13–42 % on batched real shapes (Measured, microbenchmark; masked attention −59 %, mask preparation removed) and does nothing at ~1.2 requests per batch; HiFT gains nothing from folding, layout or FP16 (per-call overhead dominates). The hidden-state side copy that failed 实验 11 is bit-exact under the verify mode in all 885 verified copies (Measured; performance runs queued, not reported).
+- **Main result.** Packed variable-length attention plus compilation cuts code2wav GPU time per audio second by 13–42 % on batched real shapes (Measured, microbenchmark; masked attention −59 %, mask preparation removed) and does nothing at ~1.2 requests per batch; HiFT gains nothing from folding, layout or FP16 (per-call overhead dominates). The hidden-state side copy that failed 实验 11 is bit-exact under the verify mode in all 885 verified copies (Measured; performance runs not run).
 - **Failures / negative results.** The registered packed path runs in BF16 and fails the quality gate (MCD +1.01 dB), so no end-to-end test ran; FP16 HiFT is slower; the maximum wait hurts at overload.
-- **Remaining unknown.** End-to-end value of FP16 packed flow at saturation; whether sidecopy pays off (P2 performance runs pending).
+- **Remaining unknown.** End-to-end value of FP16 packed flow at saturation; whether sidecopy pays off (P2 performance runs not run).
 - **Next hypothesis.** FP16 packed flow lowers code2wav GPU time per audio second in the saturated full service by roughly its microbenchmark gain on Length8 batches (−25 % on MIX) and keeps MCD within +0.1 dB of the dense path.
 
 ### RQ3 — What does real-time multimodal robot interaction need from the serving system?
