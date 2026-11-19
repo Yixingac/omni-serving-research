@@ -45,47 +45,47 @@
  },
  "ppv_c1_c2_microbench": {
   "included": true,
-  "reason": "C1 and C2 microbenchmarks with registered gates (C1: performance met, quality not met; C2: no gain, layout and FP16 fail numerical gates); microbenchmark only, overlapped R1 block 1 (D1)"
+  "reason": "C1 and C2 microbenchmarks with registered gates (C1: performance met, quality not met; C2: no gain, layout and FP16 fail numerical gates); microbenchmark only, overlapped R1 block 1 (D1); ran alongside every R1 run, the R2 smokes and R2 blocks 1-2 on other GPUs (D1)"
  },
  "ppv_r1_duplex_block1": {
   "included": true,
-  "reason": "R1 block 1 (full duplex, 1 session), overlapped C1/C2 and R3 screening (D1)"
+  "reason": "R1 block 1 (full duplex, 1 session); overlapped C1/C2 on other GPUs and, for its first ~2.5 min, the crashed R3 screening attempt (D1)"
  },
  "ppv_r1_chat_ref_block1": {
   "included": true,
-  "reason": "R1 request-response reference, block 1"
+  "reason": "R1 request-response reference, block 1. Overlapped the C1/C2 microbenchmark on another GPU (D1)."
  },
  "ppv_r1_duplex_block2": {
   "included": true,
-  "reason": "R1 block 2 (full duplex, 1 session)"
+  "reason": "R1 block 2 (full duplex, 1 session). Overlapped the C1/C2 microbenchmark on another GPU (D1)."
  },
  "ppv_r1_chat_ref_block2": {
   "included": true,
-  "reason": "R1 request-response reference, block 2"
+  "reason": "R1 request-response reference, block 2. Overlapped the C1/C2 microbenchmark on another GPU (D1)."
  },
  "ppv_r1_duplex_block3": {
   "included": true,
-  "reason": "R1 block 3 (full duplex, 1 session)"
+  "reason": "R1 block 3 (full duplex, 1 session). Overlapped the C1/C2 microbenchmark on another GPU (D1)."
  },
  "ppv_r1_chat_ref_block3": {
   "included": true,
-  "reason": "R1 request-response reference, block 3"
+  "reason": "R1 request-response reference, block 3. Overlapped the C1/C2 microbenchmark on another GPU (D1)."
  },
  "ppv_r2_smoke_ms8_1gpu": {
   "included": true,
-  "reason": "R2 placement smoke (decides the arm by the registered rule); not part of the R2 statistics"
+  "reason": "R2 placement smoke (decides the arm by the registered rule); not part of the R2 statistics. Overlapped the C1/C2 microbenchmark on another GPU (D1)."
  },
  "ppv_r2_smoke_ms8_2gpu": {
   "included": true,
-  "reason": "R2 placement smoke for the 2-GPU arm; not needed after the 1-GPU smoke passed"
+  "reason": "R2 placement smoke for the 2-GPU arm; met the start-and-no-failure rule but all 240 units were late (unit lag P50 about 22 s); not needed after the 1-GPU smoke passed. Overlapped the C1/C2 microbenchmark on another GPU (D1)."
  },
  "ppv_r2_ms8_1gpu_block1": {
   "included": true,
-  "reason": "R2 block 1 (ms8_1gpu chosen by the registered smoke rule)"
+  "reason": "R2 block 1 (ms8_1gpu chosen by the registered smoke rule); overlapped the C1 arms and the ASR quality pass on another GPU (D1)"
  },
  "ppv_r2_ms8_1gpu_block2": {
   "included": true,
-  "reason": "R2 block 2 (ms8_1gpu chosen by the registered smoke rule); levels 2-8 skipped by the stop rule after the first-reply warm-up at level 1"
+  "reason": "R2 block 2 (ms8_1gpu chosen by the registered smoke rule); levels 2-8 skipped by the stop rule after the first-reply warm-up at level 1; overlapped the end of the C1/C2 run (ASR pass, until 00:53; D1)"
  },
  "ppv_r2_ms8_1gpu_block3": {
   "included": true,
