@@ -421,10 +421,64 @@ def fig_c2(out: Path) -> list[Path]:
     return save(fig, out, "fig08_c2_hift")
 
 
+R2_SUMMARY = PV / "results/r2_summary.json"
+
+
+def fig_duplex_sessions(out: Path) -> list[Path]:
+    """R2: concurrent full-duplex sessions on one A6000 vs unit lag by unit kind, unit misses, deadline misses, stalls."""
+    d = json.loads(R2_SUMMARY.read_text())
+    levels = d["arms"]["ms8_1gpu"]["levels"]
+    xs = [lv["level"] for lv in levels]
+    plt = plt_setup()
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(13, 4.8))
+    sp50 = [lv["descriptive"]["unit_lag_speaking_ms"].get("p50") for lv in levels]
+    sp99 = [lv["descriptive"]["unit_lag_speaking_ms"].get("p99") for lv in levels]
+    li50 = [lv["descriptive"]["unit_lag_listening_ms"].get("p50") for lv in levels]
+    a1.plot(xs, sp50, marker="o", color="#0072B2", label="speaking units, P50")
+    a1.plot(xs, sp99, marker="o", ls="--", color="#0072B2", label="speaking units, P99")
+    a1.plot(xs, li50, marker="s", color="#999999", label="listening units, P50")
+    a1.axhline(1000, color="#D55E00", ls=":", lw=1)
+    a1.text(xs[0], 1030, "unit length (1 s): later units fall behind", color="#D55E00", fontsize=8)
+    for x, lv in zip(xs, levels):
+        miss = lv["unit_miss_rate"] * 100
+        oom = sum((b.get("oom_events") or 0) for b in lv["per_block"].values())
+        note = f"miss {miss:.1f}%" + (f"\n{oom} OOM" if oom else "")
+        a1.text(x, (lv["descriptive"]["unit_lag_speaking_ms"].get("p99") or 0) + 60, note, ha="center", fontsize=8)
+    a1.set_xscale("log", base=2)
+    a1.set_xticks(xs, [str(x) for x in xs])
+    a1.set_xlabel("concurrent sessions on one A6000")
+    a1.set_ylabel("unit lag (ms): last input sample → unit done")
+    a1.set_title("1-s unit processing vs sessions")
+    a1.set_ylim(0, 1800)
+    a1.legend(fontsize=8, loc="upper left")
+    for deadline, ls in (("0.5s", ":"), ("1s", "-"), ("2s", "--")):
+        ys = [lv["deadline_miss_all_turns"][deadline] * 100 for lv in levels]
+        a2.plot(xs, ys, marker="o", ls=ls, color="#CC79A7", label=f"turns missing a {deadline} TTFA deadline")
+    stall = []
+    for lv in levels:
+        p = lv["pooled"]
+        stall.append(100 * p["replies_with_stall"]["80ms"] / p["replies_with_audio"] if p.get("replies_with_audio") else None)
+    a2.plot(xs, stall, marker="^", color="#009E73", label="replies with a playback stall (80 ms buffer)")
+    a2.set_xscale("log", base=2)
+    a2.set_xticks(xs, [str(x) for x in xs])
+    a2.set_ylim(0, 105)
+    a2.set_xlabel("concurrent sessions on one A6000")
+    a2.set_ylabel("percent")
+    a2.set_title("Interaction quality vs sessions")
+    a2.legend(fontsize=8, loc="lower right")
+    blocks = {lv["level"]: len(lv["blocks_ran"]) for lv in levels}
+    caption(fig, "R2 (this round): stock SGLang-Omni 520b49ee, --variant session --enable-realtime --max_sessions 8 on one RTX A6000; synthetic "
+                 "spoken questions; 180 s per level, levels 1 → 8 within a run. Blocks per level: " + ", ".join(f"{k}: {v}" for k, v in blocks.items())
+            + " (block 2 stopped after level 1 under the registered stop rule: a first-reply warm-up missed 1.67 % of units). "
+              "Unit lag is bimodal, so speaking and listening units are shown separately. Registered capacity verdicts: "
+              "below the lowest level (see the results). Deadline misses at 1 session are mostly the model's turn-taking.")
+    return save(fig, out, "fig09_duplex_sessions")
+
+
 FIGURES: dict[str, Callable[[Path], list[Path]]] = {"placement": fig_placement, "p0_admission": fig_p0_admission,
                                                     "p0_capacity": fig_p0_capacity, "c2w_shapes": fig_c2w_shapes,
                                                     "c2w_kernels": fig_c2w_kernels, "duplex_ttfa": fig_duplex_ttfa,
-                                                    "c1": fig_c1, "c2": fig_c2}
+                                                    "c1": fig_c1, "c2": fig_c2, "duplex_sessions": fig_duplex_sessions}
 
 
 def main() -> int:
