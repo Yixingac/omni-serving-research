@@ -1,0 +1,1350 @@
+{
+ "runtime_profile": "unicorn_ppv_maxwait",
+ "hardware_label": "a6000x8",
+ "seed": 0,
+ "assets": "synthetic-v1",
+ "experiment_id": "ppv_p1_block2",
+ "description": "P1 第 2 个区组：放置 t2_k2_c4，flow CUDA graph 开。负载顺序 w3l/mix/w3b；每种负载 5 种设置（FIFO16、Length8、Length8+最长等待 0.5/1/2 秒）× 3 档速率（0.9X/1.0X/1.1X），顺序随机（种子 20261119），控制文件切换，每格一个开环段（先预热再测登记的时长），开事件。",
+ "restart_dead_servers": true,
+ "max_server_restarts": 4,
+ "servers": [
+  {
+   "name": "s0",
+   "model": "minicpm_o_4_5",
+   "gpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "args": [
+    "--config",
+    "{research_repo}/configs/models/minicpm_o_4_5_exp_t2_k2_c4.yaml"
+   ],
+   "ready_timeout_s": 2400,
+   "env": {
+    "SGLANG_OMNI_C2W_CONTROL": "{exp_dir}/c2w_control.json",
+    "SGLANG_OMNI_PORT_CLAIM_DIR": "{exp_dir}/port_claims",
+    "SGLANG_OMNI_EXP_STACK_DIR": "{exp_dir}/stacks"
+   }
+  }
+ ],
+ "phases": [
+  {
+   "kind": "smoke",
+   "name": "smoke_w3b",
+   "workload": "configs/workloads/w3b_text_speech.json",
+   "requests": 2
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3l_length8_x100",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3l_length8_x100",
+   "rates_rps": [
+    14.5
+   ],
+   "duration_per_rate_s": 110,
+   "min_requests_per_rate": 1595,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 20,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3l_long_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3l_length8_w500_x090",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 500
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3l_length8_w500_x090",
+   "rates_rps": [
+    13.0
+   ],
+   "duration_per_rate_s": 110,
+   "min_requests_per_rate": 1430,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 20,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3l_long_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3l_length8_w500_x100",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 500
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3l_length8_w500_x100",
+   "rates_rps": [
+    14.5
+   ],
+   "duration_per_rate_s": 110,
+   "min_requests_per_rate": 1595,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 20,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3l_long_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3l_fifo16_x100",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 16,
+    "policy": "fifo",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3l_fifo16_x100",
+   "rates_rps": [
+    14.5
+   ],
+   "duration_per_rate_s": 110,
+   "min_requests_per_rate": 1595,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 20,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3l_long_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3l_length8_w1000_x100",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 1000
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3l_length8_w1000_x100",
+   "rates_rps": [
+    14.5
+   ],
+   "duration_per_rate_s": 110,
+   "min_requests_per_rate": 1595,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 20,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3l_long_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3l_fifo16_x110",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 16,
+    "policy": "fifo",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3l_fifo16_x110",
+   "rates_rps": [
+    16.0
+   ],
+   "duration_per_rate_s": 110,
+   "min_requests_per_rate": 1760,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 20,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3l_long_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3l_fifo16_x090",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 16,
+    "policy": "fifo",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3l_fifo16_x090",
+   "rates_rps": [
+    13.0
+   ],
+   "duration_per_rate_s": 110,
+   "min_requests_per_rate": 1430,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 20,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3l_long_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3l_length8_w1000_x090",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 1000
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3l_length8_w1000_x090",
+   "rates_rps": [
+    13.0
+   ],
+   "duration_per_rate_s": 110,
+   "min_requests_per_rate": 1430,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 20,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3l_long_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3l_length8_w2000_x110",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 2000
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3l_length8_w2000_x110",
+   "rates_rps": [
+    16.0
+   ],
+   "duration_per_rate_s": 110,
+   "min_requests_per_rate": 1760,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 20,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3l_long_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3l_length8_x090",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3l_length8_x090",
+   "rates_rps": [
+    13.0
+   ],
+   "duration_per_rate_s": 110,
+   "min_requests_per_rate": 1430,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 20,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3l_long_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3l_length8_x110",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3l_length8_x110",
+   "rates_rps": [
+    16.0
+   ],
+   "duration_per_rate_s": 110,
+   "min_requests_per_rate": 1760,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 20,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3l_long_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3l_length8_w2000_x100",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 2000
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3l_length8_w2000_x100",
+   "rates_rps": [
+    14.5
+   ],
+   "duration_per_rate_s": 110,
+   "min_requests_per_rate": 1595,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 20,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3l_long_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3l_length8_w2000_x090",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 2000
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3l_length8_w2000_x090",
+   "rates_rps": [
+    13.0
+   ],
+   "duration_per_rate_s": 110,
+   "min_requests_per_rate": 1430,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 20,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3l_long_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3l_length8_w1000_x110",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 1000
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3l_length8_w1000_x110",
+   "rates_rps": [
+    16.0
+   ],
+   "duration_per_rate_s": 110,
+   "min_requests_per_rate": 1760,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 20,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3l_long_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3l_length8_w500_x110",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 500
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3l_length8_w500_x110",
+   "rates_rps": [
+    16.0
+   ],
+   "duration_per_rate_s": 110,
+   "min_requests_per_rate": 1760,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 20,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3l_long_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_length8_x100",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "mix_length8_x100",
+   "rates_rps": [
+    14.5
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 1305,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_length8_w500_x090",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 500
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "mix_length8_w500_x090",
+   "rates_rps": [
+    13.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 1170,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_fifo16_x090",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 16,
+    "policy": "fifo",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "mix_fifo16_x090",
+   "rates_rps": [
+    13.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 1170,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_fifo16_x100",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 16,
+    "policy": "fifo",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "mix_fifo16_x100",
+   "rates_rps": [
+    14.5
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 1305,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_length8_w1000_x110",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 1000
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "mix_length8_w1000_x110",
+   "rates_rps": [
+    16.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 1440,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_length8_w500_x100",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 500
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "mix_length8_w500_x100",
+   "rates_rps": [
+    14.5
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 1305,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_length8_w500_x110",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 500
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "mix_length8_w500_x110",
+   "rates_rps": [
+    16.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 1440,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_length8_w2000_x090",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 2000
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "mix_length8_w2000_x090",
+   "rates_rps": [
+    13.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 1170,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_length8_w2000_x110",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 2000
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "mix_length8_w2000_x110",
+   "rates_rps": [
+    16.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 1440,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_length8_x090",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "mix_length8_x090",
+   "rates_rps": [
+    13.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 1170,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_length8_w2000_x100",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 2000
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "mix_length8_w2000_x100",
+   "rates_rps": [
+    14.5
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 1305,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_length8_w1000_x100",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 1000
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "mix_length8_w1000_x100",
+   "rates_rps": [
+    14.5
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 1305,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_fifo16_x110",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 16,
+    "policy": "fifo",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "mix_fifo16_x110",
+   "rates_rps": [
+    16.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 1440,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_length8_w1000_x090",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 1000
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "mix_length8_w1000_x090",
+   "rates_rps": [
+    13.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 1170,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_mix_length8_x110",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "mix_length8_x110",
+   "rates_rps": [
+    16.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 1440,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload_mix": [
+    {
+     "workload": "configs/workloads/w3b_text_speech.json",
+     "weight": 0.5
+    },
+    {
+     "workload": "configs/workloads/w3l_long_speech.json",
+     "weight": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_fifo16_x110",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 16,
+    "policy": "fifo",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_fifo16_x110",
+   "rates_rps": [
+    32.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 2880,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_fifo16_x090",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 16,
+    "policy": "fifo",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_fifo16_x090",
+   "rates_rps": [
+    26.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 2340,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_length8_w2000_x090",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 2000
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_length8_w2000_x090",
+   "rates_rps": [
+    26.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 2340,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_length8_x090",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_length8_x090",
+   "rates_rps": [
+    26.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 2340,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_length8_w1000_x090",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 1000
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_length8_w1000_x090",
+   "rates_rps": [
+    26.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 2340,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_length8_w500_x110",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 500
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_length8_w500_x110",
+   "rates_rps": [
+    32.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 2880,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_length8_w1000_x110",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 1000
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_length8_w1000_x110",
+   "rates_rps": [
+    32.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 2880,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_length8_w2000_x110",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 2000
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_length8_w2000_x110",
+   "rates_rps": [
+    32.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 2880,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_length8_w1000_x100",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 1000
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_length8_w1000_x100",
+   "rates_rps": [
+    29.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 2610,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_fifo16_x100",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 16,
+    "policy": "fifo",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_fifo16_x100",
+   "rates_rps": [
+    29.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 2610,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_length8_w500_x100",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 500
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_length8_w500_x100",
+   "rates_rps": [
+    29.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 2610,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_length8_x110",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_length8_x110",
+   "rates_rps": [
+    32.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 2880,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_length8_x100",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": null
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_length8_x100",
+   "rates_rps": [
+    29.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 2610,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_length8_w500_x090",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 500
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_length8_w500_x090",
+   "rates_rps": [
+    26.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 2340,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  },
+  {
+   "kind": "control",
+   "name": "ctl_w3b_length8_w2000_x100",
+   "path": "{exp_dir}/c2w_control.json",
+   "content": {
+    "max_batch_size": 8,
+    "policy": "length",
+    "window": 64,
+    "max_wait_ms": 2000
+   },
+   "settle_s": 3
+  },
+  {
+   "kind": "open_loop",
+   "name": "w3b_length8_w2000_x100",
+   "rates_rps": [
+    29.0
+   ],
+   "duration_per_rate_s": 90,
+   "min_requests_per_rate": 2610,
+   "max_error_rate": 0.5,
+   "server_events": true,
+   "warmup_s": 15,
+   "seed": 20261121,
+   "workload": "configs/workloads/w3b_text_speech.json"
+  }
+ ],
+ "stall_watch": true
+}

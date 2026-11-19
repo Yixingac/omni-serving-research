@@ -68,7 +68,8 @@ def test_main_blocks_hold_every_cell_once_with_a_control_before_each():
     assert entries == mp.main_entries(X)  # deterministic
 
 
-def test_render_writes_the_main_plan_only_with_x_and_uses_the_worktree_command():
+def test_render_writes_the_main_plan_only_with_x_and_uses_the_worktree_command(monkeypatch):
+    monkeypatch.setattr(mp, "P1_X", None)  # before the pre-run: no X, no main plan
     files = mp.render(None)
     assert "configs/experiments/plan_ppv_p1_prerun.json" in files and "configs/experiments/plan_ppv_p1.json" not in files
     files = mp.render(X)

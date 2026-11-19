@@ -59,7 +59,7 @@ MEASURED_S = {"w3b": 75, "w3l": 90, "mix": 75}  # registered
 WARMUP_S = {"w3b": 15, "w3l": 20, "mix": 15}
 # Busy-window capacity X (requests/s) per workload from the pre-run (scripts/analysis/ppv_p1_report.py --prerun).
 # None until the pre-run has been analysed; the main plan is written only then.
-P1_X: dict[str, float] | None = None
+P1_X: dict[str, float] | None = {"w3b": 28.96, "w3l": 14.52, "mix": 14.67}  # 20261119_ppv_p1_prerun_run01 (Erratum E-P1-X fixed)
 PRERUN_ID = "ppv_p1_prerun"
 
 

@@ -63,11 +63,15 @@ def pct(values: list[float], q: float) -> float | None:
 
 
 def prerun_capacity(records: list[dict[str, Any]]) -> dict[str, Any]:
-    """X (busy-window throughput) and, next to it, the registered closed-loop capacity (first send -> last completion)."""
+    """X (busy-window throughput) and, next to it, the registered closed-loop capacity (first send -> last completion).
+
+    The busy window is 实验 9's: from the first to the last send of a measured request, counting every request that
+    completes inside it — warm-up requests included, since in a closed loop each of their completions frees the slot a
+    measured request is sent on (Erratum E-P1-X: the first version passed only measured requests and undercounted X)."""
     meas = [r for r in records if not r.get("warmup")]
     ok = [r for r in meas if r.get("status") == "ok" and r.get("sent_ns") is not None and r.get("done_ns") is not None]
     span = (max(r["done_ns"] for r in ok) - min(r["sent_ns"] for r in ok)) / 1e9 if ok else None
-    bw = busy_window_throughput(meas)
+    bw = busy_window_throughput(records)
     return {"measured": len(meas), "ok": len(ok), "x_rps": bw["throughput_rps"], "busy_window_s": bw["window_s"],
             "registered_capacity_rps": len(ok) / span if span else None}
 

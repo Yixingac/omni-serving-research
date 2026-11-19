@@ -25,7 +25,9 @@ def test_prerun_capacity_uses_the_busy_window_and_reports_the_registered_capacit
     recs = [rec(i, i, 2.5) for i in range(10)] + [{**rec(99, 0, 0.5), "warmup": True}]
     c = rp.prerun_capacity(recs)
     assert c["measured"] == 10 and c["busy_window_s"] == 9.0
-    assert math.isclose(c["x_rps"], 7 / 9)  # completions in (0, 9] s: done at 2.5 .. 8.5 s
+    # completions in (0, 9] s: the warm-up request done at 0.5 s and measured ones done at 2.5 .. 8.5 s (实验 9's busy
+    # window counts every completion inside it; Erratum E-P1-X)
+    assert math.isclose(c["x_rps"], 8 / 9)
     assert math.isclose(c["registered_capacity_rps"], 10 / 11.5)  # first send 0 s -> last completion 11.5 s
     assert rp.prerun_rates({"w3b": 29.3}) == {"w3b": {"x090": 26.5, "x100": 29.5, "x110": 32.0}}
 
@@ -153,3 +155,16 @@ def test_analyze_run_reads_cells_from_a_run_directory(tmp_path):
     assert run["block"] == 2 and list(run["cells"]) == [("mix", "length8_w1000", "x100")]
     c = run["cells"][("mix", "length8_w1000", "x100")]["client"]
     assert c["measured"] == 750 and c["offered_rps"] == 10.0 and c["usable"] is True and c["steady"] is True
+
+
+def test_busy_window_x_is_never_below_the_registered_capacity_in_a_closed_loop():
+    """Closed loop at 4 in flight: a warm-up wave of 4, then 12 measured requests, each 1 s long."""
+    recs, t = [], 0.0
+    for wave in range(4):
+        for k in range(4):
+            r = rec(wave * 4 + k, wave * 1.0, 1.0)
+            if wave == 0:
+                r["warmup"] = True
+            recs.append(r)
+    c = rp.prerun_capacity(recs)
+    assert c["x_rps"] >= c["registered_capacity_rps"]
