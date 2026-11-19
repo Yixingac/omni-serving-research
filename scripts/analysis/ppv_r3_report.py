@@ -139,9 +139,23 @@ def confirm_cells(cells: dict[str, dict[str, dict[str, Any]]], limit: int = 6) -
     return [k for *_, k in chosen[:limit]]
 
 
+def gpu_evidence(win: dict[str, dict[str, Any]], gpus: list[int]) -> dict[str, Any]:
+    """Descriptive GPU columns next to gpu_busy_mean (the registered class still uses only gpu_busy_mean): nvidia-smi
+    utilisation aliases under periodic per-session loads (seen in R0), so mean power and the share of 0 % readings are
+    reported, and the cell is flagged when utilisation is unusable (duplex.report.UTIL_SUSPECT_*)."""
+    g = [win[str(i)] for i in gpus if str(i) in win]
+    if not g:
+        return {}
+    power = [x["power_mean_w"] for x in g if x.get("power_mean_w") is not None]
+    return {"gpu_power_mean_w": statistics.fmean(power) if power else None,
+            "gpu_util_zero_share": statistics.fmean(x["util_zero_share"] for x in g),
+            "gpu_util_suspect": any(x["util_suspect"] for x in g)}
+
+
 def analyze_run(exp: Path) -> dict[str, Any]:
     from exp01_gpu_timeline import load_util
     from omni_research.analysis.experiment_analysis import clock_anchor, read_jsonl
+    from omni_research.duplex.report import gpu_window, load_gpu_samples_utc
 
     cfg = json.loads((exp / "config.json").read_text())
     res = json.loads((exp / "result.json").read_text())
@@ -149,6 +163,7 @@ def analyze_run(exp: Path) -> dict[str, Any]:
     anchor = clock_anchor(exp)
     off = (anchor[1] - anchor[0]) / 1e9 if anchor else None
     util = load_util(exp) if (exp / "raw" / "gpu_samples.csv").exists() else {}
+    samples = load_gpu_samples_utc(exp) if (exp / "raw" / "gpu_samples.csv").exists() else []
     cpu = read_jsonl(exp / "raw" / "cpu_samples.jsonl") if (exp / "raw" / "cpu_samples.jsonl").exists() else []
     phases_cfg = {p.get("name"): p for p in cfg.get("phases", [])}
     out = {"run": exp.name, "experiment_id": res.get("experiment_id"), "cells": []}
@@ -168,6 +183,7 @@ def analyze_run(exp: Path) -> dict[str, Any]:
             b = max(r.get("done_ns") or r["sent_ns"] for r in meas) / 1e9 + off
             busy = [u for g in gpus for t, u, _ in util.get(g, []) if a <= t <= b]
             cell["gpu_busy_mean"] = statistics.fmean(busy) if busy else None
+            cell.update(gpu_evidence(gpu_window(samples, a, b), gpus))
             base = exp / "raw" / "server_events" / name
             events = [e for f in sorted(base.rglob("*.jsonl")) for e in read_jsonl(f)] if base.exists() else []
             pre_pids = {f.stem.rsplit("_", 1)[-1] for f in base.rglob("events_preprocessing_*.jsonl")} if base.exists() else set()

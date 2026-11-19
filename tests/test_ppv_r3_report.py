@@ -83,3 +83,11 @@ def test_confirm_cells_picks_saturated_or_improved_cells_most_dropping_first():
     }
     assert r3.confirm_cells(cells) == ["frame_s16_f2", "frame_s4_f2", "clip_s1_f1"]
     assert r3.confirm_cells(cells, limit=1) == ["frame_s16_f2"]
+
+
+def test_gpu_evidence_reports_power_and_flags_aliased_utilisation():
+    win = {"0": {"samples": 300, "util_mean": 0.0, "util_zero_share": 1.0, "power_mean_w": 180.0, "util_suspect": True},
+           "1": {"samples": 300, "util_mean": 85.0, "util_zero_share": 0.0, "power_mean_w": 290.0, "util_suspect": False}}
+    assert r3.gpu_evidence(win, [0]) == {"gpu_power_mean_w": 180.0, "gpu_util_zero_share": 1.0, "gpu_util_suspect": True}
+    assert r3.gpu_evidence(win, [1])["gpu_util_suspect"] is False
+    assert r3.gpu_evidence(win, [7]) == {}
