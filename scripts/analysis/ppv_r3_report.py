@@ -171,7 +171,9 @@ def confirm_verdicts(runs: list[dict[str, Any]]) -> dict[str, Any]:
                     "drop_ratio": {"c1": col("1", lambda c: c.get("drop_ratio")), "c4": col("4", lambda c: c.get("drop_ratio"))},
                     "first_response_p95_s": {"c1": col("1", lambda c: (c.get("first_response_s") or {}).get("p95")),
                                              "c4": col("4", lambda c: (c.get("first_response_s") or {}).get("p95"))},
-                    "sent_per_s": {"c1": col("1", lambda c: c.get("sent") / 60.0 if c.get("sent") is not None else None)},
+                    "sent_per_s": {conc: col(str(n), lambda c: c.get("sent") / 60.0 if c.get("sent") is not None else None)
+                                   for conc, n in (("c1", 1), ("c4", 4))},
+                    "offered_per_s": next((c["sessions"] * c["fps"] for b in blocks.values() for c in b.values()), None),
                     "gpu_power_mean_w_c1": col("1", lambda c: c.get("gpu_power_mean_w"))}
     return out
 

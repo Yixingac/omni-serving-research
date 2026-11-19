@@ -86,3 +86,17 @@ def test_duplex_sessions_figure_overlays_r2b_only_when_it_exists(tmp_path, monke
     assert "R2b" in svg and "supported" in svg
     monkeypatch.setattr(pf, "R2B_SUMMARY", tmp_path / "missing.json")
     assert "R2b" not in pf.fig_duplex_sessions(tmp_path / "without")[1].read_text()
+
+
+def test_r3_figure_overlays_the_confirmation_only_when_it_exists(tmp_path, monkeypatch):
+    import json
+
+    conf = {"frame_s16_f1": {"verdict": "不支持", "offered_per_s": 16.0,
+                             "sent_per_s": {"c1": {"1": 7.4, "2": 7.6, "3": 7.5}, "c4": {"1": 7.5, "2": 7.5, "3": None}}}}
+    p = tmp_path / "conf.json"
+    p.write_text(json.dumps({"confirmation": conf}))
+    monkeypatch.setattr(pf, "R3_CONFIRM", p)
+    svg = pf.fig_r3_camera(tmp_path / "with")[1].read_text()
+    assert "3-block confirmation" in svg and "not supported" in svg
+    monkeypatch.setattr(pf, "R3_CONFIRM", tmp_path / "missing.json")
+    assert "3-block confirmation" not in pf.fig_r3_camera(tmp_path / "without")[1].read_text()

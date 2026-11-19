@@ -501,6 +501,7 @@ def fig_duplex_sessions(out: Path) -> list[Path]:
 
 
 R3_SCREEN = PV / "results/r3_screen.json"
+R3_CONFIRM = PV / "results/r3_confirm.json"
 
 
 def fig_r3_camera(out: Path) -> list[Path]:
@@ -526,6 +527,19 @@ def fig_r3_camera(out: Path) -> list[Path]:
     lim = [0.4, 40]
     a1.plot(lim, lim, color="#999999", lw=1, ls=":")
     a1.text(0.5, 0.62, "accepted = offered", color="#777777", fontsize=8, rotation=37)
+    confirm_note = ""
+    if R3_CONFIRM.exists():  # 3-block confirmation of the registered cells: block range (min-max) at concurrency 1 and 4
+        conf = json.loads(R3_CONFIRM.read_text())["confirmation"]
+        for key, v in conf.items():
+            x = v.get("offered_per_s")
+            for conc, dx, mk in (("c1", 0.94, "o"), ("c4", 1.06, "D")):
+                ys = [y for y in (v["sent_per_s"].get(conc) or {}).values() if y is not None]
+                if x and ys:
+                    a1.errorbar([x * dx], [statistics.fmean(ys)], yerr=[[statistics.fmean(ys) - min(ys)], [max(ys) - statistics.fmean(ys)]],
+                                fmt=mk, color="black", mfc="black" if conc == "c1" else "white", ms=4, capsize=3, lw=1)
+        verdicts = {k: VERDICT_EN.get(v["verdict"], v["verdict"]) for k, v in conf.items()}
+        confirm_note = (" Black: 3-block confirmation of the registered cells (mean, whiskers = block range; filled = concurrency 1). "
+                        "Registered verdicts for concurrency 4: " + ", ".join(f"{k} {v}" for k, v in sorted(verdicts.items())) + ".")
     handles = [Line2D([], [], color=colors["frame"], marker="o", label="frame (one PNG)"),
                Line2D([], [], color=colors["clip"], marker="o", label="clip (2 s H.264)"),
                *[Line2D([], [], color="#555555", ls=styles[n], label=f"{n} session{'s' if n > 1 else ''}, fps 0.5 / 1 / 2") for n in (1, 4, 16)],
@@ -563,7 +577,7 @@ def fig_r3_camera(out: Path) -> list[Path]:
                  "(no blocks yet). Sessions 1/4/16 × 0.5/1/2 fps. Right: stage medians from request events (not additive); "
                  "requests per bar group: " + ", ".join(f"{s} {k}×{f:g}: {v}" for (s, k, f), v in n.items())
             + ". At concurrency 1 all 5 saturated cells are GPU-bound by the registered rule (at concurrency 4 two of them are 'cause unclear', "
-              "74–75 % GPU busy); concurrency 4 improved no cell.")
+              "74–75 % GPU busy); concurrency 4 improved no cell." + confirm_note)
     return save(fig, out, "fig10_r3_camera")
 
 
@@ -572,7 +586,7 @@ P1_SETTINGS = [("fifo16", "FIFO16", "#999999", "o"), ("length8", "Length8", "#00
                ("length8_w500", "Length8 + max wait 0.5 s", "#56B4E9", "v"),
                ("length8_w1000", "Length8 + max wait 1 s", "#D55E00", "D"),
                ("length8_w2000", "Length8 + max wait 2 s", "#CC79A7", "^")]
-VERDICT_EN = {"支持": "supported", "反驳": "refuted", "不确定": "inconclusive", "数据不足": "insufficient data"}
+VERDICT_EN = {"支持": "supported", "反驳": "refuted", "不确定": "inconclusive", "数据不足": "insufficient data", "不支持": "not supported"}
 
 
 def _num(x: Any) -> float | None:
