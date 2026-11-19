@@ -226,3 +226,46 @@ Why the registered verdicts came out this way (analysis after the fact, rules un
 **Limitations.** One node, synthetic W3b/W3L; joint change of cap and graph coverage (Erratum E-P0-G); the H0b CPU criterion is weak (M1); the reference ran W3b only; open-loop rates top out at 31 req/s, so the stable capacities of B and the reference are lower bounds; the registered capacity includes the final drain (as in 实验 9).
 
 **中文小结。** 只把 talker 的同时处理名额从 32 改成 64（固定版本会同时把 CUDA graph 录到 64），2+1+5 的容量在 W3b 和 W3L 上都提高约 31%（3 个区组 +30.4/+29.8/+31.9%），比事先预测的 +10–20% 还多，闭环容量离最好的 2+2+4 只差约 4%；但高负载下尾延迟和 goodput 仍明显落后（31 请求/秒时 P95 8 秒对 5 秒），按登记规则“追上 2+2+4”被反驳。名额放开后 talker 立刻又顶在 64、排队约 128 个，卡只忙一半——瓶颈仍是软件准入，而不是 GPU 或 KV（KV 触发条件 0%）。由于固定版本不允许 graph 上限低于名额，名额和 graph 覆盖的贡献分不开。
+
+---
+
+## R3 — Where does continuous camera input stop keeping up on the request-response path?
+
+**Research question.** When synthetic camera sessions send one frame (or one 2-s clip) per tick to a text-only replica on one A6000, at which number of sessions × frame rate does the replica stop keeping up, which resource limits it first, and does raising the CPU preprocessing concurrency from 1 to 4 help?
+
+**Hypothesis and gates (registered 2026-11-18 22:55, before any R3 run; `r3_r4_design.md` §2.4).** A cell is *saturated* when ≥ 10 % of ticks are dropped or ≥ 20 % of sent requests finish after the next tick. A saturated cell is *preprocessing-bound* when preprocessing (queue + service) is ≥ 50 % of server time and the preprocessing slot is ≥ 80 % busy, *GPU-bound* when GPU busy ≥ 80 % and the slot < 80 % busy, otherwise *unclear*. Concurrency 4 *improves* a cell when its drop ratio falls by ≥ 5 points and ≥ 20 % relative, or its first-response P95 falls by ≥ 20 %. Prediction (Hypothesis): `clip` at 16 sessions and ≥ 1 fps is preprocessing-bound, and concurrency 4 helps `clip` but hardly `frame`. Confirmation: at most 6 cells picked by a fixed rule, 3 blocks × both concurrencies; “supported” only when all 3 blocks improve.
+
+**Setup.**
+- Replica: `--text-only`, 1 GPU and 7 CPU cores (the per-GPU share of the node), runtime `unicorn_ppv_kv` = 520b49ee plus a default-off research patch. Stock MiniCPM-o hard-codes preprocessing concurrency 1 and rejects the parameter, so both arms use the patched code and differ only in that parameter.
+- Camera: synthetic 640×360 scene with 1–5 moving circles; each frame carries a code so no two frames are byte-identical (no media or prefix cache hits). `frame` sends the newest PNG and asks how many circles there are; `clip` sends the last 2 s at 8 fps as H.264.
+- Load: one request in flight per session (`drop_if_busy`): a tick that arrives while the previous request is outstanding is dropped. 1/4/16 sessions × 0.5/1/2 fps × 2 shapes = 18 cells, each 10 s warm-up + 60 s measured, in random order (seed 20261119, same order for both arms), request events on.
+- Screening: one run per concurrency, side by side on two GPUs, 02:53–03:20; no other run overlapped them. A first attempt crashed at its first request (the patch used a field SGLang 0.5.21 does not have) and was re-run under new IDs; both failed runs are kept.
+- This is frame replay through `/v1/chat/completions`, not a live camera and not the duplex image path.
+
+**Evidence** (`results/r3_screen.json`; screening = one run per arm). Concurrency 1, the five saturated cells and the three cells next to them; at 1 session every cell answers in 0.14–0.15 s (P95) with image-encoder service 47–67 ms and thinker prefill 40–51 ms:
+
+| Cell | Offered → sent (req/s) | Dropped | Late | First response P50 / P95 (s) | Image encoder P50 (ms) | Thinker prefill P50 (ms) | Preprocessing share / slot busy | GPU util / power | Class |
+|---|---|---|---|---|---|---|---|---|---|
+| frame, 4 sessions, 2 fps | 8 → 5.9 | 26 % | 36 % | 0.40 / 0.61 | 219 | 104 | 8 % / 0.25 | 89 % / 289 W | GPU-bound |
+| frame, 16, 0.5 | 8 → 7.7 | 4 % | 5 % | 1.50 / 1.86 | 1,232 | 111 | 2 % / 0.33 | 86 % / 290 W | not saturated |
+| frame, 16, 1 | 16 → 7.5 | 53 % | 99 % | 1.51 / 2.23 | 1,219 | 111 | 2 % / 0.33 | 82 % / 291 W | GPU-bound |
+| frame, 16, 2 | 32 → 7.6 | 76 % | 100 % | 1.71 / 2.20 | 1,401 | 111 | 3 % / 0.39 | 88 % / 291 W | GPU-bound |
+| clip, 4, 2 | 8 → 7.4 | 8 % | 9 % | 0.34 / 0.46 | 158 | 77 | 12 % / 0.41 | 82 % / 284 W | not saturated |
+| clip, 16, 0.5 | 8 → 8.0 | 0 % | 0 % | 0.37 / 0.59 | 167 | 80 | 10 % / 0.39 | 80 % / 283 W | not saturated |
+| clip, 16, 1 | 16 → 9.4 | 41 % | 71 % | 1.05 / 1.50 | 778 | 84 | 6 % / 0.65 | 82 % / 285 W | GPU-bound |
+| clip, 16, 2 | 32 → 9.5 | 70 % | 100 % | 1.28 / 1.63 | 1,023 | 85 | 5 % / 0.76 | 81 % / 285 W | GPU-bound |
+
+- **Ceiling (Measured):** accepted requests flatten at 7.5–7.7 req/s for `frame` (235 prompt tokens) and 9.4–9.5 req/s for `clip` (167 tokens) per GPU, whatever the offered rate.
+- **Where the time goes (Measured):** the image-encoder stage's service time grows 12–21× (to 0.78–1.40 s); thinker prefill only doubles and thinker queueing stays ≤ 7 ms; CPU preprocessing is 2–12 % of server time and its process uses 1.5–1.9 of the 7 cores.
+- **GPU (Measured):** in every 16-session cell the GPU drew 283–292 W (median), near the A6000's 300 W board limit (spec value; the limit was not queried), and the SM clock dropped from 1.9 GHz at light load to 1.62–1.70 GHz. In the 1- and 4-session cells nvidia-smi read 0 % for whole minutes at 140–220 W (aliasing, as in R0); none of those cells is saturated, so no class depends on those readings (post-data descriptive columns; the rule was not changed).
+- **Consistency check (Derived):** at 1 session one request costs ≈ 117 ms (`frame`) or ≈ 89 ms (`clip`) of encoder + prefill. If all GPU work of the replica runs one request at a time, the ceiling is ≈ 8.5 and ≈ 11 req/s; the measured ceilings are 89 % and 85 % of that.
+- **Concurrency 4 (Measured):** drop ratio within −3.5 … +1.2 points of concurrency 1 in all 18 cells, first-response P95 −14 … +9 %; no cell meets the improvement rule. The circle-count accuracy differs by −0.02 … +0.01, so the 4 parallel preprocessing workers did not corrupt inputs.
+- **Picked for confirmation (registered rule):** the five saturated cells, most-dropping first: `frame_s16_f2`, `clip_s16_f2`, `frame_s16_f1`, `clip_s16_f1`, `frame_s4_f2`.
+
+**Result (screening).** All five saturated cells are GPU-bound by the registered rule; none is preprocessing-bound. The registered prediction — `clip` preprocessing-bound at 16 sessions, helped by concurrency 4 — is not supported at screening: preprocessing is at most 12 % of server time, and raising its concurrency changed no cell. The 3-block confirmation is reported below.
+
+**Interpretation.** On this path the camera stops keeping up because one GPU has to run the image encoder and the thinker for every frame: the replica tops out at ≈ 7.6 frames/s (single PNG) or ≈ 9.5 clips/s, about what the GPU time per request predicts. More CPU parallelism in preprocessing cannot help. “Keeping up” is also not the same as “fresh”: at 16 sessions × 0.5 fps nothing is dropped by the rule, yet every answer arrives 1.5 s after its frame (10× the 1-session latency). Levers that follow from this (Hypothesis, not tested): fewer image tokens per frame (the 2-s clip is cheaper than one PNG), skipping unchanged frames, batching frames across sessions in the encoder, or a second GPU for the encoder.
+
+**Limitations.** Synthetic frames of ≈ 2.5 KB (CPU decode cost is a lower bound); request-response path only; text-only replica; one block per arm at screening; the encoder's “service” time is dispatch-to-completion on a GPU shared by all stages of the replica, so the events cannot separate its own compute from waiting for the GPU or for requests batched with it; nvidia-smi utilisation is unusable at light load; `processor` timing includes host-to-device copies.
+
+**中文小结（筛选）。** 一张 A6000 上的纯文字副本，合成摄像头每个时刻发一帧图（或 2 秒短片）。16 个会话时，每秒能接受的请求封顶在约 7.6 帧（单张 PNG）或约 9.5 段短片，再提高帧率只会多丢帧。时间都花在图像编码器上（服务时间从约 50–70 ms 涨到 0.8–1.4 s），GPU 功耗顶在 300 W 上限附近、频率被压低；CPU 预处理只占服务端时间的 2–12%。按登记规则，5 个饱和格子都是“GPU 受限”，没有一个是“预处理受限”。把预处理并发从 1 提到 4，18 个格子都没有改善，事先的预测（短片在 16 个会话时卡在预处理上，提高并发有帮助）在筛选阶段不成立。另外，“跟得上”不等于“新鲜”：16 个会话 × 0.5 帧/秒不丢帧，但每个回答都晚 1.5 秒。3 个区组的确认运行排在 P1 之后，结果补在下面。
