@@ -88,6 +88,8 @@ def test_attribution_separates_routing_and_eviction_losses():
     assert att["lost_reuse_tokens"]["routing"] == round(ref * 420 - 100)
     assert att["lost_reuse_tokens"]["eviction"] == round(ref * 380 - 100)
     assert att["ttft_s_by_cause"]["routing"]["p50"] > 1.2 * att["ttft_s_by_cause"]["clean"]["p50"]
+    by = att["ttft_s_by_transition_and_cause"]["next_turn"]
+    assert by["routing"]["n"] == 1 and by["clean"]["n"] == 1 and by["eviction"]["n"] == 1
 
 
 def test_working_set_follows_each_sessions_latest_request():

@@ -173,9 +173,11 @@ def attribute(requests: list[dict[str, Any]], prefills: list[dict[str, Any]], po
             lost["unexplained_same_replica"] += loss
             p["cause"] = "clean"
     ttft_by_cause: dict[str, list[float]] = defaultdict(list)
+    ttft_by_kind: dict[str, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
     for p in pairs:
         if p["cur"]["ttft_s"] is not None:
             ttft_by_cause[p["cause"]].append(p["cur"]["ttft_s"])
+            ttft_by_kind[p["transition"]][p["cause"]].append(p["cur"]["ttft_s"])
     # tokens each request had to compute (input - cached), independent of how SGLang chunked the prefill
     prefill_tokens = sum(x["input_tokens"] - x["cached_tokens"] for x in rows)
     every = {kind: [p["reuse_ratio"] for p in pairs if p["transition"] == kind and p["reuse_ratio"] is not None]
@@ -185,7 +187,10 @@ def attribute(requests: list[dict[str, Any]], prefills: list[dict[str, Any]], po
             "lost_reuse_tokens": {k: round(v) for k, v in lost.items()},
             "prefill_tokens": prefill_tokens, "cached_tokens": sum(x["cached_tokens"] for x in rows),
             "lost_share_of_prefill": {k: (v / prefill_tokens if prefill_tokens else None) for k, v in lost.items()},
-            "ttft_s_by_cause": {k: {"p50": statistics.median(v), "n": len(v)} for k, v in ttft_by_cause.items()}}
+            "ttft_s_by_cause": {k: {"p50": statistics.median(v), "n": len(v)} for k, v in ttft_by_cause.items()},
+            # descriptive: the same comparison inside each transition, since the causes can mix transitions differently
+            "ttft_s_by_transition_and_cause": {t: {k: {"p50": statistics.median(v), "n": len(v)} for k, v in c.items()}
+                                               for t, c in ttft_by_kind.items()}}
 
 
 def working_set(requests: list[dict[str, Any]], sessions: list[dict[str, Any]], prefills: list[dict[str, Any]],
