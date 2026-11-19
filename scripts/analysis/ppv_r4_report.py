@@ -301,6 +301,16 @@ def verdict(levels: list[dict[str, Any]]) -> dict[str, Any]:
     return {"levels": pressure, "conclusion": text}
 
 
+def combined_verdict(per_block: dict[str, dict[str, Any]], blocks: int = 3) -> dict[str, Any]:
+    """Registered (r3_r4_design.md 3.5): the conclusion is stable only when all three blocks give the same one;
+    otherwise 不确定 with every block's conclusion listed. Fewer than three blocks is 数据不足."""
+    conclusions = {run: v["conclusion"] for run, v in per_block.items()}
+    if len(conclusions) < blocks:
+        return {"conclusion": "数据不足", "stable": False, "by_block": conclusions}
+    same = len(set(conclusions.values())) == 1
+    return {"conclusion": next(iter(conclusions.values())) if same else "不确定", "stable": same, "by_block": conclusions}
+
+
 def structural_gap(levels: list[dict[str, Any]]) -> dict[str, Any]:
     """Media-history contrast: reference next-turn reuse with re-sent media vs text history at the same session count."""
     out = {}
@@ -344,6 +354,10 @@ def main() -> int:
                             "structural": structural_gap(levels), "utc_offset_known": off is not None,
                             "replicas": sorted({p["replica"] for p in pools})}
         print(run, json.dumps(out["runs"][run]["verdict"], ensure_ascii=False))
+    mains = {run: r["verdict"] for run, r in out["runs"].items() if "verdict" in r}
+    if mains:
+        out["combined"] = combined_verdict(mains)
+        print("combined", json.dumps(out["combined"], ensure_ascii=False))
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     Path(a.out).write_text(json.dumps(out, ensure_ascii=False, indent=1))
     return 0

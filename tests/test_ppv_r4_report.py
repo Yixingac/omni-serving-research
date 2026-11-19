@@ -135,3 +135,14 @@ def test_structural_gap_pairs_the_media_phase_with_the_text_phase_of_the_same_si
     out = r4.structural_gap([lv("r4_n32", 32, 0.9, 0.4), lv("r4_n64", 64, 0.85, 0.5), lv("r4_n32_media2", 32, 0.3, 0.7)])
     assert out == {"r4_n32_media2": {"vs": "r4_n32", "next_turn_reuse_text": 0.9, "next_turn_reuse_media": 0.3,
                                      "ttft_p50_text": 0.4, "ttft_p50_media": 0.7}}
+
+
+def test_combined_verdict_needs_the_same_conclusion_in_all_three_blocks():
+    none = "当前实验条件下，尚无证据支持引入更复杂的 Agent-aware Cache Management。"
+    ev = "eviction pressure observed: design the session-affinity / cost-aware eviction A/B"
+    same = {f"b{i}": {"conclusion": none} for i in (1, 2, 3)}
+    assert r4.combined_verdict(same) == {"conclusion": none, "stable": True, "by_block": {f"b{i}": none for i in (1, 2, 3)}}
+    mixed = {**same, "b3": {"conclusion": ev}}
+    v = r4.combined_verdict(mixed)
+    assert v["conclusion"] == "不确定" and not v["stable"] and v["by_block"]["b3"] == ev
+    assert r4.combined_verdict({"b1": {"conclusion": none}})["conclusion"] == "数据不足"
