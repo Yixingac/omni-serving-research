@@ -55,7 +55,7 @@ def verdict(report: dict[str, Any], capabilities: dict[str, Any] | None) -> dict
             continue
         checks = [check_session(s) for s in ph["duplex_sessions"]]
         out["phases"][name] = {"present": True, "sessions": len(checks), "checks": checks,
-                               "unit_miss_rate": (ph.get("duplex") or {}).get("units", {}).get("miss_rate"),
+                               "unit_miss_rate": (ph.get("duplex") or {}).get("unit_miss_rate"),
                                "duplex": ph.get("duplex")}
         completed &= all(c["completed"] for c in checks)
         no_fatal &= all(c["no_fatal"] for c in checks)

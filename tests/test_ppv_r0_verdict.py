@@ -23,7 +23,8 @@ def _report(s1=None, s2=None, restarts=None, miss=(0.0, 0.0)):
     phases = {}
     for name, sessions, m in (("duplex_s1", s1, miss[0]), ("duplex_s2", s2, miss[1])):
         if sessions is not None:
-            phases[name] = {"duplex_sessions": sessions, "duplex": {"units": {"miss_rate": m}}}
+            # the pooled block as omni_research.duplex.metrics.pool writes it (unit_miss_rate at top level)
+            phases[name] = {"duplex_sessions": sessions, "duplex": {"unit_miss_rate": m, "units_planned": 300}}
     return {"runs": [{"run": "r", "server_restarts": restarts or [], "phases": phases}]}
 
 
@@ -56,3 +57,9 @@ def test_mostly_silent_audio_and_missing_phase_or_restart_fail():
     out = rv.verdict(_report([_session()], None), CAPS)
     assert out["phases"]["duplex_s2"] == {"present": False} and out["verdict"] == "未通过"
     assert rv.verdict(_report([_session()], [_session(), _session()], restarts=[{"t": 1}]), CAPS)["conditions"]["3_no_fatal_error"] is False
+
+
+def test_reads_the_miss_rate_where_the_real_pool_puts_it():
+    from omni_research.duplex.metrics import pool
+
+    assert "unit_miss_rate" in pool([])  # top-level key of the pooled block the verdict reads

@@ -211,8 +211,64 @@ def fig_p0_capacity(out: Path) -> list[Path]:
     return save(fig, out, "fig03_talker_cap_capacity")
 
 
+SHAPES = REPO / "research/next_steps/results/c1_real_shapes.json"
+CENSUS = REPO / "research/next_steps/results/c2w_kernel_census_exclusive_c128.json"
+SETTING_ORDER = ["fifo1", "fifo2", "fifo4", "fifo8", "fifo16", "length8", "length16"]
+
+
+def fig_c2w_shapes(out: Path) -> list[Path]:
+    """Existing data (实验 10, t2_k4_c2, code2wav saturated): padding and CUDA-graph eligibility per batching setting."""
+    d = json.loads(SHAPES.read_text())["groups"]
+    plt = plt_setup()
+    fig, axes = plt.subplots(1, 2, figsize=(13, 4.6), sharey=False)
+    for ax, wl, title in ((axes[0], "w3b", "W3b (short answers)"), (axes[1], "mix", "MIX (half short, half long)")):
+        rows = [(s, d.get(f"exp10_t2_k4_c2_graph|{wl}|{s}")) for s in SETTING_ORDER]
+        rows = [(s, g) for s, g in rows if g]
+        xs = range(len(rows))
+        pad = [g["padding_ratio_frame_weighted"] * 100 for _, g in rows]
+        graph = [(g["request_share_by_path"]["dense_default"].get("dense_graph", 0.0)) * 100 for _, g in rows]
+        b1 = ax.bar([x - 0.2 for x in xs], pad, width=0.4, color="#D55E00", label="padded frames (%)")
+        b2 = ax.bar([x + 0.2 for x in xs], graph, width=0.4, color="#0072B2", label="requests on a flow CUDA graph (%)")
+        for x, (_, g) in zip(xs, rows):
+            ax.text(x, max(pad[x], graph[x]) + 1.5, f"b̄={g['batch_size']['mean']:.1f}\nn={g['batches']}", ha="center", fontsize=8)
+        ax.set_xticks(list(xs), [s for s, _ in rows], rotation=20)
+        ax.set_title(title)
+        ax.set_ylim(0, 70)
+        ax.set_ylabel("percent")
+    axes[0].legend(loc="upper right", fontsize=9)
+    caption(fig, "Existing data (Experiment 10, placement 2+4+2 with code2wav saturated, CUDA graphs on; batches pooled over 3 blocks). "
+                 "fifoN = first-in-first-out up to N requests; lengthN = length-aware up to N. b̄ = mean requests per batch, n = batches. "
+                 "Graph share = requests whose batch matched a captured flow shape (B=1: 44 buckets up to 1024 frames; B 2–10 narrow; "
+                 f"none above 10), reproduced from the recorded path for 100 % of batches. {COMMON}.")
+    return save(fig, out, "fig04_code2wav_batch_shapes")
+
+
+def fig_c2w_kernels(out: Path) -> list[Path]:
+    """Existing data (实验 7 traces, code2wav on its own GPUs at 128 in flight): GPU kernel time by kernel family."""
+    d = json.loads(CENSUS.read_text())["pooled"]
+    fam = sorted(d["families"].items(), key=lambda kv: -kv[1]["share"])
+    plt = plt_setup()
+    fig, ax = plt.subplots(figsize=(11, 4.6))
+    names = [k for k, _ in fam][:12]
+    shares = [d["families"][k]["share"] * 100 for k in names]
+    colors = ["#0072B2" if k in ("attention", "attention_prep", "softmax", "gemm", "conv_f16") else
+              "#D55E00" if k in ("conv_f32_tf32", "layout_conversion", "fft", "snake_weight_norm") else "#999999" for k in names]
+    ax.barh(range(len(names))[::-1], shares, color=colors)
+    ax.set_yticks(range(len(names))[::-1], names)
+    for i, v in enumerate(shares):
+        ax.text(v + 0.3, len(names) - 1 - i, f"{v:.1f}%", va="center", fontsize=9)
+    ax.set_xlabel("share of code2wav GPU kernel time (%)")
+    ax.set_title("Where code2wav spends GPU time (blue: flow DiT families, orange: HiFT families, grey: shared/other)")
+    caption(fig, f"Existing traces (Experiment 7, 2+2+4 and 2+4+2 placements, W3b at 128 in flight, 3 blocks each): {d['kernel_count']:,} "
+                 f"kernels, {d['kernel_total_ms'] / 1000:.1f} s of kernel time inside short torch-profiler windows (CUPTI timestamps). "
+                 "Families and flow/HiFT attribution are name heuristics. CUDA-graph kernels are "
+                 f"{d['graph_share'] * 100:.1f} % of kernel time — a time share, not a graph hit rate. {COMMON}.")
+    return save(fig, out, "fig05_code2wav_kernels")
+
+
 FIGURES: dict[str, Callable[[Path], list[Path]]] = {"placement": fig_placement, "p0_admission": fig_p0_admission,
-                                                    "p0_capacity": fig_p0_capacity}
+                                                    "p0_capacity": fig_p0_capacity, "c2w_shapes": fig_c2w_shapes,
+                                                    "c2w_kernels": fig_c2w_kernels}
 
 
 def main() -> int:
