@@ -1,10 +1,11 @@
 """P1 plan generator (length-aware batching + max wait on the full service): settings, cells, seeds (no GPU, no network)."""
 
-import pytest
 import importlib.util
 import json
 import sys
 from pathlib import Path
+
+import pytest
 
 HERE = Path(__file__).resolve().parents[1] / "scripts/slurm"
 sys.path.insert(0, str(HERE))

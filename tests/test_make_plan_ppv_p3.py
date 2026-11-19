@@ -22,7 +22,9 @@ def test_abba_runs_share_every_phase():
     assert len(opens) == 6 and all(p["rates_rps"] == [21.0] and p["duration_per_rate_s"] == 300 and p["server_events"] for p in opens)
     for cfg, _ in es:
         env = cfg["servers"][0]["env"]
-        assert "SGLANG_OMNI_C2W_CONTROL" not in env and env["SGLANG_OMNI_EXP_STACK_DIR"] == "{exp_dir}/stacks"
+        # deviation D3: no SIGUSR2 stack dumps; gc logging stays
+        assert "SGLANG_OMNI_C2W_CONTROL" not in env and "SGLANG_OMNI_EXP_STACK_DIR" not in env
+        assert "stack" not in env["SGLANG_OMNI_EXP_TRACE"].split(",") and "gc" in env["SGLANG_OMNI_EXP_TRACE"].split(",")
         assert cfg["runtime_profile"] == "unicorn_ppv_maxwait"
 
 

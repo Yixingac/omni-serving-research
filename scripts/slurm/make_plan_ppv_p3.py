@@ -51,6 +51,11 @@ def scratch_command(eid: str) -> str:
             "rsync -a \"$SCR\"/ \"$OMNI_EXP_DIR\"/ && rm -rf \"$SCR\"; exit $rc")
 
 
+def trace_without_stack() -> str:
+    runtime = json.loads((REPO / "configs/models" / f"runtime_{RUNTIME}.json").read_text())
+    return ",".join(p for p in runtime["env"]["SGLANG_OMNI_EXP_TRACE"].split(",") if p != "stack")
+
+
 def entries() -> list[tuple[dict, dict]]:
     out = []
     for position, arm in enumerate(ORDER, start=1):
@@ -58,11 +63,13 @@ def entries() -> list[tuple[dict, dict]]:
                                "duration_per_rate_s": PHASE_S, "min_requests_per_rate": int(RATE_RPS * PHASE_S),
                                "max_error_rate": 0.5, "server_events": True, "seed": 20261119 + k} for k in range(1, PHASES + 1)]
         srv = [{"name": "s0", "model": "minicpm_o_4_5", "gpus": list(range(8)), "args": ["--config", "{research_repo}/" + PLACEMENT_YAML],
+                # Deviation D3: no SIGUSR2 stack dumps (one segfaulted a code2wav process in P1 block 2), so the
+                # trace drops "stack"; gc logging and the watcher's pauses, process states and slow stats stay on
                 "ready_timeout_s": 2400, "env": {"SGLANG_OMNI_PORT_CLAIM_DIR": "{exp_dir}/port_claims",
-                                                 "SGLANG_OMNI_EXP_STACK_DIR": "{exp_dir}/stacks"}}]
+                                                 "SGLANG_OMNI_EXP_TRACE": trace_without_stack()}}]
         cfg = base(f"ppv_p3_{arm}_{position}", 8, srv, phases,
                    f"P3 停顿对照第 {position} 个（顺序 NFS/本地盘/本地盘/NFS）：日志、事件、客户端记录写{'节点本地盘 /scratch' if arm == 'scratch' else ' NFS'}。"
-                   "放置 t2_k2_c4，默认组批（没有控制文件），gc 日志、调用栈注册和停顿检测开。W3b 开环 21 请求/秒，6 段各 300 秒，开事件。")
+                   "放置 t2_k2_c4，默认组批（没有控制文件），gc 日志和停顿检测开（不做调用栈转储，偏离 D3）。W3b 开环 21 请求/秒，6 段各 300 秒，开事件。")
         cfg["runtime_profile"] = RUNTIME
         cfg["stall_watch"] = True  # the point of P3
         out.append((cfg, {"priority": -(800 + position), "est": 2100, "timeout": 5400, "arm": arm}))
