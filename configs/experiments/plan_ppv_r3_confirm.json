@@ -3,8 +3,8 @@
  "_comment": "R3 确认：按登记规则选出的格子，3 个区组 × 两种并发。 由 scripts/slurm/make_plan_ppv_r34.py 生成。",
  "experiments": [
   {
-   "experiment_id": "ppv_r3_confirm_c1_block1",
-   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r3_confirm_c1_block1.json",
+   "experiment_id": "ppv_r3_confirm_seq_c1_block1",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r3_confirm_seq_c1_block1.json",
    "priority": -631,
    "required_gpus": 1,
    "required_cpus": 7,
@@ -13,11 +13,11 @@
    "estimated_duration_s": 750,
    "timeout_s": 3600,
    "max_retries": 1,
-   "description": "R3 确认第 1 个区组：预处理并发 1，只跑筛选按登记规则选出的 5 格（frame_s16_f2, clip_s16_f2, frame_s16_f1, clip_s16_f1, frame_s4_f2），区组内顺序随机（种子 20261119），两种并发同一顺序。"
+   "description": "R3 确认第 1 个区组：预处理并发 1，只跑筛选按登记规则选出的 5 格（frame_s16_f2, clip_s16_f2, frame_s16_f1, clip_s16_f1, frame_s4_f2），区组内顺序随机（种子 20261119），两种并发同一顺序；上一个区组结束后才开始。"
   },
   {
-   "experiment_id": "ppv_r3_confirm_c4_block1",
-   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r3_confirm_c4_block1.json",
+   "experiment_id": "ppv_r3_confirm_seq_c4_block1",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r3_confirm_seq_c4_block1.json",
    "priority": -634,
    "required_gpus": 1,
    "required_cpus": 7,
@@ -26,59 +26,71 @@
    "estimated_duration_s": 750,
    "timeout_s": 3600,
    "max_retries": 1,
-   "description": "R3 确认第 1 个区组：预处理并发 4，只跑筛选按登记规则选出的 5 格（frame_s16_f2, clip_s16_f2, frame_s16_f1, clip_s16_f1, frame_s4_f2），区组内顺序随机（种子 20261119），两种并发同一顺序。"
+   "description": "R3 确认第 1 个区组：预处理并发 4，只跑筛选按登记规则选出的 5 格（frame_s16_f2, clip_s16_f2, frame_s16_f1, clip_s16_f1, frame_s4_f2），区组内顺序随机（种子 20261119），两种并发同一顺序；上一个区组结束后才开始。"
   },
   {
-   "experiment_id": "ppv_r3_confirm_c1_block2",
-   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r3_confirm_c1_block2.json",
+   "experiment_id": "ppv_r3_confirm_seq_c1_block2",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r3_confirm_seq_c1_block2.json",
    "priority": -641,
    "required_gpus": 1,
    "required_cpus": 7,
    "required_memory_gb": 95,
-   "dependencies": [],
+   "dependencies": [
+    "ppv_r3_confirm_seq_c1_block1",
+    "ppv_r3_confirm_seq_c4_block1"
+   ],
    "estimated_duration_s": 750,
    "timeout_s": 3600,
    "max_retries": 1,
-   "description": "R3 确认第 2 个区组：预处理并发 1，只跑筛选按登记规则选出的 5 格（frame_s16_f2, clip_s16_f2, frame_s16_f1, clip_s16_f1, frame_s4_f2），区组内顺序随机（种子 20261119），两种并发同一顺序。"
+   "description": "R3 确认第 2 个区组：预处理并发 1，只跑筛选按登记规则选出的 5 格（frame_s16_f2, clip_s16_f2, frame_s16_f1, clip_s16_f1, frame_s4_f2），区组内顺序随机（种子 20261119），两种并发同一顺序；上一个区组结束后才开始。"
   },
   {
-   "experiment_id": "ppv_r3_confirm_c4_block2",
-   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r3_confirm_c4_block2.json",
+   "experiment_id": "ppv_r3_confirm_seq_c4_block2",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r3_confirm_seq_c4_block2.json",
    "priority": -644,
    "required_gpus": 1,
    "required_cpus": 7,
    "required_memory_gb": 95,
-   "dependencies": [],
+   "dependencies": [
+    "ppv_r3_confirm_seq_c1_block1",
+    "ppv_r3_confirm_seq_c4_block1"
+   ],
    "estimated_duration_s": 750,
    "timeout_s": 3600,
    "max_retries": 1,
-   "description": "R3 确认第 2 个区组：预处理并发 4，只跑筛选按登记规则选出的 5 格（frame_s16_f2, clip_s16_f2, frame_s16_f1, clip_s16_f1, frame_s4_f2），区组内顺序随机（种子 20261119），两种并发同一顺序。"
+   "description": "R3 确认第 2 个区组：预处理并发 4，只跑筛选按登记规则选出的 5 格（frame_s16_f2, clip_s16_f2, frame_s16_f1, clip_s16_f1, frame_s4_f2），区组内顺序随机（种子 20261119），两种并发同一顺序；上一个区组结束后才开始。"
   },
   {
-   "experiment_id": "ppv_r3_confirm_c1_block3",
-   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r3_confirm_c1_block3.json",
+   "experiment_id": "ppv_r3_confirm_seq_c1_block3",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r3_confirm_seq_c1_block3.json",
    "priority": -651,
    "required_gpus": 1,
    "required_cpus": 7,
    "required_memory_gb": 95,
-   "dependencies": [],
+   "dependencies": [
+    "ppv_r3_confirm_seq_c1_block2",
+    "ppv_r3_confirm_seq_c4_block2"
+   ],
    "estimated_duration_s": 750,
    "timeout_s": 3600,
    "max_retries": 1,
-   "description": "R3 确认第 3 个区组：预处理并发 1，只跑筛选按登记规则选出的 5 格（frame_s16_f2, clip_s16_f2, frame_s16_f1, clip_s16_f1, frame_s4_f2），区组内顺序随机（种子 20261119），两种并发同一顺序。"
+   "description": "R3 确认第 3 个区组：预处理并发 1，只跑筛选按登记规则选出的 5 格（frame_s16_f2, clip_s16_f2, frame_s16_f1, clip_s16_f1, frame_s4_f2），区组内顺序随机（种子 20261119），两种并发同一顺序；上一个区组结束后才开始。"
   },
   {
-   "experiment_id": "ppv_r3_confirm_c4_block3",
-   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r3_confirm_c4_block3.json",
+   "experiment_id": "ppv_r3_confirm_seq_c4_block3",
+   "command": "cd ~/workspace/omni-ppv && OMNI_REPO=\"$PWD\" bash scripts/slurm/run_experiment.sh configs/experiments/ppv/ppv_r3_confirm_seq_c4_block3.json",
    "priority": -654,
    "required_gpus": 1,
    "required_cpus": 7,
    "required_memory_gb": 95,
-   "dependencies": [],
+   "dependencies": [
+    "ppv_r3_confirm_seq_c1_block2",
+    "ppv_r3_confirm_seq_c4_block2"
+   ],
    "estimated_duration_s": 750,
    "timeout_s": 3600,
    "max_retries": 1,
-   "description": "R3 确认第 3 个区组：预处理并发 4，只跑筛选按登记规则选出的 5 格（frame_s16_f2, clip_s16_f2, frame_s16_f1, clip_s16_f1, frame_s4_f2），区组内顺序随机（种子 20261119），两种并发同一顺序。"
+   "description": "R3 确认第 3 个区组：预处理并发 4，只跑筛选按登记规则选出的 5 格（frame_s16_f2, clip_s16_f2, frame_s16_f1, clip_s16_f1, frame_s4_f2），区组内顺序随机（种子 20261119），两种并发同一顺序；上一个区组结束后才开始。"
   }
  ]
 }

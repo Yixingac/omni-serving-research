@@ -114,5 +114,37 @@
  "ppv_p0_ref_t2_k2_c4_block3_a2": {
   "included": true,
   "reason": "registered P0 arm, block 3"
+ },
+ "ppv_r3_confirm_c1_block1": {
+  "included": false,
+  "reason": "withdrawn before it started (deviation D2: no block ordering); its config was removed so it fails at start; replaced by ppv_r3_confirm_seq_*"
+ },
+ "ppv_r3_confirm_c4_block1": {
+  "included": false,
+  "reason": "withdrawn before it started (deviation D2: no block ordering); its config was removed so it fails at start; replaced by ppv_r3_confirm_seq_*"
+ },
+ "ppv_r3_confirm_c1_block2": {
+  "included": false,
+  "reason": "withdrawn before it started (deviation D2: no block ordering); its config was removed so it fails at start; replaced by ppv_r3_confirm_seq_*"
+ },
+ "ppv_r3_confirm_c4_block2": {
+  "included": false,
+  "reason": "withdrawn before it started (deviation D2: no block ordering); its config was removed so it fails at start; replaced by ppv_r3_confirm_seq_*"
+ },
+ "ppv_r3_confirm_c1_block3": {
+  "included": false,
+  "reason": "withdrawn before it started (deviation D2: no block ordering); its config was removed so it fails at start; replaced by ppv_r3_confirm_seq_*"
+ },
+ "ppv_r3_confirm_c4_block3": {
+  "included": false,
+  "reason": "withdrawn before it started (deviation D2: no block ordering); its config was removed so it fails at start; replaced by ppv_r3_confirm_seq_*"
+ },
+ "ppv_r3_screen_c1_a2": {
+  "included": true,
+  "reason": "R3 screening (registered; used to pick the confirmation cells)"
+ },
+ "ppv_r3_screen_c4_a2": {
+  "included": true,
+  "reason": "R3 screening (registered; used to pick the confirmation cells)"
  }
 }

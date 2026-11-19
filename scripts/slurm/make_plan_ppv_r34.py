@@ -110,15 +110,19 @@ def r3_confirm_entries(keys: list[str]) -> list[tuple[dict, dict]]:
     unknown = [k for k in keys if k not in known]
     if unknown or not keys:
         raise ValueError(f"unknown or empty R3 cells: {unknown or keys}")
+    # The pair of a block (both concurrencies) runs side by side; a block starts only after both runs of the previous
+    # block have succeeded, so blocks stay separated in time and never overlap each other (the first version, IDs
+    # ppv_r3_confirm_c*_block*, had no dependencies and was withdrawn before it started).
     out = []
     for block in range(1, BLOCKS + 1):
         cells = [known[k] for k in keys]
         random.Random(SEED * 100 + 40 + block).shuffle(cells)
+        prev = [f"ppv_r3_confirm_seq_c{c}_block{block - 1}" for c in R3_CONCURRENCY] if block > 1 else []
         for c in R3_CONCURRENCY:
             desc = (f"R3 确认第 {block} 个区组：预处理并发 {c}，只跑筛选按登记规则选出的 {len(cells)} 格（{', '.join(keys)}），"
-                    f"区组内顺序随机（种子 {SEED}），两种并发同一顺序。")
-            out.append((r3_config(f"ppv_r3_confirm_c{c}_block{block}", c, cells, desc),
-                        {"priority": -620 - 10 * block - c, "est": 300 + 90 * len(cells), "timeout": 3600}))
+                    f"区组内顺序随机（种子 {SEED}），两种并发同一顺序；上一个区组结束后才开始。")
+            out.append((r3_config(f"ppv_r3_confirm_seq_c{c}_block{block}", c, cells, desc),
+                        {"priority": -620 - 10 * block - c, "est": 300 + 90 * len(cells), "timeout": 3600, "deps": prev}))
     return out
 
 

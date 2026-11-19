@@ -78,3 +78,15 @@ def test_r3_r4_configs_turn_the_stall_watcher_on():
     files = mp.render()
     cfgs = [_json.loads(t) for p, t in files.items() if p.startswith("configs/experiments/ppv/")]
     assert cfgs and all(c.get("stall_watch") is True for c in cfgs)
+
+
+def test_r3_confirmation_blocks_are_chained_and_never_overlap():
+    import json as _json
+
+    plan = _json.loads(mp.render(confirm=["frame_s16_f2", "clip_s16_f2"])["configs/experiments/plan_ppv_r3_confirm.json"])
+    deps = {e["experiment_id"]: e["dependencies"] for e in plan["experiments"]}
+    assert deps["ppv_r3_confirm_seq_c1_block1"] == [] and deps["ppv_r3_confirm_seq_c4_block1"] == []
+    for b in (2, 3):
+        for c in (1, 4):
+            assert sorted(deps[f"ppv_r3_confirm_seq_c{c}_block{b}"]) == [f"ppv_r3_confirm_seq_c1_block{b - 1}",
+                                                                           f"ppv_r3_confirm_seq_c4_block{b - 1}"]
