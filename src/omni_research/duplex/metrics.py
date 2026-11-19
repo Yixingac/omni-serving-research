@@ -204,6 +204,7 @@ def session_metrics(records: list[dict[str, Any]], script: dict[str, Any], *, si
 
     # Units: lag, misses, decisions.
     lags = []
+    lag_by_decision: dict[str, list[float]] = {"speak": [], "text_only": [], "listen": []}
     decisions = {"speak": 0, "text_only": 0, "listen": 0}
     # The server closes the input with one more unit; when the input ended on a unit boundary that unit
     # holds no audio (duration 0). It is not one of the planned units.
@@ -212,14 +213,11 @@ def session_metrics(records: list[dict[str, Any]], script: dict[str, Any], *, si
         if uid in empty:
             continue
         ready = unit_ready_ms(u["media_time"], packets, tr["input_end_ms"])
+        kind = unit_decision(uid, tr)
+        decisions[kind] += 1
         if ready is not None:
             lags.append(u["t"] - ready)
-        if tr["unit_audio_s"].get(uid, 0.0) > 0:
-            decisions["speak"] += 1
-        elif tr["unit_text"].get(uid, 0):
-            decisions["text_only"] += 1
-        else:
-            decisions["listen"] += 1
+            lag_by_decision[kind].append(u["t"] - ready)
     missed = max(0, planned - (len(units) - len(empty))) + sum(1 for x in lags if x > UNIT_MS)
 
     # Replies.
@@ -322,6 +320,9 @@ def session_metrics(records: list[dict[str, Any]], script: dict[str, Any], *, si
         "turn_rows": turn_rows,
         "reply_rows": [{k: v for k, v in r.items() if k != "delta_gaps_ms"} for r in rep_rows],
         "unit_lags_ms": lags,
+        # A speaking unit runs the talker and the vocoder, a listening one does not: the two lag distributions are
+        # far apart, so an all-unit percentile moves with the share of speaking units (R2, 2026-11-19).
+        "unit_lags_by_decision_ms": lag_by_decision,
         "delta_gaps_ms_list": gaps,
         "speak_units": sorted(int(uid.split("_")[1]) for uid in units if uid not in empty
                               and unit_decision(uid, tr) == "speak" and uid.startswith("unit_")),

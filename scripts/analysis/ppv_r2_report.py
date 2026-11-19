@@ -37,7 +37,7 @@ sys.path.insert(0, str(ROOT / "scripts" / "slurm"))
 
 from make_plan_ppv_r import BLOCKS, R2_ARMS, UNIT_MISS_TARGET  # noqa: E402
 
-from omni_research.analysis.experiment_analysis import load_gpu_samples, read_jsonl  # noqa: E402
+from omni_research.analysis.experiment_analysis import read_jsonl  # noqa: E402
 from omni_research.duplex.metrics import DEADLINES_S, dist, pool  # noqa: E402
 from omni_research.duplex.report import (  # noqa: E402
     choose_runs,
@@ -45,9 +45,12 @@ from omni_research.duplex.report import (  # noqa: E402
     discover_runs,
     duplex_phase_metrics,
     gpu_window,
+    load_gpu_samples_utc,
     load_server_units,
+    oom_events,
     pid_stages,
     run_status,
+    speaking_selector,
     stage_cpu,
     stage_gpu_position,
     stage_table,
@@ -87,7 +90,7 @@ def denials(phase_dir: Path, summary: dict[str, Any]) -> int:
 
 
 def level_block(exp: Path, level: int, gpu_samples: list[dict[str, Any]], cpu_samples: list[dict[str, Any]],
-                pids: dict[str, str]) -> dict[str, Any]:
+                pids: dict[str, str], ooms: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     name = f"duplex_n{level}"
     summary = phase_summaries(exp).get(name)
     d = exp / "raw" / f"duplex_{name}"
@@ -99,7 +102,9 @@ def level_block(exp: Path, level: int, gpu_samples: list[dict[str, Any]], cpu_sa
     p = pool(sessions)
     t0, t1 = summary.get("started"), summary.get("ended")
     units, _, reason = load_server_units(exp / "raw" / "server_events" / name)
+    in_window = [o for o in ooms or [] if o["t"] is not None and t0 and t1 and t0 <= o["t"] <= t1]
     return {"ran": True, "sessions_metrics": sessions, "pooled": p, "denials": denials(d, summary),
+            "oom_events": len(in_window), "oom_first": in_window[0]["line"] if in_window else None,
             "mean_open_sessions": (summary.get("duplex") or {}).get("mean_open_sessions"),
             "window": [t0, t1], "gpu": gpu_window(gpu_samples, t0, t1) if t0 and t1 else {},
             "cpu_raw": stage_cpu(cpu_samples, t0, t1, pids, raw=True) if t0 and t1 else {},
@@ -115,7 +120,29 @@ def compact_block(b: dict[str, Any]) -> dict[str, Any]:
             "unit_lag_p50_ms": p["unit_lag_ms"]["p50"], "ttfa_p50_ms": p["ttfa_ms"]["p50"],
             "deadline_miss_all_turns": p["deadline_miss_all_turns"], "mean_open_sessions": b["mean_open_sessions"],
             "gpu": b["gpu"], "cpu": {k: dist(v) for k, v in b["cpu_raw"].items()}, "servers_exited": b["servers_exited"],
-            "server_stage_timing": "available" if b["server_units"] is not None else b["server_reason"]}
+            "oom_events": b["oom_events"], "oom_first": b["oom_first"],
+            "server_stage_timing": "available" if b["server_units"] is not None else b["server_reason"],
+            **unit_mix(b["sessions_metrics"])}
+
+
+def unit_mix(sessions: list[dict[str, Any]]) -> dict[str, Any]:
+    """Descriptive (not a registered rule): share of speaking units and the unit lag of each kind. A speaking
+    unit runs the talker and the vocoder, so the all-unit P50 moves with the speaking share."""
+    by = {k: [x for s in sessions for x in (s.get("unit_lags_by_decision_ms") or {}).get(k, [])]
+          for k in ("speak", "listen", "text_only")}
+    n = sum(len(v) for v in by.values())
+    return {"speak_share": len(by["speak"]) / n if n else None,
+            "unit_lag_speaking_ms": dist(by["speak"]), "unit_lag_listening_ms": dist(by["listen"])}
+
+
+def ttfa_parts(sessions: list[dict[str, Any]]) -> dict[str, Any]:
+    """Descriptive: TTFA = (a) unit fill + (b) k further units + (c) the speaking unit's service (metrics.ttfa_parts)."""
+    parts = [r["parts"] for s in sessions for r in s["turn_rows"] if r.get("status") == "answered" and r.get("parts")]
+    reg = [p for p in parts if not p["early_start"]]
+    return {"answered": len(parts), "early_start": len(parts) - len(reg),
+            "k_counts": {str(k): sum(1 for p in reg if p["k"] == k) for k in sorted({p["k"] for p in reg})},
+            "a_wait_unit_end_ms": dist([p["a_wait_unit_end_ms"] for p in reg]),
+            "b_listen_ms": dist([p["b_listen_ms"] for p in reg]), "c_service_ms": dist([p["c_service_ms"] for p in reg])}
 
 
 def level_entry(level: int, blocks: dict[int, dict[str, Any]], expected_blocks: int) -> dict[str, Any]:
@@ -145,7 +172,9 @@ def level_entry(level: int, blocks: dict[int, dict[str, Any]], expected_blocks: 
                                            "replies_with_stall", "audio_s_total", "decisions", "pacing_violations")}
         out["pooled"].update(ttfa_ms=p["ttfa_ms"], unit_lag_ms=p["unit_lag_ms"], first_audio_latency_ms=p["first_audio_latency_ms"],
                              delta_gap_ms=p["delta_gap_ms"], denials=sum(v["denials"] for v in ran.values()),
-                             mean_open_sessions=[v["mean_open_sessions"] for v in ran.values()])
+                             mean_open_sessions=[v["mean_open_sessions"] for v in ran.values()],
+                             oom_events=sum(v["oom_events"] for v in ran.values()))
+        out["descriptive"] = {**unit_mix(sessions), "ttfa_parts": ttfa_parts(sessions)}
     return out
 
 
@@ -197,14 +226,17 @@ def first_limiting_stage(arm_levels: list[dict[str, Any]], raw: dict[int, dict[i
     cpu = [x for v in raw[target].values() if v["ran"] for x in v["cpu_raw"].get(stage, [])]
     cpu_p90 = dist(cpu)["p90"]
     pos = stage_gpu_position(args, stage)
-    gpu_utils, mapping = [], []
+    gpu_utils, mapping, power, suspect = [], [], [], []
     for v in raw[target].values():
         if not v["ran"] or not v["gpu"]:
             continue
         idx = sorted(v["gpu"], key=lambda g: int(g) if g.isdigit() else g)
         if pos < len(idx):
-            gpu_utils.append(v["gpu"][idx[pos]]["util_mean"])
+            w = v["gpu"][idx[pos]]
+            gpu_utils.append(w["util_mean"])
             mapping.append(idx[pos])
+            power.append(w.get("power_mean_w"))
+            suspect.append(bool(w.get("util_suspect")))
     gpu_util = sum(gpu_utils) / len(gpu_utils) if gpu_utils else None
     if gpu_util is not None and gpu_util >= GPU_BOUND:
         resource = "GPU-bound"
@@ -212,10 +244,27 @@ def first_limiting_stage(arm_levels: list[dict[str, Any]], raw: dict[int, dict[i
         resource = "CPU-bound"
     else:
         resource = "neither saturated (uncertain)"
+    # Descriptive robustness view (not the registered rule): the same increase over speaking units only, so a change
+    # in the speaking share between the two levels cannot move a stage's median.
+    speaking = {}
+    for lv in (base, target):
+        units = [u for v in raw[lv].values() if v["ran"] and v["server_units"] for u in v["server_units"]]
+        sessions = [s for v in raw[lv].values() if v["ran"] for s in v["sessions_metrics"]]
+        sel, _ = speaking_selector(units, sessions)
+        speaking[lv] = stage_table(units, sel)
+    inc_speak = {}
+    for name, st in speaking[target]["stages"].items():
+        b0 = speaking[base]["stages"].get(name, {}).get("queue_plus_service_ms", {}).get("p50")
+        t1 = st.get("queue_plus_service_ms", {}).get("p50")
+        inc_speak[name] = t1 - b0 if t1 is not None and b0 is not None else None
     return {"verdict": stage, "base_level": base, "target_level": target,
             "target_reason": "first level with pooled unit miss > 1 %" if over else "top level (no level missed > 1 %)",
             "increase_queue_plus_service_p50_ms": inc, "resource": resource, "stage_process_cpu_p90": cpu_p90,
             "stage_gpu_position": pos, "stage_gpu_index_per_block": mapping, "stage_gpu_util_mean": gpu_util,
+            "stage_gpu_power_mean_w": power, "gpu_util_suspect": any(suspect),
+            "resource_input_note": ("nvidia-smi utilisation of this GPU is flagged util_suspect in a target-level block, so "
+                                    "the registered GPU test has unreliable input") if any(suspect) else None,
+            "descriptive_increase_speaking_units_only_ms": inc_speak,
             "single_gpu_note": "all stages share one GPU; its utilisation is the whole card's" if "--thinker.gpu" not in args else None,
             "base_table": tables[base], "target_table": tables[target]}
 
@@ -297,11 +346,12 @@ def build(exps: list[Path]) -> dict[str, Any]:
                     raw[lv][block] = {"ran": False, "skipped": False, "reason": "no ok run for this block"}
                 continue
             args = args or server_args(exp)
-            gpu = load_gpu_samples(exp)
+            gpu = load_gpu_samples_utc(exp)
             cpu = read_jsonl(exp / "raw" / "cpu_samples.jsonl")
             pids = pid_stages([exp / "raw" / "server_events"])
+            ooms = oom_events(exp)
             for lv in levels:
-                raw[lv][block] = level_block(exp, lv, gpu, cpu, pids)
+                raw[lv][block] = level_block(exp, lv, gpu, cpu, pids, ooms)
         entries = [level_entry(lv, raw[lv], BLOCKS) for lv in levels]
         serving = capacity(entries, lambda e: e["meets_serving_target"])
         deadline = {f"{d:g}s": capacity(entries, lambda e, k=f"{d:g}s": e["meets_deadline_target"][k]) for d in DEADLINES_S}
@@ -311,8 +361,27 @@ def build(exps: list[Path]) -> dict[str, Any]:
             "stop_rule_skips": {str(e["level"]): e["skipped_in_blocks"] for e in entries if e["skipped_in_blocks"]},
             "first_limiting_stage": first_limiting_stage(entries, raw, args),
             "model_behaviour_at_lowest_level": {"level": lowest, **model_behaviour(raw[lowest])},
+            "first_reply_after_start": first_reply(raw, levels),
             "server_args": args}
     out["cross_placement"] = cross_placement(out["arms"])
+    return out
+
+
+def first_reply(raw: dict[int, dict[int, dict[str, Any]]], levels: list[int]) -> dict[str, Any]:
+    """Descriptive: the first answered turn of the first level of each block -- the first reply after the server
+    started, which pays any one-time cost the start-up warm-up did not exercise -- and the worst unit lag of that
+    session's first 30 units."""
+    out = {}
+    first = min(levels)
+    for b, v in sorted(raw[first].items()):
+        if not v["ran"] or not v["sessions_metrics"]:
+            continue
+        s0 = v["sessions_metrics"][0]
+        ans = [r for r in s0["turn_rows"] if r.get("status") == "answered"]
+        later = [r["ttfa_ms"] for r in ans[1:]]
+        out[str(b)] = {"first_answer_ttfa_ms": ans[0]["ttfa_ms"] if ans else None,
+                       "later_answers_ttfa_p50_ms": dist(later)["p50"],
+                       "first_answer_parts": ans[0].get("parts") if ans else None}
     return out
 
 

@@ -218,14 +218,93 @@ def stage_cpu(samples: list[dict[str, Any]], t0: float, t1: float, pids: dict[st
     return {stage: dist(v) for stage, v in sorted(per.items())}
 
 
+# Post-hoc data-quality flag (added 2026-11-19 after R2, changes no registered rule): nvidia-smi's utilization.gpu
+# read 0 % for whole duplex phases while the card drew 110-150 W (idle with no process: ~35 W) and the server's stage
+# events showed 70-350 ms of execution per 1 s unit; the same sampler reads plausibly on the aperiodic chat path. The
+# duplex load is strictly periodic at 1 Hz (one unit per second of real-time input); the hypothesis is aliasing
+# between that cadence and NVML's utilisation sampling. A window with at least half of its readings at 0 % while the
+# mean power is at least 100 W is flagged util_suspect; its utilisation must not be used as evidence of idleness.
+UTIL_SUSPECT_ZERO_SHARE = 0.5
+UTIL_SUSPECT_POWER_W = 100.0
+
+
+def run_tz(exp: Path) -> Any:
+    """The run's time zone as a fixed offset (manifest.json utc_offset such as "-0500"), or None."""
+    from datetime import timedelta, timezone
+
+    try:
+        off = json.loads((exp / "manifest.json").read_text()).get("utc_offset")
+    except (OSError, ValueError):
+        return None
+    if not off or len(off) != 5 or off[0] not in "+-" or not off[1:].isdigit():
+        return None
+    return timezone((1 if off[0] == "+" else -1) * timedelta(hours=int(off[1:3]), minutes=int(off[3:5])))
+
+
+def load_gpu_samples_utc(exp: Path) -> list[dict[str, Any]]:
+    """nvidia-smi samples with their local timestamps converted using the run's own UTC offset (recorded by the
+    runner), so windows do not depend on the time zone of the machine running the analysis; without a recorded
+    offset this falls back to the analysis machine's local time zone."""
+    from datetime import datetime
+
+    samples = load_gpu_samples(exp)
+    tz = run_tz(exp)
+    if tz is None:
+        return samples
+    # load_gpu_samples read the stamps as local time of this machine; undo that and apply the run's offset
+    return [{**s, "t": datetime.fromtimestamp(s["t"]).replace(tzinfo=tz).timestamp()} for s in samples]
+
+
 def gpu_window(samples: list[dict[str, Any]], t0: float, t1: float) -> dict[str, Any]:
+    """Per GPU index over [t0, t1]: samples, mean utilisation, share of 0 % readings, mean power, max memory, and
+    util_suspect (see UTIL_SUSPECT_*)."""
     per: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for s in samples:
         if t0 <= s["t"] <= t1:
             per[str(s["gpu"])].append(s)
-    return {g: {"samples": len(v), "util_mean": sum(x["util"] for x in v) / len(v),
-                "mem_max_mib": max((x["mem_mib"] for x in v if x["mem_mib"] is not None), default=None)}
-            for g, v in sorted(per.items(), key=lambda kv: int(kv[0]) if kv[0].isdigit() else kv[0])}
+    out = {}
+    for g, v in sorted(per.items(), key=lambda kv: int(kv[0]) if kv[0].isdigit() else kv[0]):
+        power = [x["power_w"] for x in v if x.get("power_w") is not None]
+        zero = sum(1 for x in v if x["util"] == 0) / len(v)
+        pw = sum(power) / len(power) if power else None
+        out[g] = {"samples": len(v), "util_mean": sum(x["util"] for x in v) / len(v), "util_zero_share": zero,
+                  "power_mean_w": pw, "mem_max_mib": max((x["mem_mib"] for x in v if x["mem_mib"] is not None), default=None),
+                  "util_suspect": bool(zero >= UTIL_SUSPECT_ZERO_SHARE and pw is not None and pw >= UTIL_SUSPECT_POWER_W)}
+    return out
+
+
+OOM_PATTERN = r"CUDA out of memory|OutOfMemoryError|memory allocation failed with OOM|memory mapping failed with OOM"
+
+
+def oom_events(exp: Path) -> list[dict[str, Any]]:
+    """CUDA out-of-memory lines of the server log with the time of the line (or of the last timestamped line
+    before it: traceback lines carry none). Two stamp formats: SGLang's '2026-11-19 00:44:43,788' and torch's
+    '[W1119 00:44:43.788238681 ...' (month and day only; the year comes from the last full stamp)."""
+    import re
+    from datetime import datetime
+
+    log = exp / "logs" / "server_s0.log"
+    if not log.exists():
+        return []
+    full = re.compile(r"^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2}),(\d{3})")
+    torch_w = re.compile(r"^\[(?:rank\d+\]:\[)?[WEI](\d{2})(\d{2}) (\d{2}):(\d{2}):(\d{2})\.(\d{6})")
+    oom = re.compile(OOM_PATTERN)
+    tz = run_tz(exp)
+    year, last, out = None, None, []
+    with open(log, errors="ignore") as fh:
+        for line in fh:
+            m = full.match(line)
+            if m:
+                year = int(m.group(1))
+                last = datetime(*(int(x) for x in m.groups()[:6]), int(m.group(7)) * 1000, tzinfo=tz).timestamp()
+            else:
+                m = torch_w.match(line)
+                if m and year:
+                    mo, d, hh, mi, ss, us = (int(x) for x in m.groups())
+                    last = datetime(year, mo, d, hh, mi, ss, us, tzinfo=tz).timestamp()
+            if oom.search(line):
+                out.append({"t": last, "line": line.strip()[:240]})
+    return out
 
 
 def stage_gpu_position(server_args: list[str], stage: str) -> int:
@@ -280,7 +359,8 @@ def summarize_run(exp: Path) -> dict[str, Any]:
     res = json.loads((exp / "result.json").read_text()) if (exp / "result.json").exists() else {}
     out: dict[str, Any] = {"run": exp.name, "experiment_id": res.get("experiment_id"), "status": res.get("status"),
                            "server_restarts": res.get("server_restarts") or [], "phases": {}}
-    gpu = gpu_by_phase(load_gpu_samples(exp), phases)
+    samples = load_gpu_samples_utc(exp)
+    gpu = gpu_by_phase(samples, phases)
     cpu_path = exp / "raw" / "cpu_samples.jsonl"
     cpu = cpu_by_phase(read_jsonl(cpu_path), phases) if cpu_path.exists() else []
     for ph in phases:
@@ -288,7 +368,8 @@ def summarize_run(exp: Path) -> dict[str, Any]:
         row: dict[str, Any] = {"kind": ph.get("kind"), "started": ph.get("started"), "ended": ph.get("ended"),
                                "skipped": ph.get("skipped"), "error": ph.get("error"),
                                "server_events": ph.get("profiled") == "request_events",
-                               "gpu": [g for g in gpu if g["phase"] == name], "cpu": next((c for c in cpu if c["phase"] == name), None)}
+                               "gpu": [g for g in gpu if g["phase"] == name], "cpu": next((c for c in cpu if c["phase"] == name), None),
+                               "gpu_window": gpu_window(samples, ph["started"], ph["ended"]) if ph.get("started") and ph.get("ended") else {}}
         d = exp / "raw" / f"duplex_{name}"
         if d.exists() and (d / "scripts.json").exists():
             m = duplex_phase_metrics(d)

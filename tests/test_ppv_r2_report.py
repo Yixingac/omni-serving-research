@@ -63,7 +63,8 @@ def _shift_unit_done(phase_dir, ms):
         t.write_text("".join(json.dumps(r) + "\n" for r in recs))
 
 
-async def _arm_run(root, base_url, arm, block, levels, *, slow=(), skip=(), denial=(), gpu_util=95.0, server_args=None):
+async def _arm_run(root, base_url, arm, block, levels, *, slow=(), skip=(), denial=(), gpu_util=95.0, server_args=None,
+                   power_w=200.0, oom_level=None):
     exp = root / "experiments" / f"20261119_ppv_r2_{arm}_block{block}_run01"
     (exp / "analysis").mkdir(parents=True)
     (exp / "raw").mkdir(parents=True)
@@ -71,7 +72,7 @@ async def _arm_run(root, base_url, arm, block, levels, *, slow=(), skip=(), deni
                                                  "server_ready_s": {"s0": 1.0}}))
     (exp / "config.json").write_text(json.dumps({"servers": [{"args": server_args or ["--variant", "session"]}]}))
     runner = types.SimpleNamespace(phase_summaries=[], data_root=root)
-    summaries, cpu, gpu = [], [], []
+    summaries, cpu, gpu, log_lines = [], [], [], ["2026-11-19 00:00:00,000 [INFO] start"]
     for lv in levels:
         name = f"duplex_n{lv}"
         if lv in skip:
@@ -102,10 +103,17 @@ async def _arm_run(root, base_url, arm, block, levels, *, slow=(), skip=(), deni
                                    "client": {"cpu_percent": 5.0}}})
             for g in range(len([a for a in (server_args or []) if a == "--thinker.gpu"]) + 1):
                 stamp = datetime.fromtimestamp(ts).strftime("%Y/%m/%d %H:%M:%S.%f")[:-3]
-                gpu.append(f"{stamp}, {3 + g}, {gpu_util if g == 0 else 40.0}, 30000, 200")
+                gpu.append(f"{stamp}, {3 + g}, {gpu_util if g == 0 else 40.0}, 30000, {power_w}")
+        if lv == oom_level:  # one OOM inside this level's window, logged the way the server logs it
+            mid = datetime.fromtimestamp((t0 + t1) / 2)
+            log_lines.append(mid.strftime("%Y-%m-%d %H:%M:%S,%f")[:-3] + " [ERROR] sglang_omni.serve.realtime.adapters: "
+                             "Realtime session output reader failed")
+            log_lines.append("RuntimeError: CUDA out of memory. Tried to allocate 114.00 MiB. GPU 0 has a total capacity of 47.40 GiB")
     (exp / "analysis" / "phases.json").write_text(json.dumps(summaries))
     (exp / "raw" / "cpu_samples.jsonl").write_text("".join(json.dumps(c) + "\n" for c in cpu))
     (exp / "raw" / "gpu_samples.csv").write_text("timestamp, index, utilization.gpu, memory.used, power.draw\n" + "\n".join(gpu) + "\n")
+    (exp / "logs").mkdir(exist_ok=True)
+    (exp / "logs" / "server_s0.log").write_text("\n".join(log_lines) + "\n")
     return exp
 
 
@@ -140,6 +148,13 @@ async def test_capacity_stage_verdict_intervals_and_p99_rule(tmp_path, monkeypat
     assert by[2]["block_p50"]["unit_lag_ms"]["n"] == 3 and by[2]["block_p50"]["unit_lag_ms"]["lo"] is not None
     assert a["stop_rule_skips"] == {} and rep["placement"]["expected_arms"] is None
     assert "Serving capacity: 2" in r2.markdown(rep)
+    d = by[1]["descriptive"]  # mix-controlled views: speaking / listening unit lags, TTFA parts
+    assert d["unit_lag_speaking_ms"]["n"] + d["unit_lag_listening_ms"]["n"] == by[1]["pooled"]["unit_lag_ms"]["n"]
+    assert 0 < d["speak_share"] < 1 and d["ttfa_parts"]["answered"] == by[1]["pooled"]["answered"]
+    assert set(a["first_reply_after_start"]) == {"1", "2", "3"}
+    assert fl["gpu_util_suspect"] is False and fl["resource_input_note"] is None
+    assert abs(fl["descriptive_increase_speaking_units_only_ms"]["thinker"] - 6.0) < 1e-9
+    assert by[1]["pooled"]["oom_events"] == 0
 
 
 async def test_capacity_is_the_unbroken_run_from_the_lowest_level(tmp_path, monkeypatch):
@@ -224,3 +239,61 @@ async def test_deadline_misses_from_listening_are_attributed_to_the_model(tmp_pa
     mb = a["model_behaviour_at_lowest_level"]
     assert mb["level"] == 1 and mb["1s"]["missed"] == mb["1s"]["turns"] > 0 and mb["1s"]["share"] == 1.0
     assert mb["1s"]["statement"] == "主要是模型的轮次决策，不是服务容量"
+
+
+def test_gpu_window_flags_zero_utilisation_while_the_card_draws_power():
+    from omni_research.duplex.report import gpu_window
+
+    busy = [{"t": 10.0 + k, "gpu": "0", "util": 0.0 if k < 8 else 30.0, "mem_mib": 1.0, "power_w": 150.0} for k in range(10)]
+    w = gpu_window(busy, 0.0, 100.0)["0"]
+    assert w["util_zero_share"] == 0.8 and w["power_mean_w"] == 150.0 and w["util_suspect"] is True
+    idle = [{**x, "power_w": 40.0} for x in busy]  # zero readings at idle power are plausible
+    assert gpu_window(idle, 0.0, 100.0)["0"]["util_suspect"] is False
+    steady = [{**x, "util": 60.0} for x in busy]
+    assert gpu_window(steady, 0.0, 100.0)["0"]["util_suspect"] is False
+
+
+def test_gpu_and_log_stamps_use_the_runs_utc_offset_not_this_machines(tmp_path, monkeypatch):
+    import os
+
+    from omni_research.duplex.report import load_gpu_samples_utc, oom_events
+
+    exp = tmp_path / "run"
+    (exp / "raw").mkdir(parents=True)
+    (exp / "logs").mkdir()
+    (exp / "manifest.json").write_text(json.dumps({"utc_offset": "-0500"}))
+    (exp / "raw" / "gpu_samples.csv").write_text("timestamp, index, utilization.gpu, memory.used, power.draw\n"
+                                                 "2026/11/19 00:35:00.000, 0, 50, 1000, 120\n")
+    (exp / "logs" / "server_s0.log").write_text("2026-11-19 00:35:00,000 [ERROR] x\nRuntimeError: CUDA out of memory.\n"
+                                                "[W1119 00:36:00.123456789 CUDACachingAllocator.cpp:508] expandable_segments: "
+                                                "memory mapping failed with OOM on device 0\n")
+    want = datetime(2026, 11, 19, 5, 35, 0, tzinfo=__import__("datetime").timezone.utc).timestamp()
+    monkeypatch.setenv("TZ", "Asia/Tokyo")  # the analysis machine is somewhere else
+    time.tzset()
+    try:
+        assert load_gpu_samples_utc(exp)[0]["t"] == want
+        ev = oom_events(exp)
+        assert [e["t"] for e in ev] == [want, want + 60.123456] and "OOM" in ev[1]["line"]
+    finally:
+        monkeypatch.delenv("TZ")
+        time.tzset()
+    assert os.environ.get("TZ") is None
+
+
+async def test_suspect_gpu_utilisation_is_flagged_and_ooms_are_counted_per_level(tmp_path, monkeypatch):
+    _pool(tmp_path)
+    srv, base = await _server(max_sessions=4)
+    try:
+        for b in (1, 2, 3):
+            await _arm_run(tmp_path, base, "ms4_1gpu", b, [1, 2, 4], slow={4}, gpu_util=0.0, power_w=150.0, oom_level=4)
+    finally:
+        await srv.close()
+    fake_duplex_metrics(monkeypatch)
+    a = r2.build(r2.discover_runs(tmp_path, []))["arms"]["ms4_1gpu"]
+    by = {e["level"]: e for e in a["levels"]}
+    assert all(by[4]["per_block"][str(b)]["oom_events"] == 1 for b in (1, 2, 3)) and by[4]["pooled"]["oom_events"] == 3
+    assert by[2]["pooled"]["oom_events"] == 0 and "CUDA out of memory" in by[4]["per_block"]["1"]["oom_first"]
+    fl = a["first_limiting_stage"]
+    assert fl["resource"] == "neither saturated (uncertain)"  # the registered test, unchanged
+    assert fl["gpu_util_suspect"] is True and "unreliable input" in fl["resource_input_note"]
+    assert fl["stage_gpu_power_mean_w"] == [150.0, 150.0, 150.0]
