@@ -110,3 +110,21 @@ def test_live_watcher_records_are_summarised_per_run(tmp_path):
     assert (s["watched_runs"], s["watcher_pauses"], s["watcher_slow_stats"], s["watcher_slow_stat_max_s"]) == (1, 1, 2, 0.739)
     (exp / "raw" / "stalls_s0.jsonl").unlink()
     assert ps.analyze_run(exp)["watcher"] is None
+
+
+def test_gaps_and_watcher_pauses_are_split_into_under_load_and_drain(tmp_path):
+    # sending from T0 to T0 + 10 s; the phase drains until T0 + 20 s
+    lines = [T0 + 0.1 * i for i in range(0, 40)] + [T0 + 5.5 + 0.1 * i for i in range(0, 80)] + [T0 + 15.0 + 0.1 * i for i in range(30)]
+    exp = _run(tmp_path, lines, [_sample(T0 + i, 0.0) for i in range(21)])  # gaps at 3.9 s (load) and 13.4 s (drain)
+    mono0, wall0 = 5_000_000_000, int(T0 * 1e9)
+    (exp / "raw" / "bench_trace.jsonl").write_text(json.dumps({"clock": {"mono_anchor_ns": mono0, "wall_anchor_ns": wall0}}) + "\n")
+    (exp / "raw" / "requests_open.jsonl").write_text("".join(json.dumps({"sent_ns": mono0 + int(k * 1e9)}) + "\n" for k in range(11)))
+    pause = lambda end, s: {"event": "pause_end", "t_wall_ns": int((T0 + end) * 1e9), "silent_s": s}  # noqa: E731
+    (exp / "raw" / "stalls_s0.jsonl").write_text("".join(json.dumps(r) + "\n" for r in (pause(5.4, 1.5), pause(14.9, 1.5), pause(17.0, 2.0))))
+    r = ps.analyze_run(exp)
+    by = {round(g["start"] - T0, 1): g["under_load"] for g in r["log_gaps"]}
+    assert by == {3.9: True, 13.4: False}
+    w = r["watcher"]
+    assert (w["pauses_under_load"], w["pauses_in_drain"], w["max_pause_under_load_s"]) == (1, 2, 1.5)
+    s = ps.summarize([r])
+    assert (s["log_gaps_under_load"], s["log_gaps_in_drain"], s["watcher_pauses_under_load"], s["watcher_pauses_in_drain"]) == (1, 1, 1, 2)

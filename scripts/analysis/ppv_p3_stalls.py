@@ -72,19 +72,61 @@ def stage_of_pid(exp: Path) -> dict[int, str]:
     return out
 
 
-def watcher_records(exp: Path) -> dict[str, Any] | None:
+def send_windows(exp: Path, phase_names: list[str]) -> dict[str, tuple[float, float]]:
+    """Per measured phase with a client request file: (first send, last send) in wall seconds, i.e. the part of the
+    phase with arriving load. After the last send a phase drains -- the last long requests finish and the log thins
+    out -- so a silence there is not a pause of a loaded server (seen in P1's W3L cells: every watcher pause fell
+    111-135 s into a cell whose sending ended at 110 s)."""
+    from omni_research.analysis.experiment_analysis import clock_anchor
+
+    anchor = clock_anchor(exp)
+    if anchor is None:
+        return {}
+    mono0, wall0 = anchor
+    out: dict[str, tuple[float, float]] = {}
+    for name in phase_names:
+        f = exp / "raw" / f"requests_{name}.jsonl"
+        if not f.exists():
+            continue
+        sent = []
+        with open(f) as fh:
+            for line in fh:
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    continue
+                if isinstance(r, dict) and r.get("sent_ns") is not None:
+                    sent.append(int(r["sent_ns"]))
+        if sent:
+            out[name] = ((min(sent) - mono0 + wall0) / 1e9, (max(sent) - mono0 + wall0) / 1e9)
+    return out
+
+
+def under_load(t: float, windows: dict[str, tuple[float, float]]) -> bool | None:
+    """True inside a sending window, False outside, None when the run has no send windows (no request files)."""
+    if not windows:
+        return None
+    return any(lo <= t <= hi for lo, hi in windows.values())
+
+
+def watcher_records(exp: Path, windows: dict[str, tuple[float, float]] | None = None) -> dict[str, Any] | None:
     """The live stall watcher's records (raw/stalls_<server>.jsonl, written only when the run had stall_watch on):
-    pauses of the server log while a load phase ran, the process states captured at each pause, and stats of the
-    log on the network file system that themselves took > 0.2 s."""
+    pauses of the server log while a load phase ran (split into pauses under arriving load and pauses in a phase's
+    drain), the process states captured at each pause, and stats of the log on the network file system that
+    themselves took > 0.2 s."""
     files = sorted((exp / "raw").glob("stalls_*.jsonl"))
     if not files:
         return None
     recs = [json.loads(x) for f in files for x in f.read_text().splitlines() if x.strip()]
     ends = [r for r in recs if r.get("event") == "pause_end"]
+    load = [under_load(r["t_wall_ns"] / 1e9 - r["silent_s"], windows or {}) for r in ends]
+    loaded = [r["silent_s"] for r, u in zip(ends, load) if u]
     snaps = [r for r in recs if r.get("event") == "pause_snapshot"]
     slow = [r for r in recs if r.get("event") == "slow_stat"]
     return {"pauses": sum(1 for r in recs if r.get("event") == "pause_start"),
             "pause_s": [r["silent_s"] for r in ends], "max_pause_s": max((r["silent_s"] for r in ends), default=None),
+            "pauses_under_load": len(loaded), "max_pause_under_load_s": max(loaded, default=None),
+            "pauses_in_drain": sum(1 for u in load if u is False), "pauses_load_unknown": sum(1 for u in load if u is None),
             "snapshots": len(snaps), "d_state_in_snapshots": sum(1 for r in snaps for p in r.get("processes", []) if p.get("state") == "D"),
             "slow_stats": len(slow), "slow_stat_max_s": max((r["stat_s"] for r in slow), default=None),
             "slow_stat_s": [r["stat_s"] for r in slow], "errors": sum(1 for r in recs if r.get("event") == "watcher_error")}
@@ -160,7 +202,10 @@ def analyze_run(exp: Path, gap_s: float = 1.0, dense_s: float = 0.25) -> dict[st
     # A full-duplex server logs in bursts once per 1-s unit and idles between them, so its log gaps are not pauses.
     duplex = any((exp / "raw").glob("duplex_*"))
     dense = spacing is not None and spacing <= dense_s and not duplex
+    sends = send_windows(exp, [p["phase"] for p in phases if p.get("phase")])
     log_gaps = [describe_gap(g, per_s) for lo, hi in windows for g in gaps_in(times, lo, hi, gap_s)]
+    for g in log_gaps:
+        g["under_load"] = under_load(g["start"], sends)
     for g in log_gaps:  # a gen-2 collection overlapping the gap (its process cannot log while it collects)
         g["gc_overlap"] = [{"pid": c["pid"], "stage": stages.get(c["pid"]), "duration_ms": c["duration_ms"]}
                            for c in gcs if c["start"] < g["start"] + g["gap_s"] and c["end"] > g["start"]]
@@ -169,7 +214,7 @@ def analyze_run(exp: Path, gap_s: float = 1.0, dense_s: float = 0.25) -> dict[st
     return {"run": exp.name, "measured_s": round(sum(hi - lo for lo, hi in windows), 1), "duplex": duplex,
             "log_median_spacing_s": spacing, "log_dense": dense,
             "log_gaps": log_gaps if dense else [], "log_gaps_sparse_log": [] if dense else log_gaps,
-            "sampler_gaps": sampler_gaps, "watcher": watcher_records(exp),
+            "sampler_gaps": sampler_gaps, "watcher": watcher_records(exp, sends), "send_windows": len(sends),
             "gc_gen2": {"count": len(gcs), "duration_ms_p50": statistics.median([c["duration_ms"] for c in gcs]) if gcs else None,
                         "duration_ms_max": max((c["duration_ms"] for c in gcs), default=None),
                         "by_stage": {st: sum(1 for c in gcs if stages.get(c["pid"]) == st) for st in sorted({stages.get(c["pid"]) or "unknown" for c in gcs})}
@@ -184,6 +229,8 @@ def summarize(runs: list[dict[str, Any]]) -> dict[str, Any]:
     gaps = [g for r in dense for g in r["log_gaps"]]
     return {"runs": len(runs), "dense_log_runs": len(dense), "measured_s_dense": round(sum(r["measured_s"] for r in dense), 1),
             "log_gaps_over_1s": len(gaps), "log_gaps_over_2s": sum(1 for g in gaps if g["gap_s"] > 2),
+            "log_gaps_under_load": sum(1 for g in gaps if g.get("under_load")),
+            "log_gaps_in_drain": sum(1 for g in gaps if g.get("under_load") is False),
             "max_log_gap_s": max((g["gap_s"] for g in gaps), default=None),
             "sampler_gaps": sum(len(r["sampler_gaps"]) for r in runs),
             "gaps_with_io_stall": sum(1 for g in gaps if (g["io_full_ms_per_s_max"] or 0) >= 100),
@@ -192,6 +239,9 @@ def summarize(runs: list[dict[str, Any]]) -> dict[str, Any]:
             "watched_runs": sum(1 for r in runs if r.get("watcher")),
             "watcher_pauses": sum(r["watcher"]["pauses"] for r in runs if r.get("watcher")),
             "watcher_max_pause_s": max((r["watcher"]["max_pause_s"] or 0 for r in runs if r.get("watcher")), default=None),
+            "watcher_pauses_under_load": sum(r["watcher"]["pauses_under_load"] for r in runs if r.get("watcher")),
+            "watcher_max_pause_under_load_s": max((r["watcher"]["max_pause_under_load_s"] or 0 for r in runs if r.get("watcher")), default=None),
+            "watcher_pauses_in_drain": sum(r["watcher"]["pauses_in_drain"] for r in runs if r.get("watcher")),
             "watcher_slow_stats": sum(r["watcher"]["slow_stats"] for r in runs if r.get("watcher")),
             "watcher_slow_stat_max_s": max((r["watcher"]["slow_stat_max_s"] or 0 for r in runs if r.get("watcher")), default=None),
             "gc_gen2_in_measured_phases": sum(r["gc_gen2"]["count"] for r in runs),
